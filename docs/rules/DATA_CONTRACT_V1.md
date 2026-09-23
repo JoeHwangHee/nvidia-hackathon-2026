@@ -156,7 +156,7 @@
 | snapshot_id | `snapshot_id` | 문자열 | 이 행이 속한 스냅샷 |
 | month | `month` | 문자열. 월 행은 `YYYYMM`, 총계 행(응답에 함께 오는 조회 구간 전체 합계 행)은 `RAW:총계` | 관측 월. 응답의 `2024.01` 형식을 `202401`로 바꿔 적는다. 월 형식이 아닌 행은 `RAW:` 접두어를 붙여 원문을 보존하며, v2의 총계 행은 모두 `RAW:총계`다 [사실: 수집기, v2 SQLite 조회] |
 | partner_code 원문/namespace | `partner_code`, `partner_namespace` | 문자열 | 상대국 코드 원문(예: `CN`)과 코드 체계 이름(`KCS_cntyCd`: 관세청 조회코드의 2자리 국가코드). 전체국가 분모 행은 `partner_code`가 `ALL`이다 [사실: 수집기] |
-| hs_code 문자열 | `hs_code` | 문자열 | HS 코드(국제 품목분류 번호). 앞자리 0을 지키도록 문자열로 둔다. 총계 행(국가별 `nitemtrade` 응답은 `hsCd='-'`, 품목별 `itemtrade`(`ALL`) 응답은 `hsCode='-'`인 행)은 요청한 코드로 귀속한다 [사실: 수집기, 검토자의 v2 raw XML 확인] |
+| hs_code 문자열 | `hs_code` | 문자열 | HS 코드(국제 품목분류 번호). 앞자리 0을 지키도록 문자열로 둔다. 총계 행(국가별 `nitemtrade` 응답은 `hsCd='-'`, 품목별 `itemtrade`(`ALL`) 응답은 `hsCode='-'`인 행)은 요청한 코드로 귀속한다 [사실: 수집기, `data/snapshots/kcs_202201_202412_v2/raw/`의 v2 raw XML(itemtrade 총계 행 21개는 `hsCode='-'`, nitemtrade 총계 행 334개는 `hsCd='-'`, 빈 응답 2개에는 총계 행 없음)] |
 | hs_level | `hs_level` | 정수 | HS 코드 자릿수(2·4·6·10) [사실: 수집기는 코드 길이를 적는다] |
 | hs_version | `hs_version` | 문자열 | `snapshot`의 `hs_version`과 같은 형식(§2.3.1). v2 관측 행은 모두 `HSK`다 [사실: v2 SQLite 조회] |
 | amount_usd | `amount_usd` | 정수 또는 `null` | 금액(USD 정수). 관측이 없으면 `null`이며 0으로 채우지 않는다 [사실: 수집기] |
@@ -172,7 +172,7 @@
 1. 관측 단위: 기존 `observation` 테이블의 기본 키는 (`request_id`, `month`, `partner_code`, `hs_code`, `flow`)다 [사실: 수집기]. 같은 월·상대국·HS 코드라도 수집 요청이나 흐름이 다르면 행이 따로 있다.
 2. 흐름: 지표는 `flow`가 `import`인 행만 쓴다 [DESIGN].
 3. 총계 행: 응답의 총계 행(국가별 `nitemtrade`는 `hsCd='-'`, 품목별 `itemtrade`(`ALL`)는 `hsCode='-'`)은 `observation_status`=`OBSERVED`, `hs_code`=요청 코드(`hs_level`=요청 코드 자릿수), `month`=`RAW:총계`로 저장된다. 값은 그 요청의 조회 구간(v2는 12개월) 전체 합이다 [사실: 수집기, v2 SQLite 조회]. 총계 행은 총계·부모-하위 대조에만 쓰고, 월 지표의 입력이나 근거 ID 대상으로 쓰지 않는다 [DESIGN].
-4. 상대국 월 값(부모 HS6 행): 상대국의 HS6 월 금액·중량은 그 HS6가 속한 HS4의 스캔 요청(`nitemtrade`, `hsSgn`=HS4 코드, v2는 `8504`, `cntyCd`=상대국)이 돌려준 HS6 행(`hs_level`=6)에서만 가져온다. 이 행을 부모 HS6 행이라 한다. HS6 요청이 돌려준 HS10 하위 행은 구성효과 분해와 부모 대조에만 쓴다(§11.2 원천 규칙) [DESIGN]. 부모 HS6 행이 없는 월은 값을 계산하지 않고(`null`과 사유), 그 월을 맡은 요청들이 남긴 상태 행(`UNRESOLVED_ZERO`, `REQUEST_FAILED`, `NOT_COLLECTED`)을 도구 봉투의 `missingness`로 돌려준다 [DESIGN]. 부모 HS6 행이 있으면, 같은 월에 HS6 요청이 HS6 자릿수로 남긴 상태 행(`UNRESOLVED_ZERO`, `REQUEST_FAILED`)이나 `snapshot-build`가 만든 `NOT_COLLECTED` 행이 같은 (`partner_code`, `hs_code`, `month`, `flow`) 키로 함께 있어도 월 값은 부모 HS6 행에서 가져온다. 그 상태 행은 HS10 하위 자료가 빠졌다는 뜻이므로 구성효과 분해의 `missingness`로만 돌려준다 [DESIGN]. oracle C 사례가 이 경우다. 부모 값(V 360, Q 100)으로 `U`와 `r_U`를 계산하고, HS10 조회가 실패(`REQUEST_FAILED`)했으므로 `within_effect`·`mix_effect`는 `null`이다 [사실: oracle]. `residual`도 계산하지 않는다 [DESIGN]. v2에는 이런 키가 없다 [사실: v2 SQLite 조회].
+4. 상대국 월 값(부모 HS6 행): 상대국의 HS6 월 금액·중량은 그 HS6가 속한 HS4의 스캔 요청(`nitemtrade`, `hsSgn`=HS4 코드, v2는 `8504`, `cntyCd`=상대국)이 돌려준 HS6 행(`hs_level`=6)에서만 가져온다. 이 행을 부모 HS6 행이라 한다. HS6 요청이 돌려준 HS10 하위 행은 구성효과 분해와 부모 대조에만 쓴다(§11.2 원천 규칙) [DESIGN]. 부모 HS6 행이 없는 월은 값을 계산하지 않고(`null`과 사유), 그 월을 맡은 요청들이 남긴 상태 행(`UNRESOLVED_ZERO`, `REQUEST_FAILED`, `NOT_COLLECTED`)을 도구 봉투의 `missingness`로 돌려준다 [DESIGN]. 예외: 그 월의 상태 행이 `CONFIRMED_NO_TRADE`(승격된 행)이면 §3.4대로 V·Q를 0으로 본다. 점유율 분자는 0이고, 단가와 기준월 값이 0인 변화율(`r_U`)은 `null`이다 [DESIGN]. 부모 HS6 행이 있으면, 같은 월에 HS6 요청이 HS6 자릿수로 남긴 상태 행(`UNRESOLVED_ZERO`, `REQUEST_FAILED`)이나 `snapshot-build`가 만든 `NOT_COLLECTED` 행이 같은 (`partner_code`, `hs_code`, `month`, `flow`) 키로 함께 있어도 월 값은 부모 HS6 행에서 가져온다. 그 상태 행은 HS10 하위 자료가 빠졌다는 뜻이므로 구성효과 분해의 `missingness`로만 돌려준다 [DESIGN]. oracle C 사례가 이 경우다. 부모 값(V 360, Q 100)으로 `U`와 `r_U`를 계산하고, HS10 조회가 실패(`REQUEST_FAILED`)했으므로 `within_effect`·`mix_effect`는 `null`이다 [사실: oracle]. `residual`도 계산하지 않는다 [DESIGN]. v2에는 이런 키가 없다 [사실: v2 SQLite 조회].
 5. 전체국가(`ALL`) 월 값: `ALL`에는 월별 HS6 행이 없고, HS6 자릿수의 `ALL` 행은 모두 총계 행이다 [사실: v2 SQLite 조회]. 그래서 HS6의 전체국가 월 금액(점유율 분모)은 `hs_code` 앞 6자리가 그 HS6인 `ALL` HS10 월 행의 금액 합이다(6의 중복 제거 뒤) [DESIGN].
 6. `ALL` 중복 제거: v2에서 대상 HS6 아래 `ALL`×HS10×월 키는 `8504` 요청과 그 HS6 요청(예: `850450`) 아래 두 번 들어 있다. 수입 흐름에서 612키이고 두 값의 차이는 0이다 [사실: v2 SQLite 조회, 메모 §2 "전체국가 분모 대조 612건 일치"]. 이 규칙은 `partner_code`가 `ALL`이고 `hs_level`이 10인 월 행에만 적용한다. 같은 (`hs_code`, `month`, `flow`) 키에 이런 행이 둘 이상이면 요청 코드(`collection_receipt`의 `params_json`에 든 `hsSgn`)가 가장 긴 요청의 행 하나만 쓴다. 그래도 둘 이상이면 `request_id` 사전순으로 첫 행을 쓴다. 이 규칙으로 v2에서는 HS6 요청의 행이 쓰인다. 상대국 행에는 이 규칙을 쓰지 않고 규칙 4를 따른다 [DESIGN]. 중복된 두 행의 값이 다르면 하나를 조용히 고르지 않고 스냅샷 빌드를 오류로 멈춘다 [DESIGN]. v2에서는 불일치가 0건이다 [사실: `data/snapshots/kcs_202201_202412_v2/data-readiness.json`의 `cross_check.ALL`(matched 612, mismatches 없음)].
 7. 분석 범위: 탐지·분석 대상은 HS6 4개 × 상대국 16개와 `ALL`이다(§4.2). v2에 함께 든 선정용 HS4 스캔(`8544`, `8536`)의 행과 `8504` 아래 다른 HS6(예: `850440`)의 행은 범위 밖이며, 지표와 도구가 쓰지 않는다 [DESIGN: 명세 §3.2].
@@ -436,7 +436,7 @@ case ──→ snapshot_id, policy_version
 [DESIGN: 명세 §3.2, §3.4, §3.6]
 
 - `real_dev`와 `real_sealed`는 같은 스냅샷 `kcs_202201_202412_v2`를 품목×국가 시계열 64개 단위로 나눈 묶음이다. 기준값 조정 전에 고정 난수로 먼저 나누고, 같은 시계열이 양쪽에 섞이지 않게 한다. 분할 비율(1:2)과 seed(난수를 다시 똑같이 뽑기 위한 시작값)는 조정값이며 기록한다 [DESIGN: 명세 §3.6]. 두 묶음이 같은 스냅샷에 있으므로 실행 기록은 `dataset`과 `snapshot_id`를 따로 적는다.
-- 분할 seed·비율·시계열 배정은 D가 `policy_v1` 수치를 제안하기 전에 결정 기록(`docs/tracking/decisions/`)으로 커밋한다. 이 커밋이 기준값 조정 전에 나눴다는 증거가 된다. 같은 결정 기록에 `real_sealed` 표본 추출 seed 파일(nonce, 즉 추측을 막으려고 섞는 한 번 쓰는 임의 값을 포함)의 sha256도 함께 커밋한다. 사례 목록을 계산할 수 있게 되기 전에 표본 seed를 골랐다는 증거다. seed 값 자체는 채점 뒤에 공개한다(§12.3) [DESIGN].
+- 분할 seed·비율·시계열 배정은 D가 `policy_v1` 수치를 제안하기 전에 결정 기록(`docs/tracking/decisions/`)으로 커밋한다. 이 커밋이 기준값 조정 전에 나눴다는 증거가 된다. 같은 결정 기록에 `real_sealed` 표본 추출 seed 파일(nonce, 즉 추측을 막으려고 섞는 한 번 쓰는 임의 값을 포함)의 sha256도 함께 커밋한다. 사례 목록을 계산할 수 있게 되기 전에 표본 seed를 골랐다는 증거다. seed 파일(nonce 포함) 자체는 채점 뒤에 공개한다(§12.3). nonce가 있어야 미리 커밋한 sha256으로 검증할 수 있기 때문이다 [DESIGN].
 
 ### 4.3 스킬 형식 풀이
 
@@ -484,7 +484,7 @@ case ──→ snapshot_id, policy_version
   1. `snapshot-build`는 행 순서가 결정적이어야 한다. 같은 raw 응답·manifest·승인된 `policy_version`으로 다시 빌드하면 같은 행이 같은 순서로 들어가 같은 rowid를 받는다.
   2. raw 응답이나 manifest가 바뀌는 재수집은 새 `snapshot_id`로만 한다.
   3. 동결한 SQLite 파일에는 VACUUM을 포함해 파일을 다시 쓰는 작업을 하지 않는다.
-  4. 채점 전에 스냅샷의 `normalized_sha256`을 다시 계산해 기록값과 대조한다. 기록값은 SQLite 밖의 커밋된 기록(결정 기록이나 스냅샷 폴더의 해시 파일, 예: v2의 `snapshot_hash.json`)에 둔다. SQLite 안의 값과 비교하면 자기 자신과 대조하는 셈이기 때문이다. 다르면 그 스냅샷으로 채점하지 않고 사용자에게 올린다.
+  4. 채점 전에 스냅샷의 `normalized_sha256`을 다시 계산해 기록값과 대조한다. 기록값은 SQLite 밖의 커밋된 기록(결정 기록이나 스냅샷 폴더의 해시 파일)에 둔다. v2의 `snapshot_hash.json`에는 지금 raw 해시만 있으므로, D가 `snapshot-build`를 구현할 때 `normalized_sha256`을 그 파일이나 결정 기록에 더해 커밋한다(§2.1 표의 `normalized_sha256` 행). SQLite 안의 값과 비교하면 자기 자신과 대조하는 셈이기 때문이다. 다르면 그 스냅샷으로 채점하지 않고 사용자에게 올린다.
   5. 평가 결과 폴더의 `summary.md`에 스냅샷 해시(`normalized_sha256`), 채점기 커밋 해시, 산문 패턴 목록 버전을 적는다(§8.2).
 
 ### 4.5 그 밖의 ID
@@ -807,7 +807,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 | `share` | `s`, `d_s` |
 
 - `data_status` 주장은 값이 `OBSERVED`가 아닐 때(자료 문제를 말할 때)만 계열 요건에 센다. 그래야 내용 없는 주장 1건으로 두 계열을 모두 채우지 못한다. 셀 때는 가리키는 관측이 속한 계열에 넣는다. HS10 하위 관측(`observation_status@<HS10 코드>`, `partner`가 상대국)은 `unit_value`, `ALL` 분모 관측(`partner`가 `ALL`)은 `share`, 상대국 HS6 관측(`observation_status`, `partner`가 상대국)은 두 계열 모두에 든다.
-- 계열은 `metric`으로 정한다. 어떤 대상(상대국·기간)의 주장이어야 요건을 채우는지는 룰북의 필수 주장 규칙이 정한다.
+- 계열은 `metric`으로 정한다. 요건에 세는 claim은 사례의 `hs6`(HS10 하위 metric이면 그 부모 `hs6`)·대상국·`period`(사례의 비교월)를 가리키는 것뿐이다. `ALL` 분모 관측을 말하는 `data_status` 주장은 `partner`가 `ALL`이어도 센다. 비교국에 대한 claim(`comparison` 포함)은 요건에 세지 않는다 [DESIGN]. 룰북 `docs/eval/RULEBOOK.md`의 필수 주장 규칙과 채점기는 이 대상 규칙을 그대로 쓴다.
 - `V`·`Q` 주장은 위 표에 없으므로 어느 계열 요건도 채우지 않는다 [추론: 위 대응 표].
 
 ## 10. 계획 경로·명령 표
@@ -997,7 +997,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 5. 채점 전 재대조: 해시를 다시 대조한다. 일치하지 않으면 그 묶음의 채점을 무효로 하고 사용자에게 올린다.
 
 - `real_sealed`의 사례 목록과 표본도 같은 절차를 따른다.
-- `real_sealed` 표본 추출 seed는 표본을 뽑기 전에 nonce를 넣은 파일로 만들어 봉인 폴더 안에 두고(해시 목록 대상), 그 파일의 sha256을 분할 seed와 함께 `policy_v1` 제안 전에 결정 기록으로 커밋한다(§4.2). seed 값은 채점이 끝난 뒤 공개한다 [DESIGN].
+- `real_sealed` 표본 추출 seed는 표본을 뽑기 전에 nonce를 넣은 파일로 만들어 봉인 폴더 안에 두고(해시 목록 대상), 그 파일의 sha256을 분할 seed와 함께 `policy_v1` 제안 전에 결정 기록으로 커밋한다(§4.2). seed 파일(nonce 포함)은 채점이 끝난 뒤 공개한다 [DESIGN].
 
 ### 12.4 정직한 한계 [DESIGN: 명세 §3.6]
 
@@ -1135,4 +1135,4 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 - **NemoClaw**: 에이전트 실행 틀과 보안 런타임을 묶은 NVIDIA 참조 스택.
 - **nonce**: 추측을 막으려고 섞는 한 번 쓰는 임의 값. seed 파일의 해시만 보고 seed를 역산하지 못하게 한다.
 - **우회수입**: 제3국을 거쳐 원산지를 바꿔 들여오는 수입. 보고서는 단가·점유율 변화를 그 증거로 쓰지 않는다.
-- **중량 비중(`w@<HS10 코드>`)**: 부모 HS6 안에서 한 하위품목(HS10)이 차지하는 순중량 비율(%). 구성효과를 설명하는 모니터링 근거다.
+- **중량 비중(`w@<HS10 코드>`)**: 같은 부모 HS6의 HS10 하위 행 순중량 합(Σ_i Q_i,t) 대비 한 하위품목(HS10)의 순중량 비율(%). 분모는 부모 HS6 행의 Q가 아니다. 구성효과를 설명하는 모니터링 근거다.
