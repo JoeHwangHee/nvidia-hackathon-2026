@@ -1,0 +1,4161 @@
+{
+ "snapshot_id": "kcs_202201_202412_v1",
+ "verified_at": "2026-09-23T22:03:39+09:00",
+ "verify_logic": "v0.2 (2026-09-23): manifest 기대 요청 기준 커버리지 + 양방향 교차검증",
+ "receipts_by_status": {
+  "OK": 306
+ },
+ "import_obs_by_status": {
+  "OBSERVED": 23872,
+  "UNRESOLVED_ZERO": 182
+ },
+ "coverage_target_pairs": [
+  {
+   "hs6": "850450",
+   "partner": "CN",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "JP",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "DE",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "VN",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "US",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "PH",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "TW",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "FR",
+   "import_pos": 33,
+   "import_zero_explicit": 2,
+   "no_response": 1,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "FI",
+   "import_pos": 25,
+   "import_zero_explicit": 0,
+   "no_response": 11,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "SE",
+   "import_pos": 33,
+   "import_zero_explicit": 1,
+   "no_response": 2,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "KH",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "NL",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "ID",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "IN",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "MX",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "MY",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850450",
+   "partner": "ALL",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "CN",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "JP",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "DE",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "VN",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "US",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "PH",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "TW",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "FR",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "FI",
+   "import_pos": 32,
+   "import_zero_explicit": 0,
+   "no_response": 4,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "SE",
+   "import_pos": 35,
+   "import_zero_explicit": 1,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "import_pos": 7,
+   "import_zero_explicit": 6,
+   "no_response": 23,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "NL",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "ID",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "IN",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "MX",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "MY",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850431",
+   "partner": "ALL",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "CN",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "JP",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "DE",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "VN",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "US",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "PH",
+   "import_pos": 28,
+   "import_zero_explicit": 3,
+   "no_response": 5,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "TW",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "import_pos": 12,
+   "import_zero_explicit": 0,
+   "no_response": 24,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "import_pos": 12,
+   "import_zero_explicit": 0,
+   "no_response": 24,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "import_pos": 12,
+   "import_zero_explicit": 2,
+   "no_response": 22,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "import_pos": 0,
+   "import_zero_explicit": 2,
+   "no_response": 34,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "NL",
+   "import_pos": 26,
+   "import_zero_explicit": 5,
+   "no_response": 5,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "ID",
+   "import_pos": 4,
+   "import_zero_explicit": 22,
+   "no_response": 10,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "IN",
+   "import_pos": 14,
+   "import_zero_explicit": 15,
+   "no_response": 7,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "MX",
+   "import_pos": 22,
+   "import_zero_explicit": 6,
+   "no_response": 8,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "MY",
+   "import_pos": 33,
+   "import_zero_explicit": 1,
+   "no_response": 2,
+   "failed": 0,
+   "not_collected": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "ALL",
+   "import_pos": 36,
+   "import_zero_explicit": 0,
+   "no_response": 0,
+   "failed": 0,
+   "not_collected": 0
+  }
+ ],
+ "coverage_hs6_from_hs4_scan": [
+  {
+   "hs6": "850410",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850410",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850410",
+   "partner": "FI",
+   "months": 8,
+   "months_import_pos": 8
+  },
+  {
+   "hs6": "850410",
+   "partner": "FR",
+   "months": 19,
+   "months_import_pos": 13
+  },
+  {
+   "hs6": "850410",
+   "partner": "ID",
+   "months": 22,
+   "months_import_pos": 5
+  },
+  {
+   "hs6": "850410",
+   "partner": "IN",
+   "months": 35,
+   "months_import_pos": 29
+  },
+  {
+   "hs6": "850410",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 35
+  },
+  {
+   "hs6": "850410",
+   "partner": "MX",
+   "months": 34,
+   "months_import_pos": 32
+  },
+  {
+   "hs6": "850410",
+   "partner": "MY",
+   "months": 24,
+   "months_import_pos": 10
+  },
+  {
+   "hs6": "850410",
+   "partner": "NL",
+   "months": 30,
+   "months_import_pos": 24
+  },
+  {
+   "hs6": "850410",
+   "partner": "PH",
+   "months": 31,
+   "months_import_pos": 22
+  },
+  {
+   "hs6": "850410",
+   "partner": "SE",
+   "months": 5,
+   "months_import_pos": 4
+  },
+  {
+   "hs6": "850410",
+   "partner": "TW",
+   "months": 35,
+   "months_import_pos": 26
+  },
+  {
+   "hs6": "850410",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850410",
+   "partner": "VN",
+   "months": 32,
+   "months_import_pos": 22
+  },
+  {
+   "hs6": "850421",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850421",
+   "partner": "DE",
+   "months": 33,
+   "months_import_pos": 32
+  },
+  {
+   "hs6": "850421",
+   "partner": "FI",
+   "months": 1,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "850421",
+   "partner": "FR",
+   "months": 21,
+   "months_import_pos": 20
+  },
+  {
+   "hs6": "850421",
+   "partner": "ID",
+   "months": 31,
+   "months_import_pos": 4
+  },
+  {
+   "hs6": "850421",
+   "partner": "IN",
+   "months": 17,
+   "months_import_pos": 10
+  },
+  {
+   "hs6": "850421",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850421",
+   "partner": "MX",
+   "months": 18,
+   "months_import_pos": 6
+  },
+  {
+   "hs6": "850421",
+   "partner": "MY",
+   "months": 17,
+   "months_import_pos": 6
+  },
+  {
+   "hs6": "850421",
+   "partner": "NL",
+   "months": 9,
+   "months_import_pos": 5
+  },
+  {
+   "hs6": "850421",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 10
+  },
+  {
+   "hs6": "850421",
+   "partner": "SE",
+   "months": 10,
+   "months_import_pos": 10
+  },
+  {
+   "hs6": "850421",
+   "partner": "TW",
+   "months": 28,
+   "months_import_pos": 10
+  },
+  {
+   "hs6": "850421",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850421",
+   "partner": "VN",
+   "months": 34,
+   "months_import_pos": 28
+  },
+  {
+   "hs6": "850422",
+   "partner": "CN",
+   "months": 26,
+   "months_import_pos": 24
+  },
+  {
+   "hs6": "850422",
+   "partner": "DE",
+   "months": 7,
+   "months_import_pos": 7
+  },
+  {
+   "hs6": "850422",
+   "partner": "FI",
+   "months": 2,
+   "months_import_pos": 2
+  },
+  {
+   "hs6": "850422",
+   "partner": "FR",
+   "months": 8,
+   "months_import_pos": 7
+  },
+  {
+   "hs6": "850422",
+   "partner": "ID",
+   "months": 10,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "850422",
+   "partner": "IN",
+   "months": 26,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "850422",
+   "partner": "JP",
+   "months": 29,
+   "months_import_pos": 8
+  },
+  {
+   "hs6": "850422",
+   "partner": "MX",
+   "months": 3,
+   "months_import_pos": 2
+  },
+  {
+   "hs6": "850422",
+   "partner": "MY",
+   "months": 10,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "850422",
+   "partner": "NL",
+   "months": 1,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "850422",
+   "partner": "PH",
+   "months": 33,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "850422",
+   "partner": "SE",
+   "months": 2,
+   "months_import_pos": 2
+  },
+  {
+   "hs6": "850422",
+   "partner": "TW",
+   "months": 5,
+   "months_import_pos": 2
+  },
+  {
+   "hs6": "850422",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 17
+  },
+  {
+   "hs6": "850422",
+   "partner": "VN",
+   "months": 5,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "850423",
+   "partner": "CN",
+   "months": 22,
+   "months_import_pos": 21
+  },
+  {
+   "hs6": "850423",
+   "partner": "DE",
+   "months": 1,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "850423",
+   "partner": "FI",
+   "months": 2,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "850423",
+   "partner": "FR",
+   "months": 5,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "850423",
+   "partner": "ID",
+   "months": 7,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "850423",
+   "partner": "IN",
+   "months": 1,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "850423",
+   "partner": "JP",
+   "months": 12,
+   "months_import_pos": 2
+  },
+  {
+   "hs6": "850423",
+   "partner": "KH",
+   "months": 1,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "850423",
+   "partner": "MY",
+   "months": 13,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "850423",
+   "partner": "NL",
+   "months": 2,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "850423",
+   "partner": "PH",
+   "months": 11,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "850423",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 8
+  },
+  {
+   "hs6": "850423",
+   "partner": "VN",
+   "months": 9,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "850431",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850431",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850431",
+   "partner": "FI",
+   "months": 32,
+   "months_import_pos": 32
+  },
+  {
+   "hs6": "850431",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850431",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850431",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850431",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "months": 13,
+   "months_import_pos": 7
+  },
+  {
+   "hs6": "850431",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850431",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850431",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850431",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850431",
+   "partner": "SE",
+   "months": 36,
+   "months_import_pos": 35
+  },
+  {
+   "hs6": "850431",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850431",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850431",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850432",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850432",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "months": 12,
+   "months_import_pos": 12
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "months": 12,
+   "months_import_pos": 12
+  },
+  {
+   "hs6": "850432",
+   "partner": "ID",
+   "months": 26,
+   "months_import_pos": 4
+  },
+  {
+   "hs6": "850432",
+   "partner": "IN",
+   "months": 29,
+   "months_import_pos": 14
+  },
+  {
+   "hs6": "850432",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "months": 2,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "850432",
+   "partner": "MX",
+   "months": 28,
+   "months_import_pos": 22
+  },
+  {
+   "hs6": "850432",
+   "partner": "MY",
+   "months": 34,
+   "months_import_pos": 33
+  },
+  {
+   "hs6": "850432",
+   "partner": "NL",
+   "months": 31,
+   "months_import_pos": 26
+  },
+  {
+   "hs6": "850432",
+   "partner": "PH",
+   "months": 31,
+   "months_import_pos": 28
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "months": 14,
+   "months_import_pos": 12
+  },
+  {
+   "hs6": "850432",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850432",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850432",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850433",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850433",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 35
+  },
+  {
+   "hs6": "850433",
+   "partner": "FI",
+   "months": 1,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "850433",
+   "partner": "FR",
+   "months": 14,
+   "months_import_pos": 14
+  },
+  {
+   "hs6": "850433",
+   "partner": "ID",
+   "months": 11,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "850433",
+   "partner": "IN",
+   "months": 18,
+   "months_import_pos": 5
+  },
+  {
+   "hs6": "850433",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850433",
+   "partner": "MX",
+   "months": 23,
+   "months_import_pos": 10
+  },
+  {
+   "hs6": "850433",
+   "partner": "MY",
+   "months": 13,
+   "months_import_pos": 3
+  },
+  {
+   "hs6": "850433",
+   "partner": "NL",
+   "months": 3,
+   "months_import_pos": 3
+  },
+  {
+   "hs6": "850433",
+   "partner": "PH",
+   "months": 26,
+   "months_import_pos": 2
+  },
+  {
+   "hs6": "850433",
+   "partner": "SE",
+   "months": 12,
+   "months_import_pos": 9
+  },
+  {
+   "hs6": "850433",
+   "partner": "TW",
+   "months": 32,
+   "months_import_pos": 29
+  },
+  {
+   "hs6": "850433",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850433",
+   "partner": "VN",
+   "months": 34,
+   "months_import_pos": 3
+  },
+  {
+   "hs6": "850434",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850434",
+   "partner": "DE",
+   "months": 31,
+   "months_import_pos": 30
+  },
+  {
+   "hs6": "850434",
+   "partner": "FI",
+   "months": 14,
+   "months_import_pos": 14
+  },
+  {
+   "hs6": "850434",
+   "partner": "FR",
+   "months": 25,
+   "months_import_pos": 23
+  },
+  {
+   "hs6": "850434",
+   "partner": "ID",
+   "months": 14,
+   "months_import_pos": 2
+  },
+  {
+   "hs6": "850434",
+   "partner": "IN",
+   "months": 24,
+   "months_import_pos": 18
+  },
+  {
+   "hs6": "850434",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 31
+  },
+  {
+   "hs6": "850434",
+   "partner": "MX",
+   "months": 11,
+   "months_import_pos": 2
+  },
+  {
+   "hs6": "850434",
+   "partner": "MY",
+   "months": 27,
+   "months_import_pos": 3
+  },
+  {
+   "hs6": "850434",
+   "partner": "NL",
+   "months": 3,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "850434",
+   "partner": "PH",
+   "months": 28,
+   "months_import_pos": 2
+  },
+  {
+   "hs6": "850434",
+   "partner": "SE",
+   "months": 1,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "850434",
+   "partner": "TW",
+   "months": 35,
+   "months_import_pos": 4
+  },
+  {
+   "hs6": "850434",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 34
+  },
+  {
+   "hs6": "850434",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "850440",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "FI",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "KH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "SE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850440",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850450",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850450",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850450",
+   "partner": "FI",
+   "months": 25,
+   "months_import_pos": 25
+  },
+  {
+   "hs6": "850450",
+   "partner": "FR",
+   "months": 35,
+   "months_import_pos": 33
+  },
+  {
+   "hs6": "850450",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850450",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850450",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850450",
+   "partner": "KH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850450",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850450",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850450",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850450",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850450",
+   "partner": "SE",
+   "months": 34,
+   "months_import_pos": 33
+  },
+  {
+   "hs6": "850450",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850450",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850450",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "FI",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "KH",
+   "months": 10,
+   "months_import_pos": 8
+  },
+  {
+   "hs6": "850490",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "SE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "850490",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853610",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853610",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853610",
+   "partner": "FI",
+   "months": 35,
+   "months_import_pos": 19
+  },
+  {
+   "hs6": "853610",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853610",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 31
+  },
+  {
+   "hs6": "853610",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853610",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853610",
+   "partner": "KH",
+   "months": 29,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "853610",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853610",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853610",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853610",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853610",
+   "partner": "SE",
+   "months": 35,
+   "months_import_pos": 32
+  },
+  {
+   "hs6": "853610",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853610",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853610",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853620",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853620",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853620",
+   "partner": "FI",
+   "months": 25,
+   "months_import_pos": 15
+  },
+  {
+   "hs6": "853620",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853620",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853620",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853620",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853620",
+   "partner": "KH",
+   "months": 20,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "853620",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853620",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 33
+  },
+  {
+   "hs6": "853620",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 33
+  },
+  {
+   "hs6": "853620",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 7
+  },
+  {
+   "hs6": "853620",
+   "partner": "SE",
+   "months": 15,
+   "months_import_pos": 11
+  },
+  {
+   "hs6": "853620",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 32
+  },
+  {
+   "hs6": "853620",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853620",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853630",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853630",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853630",
+   "partner": "FI",
+   "months": 30,
+   "months_import_pos": 29
+  },
+  {
+   "hs6": "853630",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853630",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853630",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853630",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853630",
+   "partner": "KH",
+   "months": 4,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "853630",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853630",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853630",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853630",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853630",
+   "partner": "SE",
+   "months": 33,
+   "months_import_pos": 33
+  },
+  {
+   "hs6": "853630",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853630",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853630",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853641",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853641",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853641",
+   "partner": "FI",
+   "months": 15,
+   "months_import_pos": 11
+  },
+  {
+   "hs6": "853641",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853641",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853641",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853641",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853641",
+   "partner": "KH",
+   "months": 29,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "853641",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853641",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853641",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853641",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853641",
+   "partner": "SE",
+   "months": 33,
+   "months_import_pos": 30
+  },
+  {
+   "hs6": "853641",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853641",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853641",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "FI",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "KH",
+   "months": 20,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "853649",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "SE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853649",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 35
+  },
+  {
+   "hs6": "853650",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "FI",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "KH",
+   "months": 30,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "853650",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "SE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853650",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853661",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853661",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853661",
+   "partner": "FR",
+   "months": 26,
+   "months_import_pos": 26
+  },
+  {
+   "hs6": "853661",
+   "partner": "ID",
+   "months": 28,
+   "months_import_pos": 8
+  },
+  {
+   "hs6": "853661",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 13
+  },
+  {
+   "hs6": "853661",
+   "partner": "JP",
+   "months": 34,
+   "months_import_pos": 34
+  },
+  {
+   "hs6": "853661",
+   "partner": "KH",
+   "months": 4,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "853661",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853661",
+   "partner": "MY",
+   "months": 26,
+   "months_import_pos": 9
+  },
+  {
+   "hs6": "853661",
+   "partner": "NL",
+   "months": 32,
+   "months_import_pos": 29
+  },
+  {
+   "hs6": "853661",
+   "partner": "PH",
+   "months": 17,
+   "months_import_pos": 3
+  },
+  {
+   "hs6": "853661",
+   "partner": "SE",
+   "months": 9,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "853661",
+   "partner": "TW",
+   "months": 29,
+   "months_import_pos": 15
+  },
+  {
+   "hs6": "853661",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853661",
+   "partner": "VN",
+   "months": 30,
+   "months_import_pos": 7
+  },
+  {
+   "hs6": "853669",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853669",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853669",
+   "partner": "FI",
+   "months": 35,
+   "months_import_pos": 25
+  },
+  {
+   "hs6": "853669",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853669",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853669",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853669",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853669",
+   "partner": "KH",
+   "months": 22,
+   "months_import_pos": 16
+  },
+  {
+   "hs6": "853669",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853669",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853669",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853669",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853669",
+   "partner": "SE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853669",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853669",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853669",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853670",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853670",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853670",
+   "partner": "FI",
+   "months": 11,
+   "months_import_pos": 7
+  },
+  {
+   "hs6": "853670",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 25
+  },
+  {
+   "hs6": "853670",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853670",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 18
+  },
+  {
+   "hs6": "853670",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853670",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 35
+  },
+  {
+   "hs6": "853670",
+   "partner": "MY",
+   "months": 31,
+   "months_import_pos": 31
+  },
+  {
+   "hs6": "853670",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853670",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853670",
+   "partner": "SE",
+   "months": 28,
+   "months_import_pos": 26
+  },
+  {
+   "hs6": "853670",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853670",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853670",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "FI",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "KH",
+   "months": 36,
+   "months_import_pos": 18
+  },
+  {
+   "hs6": "853690",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "SE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "853690",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854411",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854411",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854411",
+   "partner": "FI",
+   "months": 2,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "854411",
+   "partner": "FR",
+   "months": 32,
+   "months_import_pos": 25
+  },
+  {
+   "hs6": "854411",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 3
+  },
+  {
+   "hs6": "854411",
+   "partner": "IN",
+   "months": 34,
+   "months_import_pos": 15
+  },
+  {
+   "hs6": "854411",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854411",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 31
+  },
+  {
+   "hs6": "854411",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854411",
+   "partner": "NL",
+   "months": 11,
+   "months_import_pos": 6
+  },
+  {
+   "hs6": "854411",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 3
+  },
+  {
+   "hs6": "854411",
+   "partner": "SE",
+   "months": 6,
+   "months_import_pos": 2
+  },
+  {
+   "hs6": "854411",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854411",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854411",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 35
+  },
+  {
+   "hs6": "854419",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854419",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 35
+  },
+  {
+   "hs6": "854419",
+   "partner": "FI",
+   "months": 2,
+   "months_import_pos": 2
+  },
+  {
+   "hs6": "854419",
+   "partner": "FR",
+   "months": 12,
+   "months_import_pos": 7
+  },
+  {
+   "hs6": "854419",
+   "partner": "ID",
+   "months": 15,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "854419",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 31
+  },
+  {
+   "hs6": "854419",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854419",
+   "partner": "KH",
+   "months": 4,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "854419",
+   "partner": "MX",
+   "months": 31,
+   "months_import_pos": 21
+  },
+  {
+   "hs6": "854419",
+   "partner": "MY",
+   "months": 34,
+   "months_import_pos": 16
+  },
+  {
+   "hs6": "854419",
+   "partner": "NL",
+   "months": 26,
+   "months_import_pos": 3
+  },
+  {
+   "hs6": "854419",
+   "partner": "PH",
+   "months": 26,
+   "months_import_pos": 6
+  },
+  {
+   "hs6": "854419",
+   "partner": "SE",
+   "months": 11,
+   "months_import_pos": 9
+  },
+  {
+   "hs6": "854419",
+   "partner": "TW",
+   "months": 30,
+   "months_import_pos": 15
+  },
+  {
+   "hs6": "854419",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854419",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854420",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854420",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854420",
+   "partner": "FI",
+   "months": 27,
+   "months_import_pos": 24
+  },
+  {
+   "hs6": "854420",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 35
+  },
+  {
+   "hs6": "854420",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 34
+  },
+  {
+   "hs6": "854420",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 34
+  },
+  {
+   "hs6": "854420",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854420",
+   "partner": "KH",
+   "months": 17,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "854420",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854420",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854420",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 32
+  },
+  {
+   "hs6": "854420",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 25
+  },
+  {
+   "hs6": "854420",
+   "partner": "SE",
+   "months": 34,
+   "months_import_pos": 33
+  },
+  {
+   "hs6": "854420",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854420",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854420",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854430",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854430",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854430",
+   "partner": "FI",
+   "months": 8,
+   "months_import_pos": 7
+  },
+  {
+   "hs6": "854430",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854430",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 29
+  },
+  {
+   "hs6": "854430",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854430",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854430",
+   "partner": "KH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854430",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854430",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 8
+  },
+  {
+   "hs6": "854430",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854430",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854430",
+   "partner": "SE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854430",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 31
+  },
+  {
+   "hs6": "854430",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854430",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "FI",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "KH",
+   "months": 34,
+   "months_import_pos": 19
+  },
+  {
+   "hs6": "854442",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "SE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854442",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854449",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854449",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854449",
+   "partner": "FI",
+   "months": 36,
+   "months_import_pos": 34
+  },
+  {
+   "hs6": "854449",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854449",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 31
+  },
+  {
+   "hs6": "854449",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854449",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854449",
+   "partner": "KH",
+   "months": 36,
+   "months_import_pos": 8
+  },
+  {
+   "hs6": "854449",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854449",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854449",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854449",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 34
+  },
+  {
+   "hs6": "854449",
+   "partner": "SE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854449",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854449",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854449",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854460",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854460",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854460",
+   "partner": "FI",
+   "months": 29,
+   "months_import_pos": 3
+  },
+  {
+   "hs6": "854460",
+   "partner": "FR",
+   "months": 35,
+   "months_import_pos": 32
+  },
+  {
+   "hs6": "854460",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "854460",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 34
+  },
+  {
+   "hs6": "854460",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854460",
+   "partner": "KH",
+   "months": 5,
+   "months_import_pos": 0
+  },
+  {
+   "hs6": "854460",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 35
+  },
+  {
+   "hs6": "854460",
+   "partner": "MY",
+   "months": 35,
+   "months_import_pos": 19
+  },
+  {
+   "hs6": "854460",
+   "partner": "NL",
+   "months": 34,
+   "months_import_pos": 29
+  },
+  {
+   "hs6": "854460",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854460",
+   "partner": "SE",
+   "months": 13,
+   "months_import_pos": 9
+  },
+  {
+   "hs6": "854460",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854460",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854460",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854470",
+   "partner": "CN",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854470",
+   "partner": "DE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854470",
+   "partner": "FI",
+   "months": 29,
+   "months_import_pos": 23
+  },
+  {
+   "hs6": "854470",
+   "partner": "FR",
+   "months": 36,
+   "months_import_pos": 29
+  },
+  {
+   "hs6": "854470",
+   "partner": "ID",
+   "months": 36,
+   "months_import_pos": 21
+  },
+  {
+   "hs6": "854470",
+   "partner": "IN",
+   "months": 36,
+   "months_import_pos": 34
+  },
+  {
+   "hs6": "854470",
+   "partner": "JP",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854470",
+   "partner": "KH",
+   "months": 4,
+   "months_import_pos": 1
+  },
+  {
+   "hs6": "854470",
+   "partner": "MX",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854470",
+   "partner": "MY",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854470",
+   "partner": "NL",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854470",
+   "partner": "PH",
+   "months": 36,
+   "months_import_pos": 25
+  },
+  {
+   "hs6": "854470",
+   "partner": "SE",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854470",
+   "partner": "TW",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854470",
+   "partner": "US",
+   "months": 36,
+   "months_import_pos": 36
+  },
+  {
+   "hs6": "854470",
+   "partner": "VN",
+   "months": 36,
+   "months_import_pos": 36
+  }
+ ],
+ "non_integer_values": 0,
+ "positive_amount_zero_or_null_weight": 646,
+ "total_row_checks": 304,
+ "total_row_mismatches": [],
+ "responses_without_total_row": [],
+ "cross_check": {
+  "country": {
+   "matched": 1546,
+   "mismatches": [],
+   "parent_only": [],
+   "child_only": []
+  },
+  "ALL": {
+   "expected": true,
+   "matched": 540,
+   "mismatches": [],
+   "only_in_hs4_query": [],
+   "only_in_hs6_query": []
+  }
+ },
+ "cross_checks_hs4_vs_hs10": 1546,
+ "cross_check_mismatches": [],
+ "raw_hash_mismatches": [],
+ "confirmed_no_trade_candidates": [
+  {
+   "hs6": "850450",
+   "partner": "FR",
+   "month": "202206"
+  },
+  {
+   "hs6": "850450",
+   "partner": "FI",
+   "month": "202205"
+  },
+  {
+   "hs6": "850450",
+   "partner": "FI",
+   "month": "202207"
+  },
+  {
+   "hs6": "850450",
+   "partner": "FI",
+   "month": "202208"
+  },
+  {
+   "hs6": "850450",
+   "partner": "FI",
+   "month": "202211"
+  },
+  {
+   "hs6": "850450",
+   "partner": "FI",
+   "month": "202302"
+  },
+  {
+   "hs6": "850450",
+   "partner": "FI",
+   "month": "202304"
+  },
+  {
+   "hs6": "850450",
+   "partner": "FI",
+   "month": "202305"
+  },
+  {
+   "hs6": "850450",
+   "partner": "FI",
+   "month": "202306"
+  },
+  {
+   "hs6": "850450",
+   "partner": "FI",
+   "month": "202307"
+  },
+  {
+   "hs6": "850450",
+   "partner": "FI",
+   "month": "202309"
+  },
+  {
+   "hs6": "850450",
+   "partner": "FI",
+   "month": "202401"
+  },
+  {
+   "hs6": "850450",
+   "partner": "SE",
+   "month": "202201"
+  },
+  {
+   "hs6": "850450",
+   "partner": "SE",
+   "month": "202203"
+  },
+  {
+   "hs6": "850431",
+   "partner": "FI",
+   "month": "202301"
+  },
+  {
+   "hs6": "850431",
+   "partner": "FI",
+   "month": "202303"
+  },
+  {
+   "hs6": "850431",
+   "partner": "FI",
+   "month": "202305"
+  },
+  {
+   "hs6": "850431",
+   "partner": "FI",
+   "month": "202307"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202202"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202203"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202205"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202208"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202302"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202304"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202305"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202306"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202307"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202308"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202309"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202310"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202311"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202312"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202401"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202403"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202405"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202406"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202407"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202408"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202409"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202410"
+  },
+  {
+   "hs6": "850431",
+   "partner": "KH",
+   "month": "202411"
+  },
+  {
+   "hs6": "850432",
+   "partner": "PH",
+   "month": "202201"
+  },
+  {
+   "hs6": "850432",
+   "partner": "PH",
+   "month": "202206"
+  },
+  {
+   "hs6": "850432",
+   "partner": "PH",
+   "month": "202304"
+  },
+  {
+   "hs6": "850432",
+   "partner": "PH",
+   "month": "202409"
+  },
+  {
+   "hs6": "850432",
+   "partner": "PH",
+   "month": "202411"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202201"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202204"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202205"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202206"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202208"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202209"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202210"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202211"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202212"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202301"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202302"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202304"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202305"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202307"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202308"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202309"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202310"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202312"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202401"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202402"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202406"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202408"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202410"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FR",
+   "month": "202411"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202203"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202204"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202205"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202206"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202207"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202209"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202212"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202301"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202302"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202303"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202304"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202305"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202308"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202309"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202310"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202311"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202401"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202402"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202403"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202405"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202406"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202407"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202410"
+  },
+  {
+   "hs6": "850432",
+   "partner": "FI",
+   "month": "202412"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202202"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202203"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202204"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202301"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202302"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202303"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202304"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202305"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202306"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202307"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202308"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202309"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202311"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202401"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202402"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202403"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202404"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202405"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202406"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202407"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202410"
+  },
+  {
+   "hs6": "850432",
+   "partner": "SE",
+   "month": "202412"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202201"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202202"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202204"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202205"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202206"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202207"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202208"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202209"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202211"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202212"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202301"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202302"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202303"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202304"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202305"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202306"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202307"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202308"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202309"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202310"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202311"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202312"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202401"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202402"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202403"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202404"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202405"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202406"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202407"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202408"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202409"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202410"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202411"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202412"
+  },
+  {
+   "hs6": "850432",
+   "partner": "NL",
+   "month": "202302"
+  },
+  {
+   "hs6": "850432",
+   "partner": "NL",
+   "month": "202307"
+  },
+  {
+   "hs6": "850432",
+   "partner": "NL",
+   "month": "202309"
+  },
+  {
+   "hs6": "850432",
+   "partner": "NL",
+   "month": "202312"
+  },
+  {
+   "hs6": "850432",
+   "partner": "NL",
+   "month": "202411"
+  },
+  {
+   "hs6": "850432",
+   "partner": "ID",
+   "month": "202207"
+  },
+  {
+   "hs6": "850432",
+   "partner": "ID",
+   "month": "202310"
+  },
+  {
+   "hs6": "850432",
+   "partner": "ID",
+   "month": "202401"
+  },
+  {
+   "hs6": "850432",
+   "partner": "ID",
+   "month": "202402"
+  },
+  {
+   "hs6": "850432",
+   "partner": "ID",
+   "month": "202403"
+  },
+  {
+   "hs6": "850432",
+   "partner": "ID",
+   "month": "202406"
+  },
+  {
+   "hs6": "850432",
+   "partner": "ID",
+   "month": "202407"
+  },
+  {
+   "hs6": "850432",
+   "partner": "ID",
+   "month": "202409"
+  },
+  {
+   "hs6": "850432",
+   "partner": "ID",
+   "month": "202410"
+  },
+  {
+   "hs6": "850432",
+   "partner": "ID",
+   "month": "202411"
+  },
+  {
+   "hs6": "850432",
+   "partner": "IN",
+   "month": "202201"
+  },
+  {
+   "hs6": "850432",
+   "partner": "IN",
+   "month": "202203"
+  },
+  {
+   "hs6": "850432",
+   "partner": "IN",
+   "month": "202211"
+  },
+  {
+   "hs6": "850432",
+   "partner": "IN",
+   "month": "202307"
+  },
+  {
+   "hs6": "850432",
+   "partner": "IN",
+   "month": "202311"
+  },
+  {
+   "hs6": "850432",
+   "partner": "IN",
+   "month": "202312"
+  },
+  {
+   "hs6": "850432",
+   "partner": "IN",
+   "month": "202409"
+  },
+  {
+   "hs6": "850432",
+   "partner": "MX",
+   "month": "202202"
+  },
+  {
+   "hs6": "850432",
+   "partner": "MX",
+   "month": "202204"
+  },
+  {
+   "hs6": "850432",
+   "partner": "MX",
+   "month": "202210"
+  },
+  {
+   "hs6": "850432",
+   "partner": "MX",
+   "month": "202212"
+  },
+  {
+   "hs6": "850432",
+   "partner": "MX",
+   "month": "202304"
+  },
+  {
+   "hs6": "850432",
+   "partner": "MX",
+   "month": "202306"
+  },
+  {
+   "hs6": "850432",
+   "partner": "MX",
+   "month": "202310"
+  },
+  {
+   "hs6": "850432",
+   "partner": "MX",
+   "month": "202405"
+  },
+  {
+   "hs6": "850432",
+   "partner": "MY",
+   "month": "202307"
+  },
+  {
+   "hs6": "850432",
+   "partner": "MY",
+   "month": "202406"
+  }
+ ],
+ "units_confirmed": "true (probe 2026-09-23: impDlr USD 정수, impWgt kg 정수; BACI 연간값과 자릿수 일치)",
+ "precision_rule": "amount exact integer USD; weight integer kg rounded per row (total-row diff observed 2kg over 6-73 rows)",
+ "hs_version": "HSK (응답 코드 그대로; 연도별 개정 여부는 코드 출현 연도로 판단)",
+ "gates": {
+  "G1_new_collection_access": true,
+  "G2_full_period_quality": {
+   "months_required": 36,
+   "pairs_expected": {
+    "country": 48,
+    "ALL": 3
+   },
+   "pairs_full_any_rows": {
+    "country": 33,
+    "ALL": 3
+   },
+   "pairs_full_import_pos": {
+    "country": 32,
+    "ALL": 3
+   },
+   "denominator_cross_check_ok": true
+  },
+  "G3_hs10_decomposition": true,
+  "snapshot_integrity": true
+ },
+ "notes": [
+  "G2 는 대상 HS6 × (국가 + ALL) 기대 쌍 기준. any_rows = 그 달 HS10 행이 있음(수출만 있는 달 포함), import_pos = 수입 합 > 0. 이전 verify 의 쌍 집계(예: 77쌍)는 itemtrade HS4 응답에서 온 비대상 HS6 의 ALL 쌍까지 섞인 값이다.",
+  "import_zero_explicit 는 결측이 아니라 API 가 명시한 0 이다. CONFIRMED_NO_TRADE 재분류는 정책 결정 사항.",
+  "G3 = 국가별 HS4 스캔 HS6 행 vs HS6 조회 HS10 합의 양방향 대조(한쪽만 있어도 실패) + 총계 대조 + 잘림 의심 응답 없음.",
+  "ALL(점유율 분모)은 itemtrade HS4 응답의 HS10 행 vs HS6 응답의 HS10 행을 코드·월별로 정확 대조한다(G2.denominator_cross_check_ok).",
+  "금액은 정확 일치, 중량은 행별 정수 kg 반올림(허용 0.5kg×(행수+1)) - probe 2026-09-23 실측 기반.",
+  "CONFIRMED_NO_TRADE 는 후보만 나열. 승격은 정책 결정 사항.",
+  "G2 는 수집 기간 전체 기준. 24개월 분석창은 2023-01~2024-12."
+ ]
+}

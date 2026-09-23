@@ -1,0 +1,9 @@
+{
+ "snapshot_id": "kcs_202201_202412_v2",
+ "hashed_at": "2026-09-23T21:55:35+09:00",
+ "raw_files": 357,
+ "raw_combined_sha256": "afc76401431f02b4d8d5e848b197faaa197ce3dd037d66fd7ca719d7ce7bb017",
+ "method": "스냅샷 폴더에서 `shasum -a 256 raw/*.xml | shasum -a 256` (파일명 순 'sha256  raw/<file>' 줄들의 sha256)",
+ "status": "COLLECTED_NOT_FROZEN (HS4·HS6·비교국 선정 후 동결)",
+ "note": "v1 과 겹치는 306개 요청의 응답 sha256 은 v1 과 전부 동일. v2 에만 있는 51개 = HS6 850490."
+}

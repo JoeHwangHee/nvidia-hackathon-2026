@@ -1,0 +1,4806 @@
+{
+ "generated_from": "관세청_HS부호_20260101.xlsx (2026 기준, 2026 이전 소멸 코드 미포함)",
+ "filter": "2<=n_hs10<=6 and no 적용시작일자>2022-01-01 and all 중량단위코드==KG",
+ "hs6_candidates": [
+  {
+   "hs6": "850110",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "교류 전동기; 교류ㆍ직류 겸용 전동기; 직류 전동기"
+  },
+  {
+   "hs6": "850120",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "출력이 100와트 초과 750와트; 출력이 37.5와트 초과 100와; 출력이 750와트를 초과하는 것"
+  },
+  {
+   "hs6": "850131",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 직류 발전기; 출력이 100와트 이하인 것"
+  },
+  {
+   "hs6": "850132",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "직류 발전기; 직류 전동기"
+  },
+  {
+   "hs6": "850134",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "직류 발전기; 직류 전동기"
+  },
+  {
+   "hs6": "850140",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "출력이 100와트 이하인 것; 출력이 100와트 초과 750와트; 출력이 750와트 초과 75킬로와; 출력이 75킬로와트를 초과하는 것"
+  },
+  {
+   "hs6": "850161",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "출력이 750볼트암페어 이하인 것; 출력이 750볼트암페어 초과 75"
+  },
+  {
+   "hs6": "850163",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "400킬로와트에 상응하는 출력 이; 기타"
+  },
+  {
+   "hs6": "850172",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "출력이 375킬로와트를 초과하는 ; 출력이 50와트 초과 750와트 ; 출력이 750와트 초과 75킬로와; 출력이 75킬로와트 초과 375킬"
+  },
+  {
+   "hs6": "850180",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "400킬로와트에 상응하는 출력 이; 기타; 출력이 750볼트암페어 이하인 것; 출력이 750볼트암페어 초과 75; 출력이 750킬로볼트암페어를 "
+  },
+  {
+   "hs6": "850211",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "출력이 750볼트암페어 이하인 것; 출력이 750볼트암페어 초과 75"
+  },
+  {
+   "hs6": "850213",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "400킬로와트에 상응하는 출력 이; 기타; 출력이 3,500킬로볼트암페어를 ; 출력이 750킬로볼트암페어 초과 "
+  },
+  {
+   "hs6": "850220",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "400킬로와트에 상응하는 출력 이; 기타; 출력이 750킬로볼트암페어를 초과; 출력이 75킬로볼트암페어 이하인 ; 출력이 75킬로볼트암페어 초과"
+  },
+  {
+   "hs6": "850231",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "출력이 750킬로볼트암페어를 초과; 출력이 75킬로볼트암페어 이하인 ; 출력이 75킬로볼트암페어 초과 7"
+  },
+  {
+   "hs6": "850239",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "출력이 375킬로볼트암페어 초과 ; 출력이 750킬로볼트암페어를 초과; 출력이 75킬로볼트암페어 이하인 ; 출력이 75킬로볼트암페어 초과 3"
+  },
+  {
+   "hs6": "850300",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "None": 4
+   },
+   "sample_names": "기타; 전동기의 것; 풍력발전기용; 회전변환기의 것"
+  },
+  {
+   "hs6": "850410",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "전류가 1암페어 이하인 것; 전류가 1암페어 초과 20암페어 ; 전류가 20암페어 초과 60암페어; 전류가 60암페어를 초과하는 것"
+  },
+  {
+   "hs6": "850421",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "계기용 변압기; 용량이 100킬로볼트암페어 이하인; 용량이 100킬로볼트암페어 초과 "
+  },
+  {
+   "hs6": "850422",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "계기용 변압기; 용량이 1,000킬로볼트암페어 초; 용량이 5,000킬로볼트암페어 초; 용량이 650킬로볼트암페어 초과 "
+  },
+  {
+   "hs6": "850431",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "계기용 변압기; 용량이 100볼트암페어 이하인 것; 용량이 100볼트암페어 초과 50; 용량이 500볼트암페어 초과 1킬; 전압 조정기"
+  },
+  {
+   "hs6": "850432",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "계기용 변압기; 용량이 1킬로볼트암페어 초과 5킬; 용량이 5킬로볼트암페어 초과 16; 전압 조정기"
+  },
+  {
+   "hs6": "850433",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "계기용 변압기; 용량이 100킬로볼트암페어 초과 ; 용량이 16킬로볼트암페어 초과 3; 용량이 30킬로볼트암페어 초과 1; 전압 조정기"
+  },
+  {
+   "hs6": "850434",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "계기용 변압기; 용량이 2,000킬로볼트암페어를 ; 용량이 500킬로볼트암페어 초과 ; 전압 조정기"
+  },
+  {
+   "hs6": "850450",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 자동자료처리기계와 그 단위기기(제"
+  },
+  {
+   "hs6": "850490",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 인쇄회로조립품(소호 제8504.4"
+  },
+  {
+   "hs6": "850511",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 알니코(alnico)의 것"
+  },
+  {
+   "hs6": "850519",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 산화철의 것"
+  },
+  {
+   "hs6": "850590",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "None": 5
+   },
+   "sample_names": "기타; 부분품; 자기공명 촬영기기에 전용 또는 주; 전자석 리프팅 헤드(lifting; 전자석이나 영구자석식의 척(chu"
+  },
+  {
+   "hs6": "850610",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 망간건전지; 알칼리망간건전지"
+  },
+  {
+   "hs6": "850680",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 산화아연으로 만든 것"
+  },
+  {
+   "hs6": "850790",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "격리판; 기타"
+  },
+  {
+   "hs6": "850811",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 로봇형"
+  },
+  {
+   "hs6": "850819",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 로봇형"
+  },
+  {
+   "hs6": "850870",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "제8508.11-1000호, 제8; 제8508.11-9000호의 것; 제8508.19-9000호, 제8"
+  },
+  {
+   "hs6": "850980",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기타; 바닥광택기; 얼음분쇄기; 주방용 쓰레기처리기; 커피분쇄기"
+  },
+  {
+   "hs6": "851090",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "면도기의 것; 모발제거기의 것; 이발기의 것"
+  },
+  {
+   "hs6": "851120",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 항공기용"
+  },
+  {
+   "hs6": "851130",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 항공기용"
+  },
+  {
+   "hs6": "851150",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 항공기용"
+  },
+  {
+   "hs6": "851180",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 항공기용"
+  },
+  {
+   "hs6": "851190",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 항공기용"
+  },
+  {
+   "hs6": "851210",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 발광다이오드(엘이디)의 것"
+  },
+  {
+   "hs6": "851220",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 발광다이오드(엘이디)의 것"
+  },
+  {
+   "hs6": "851310",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "광산용 안전등; 기타; 발광다이오드(엘이디)의 것"
+  },
+  {
+   "hs6": "851419",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "금속공업용; 기타; 식품공업용; 실험실용"
+  },
+  {
+   "hs6": "851420",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "금속공업용; 기타; 식품공업용; 실험실용"
+  },
+  {
+   "hs6": "851431",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 인쇄회로나 인쇄회로조립품의 제조에"
+  },
+  {
+   "hs6": "851432",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 인쇄회로나 인쇄회로조립품의 제조에"
+  },
+  {
+   "hs6": "851439",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 인쇄회로나 인쇄회로조립품의 제조에"
+  },
+  {
+   "hs6": "851440",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 반도체 제조용"
+  },
+  {
+   "hs6": "851490",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 반도체 제조용; 인쇄회로나 인쇄회로조립품의 제조에"
+  },
+  {
+   "hs6": "851519",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 인쇄회로조립품의 제조에 전용되거나"
+  },
+  {
+   "hs6": "851529",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 바트 용접기기; 봉합 용접기기; 점 용접기기"
+  },
+  {
+   "hs6": "851531",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 로봇형"
+  },
+  {
+   "hs6": "851539",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "교류아크 용접기기; 기타"
+  },
+  {
+   "hs6": "851580",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 레이저 작동식 기기; 전자빔용 기기; 초음파 응용기기"
+  },
+  {
+   "hs6": "851590",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "None": 4
+   },
+   "sample_names": "기타; 레이저 작동식의 것; 인쇄회로조립품의 제조에 전용되거나"
+  },
+  {
+   "hs6": "851660",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 전기밥솥(보온기능을 가진 것을 포; 전기오븐"
+  },
+  {
+   "hs6": "851679",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 전기보온밥통"
+  },
+  {
+   "hs6": "851714",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기타; 시분할다중접속을 사용하는 비동기식; 직교주파수분할다중접속을 사용하는 ; 코드분할다중접속을 사용하는 동기식; 코드분할다중접속을 사용하는 비"
+  },
+  {
+   "hs6": "851769",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "무선통신용; 유선통신용"
+  },
+  {
+   "hs6": "851771",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 무선전화기의 것"
+  },
+  {
+   "hs6": "851810",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 무선 마이크로폰(무선 마이크로폰 ; 전기통신용 마이크로폰(지름이 10"
+  },
+  {
+   "hs6": "851829",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 전기통신용의 것(지름이 50밀리미"
+  },
+  {
+   "hs6": "851830",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 유선전화 핸드세트"
+  },
+  {
+   "hs6": "851890",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 인쇄회로조립품(제8518.10-1"
+  },
+  {
+   "hs6": "851981",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "광학식 매체를 이용하는 기기; 반도체 매체를 이용하는 기기; 자기식 매체를 이용하는 기기; 자기식ㆍ광학식이나 그 밖의 반도체"
+  },
+  {
+   "hs6": "852190",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 디스크형"
+  },
+  {
+   "hs6": "852290",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 자기헤드와 동 부분품"
+  },
+  {
+   "hs6": "852329",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기록이 안 된 매체; 기타; 비디오 녹화된 것; 음성만을 기록한 것; 컴퓨터 소프트웨어를 수록한 것"
+  },
+  {
+   "hs6": "852351",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기록이 안 된 매체; 기타; 비디오 녹화된 것; 음성만을 기록한 것; 컴퓨터 소프트웨어를 수록한 것"
+  },
+  {
+   "hs6": "852352",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타(프록시미티 카드(proxim; 기타와 그 부분품; 한 개의 전자집적회로를 갖춘 것과"
+  },
+  {
+   "hs6": "852359",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기록이 안 된 매체; 기타; 비디오 녹화된 것; 음성만을 기록한 것; 컴퓨터 소프트웨어를 수록한 것"
+  },
+  {
+   "hs6": "852380",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기록이 안 된 매체; 기타; 비디오 녹화된 것; 음성만을 기록한 것; 컴퓨터 소프트웨어를 수록한 것"
+  },
+  {
+   "hs6": "852411",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 모니터용; 유선ㆍ무선 통신기기용; 전기식 시각 신호용 기기(제853; 텔레비전용 ; 휴대형 자동자료처리기계(소호 제8"
+  },
+  {
+   "hs6": "852412",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 모니터용; 유선ㆍ무선 통신기기용; 전기식 시각 신호용 기기(제853; 텔레비전용 ; 휴대형 자동자료처리기계(소호 제8"
+  },
+  {
+   "hs6": "852419",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 모니터용; 유선ㆍ무선 통신기기용; 전기식 시각 신호용 기기(제853; 텔레비전용 ; 휴대형 자동자료처리기계(소호 제8"
+  },
+  {
+   "hs6": "852491",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 모니터용; 유선ㆍ무선 통신기기용; 전기식 시각 신호용 기기(제853; 텔레비전용 ; 휴대형 자동자료처리기계(소호 제8"
+  },
+  {
+   "hs6": "852492",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 모니터용; 유선ㆍ무선 통신기기용; 전기식 시각 신호용 기기(제853; 텔레비전용 ; 휴대형 자동자료처리기계(소호 제8"
+  },
+  {
+   "hs6": "852499",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 모니터용; 유선ㆍ무선 통신기기용; 전기식 시각 신호용 기기(제853; 텔레비전용 ; 휴대형 자동자료처리기계(소호 제8"
+  },
+  {
+   "hs6": "852610",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 항공기용"
+  },
+  {
+   "hs6": "852713",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 디스크형; 카세트형; 카셋트형과 디스크형의 결합기기"
+  },
+  {
+   "hs6": "852791",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기타; 디스크형; 카세트형; 카셋트형과 디스크형의 결합기기"
+  },
+  {
+   "hs6": "852849",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 의료용으로 특수 제작된 것"
+  },
+  {
+   "hs6": "852852",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 액정모니터"
+  },
+  {
+   "hs6": "852859",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 의료용으로 특수 제작된 것"
+  },
+  {
+   "hs6": "852871",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "TV튜너가 내장된 프로젝터; 기타; 비디오 튜너; 쌍방향 커뮤니케이션 기능을 갖춘 "
+  },
+  {
+   "hs6": "852872",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 마이크로 LED 방식 ; 액정디스플레이 방식; 유기발광다이오드(오엘이디) 방식"
+  },
+  {
+   "hs6": "852910",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "None": 4
+   },
+   "sample_names": "기타; 레이더기기용; 텔레비전 송ㆍ수신용; 항행용 무선기기ㆍ무선원격조절기용"
+  },
+  {
+   "hs6": "853010",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 열차의 자동정지용ㆍ제어용ㆍ운전용 "
+  },
+  {
+   "hs6": "853110",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "가스경보기; 그 밖의 신호기기; 도난경보기; 전기식의 벨 또는 사이렌; 화재경보기"
+  },
+  {
+   "hs6": "853120",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "발광다이오드(엘이디)가 결합된 표; 액정 디바이스(엘시디)가 결합된 "
+  },
+  {
+   "hs6": "853180",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 도어벨ㆍ차임ㆍ버저와 이와 유사한 "
+  },
+  {
+   "hs6": "853190",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 소호 제8531.10호의 것; 소호 제8531.20호의 것"
+  },
+  {
+   "hs6": "853290",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "고정식의 것; 기타"
+  },
+  {
+   "hs6": "853321",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 서미스터"
+  },
+  {
+   "hs6": "853329",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 서미스터"
+  },
+  {
+   "hs6": "853340",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 바리스터; 탄소가변의 것"
+  },
+  {
+   "hs6": "853390",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "가변식 저항기의 것; 기타"
+  },
+  {
+   "hs6": "853400",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 수동소자 부분[인덕턴스(induc; 테이프형이나 리드프레임(lead "
+  },
+  {
+   "hs6": "853521",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "정격전압이 7.25킬로볼트 미만인; 정격전압이 7.25킬로볼트 이상 "
+  },
+  {
+   "hs6": "853529",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "정격전압이 200킬로볼트 미만인 ; 정격전압이 200킬로볼트 이상인 "
+  },
+  {
+   "hs6": "853530",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "정격전압이 7.25킬로볼트 미만인; 정격전압이 7.25킬로볼트 이상 ; 정격전압이 72.5킬로볼트 이상인"
+  },
+  {
+   "hs6": "853590",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 커넥터; 터미널"
+  },
+  {
+   "hs6": "853610",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "관형; 기타"
+  },
+  {
+   "hs6": "853669",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 동축케이블ㆍ인쇄회로용의 것"
+  },
+  {
+   "hs6": "853670",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "None": 4
+   },
+   "sample_names": "기타; 실험실용ㆍ화학용이나 그 밖의 공업; 주조ㆍ주형ㆍ압착ㆍ단조(이보다 더 ; 플라스틱으로 만든 것"
+  },
+  {
+   "hs6": "853690",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 선이나 케이블의 접속용 구성품; 접속함; 제8702호, 제8703호, 제8"
+  },
+  {
+   "hs6": "853710",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "None": 5
+   },
+   "sample_names": "기타; 배전용의 것; 수치 제어반; 터치감응식 자료입력장치('터치스크; 프로그램이 가능한 제어기"
+  },
+  {
+   "hs6": "853720",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "배전용의 것; 전기제어용의 것"
+  },
+  {
+   "hs6": "853890",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "None": 5
+   },
+   "sample_names": "개폐기의 것; 계전기의 것; 기타; 자동차단기의 것; 전기제어용의 것"
+  },
+  {
+   "hs6": "853922",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 백열램프; 빔 램프"
+  },
+  {
+   "hs6": "853932",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "나트륨 증기 램프; 메탈 할라이드(metal hali; 수은램프"
+  },
+  {
+   "hs6": "853939",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 평판디스플레이의 후면광원(back"
+  },
+  {
+   "hs6": "853949",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 반도체 제조용 기기의 것; 적외선 램프"
+  },
+  {
+   "hs6": "853990",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 방전램프의 것; 필라멘트 램프의 것"
+  },
+  {
+   "hs6": "854060",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 천연색"
+  },
+  {
+   "hs6": "854079",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 속도변조관(klystron)"
+  },
+  {
+   "hs6": "854089",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 방전관; 송신기용 열전자관"
+  },
+  {
+   "hs6": "854110",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 칩, 다이스와 절단되지 않은 웨이"
+  },
+  {
+   "hs6": "854121",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 칩, 다이스와 절단되지 않은 웨이"
+  },
+  {
+   "hs6": "854129",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 칩, 다이스와 절단되지 않은 웨이"
+  },
+  {
+   "hs6": "854130",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "다이액(diac); 사이리스터(thyristor); 칩, 다이스와 절단되지 않은 웨이; 트라이액(triac)"
+  },
+  {
+   "hs6": "854141",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 레이저소자"
+  },
+  {
+   "hs6": "854149",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "광전도 셀; 기타; 전하결합소자; 칩, 다이스와 절단되지 않은 웨이"
+  },
+  {
+   "hs6": "854151",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "공진기; 센서; 액추에이터; 오실레이터"
+  },
+  {
+   "hs6": "854159",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 칩, 다이스와 절단되지 않은 웨이"
+  },
+  {
+   "hs6": "854160",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 수정진동자"
+  },
+  {
+   "hs6": "854190",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 다이오드의 것; 트랜지스터의 것"
+  },
+  {
+   "hs6": "854231",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "모노리식(monolithic) 집; 복합구조칩 집적회로; 복합부품 집적회로(MCOs); 하이브리드 집적회로"
+  },
+  {
+   "hs6": "854233",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "모노리식(monolithic) 집; 복합구조칩 집적회로; 복합부품 집적회로(MCOs); 하이브리드 집적회로"
+  },
+  {
+   "hs6": "854239",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "모노리식(monolithic) 집; 복합구조칩 집적회로; 복합부품 집적회로(MCOs); 하이브리드 집적회로"
+  },
+  {
+   "hs6": "854340",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 연소시키지 않고 흡입하도록 만들어"
+  },
+  {
+   "hs6": "854390",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 1,
+    "None": 1
+   },
+   "sample_names": "기타; 전자초소형 조립회로"
+  },
+  {
+   "hs6": "854411",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 절연도료 피복전선"
+  },
+  {
+   "hs6": "854442",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "None": 6
+   },
+   "sample_names": "기타; 전기통신용"
+  },
+  {
+   "hs6": "854460",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "None": 6
+   },
+   "sample_names": "기타; 플라스틱 절연전선"
+  },
+  {
+   "hs6": "854590",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 탄소난방필름; 탄소봉"
+  },
+  {
+   "hs6": "854690",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 플라스틱으로 만든 애자"
+  },
+  {
+   "hs6": "854800",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 전자 초소형 조립회로 "
+  }
+ ],
+ "all_hs6_ch85": [
+  {
+   "hs6": "850110",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "교류 전동기; 교류ㆍ직류 겸용 전동기; 직류 전동기"
+  },
+  {
+   "hs6": "850120",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "출력이 100와트 초과 750와트; 출력이 37.5와트 초과 100와; 출력이 750와트를 초과하는 것"
+  },
+  {
+   "hs6": "850131",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 직류 발전기; 출력이 100와트 이하인 것"
+  },
+  {
+   "hs6": "850132",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "직류 발전기; 직류 전동기"
+  },
+  {
+   "hs6": "850133",
+   "n_hs10": 3,
+   "late_start": 2,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 연료전지스택; 직류 전동기"
+  },
+  {
+   "hs6": "850134",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "직류 발전기; 직류 전동기"
+  },
+  {
+   "hs6": "850140",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "출력이 100와트 이하인 것; 출력이 100와트 초과 750와트; 출력이 750와트 초과 75킬로와; 출력이 75킬로와트를 초과하는 것"
+  },
+  {
+   "hs6": "850151",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "출력이 750와트 이하인 것"
+  },
+  {
+   "hs6": "850152",
+   "n_hs10": 2,
+   "late_start": 2,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 전기차(하이브리드형을 포함한다)용"
+  },
+  {
+   "hs6": "850153",
+   "n_hs10": 4,
+   "late_start": 2,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 전기차(하이브리드형을 포함한다)용; 출력이 1,500킬로와트를 초과하; 출력이 375킬로와트 초과 1,5"
+  },
+  {
+   "hs6": "850161",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "출력이 750볼트암페어 이하인 것; 출력이 750볼트암페어 초과 75"
+  },
+  {
+   "hs6": "850162",
+   "n_hs10": 2,
+   "late_start": 2,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 연료전지시스템"
+  },
+  {
+   "hs6": "850163",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "400킬로와트에 상응하는 출력 이; 기타"
+  },
+  {
+   "hs6": "850164",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "출력이 750킬로볼트암페어를 초과"
+  },
+  {
+   "hs6": "850171",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "출력이 50와트 이하인 것"
+  },
+  {
+   "hs6": "850172",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "출력이 375킬로와트를 초과하는 ; 출력이 50와트 초과 750와트 ; 출력이 750와트 초과 75킬로와; 출력이 75킬로와트 초과 375킬"
+  },
+  {
+   "hs6": "850180",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "400킬로와트에 상응하는 출력 이; 기타; 출력이 750볼트암페어 이하인 것; 출력이 750볼트암페어 초과 75; 출력이 750킬로볼트암페어를 "
+  },
+  {
+   "hs6": "850211",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "출력이 750볼트암페어 이하인 것; 출력이 750볼트암페어 초과 75"
+  },
+  {
+   "hs6": "850212",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "출력이 75킬로볼트암페어 초과 3"
+  },
+  {
+   "hs6": "850213",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "400킬로와트에 상응하는 출력 이; 기타; 출력이 3,500킬로볼트암페어를 ; 출력이 750킬로볼트암페어 초과 "
+  },
+  {
+   "hs6": "850220",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "400킬로와트에 상응하는 출력 이; 기타; 출력이 750킬로볼트암페어를 초과; 출력이 75킬로볼트암페어 이하인 ; 출력이 75킬로볼트암페어 초과"
+  },
+  {
+   "hs6": "850231",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "출력이 750킬로볼트암페어를 초과; 출력이 75킬로볼트암페어 이하인 ; 출력이 75킬로볼트암페어 초과 7"
+  },
+  {
+   "hs6": "850239",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "출력이 375킬로볼트암페어 초과 ; 출력이 750킬로볼트암페어를 초과; 출력이 75킬로볼트암페어 이하인 ; 출력이 75킬로볼트암페어 초과 3"
+  },
+  {
+   "hs6": "850240",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "회전변환기"
+  },
+  {
+   "hs6": "850300",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "None": 4
+   },
+   "sample_names": "기타; 전동기의 것; 풍력발전기용; 회전변환기의 것"
+  },
+  {
+   "hs6": "850410",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "전류가 1암페어 이하인 것; 전류가 1암페어 초과 20암페어 ; 전류가 20암페어 초과 60암페어; 전류가 60암페어를 초과하는 것"
+  },
+  {
+   "hs6": "850421",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "계기용 변압기; 용량이 100킬로볼트암페어 이하인; 용량이 100킬로볼트암페어 초과 "
+  },
+  {
+   "hs6": "850422",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "계기용 변압기; 용량이 1,000킬로볼트암페어 초; 용량이 5,000킬로볼트암페어 초; 용량이 650킬로볼트암페어 초과 "
+  },
+  {
+   "hs6": "850423",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "용량이 10,000킬로볼트암페어를"
+  },
+  {
+   "hs6": "850431",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "계기용 변압기; 용량이 100볼트암페어 이하인 것; 용량이 100볼트암페어 초과 50; 용량이 500볼트암페어 초과 1킬; 전압 조정기"
+  },
+  {
+   "hs6": "850432",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "계기용 변압기; 용량이 1킬로볼트암페어 초과 5킬; 용량이 5킬로볼트암페어 초과 16; 전압 조정기"
+  },
+  {
+   "hs6": "850433",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "계기용 변압기; 용량이 100킬로볼트암페어 초과 ; 용량이 16킬로볼트암페어 초과 3; 용량이 30킬로볼트암페어 초과 1; 전압 조정기"
+  },
+  {
+   "hs6": "850434",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "계기용 변압기; 용량이 2,000킬로볼트암페어를 ; 용량이 500킬로볼트암페어 초과 ; 전압 조정기"
+  },
+  {
+   "hs6": "850440",
+   "n_hs10": 17,
+   "late_start": 1,
+   "all_kg": true,
+   "n_kg": 17,
+   "qty_units": {
+    "U": 17
+   },
+   "sample_names": "기타; 자동자료처리기계와 그 단위기기(제; 자동자료처리기계의 것; 전기차(하이브리드형을 포함한다) ; 전기통신용 기기의 것"
+  },
+  {
+   "hs6": "850450",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 자동자료처리기계와 그 단위기기(제"
+  },
+  {
+   "hs6": "850490",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 인쇄회로조립품(소호 제8504.4"
+  },
+  {
+   "hs6": "850511",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 알니코(alnico)의 것"
+  },
+  {
+   "hs6": "850519",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 산화철의 것"
+  },
+  {
+   "hs6": "850520",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "전자석 커플링(coupling)ㆍ"
+  },
+  {
+   "hs6": "850590",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "None": 5
+   },
+   "sample_names": "기타; 부분품; 자기공명 촬영기기에 전용 또는 주; 전자석 리프팅 헤드(lifting; 전자석이나 영구자석식의 척(chu"
+  },
+  {
+   "hs6": "850610",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 망간건전지; 알칼리망간건전지"
+  },
+  {
+   "hs6": "850630",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "산화수은으로 만든 것"
+  },
+  {
+   "hs6": "850640",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "산화은으로 만든 것"
+  },
+  {
+   "hs6": "850650",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "리튬으로 만든 것"
+  },
+  {
+   "hs6": "850660",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "에어징크로 만든 것"
+  },
+  {
+   "hs6": "850680",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 산화아연으로 만든 것"
+  },
+  {
+   "hs6": "850690",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "부분품"
+  },
+  {
+   "hs6": "850710",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "피스톤식 엔진 시동용 연산(鉛酸)"
+  },
+  {
+   "hs6": "850720",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "그 밖의 연산(鉛酸)축전지"
+  },
+  {
+   "hs6": "850730",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "니켈-카드뮴 축전지"
+  },
+  {
+   "hs6": "850750",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "니켈-수소합금 축전지"
+  },
+  {
+   "hs6": "850760",
+   "n_hs10": 3,
+   "late_start": 1,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 에너지 저장장치용; 전기차(하이브리드형을 포함한다)용"
+  },
+  {
+   "hs6": "850780",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "그 밖의 축전지"
+  },
+  {
+   "hs6": "850790",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "격리판; 기타"
+  },
+  {
+   "hs6": "850811",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 로봇형"
+  },
+  {
+   "hs6": "850819",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 로봇형"
+  },
+  {
+   "hs6": "850860",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "그 밖의 진공청소기"
+  },
+  {
+   "hs6": "850870",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "제8508.11-1000호, 제8; 제8508.11-9000호의 것; 제8508.19-9000호, 제8"
+  },
+  {
+   "hs6": "850940",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "식품용 그라인더와 믹서, 과실주스"
+  },
+  {
+   "hs6": "850980",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기타; 바닥광택기; 얼음분쇄기; 주방용 쓰레기처리기; 커피분쇄기"
+  },
+  {
+   "hs6": "850990",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "부분품"
+  },
+  {
+   "hs6": "851010",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "면도기"
+  },
+  {
+   "hs6": "851020",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "이발기"
+  },
+  {
+   "hs6": "851030",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "모발제거기"
+  },
+  {
+   "hs6": "851090",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "면도기의 것; 모발제거기의 것; 이발기의 것"
+  },
+  {
+   "hs6": "851110",
+   "n_hs10": 3,
+   "late_start": 1,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 제87류 차량용; 항공기용"
+  },
+  {
+   "hs6": "851120",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 항공기용"
+  },
+  {
+   "hs6": "851130",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 항공기용"
+  },
+  {
+   "hs6": "851140",
+   "n_hs10": 3,
+   "late_start": 1,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 제87류 차량용; 항공기용"
+  },
+  {
+   "hs6": "851150",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 항공기용"
+  },
+  {
+   "hs6": "851180",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 항공기용"
+  },
+  {
+   "hs6": "851190",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 항공기용"
+  },
+  {
+   "hs6": "851210",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 발광다이오드(엘이디)의 것"
+  },
+  {
+   "hs6": "851220",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 발광다이오드(엘이디)의 것"
+  },
+  {
+   "hs6": "851230",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "음향신호용 기구"
+  },
+  {
+   "hs6": "851240",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "윈드스크린와이퍼(windscree"
+  },
+  {
+   "hs6": "851290",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "부분품"
+  },
+  {
+   "hs6": "851310",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "광산용 안전등; 기타; 발광다이오드(엘이디)의 것"
+  },
+  {
+   "hs6": "851390",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "부분품"
+  },
+  {
+   "hs6": "851411",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "열간 등압성형기"
+  },
+  {
+   "hs6": "851419",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "금속공업용; 기타; 식품공업용; 실험실용"
+  },
+  {
+   "hs6": "851420",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "금속공업용; 기타; 식품공업용; 실험실용"
+  },
+  {
+   "hs6": "851431",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 인쇄회로나 인쇄회로조립품의 제조에"
+  },
+  {
+   "hs6": "851432",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 인쇄회로나 인쇄회로조립품의 제조에"
+  },
+  {
+   "hs6": "851439",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 인쇄회로나 인쇄회로조립품의 제조에"
+  },
+  {
+   "hs6": "851440",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 반도체 제조용"
+  },
+  {
+   "hs6": "851490",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 반도체 제조용; 인쇄회로나 인쇄회로조립품의 제조에"
+  },
+  {
+   "hs6": "851511",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "납땜용 인두와 건(gun)"
+  },
+  {
+   "hs6": "851519",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 인쇄회로조립품의 제조에 전용되거나"
+  },
+  {
+   "hs6": "851521",
+   "n_hs10": 8,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 8,
+   "qty_units": {
+    "U": 8
+   },
+   "sample_names": "기타; 로봇형"
+  },
+  {
+   "hs6": "851529",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 바트 용접기기; 봉합 용접기기; 점 용접기기"
+  },
+  {
+   "hs6": "851531",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 로봇형"
+  },
+  {
+   "hs6": "851539",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "교류아크 용접기기; 기타"
+  },
+  {
+   "hs6": "851580",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 레이저 작동식 기기; 전자빔용 기기; 초음파 응용기기"
+  },
+  {
+   "hs6": "851590",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "None": 4
+   },
+   "sample_names": "기타; 레이저 작동식의 것; 인쇄회로조립품의 제조에 전용되거나"
+  },
+  {
+   "hs6": "851610",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "전기식의 즉시식ㆍ저장식 물가열기와"
+  },
+  {
+   "hs6": "851621",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "저장식 가열 라디에이터"
+  },
+  {
+   "hs6": "851629",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "851631",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "헤어드라이어"
+  },
+  {
+   "hs6": "851632",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "그 밖의 이용기기"
+  },
+  {
+   "hs6": "851633",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "손 건조기"
+  },
+  {
+   "hs6": "851640",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "전기다리미"
+  },
+  {
+   "hs6": "851650",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "마이크로웨이브 오븐(microwa"
+  },
+  {
+   "hs6": "851660",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 전기밥솥(보온기능을 가진 것을 포; 전기오븐"
+  },
+  {
+   "hs6": "851671",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "커피ㆍ차를 끓이는 기기"
+  },
+  {
+   "hs6": "851672",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "토스터"
+  },
+  {
+   "hs6": "851679",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 전기보온밥통"
+  },
+  {
+   "hs6": "851680",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "전열용 저항체"
+  },
+  {
+   "hs6": "851690",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "부분품"
+  },
+  {
+   "hs6": "851711",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "유선전화기[무선 송수화기(cord"
+  },
+  {
+   "hs6": "851713",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "스마트폰"
+  },
+  {
+   "hs6": "851714",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기타; 시분할다중접속을 사용하는 비동기식; 직교주파수분할다중접속을 사용하는 ; 코드분할다중접속을 사용하는 동기식; 코드분할다중접속을 사용하는 비"
+  },
+  {
+   "hs6": "851718",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "851761",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기지국"
+  },
+  {
+   "hs6": "851762",
+   "n_hs10": 9,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 9,
+   "qty_units": {
+    "U": 9
+   },
+   "sample_names": "그 밖의 무선통신용; 그 밖의 유선통신용; 무선통신용; 유선통신용; 자동자료처리기계에 결합되거나 연결"
+  },
+  {
+   "hs6": "851769",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "무선통신용; 유선통신용"
+  },
+  {
+   "hs6": "851771",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 무선전화기의 것"
+  },
+  {
+   "hs6": "851779",
+   "n_hs10": 6,
+   "late_start": 1,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 소호 제8517.61호의 것; 소호 제8517.62호의 것; 소호 제8517.69호의 것; 스마트폰용의 것; 유선전화기의 것"
+  },
+  {
+   "hs6": "851810",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 무선 마이크로폰(무선 마이크로폰 ; 전기통신용 마이크로폰(지름이 10"
+  },
+  {
+   "hs6": "851821",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "단일형 확성기[인클로저(enclo"
+  },
+  {
+   "hs6": "851822",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "복합형 확성기[동일 인클로저(en"
+  },
+  {
+   "hs6": "851829",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 전기통신용의 것(지름이 50밀리미"
+  },
+  {
+   "hs6": "851830",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 유선전화 핸드세트"
+  },
+  {
+   "hs6": "851840",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "가청주파증폭기"
+  },
+  {
+   "hs6": "851850",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "음향증폭세트"
+  },
+  {
+   "hs6": "851890",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 인쇄회로조립품(제8518.10-1"
+  },
+  {
+   "hs6": "851920",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "코인ㆍ은행권ㆍ은행카드ㆍ토큰이나 그"
+  },
+  {
+   "hs6": "851930",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "턴 테이블(레코드 데크)"
+  },
+  {
+   "hs6": "851981",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "광학식 매체를 이용하는 기기; 반도체 매체를 이용하는 기기; 자기식 매체를 이용하는 기기; 자기식ㆍ광학식이나 그 밖의 반도체"
+  },
+  {
+   "hs6": "851989",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "852110",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "마그네틱 테이프형"
+  },
+  {
+   "hs6": "852190",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 디스크형"
+  },
+  {
+   "hs6": "852210",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "픽업 카트리지"
+  },
+  {
+   "hs6": "852290",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 자기헤드와 동 부분품"
+  },
+  {
+   "hs6": "852321",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "마그네틱 스트라이프(magneti"
+  },
+  {
+   "hs6": "852329",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기록이 안 된 매체; 기타; 비디오 녹화된 것; 음성만을 기록한 것; 컴퓨터 소프트웨어를 수록한 것"
+  },
+  {
+   "hs6": "852341",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기록이 안 된 것"
+  },
+  {
+   "hs6": "852349",
+   "n_hs10": 8,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 8,
+   "qty_units": {
+    "U": 8
+   },
+   "sample_names": "기타; 비디오 녹화된 것; 음성만을 기록한 것; 컴퓨터 소프트웨어를 수록한 것"
+  },
+  {
+   "hs6": "852351",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기록이 안 된 매체; 기타; 비디오 녹화된 것; 음성만을 기록한 것; 컴퓨터 소프트웨어를 수록한 것"
+  },
+  {
+   "hs6": "852352",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타(프록시미티 카드(proxim; 기타와 그 부분품; 한 개의 전자집적회로를 갖춘 것과"
+  },
+  {
+   "hs6": "852359",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기록이 안 된 매체; 기타; 비디오 녹화된 것; 음성만을 기록한 것; 컴퓨터 소프트웨어를 수록한 것"
+  },
+  {
+   "hs6": "852380",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기록이 안 된 매체; 기타; 비디오 녹화된 것; 음성만을 기록한 것; 컴퓨터 소프트웨어를 수록한 것"
+  },
+  {
+   "hs6": "852411",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 모니터용; 유선ㆍ무선 통신기기용; 전기식 시각 신호용 기기(제853; 텔레비전용 ; 휴대형 자동자료처리기계(소호 제8"
+  },
+  {
+   "hs6": "852412",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 모니터용; 유선ㆍ무선 통신기기용; 전기식 시각 신호용 기기(제853; 텔레비전용 ; 휴대형 자동자료처리기계(소호 제8"
+  },
+  {
+   "hs6": "852419",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 모니터용; 유선ㆍ무선 통신기기용; 전기식 시각 신호용 기기(제853; 텔레비전용 ; 휴대형 자동자료처리기계(소호 제8"
+  },
+  {
+   "hs6": "852491",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 모니터용; 유선ㆍ무선 통신기기용; 전기식 시각 신호용 기기(제853; 텔레비전용 ; 휴대형 자동자료처리기계(소호 제8"
+  },
+  {
+   "hs6": "852492",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 모니터용; 유선ㆍ무선 통신기기용; 전기식 시각 신호용 기기(제853; 텔레비전용 ; 휴대형 자동자료처리기계(소호 제8"
+  },
+  {
+   "hs6": "852499",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "U": 6
+   },
+   "sample_names": "기타; 모니터용; 유선ㆍ무선 통신기기용; 전기식 시각 신호용 기기(제853; 텔레비전용 ; 휴대형 자동자료처리기계(소호 제8"
+  },
+  {
+   "hs6": "852550",
+   "n_hs10": 3,
+   "late_start": 2,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 라디오 방송용; 텔레비전용"
+  },
+  {
+   "hs6": "852560",
+   "n_hs10": 3,
+   "late_start": 2,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 라디오 방송용; 텔레비전용"
+  },
+  {
+   "hs6": "852581",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "이 류의 소호주 제1호에 규정된 "
+  },
+  {
+   "hs6": "852582",
+   "n_hs10": 1,
+   "late_start": 1,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기타[이 류의 소호주 제2호에 규"
+  },
+  {
+   "hs6": "852583",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기타(이 류의 소호주 제3호에 규"
+  },
+  {
+   "hs6": "852589",
+   "n_hs10": 4,
+   "late_start": 2,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "그 밖의 디지털 카메라; 그 밖의 텔레비전 카메라; 기타; 초소형 특수카메라(필기구, 버튼,"
+  },
+  {
+   "hs6": "852610",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 항공기용"
+  },
+  {
+   "hs6": "852691",
+   "n_hs10": 11,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 11,
+   "qty_units": {
+    "U": 11
+   },
+   "sample_names": "기타; 로란 리시버; 자동차용; 항공기용"
+  },
+  {
+   "hs6": "852692",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "무선원격조절기기"
+  },
+  {
+   "hs6": "852712",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "포켓사이즈형 라디오카세트플레이어"
+  },
+  {
+   "hs6": "852713",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 디스크형; 카세트형; 카셋트형과 디스크형의 결합기기"
+  },
+  {
+   "hs6": "852719",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "852721",
+   "n_hs10": 7,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 7,
+   "qty_units": {
+    "U": 7
+   },
+   "sample_names": "기타; 디지털 무선 데이터 시스템 신호를; 카세트형"
+  },
+  {
+   "hs6": "852729",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "852791",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "기타; 디스크형; 카세트형; 카셋트형과 디스크형의 결합기기"
+  },
+  {
+   "hs6": "852792",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "시계와 결합된 것(음성기록기기나 "
+  },
+  {
+   "hs6": "852799",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "852842",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "제8471호의 자동자료처리기계에 "
+  },
+  {
+   "hs6": "852849",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 의료용으로 특수 제작된 것"
+  },
+  {
+   "hs6": "852852",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 액정모니터"
+  },
+  {
+   "hs6": "852859",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 의료용으로 특수 제작된 것"
+  },
+  {
+   "hs6": "852862",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "제8471호의 자동자료처리기계에 "
+  },
+  {
+   "hs6": "852869",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "852871",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "TV튜너가 내장된 프로젝터; 기타; 비디오 튜너; 쌍방향 커뮤니케이션 기능을 갖춘 "
+  },
+  {
+   "hs6": "852872",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 마이크로 LED 방식 ; 액정디스플레이 방식; 유기발광다이오드(오엘이디) 방식"
+  },
+  {
+   "hs6": "852873",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기타(단색)"
+  },
+  {
+   "hs6": "852910",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "None": 4
+   },
+   "sample_names": "기타; 레이더기기용; 텔레비전 송ㆍ수신용; 항행용 무선기기ㆍ무선원격조절기용"
+  },
+  {
+   "hs6": "852990",
+   "n_hs10": 10,
+   "late_start": 4,
+   "all_kg": true,
+   "n_kg": 10,
+   "qty_units": {
+    "U": 10
+   },
+   "sample_names": "그 밖의 액정 디스플레이 방식용; 그 밖의 유기발광 다이오드(오엘이; 기타; 모니터나 프로젝터의 것; 송신기기 또는 수신기기의 것; 제8524호"
+  },
+  {
+   "hs6": "853010",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 열차의 자동정지용ㆍ제어용ㆍ운전용 "
+  },
+  {
+   "hs6": "853080",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "그 밖의 기기"
+  },
+  {
+   "hs6": "853090",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "부분품"
+  },
+  {
+   "hs6": "853110",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "U": 5
+   },
+   "sample_names": "가스경보기; 그 밖의 신호기기; 도난경보기; 전기식의 벨 또는 사이렌; 화재경보기"
+  },
+  {
+   "hs6": "853120",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "발광다이오드(엘이디)가 결합된 표; 액정 디바이스(엘시디)가 결합된 "
+  },
+  {
+   "hs6": "853180",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 도어벨ㆍ차임ㆍ버저와 이와 유사한 "
+  },
+  {
+   "hs6": "853190",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 소호 제8531.10호의 것; 소호 제8531.20호의 것"
+  },
+  {
+   "hs6": "853210",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "고정식 축전기로 50/60헤르츠 "
+  },
+  {
+   "hs6": "853221",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "탄탈륨의 것"
+  },
+  {
+   "hs6": "853222",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "알루미늄 전해의 것"
+  },
+  {
+   "hs6": "853223",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "세라믹 유전체의 것(단층)"
+  },
+  {
+   "hs6": "853224",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "세라믹 유전체의 것(다층)"
+  },
+  {
+   "hs6": "853225",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "종이나 플라스틱 유전체의 것"
+  },
+  {
+   "hs6": "853229",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "853230",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "가변식이나 조정식(프리세트) 축전"
+  },
+  {
+   "hs6": "853290",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "고정식의 것; 기타"
+  },
+  {
+   "hs6": "853310",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "탄소피막형 고정식 저항기(콤퍼지션"
+  },
+  {
+   "hs6": "853321",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 서미스터"
+  },
+  {
+   "hs6": "853329",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 서미스터"
+  },
+  {
+   "hs6": "853331",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "용량이 20와트 이하인 것"
+  },
+  {
+   "hs6": "853339",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "853340",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 바리스터; 탄소가변의 것"
+  },
+  {
+   "hs6": "853390",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "가변식 저항기의 것; 기타"
+  },
+  {
+   "hs6": "853400",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 수동소자 부분[인덕턴스(induc; 테이프형이나 리드프레임(lead "
+  },
+  {
+   "hs6": "853510",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "퓨즈"
+  },
+  {
+   "hs6": "853521",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "정격전압이 7.25킬로볼트 미만인; 정격전압이 7.25킬로볼트 이상 "
+  },
+  {
+   "hs6": "853529",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "정격전압이 200킬로볼트 미만인 ; 정격전압이 200킬로볼트 이상인 "
+  },
+  {
+   "hs6": "853530",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "정격전압이 7.25킬로볼트 미만인; 정격전압이 7.25킬로볼트 이상 ; 정격전압이 72.5킬로볼트 이상인"
+  },
+  {
+   "hs6": "853540",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "피뢰기ㆍ전압제한기와 서지(surg"
+  },
+  {
+   "hs6": "853590",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 커넥터; 터미널"
+  },
+  {
+   "hs6": "853610",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "관형; 기타"
+  },
+  {
+   "hs6": "853620",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "자동차단기"
+  },
+  {
+   "hs6": "853630",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "전기회로 보호용 그 밖의 기기"
+  },
+  {
+   "hs6": "853641",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "전압이 60볼트 이하인 것"
+  },
+  {
+   "hs6": "853649",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "853650",
+   "n_hs10": 8,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 8,
+   "qty_units": {
+    "U": 8
+   },
+   "sample_names": "교류(AC)방식의 것(입출력 회로; 기타; 마이크로형; 온도보호용의 것(1,000볼트 이; 전기기계식의 스냅동작방식의 것(1; 전자개폐형(전자접"
+  },
+  {
+   "hs6": "853661",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "램프홀더"
+  },
+  {
+   "hs6": "853669",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 동축케이블ㆍ인쇄회로용의 것"
+  },
+  {
+   "hs6": "853670",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "None": 4
+   },
+   "sample_names": "기타; 실험실용ㆍ화학용이나 그 밖의 공업; 주조ㆍ주형ㆍ압착ㆍ단조(이보다 더 ; 플라스틱으로 만든 것"
+  },
+  {
+   "hs6": "853690",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "기타; 선이나 케이블의 접속용 구성품; 접속함; 제8702호, 제8703호, 제8"
+  },
+  {
+   "hs6": "853710",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "None": 5
+   },
+   "sample_names": "기타; 배전용의 것; 수치 제어반; 터치감응식 자료입력장치('터치스크; 프로그램이 가능한 제어기"
+  },
+  {
+   "hs6": "853720",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "배전용의 것; 전기제어용의 것"
+  },
+  {
+   "hs6": "853810",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "보드ㆍ패널ㆍ콘솔ㆍ책상ㆍ캐비닛과 그"
+  },
+  {
+   "hs6": "853890",
+   "n_hs10": 5,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 5,
+   "qty_units": {
+    "None": 5
+   },
+   "sample_names": "개폐기의 것; 계전기의 것; 기타; 자동차단기의 것; 전기제어용의 것"
+  },
+  {
+   "hs6": "853910",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "실드빔 램프 유닛(sealed b"
+  },
+  {
+   "hs6": "853921",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "텅스텐 할로겐의 것"
+  },
+  {
+   "hs6": "853922",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 백열램프; 빔 램프"
+  },
+  {
+   "hs6": "853929",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "853931",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "형광램프(열음극형으로 한정한다)"
+  },
+  {
+   "hs6": "853932",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "나트륨 증기 램프; 메탈 할라이드(metal hali; 수은램프"
+  },
+  {
+   "hs6": "853939",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 평판디스플레이의 후면광원(back"
+  },
+  {
+   "hs6": "853941",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "아크램프"
+  },
+  {
+   "hs6": "853949",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 반도체 제조용 기기의 것; 적외선 램프"
+  },
+  {
+   "hs6": "853951",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "발광다이오드(엘이디) 모듈"
+  },
+  {
+   "hs6": "853952",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "발광다이오드(엘이디) 램프"
+  },
+  {
+   "hs6": "853990",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 방전램프의 것; 필라멘트 램프의 것"
+  },
+  {
+   "hs6": "854011",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "천연색"
+  },
+  {
+   "hs6": "854012",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "단색"
+  },
+  {
+   "hs6": "854020",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "텔레비전용 촬상관(camera t"
+  },
+  {
+   "hs6": "854040",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "데이터/그래픽 직시관(displa"
+  },
+  {
+   "hs6": "854060",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 천연색"
+  },
+  {
+   "hs6": "854071",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "자전관(magnetron)"
+  },
+  {
+   "hs6": "854079",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 속도변조관(klystron)"
+  },
+  {
+   "hs6": "854081",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "수신관이나 증폭관"
+  },
+  {
+   "hs6": "854089",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 방전관; 송신기용 열전자관"
+  },
+  {
+   "hs6": "854091",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "음극선관의 것"
+  },
+  {
+   "hs6": "854099",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "854110",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 칩, 다이스와 절단되지 않은 웨이"
+  },
+  {
+   "hs6": "854121",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 칩, 다이스와 절단되지 않은 웨이"
+  },
+  {
+   "hs6": "854129",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 칩, 다이스와 절단되지 않은 웨이"
+  },
+  {
+   "hs6": "854130",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "다이액(diac); 사이리스터(thyristor); 칩, 다이스와 절단되지 않은 웨이; 트라이액(triac)"
+  },
+  {
+   "hs6": "854141",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 레이저소자"
+  },
+  {
+   "hs6": "854142",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "광전지(모듈에 조립되었거나 패널로"
+  },
+  {
+   "hs6": "854143",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "광전지(모듈에 조립되었거나 패널로"
+  },
+  {
+   "hs6": "854149",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "광전도 셀; 기타; 전하결합소자; 칩, 다이스와 절단되지 않은 웨이"
+  },
+  {
+   "hs6": "854151",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "공진기; 센서; 액추에이터; 오실레이터"
+  },
+  {
+   "hs6": "854159",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 칩, 다이스와 절단되지 않은 웨이"
+  },
+  {
+   "hs6": "854160",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 수정진동자"
+  },
+  {
+   "hs6": "854190",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 다이오드의 것; 트랜지스터의 것"
+  },
+  {
+   "hs6": "854231",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "모노리식(monolithic) 집; 복합구조칩 집적회로; 복합부품 집적회로(MCOs); 하이브리드 집적회로"
+  },
+  {
+   "hs6": "854232",
+   "n_hs10": 7,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 7,
+   "qty_units": {
+    "U": 7
+   },
+   "sample_names": "기타; 디램; 복합구조칩 집적회로; 복합부품 집적회로(MCOs); 에스램; 플래시 메모리; 하이브리드 집적회로"
+  },
+  {
+   "hs6": "854233",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "모노리식(monolithic) 집; 복합구조칩 집적회로; 복합부품 집적회로(MCOs); 하이브리드 집적회로"
+  },
+  {
+   "hs6": "854239",
+   "n_hs10": 4,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 4,
+   "qty_units": {
+    "U": 4
+   },
+   "sample_names": "모노리식(monolithic) 집; 복합구조칩 집적회로; 복합부품 집적회로(MCOs); 하이브리드 집적회로"
+  },
+  {
+   "hs6": "854290",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "부분품"
+  },
+  {
+   "hs6": "854310",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "입자가속기"
+  },
+  {
+   "hs6": "854320",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "U": 1
+   },
+   "sample_names": "신호발생기"
+  },
+  {
+   "hs6": "854330",
+   "n_hs10": 3,
+   "late_start": 1,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "U": 3
+   },
+   "sample_names": "기타; 수전해 설비; 인쇄회로의 제조에 전용되거나 주로"
+  },
+  {
+   "hs6": "854340",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 2
+   },
+   "sample_names": "기타; 연소시키지 않고 흡입하도록 만들어"
+  },
+  {
+   "hs6": "854370",
+   "n_hs10": 16,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 16,
+   "qty_units": {
+    "U": 16
+   },
+   "sample_names": "고주파증폭기; 기타; 디지털 비행 데이터 기록 장치; 디지털신호처리기(사운드 믹싱을 위; 디텍터(소호 제8541.51호의 ; 미용기기; 비디오게"
+  },
+  {
+   "hs6": "854390",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "U": 1,
+    "None": 1
+   },
+   "sample_names": "기타; 전자초소형 조립회로"
+  },
+  {
+   "hs6": "854411",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 절연도료 피복전선"
+  },
+  {
+   "hs6": "854419",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "854420",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "동축케이블과 그 밖의 동축 도체"
+  },
+  {
+   "hs6": "854430",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "점화용 와이어링 세트와 그 밖의 "
+  },
+  {
+   "hs6": "854442",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "None": 6
+   },
+   "sample_names": "기타; 전기통신용"
+  },
+  {
+   "hs6": "854449",
+   "n_hs10": 9,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 9,
+   "qty_units": {
+    "None": 9
+   },
+   "sample_names": "기타; 전압이 80볼트 이하인 것; 전압이 80볼트 초과 1,000볼"
+  },
+  {
+   "hs6": "854460",
+   "n_hs10": 6,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 6,
+   "qty_units": {
+    "None": 6
+   },
+   "sample_names": "기타; 플라스틱 절연전선"
+  },
+  {
+   "hs6": "854470",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "광섬유 케이블"
+  },
+  {
+   "hs6": "854511",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "노(爐)용"
+  },
+  {
+   "hs6": "854519",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "854520",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "브러시"
+  },
+  {
+   "hs6": "854590",
+   "n_hs10": 3,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 탄소난방필름; 탄소봉"
+  },
+  {
+   "hs6": "854610",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "유리로 만든 것"
+  },
+  {
+   "hs6": "854620",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "도자제의 것"
+  },
+  {
+   "hs6": "854690",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 플라스틱으로 만든 애자"
+  },
+  {
+   "hs6": "854710",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "도자제의 절연용 물품"
+  },
+  {
+   "hs6": "854720",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "플라스틱으로 만든 절연용 물품"
+  },
+  {
+   "hs6": "854790",
+   "n_hs10": 1,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "854800",
+   "n_hs10": 2,
+   "late_start": 0,
+   "all_kg": true,
+   "n_kg": 2,
+   "qty_units": {
+    "None": 2
+   },
+   "sample_names": "기타; 전자 초소형 조립회로 "
+  },
+  {
+   "hs6": "854911",
+   "n_hs10": 1,
+   "late_start": 1,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "연산(鉛酸) 축전지의 웨이스트(w"
+  },
+  {
+   "hs6": "854912",
+   "n_hs10": 3,
+   "late_start": 3,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "납을 함유한 것; 수은을 함유한 것; 카드뮴을 함유한 것"
+  },
+  {
+   "hs6": "854913",
+   "n_hs10": 1,
+   "late_start": 1,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "화학적 유형에 따라 선별된 것(납"
+  },
+  {
+   "hs6": "854914",
+   "n_hs10": 3,
+   "late_start": 3,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타 ; 망간을 함유한 것; 철강ㆍ구리ㆍ니켈ㆍ아연을 함유한 것"
+  },
+  {
+   "hs6": "854919",
+   "n_hs10": 1,
+   "late_start": 1,
+   "all_kg": true,
+   "n_kg": 1,
+   "qty_units": {
+    "None": 1
+   },
+   "sample_names": "기타"
+  },
+  {
+   "hs6": "854921",
+   "n_hs10": 3,
+   "late_start": 3,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 유리·카드뮴·망간을 함유한 것; 철강·구리·니켈·납·아연을 함유한"
+  },
+  {
+   "hs6": "854929",
+   "n_hs10": 3,
+   "late_start": 3,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 유리·카드뮴·망간을 함유한 것; 철강·구리·니켈·납·아연을 함유한"
+  },
+  {
+   "hs6": "854931",
+   "n_hs10": 3,
+   "late_start": 3,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 유리·카드뮴·망간을 함유한 것; 철강·구리·니켈·납·아연을 함유한"
+  },
+  {
+   "hs6": "854939",
+   "n_hs10": 3,
+   "late_start": 3,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 유리·카드뮴·망간을 함유한 것; 철강·구리·니켈·납·아연을 함유한"
+  },
+  {
+   "hs6": "854991",
+   "n_hs10": 3,
+   "late_start": 3,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 유리·카드뮴·망간을 함유한 것; 철강·구리·니켈·납·아연을 함유한"
+  },
+  {
+   "hs6": "854999",
+   "n_hs10": 3,
+   "late_start": 3,
+   "all_kg": true,
+   "n_kg": 3,
+   "qty_units": {
+    "None": 3
+   },
+   "sample_names": "기타; 유리·카드뮴·망간을 함유한 것; 철강·구리·니켈·납·아연을 함유한"
+  }
+ ]
+}

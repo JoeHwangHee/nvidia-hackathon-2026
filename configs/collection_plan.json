@@ -1,0 +1,63 @@
+{
+  "_status": "PROVISIONAL v3 (2026-09-23). 스냅샷 v2 = v1 설정 + HS6 850490, 전체 재수집. probe 실측: nitemtrade HS6 조회→HS10 행, HS4 조회→HS6 행, itemtrade 는 HS4·HS6 조회 모두 HS10 행. 12개월 chunk 허용, USD/kg 정수. HS4/HS6/비교국 확정은 G2/G3 판정 후.",
+  "_selection_rule": "HS4 는 거래 급변 크기가 아니라 (1) 자료 완전성 (2) HS 연도별 정의 안정성 (3) 중량 유효성(중량단위코드 KG) (4) HS10 접근성(HS6당 2~6개)으로 고른다. 비교국은 기준연도(2023) 거래 규모와 유효월 수로 고정하고 당월 결과를 보고 바꾸지 않는다.",
+  "_candidate_basis": "data/reference/hs6_candidate_table.json (2026 HS부호표 필터 140개 HS6 + BACI HS22 V202601 한국수입 2022~2024 규모/상대국). 1순위 8504(통과 HS6 9개, HS10 4~6개, 안정 상대국 다수), 대안 8544(HS10 구조가 조회코드 v1.3와 2026표에서 완전 일치, USD/kg 의미 명확), 3순위 8536/8501.",
+  "snapshot_id": "kcs_202201_202412_v2",
+  "period": {
+    "start": "202201",
+    "end": "202412"
+  },
+  "chunk_months": 12,
+  "hs4_candidate": "8504",
+  "hs6": [
+    "850450",
+    "850431",
+    "850432",
+    "850490"
+  ],
+  "partners": [
+    "CN",
+    "JP",
+    "DE",
+    "VN",
+    "US",
+    "PH",
+    "TW",
+    "FR",
+    "FI",
+    "SE",
+    "KH",
+    "NL",
+    "ID",
+    "IN",
+    "MX",
+    "MY"
+  ],
+  "_alternate": {
+    "hs4_candidate": "8544",
+    "hs6": [
+      "854442",
+      "854411",
+      "854460"
+    ],
+    "partners": [
+      "CN",
+      "VN",
+      "US",
+      "JP",
+      "DE"
+    ]
+  },
+  "collect_total_denominator": true,
+  "hs10": [],
+  "_hs10_note": "실측상 HS6 조회에 HS10 행이 포함되므로 비워 둔다. 특정 HS10 만 재조회할 때만 사용.",
+  "_partner_code_note": "cntyCd 2자리 국가코드는 data/reference/kcs_country_codes.json (관세청조회코드_v1.3.xlsx 국가코드 시트) 기준. 대만=TW (BACI 는 'Asia n.e.s.' 490/S19 로 표기).",
+  "hs4_scan": [
+    "8504",
+    "8544",
+    "8536"
+  ],
+  "_hs4_scan_note": "HS4 조회 1회 = 해당 HS4 의 모든 HS6 월별 행(완전성 스캔 + HS6 부모값). 후보 HS4 3개 전부 스캔해 선정에 사용.",
+  "_hs6_note": "HS6 조회 1회 = 해당 HS6 의 모든 HS10 월별 행(구성분해 자료). 별도 HS10 직접 조회 불필요.",
+  "_partner_basis": "data/reference/partner_superset_2023.json: HS4 8504/8544/8536 각각 BACI 2023 한국수입 상위 10개국의 합집합 16개국(superset). peer 선택은 이 안에서만(합의문서 D8)."
+}

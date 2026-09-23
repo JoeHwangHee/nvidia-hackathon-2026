@@ -1,0 +1,200 @@
+{
+ "_status": "[DESIGN] 개발계획 10절의 합성 oracle. 통계 실행 결과가 아니며 실제 사건이 아니다. metrics.py 는 이 3건을 그대로 재현해야 한다.",
+ "policy_version": "dev-0.1 (임계 |r_U|>=30%, |d_s|>=10pp)",
+ "formula": {
+  "u_i": "V_i/Q_i",
+  "w_i": "Q_i/ΣQ (중량 비중)",
+  "within": "Σ((w0+w1)/2)*(u1-u0)",
+  "mix": "Σ((u0+u1)/2)*(w1-w0)"
+ },
+ "cases": [
+  {
+   "case_id": "A-composition",
+   "baseline": {
+    "hs10": [
+     {
+      "code": "X1",
+      "V": 500,
+      "Q": 50
+     },
+     {
+      "code": "X2",
+      "V": 100,
+      "Q": 50
+     }
+    ],
+    "parent": {
+     "V": 600,
+     "Q": 100
+    }
+   },
+   "comparison": {
+    "hs10": [
+     {
+      "code": "X1",
+      "V": 200,
+      "Q": 20
+     },
+     {
+      "code": "X2",
+      "V": 160,
+      "Q": 80
+     }
+    ],
+    "parent": {
+     "V": 360,
+     "Q": 100
+    }
+   },
+   "expected": {
+    "unit_value": {
+     "U0": 6.0,
+     "U1": 3.6,
+     "r_U": -0.4,
+     "within": 0.0,
+     "mix": -2.4,
+     "residual": 0.0
+    },
+    "share": {
+     "V_country_0": 600,
+     "V_world_0": 6000,
+     "V_country_1": 360,
+     "V_world_1": 6000,
+     "s0_pp": 10.0,
+     "s1_pp": 6.0,
+     "d_s_pp": -4.0,
+     "triggered": false,
+     "threshold_pp": 10
+    },
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "모니터링",
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "per_child_unit_value_stable",
+     "comparability_ok"
+    ]
+   }
+  },
+  {
+   "case_id": "B-residual",
+   "baseline": {
+    "hs10": [
+     {
+      "code": "X1",
+      "V": 500,
+      "Q": 50
+     },
+     {
+      "code": "X2",
+      "V": 100,
+      "Q": 50
+     }
+    ],
+    "parent": {
+     "V": 600,
+     "Q": 100
+    }
+   },
+   "comparison": {
+    "hs10": [
+     {
+      "code": "X1",
+      "V": 300,
+      "Q": 50
+     },
+     {
+      "code": "X2",
+      "V": 60,
+      "Q": 50
+     }
+    ],
+    "parent": {
+     "V": 360,
+     "Q": 100
+    }
+   },
+   "expected": {
+    "unit_value": {
+     "U0": 6.0,
+     "U1": 3.6,
+     "r_U": -0.4,
+     "within": -2.4,
+     "mix": 0.0,
+     "residual": 0.0
+    },
+    "share": {
+     "V_country_0": 600,
+     "V_world_0": 6000,
+     "V_country_1": 360,
+     "V_world_1": 6000,
+     "s0_pp": 10.0,
+     "s1_pp": 6.0,
+     "d_s_pp": -4.0,
+     "triggered": false,
+     "threshold_pp": 10
+    },
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "검토 유지",
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   }
+  },
+  {
+   "case_id": "C-missing-hs10",
+   "baseline": {
+    "parent": {
+     "V": 600,
+     "Q": 100
+    }
+   },
+   "comparison": {
+    "parent": {
+     "V": 360,
+     "Q": 100
+    },
+    "hs10": "REQUEST_FAILED"
+   },
+   "expected": {
+    "unit_value": {
+     "U0": 6.0,
+     "U1": 3.6,
+     "r_U": -0.4,
+     "within": null,
+     "mix": null
+    },
+    "share": {
+     "V_country_0": 600,
+     "V_world_0": 6000,
+     "V_country_1": 360,
+     "V_world_1": 6000,
+     "s0_pp": 10.0,
+     "s1_pp": 6.0,
+     "d_s_pp": -4.0,
+     "triggered": false,
+     "threshold_pp": 10
+    },
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "자료 보류",
+    "required_evidence": [
+     "missingness_listed",
+     "failure_vs_not_collected_distinguished",
+     "no_zero_fill"
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,240 @@
+{
+ "basis": "BACI HS22 V202601 importer=KOR, exporter 2023 value top-10 per HS4",
+ "per_hs4": {
+  "8504": [
+   {
+    "kcs": "CN",
+    "iso3": "CHN",
+    "baci_code": "156",
+    "v2023_kusd": 1569598,
+    "years": 3
+   },
+   {
+    "kcs": "JP",
+    "iso3": "JPN",
+    "baci_code": "392",
+    "v2023_kusd": 379753,
+    "years": 3
+   },
+   {
+    "kcs": "DE",
+    "iso3": "DEU",
+    "baci_code": "276",
+    "v2023_kusd": 366072,
+    "years": 3
+   },
+   {
+    "kcs": "VN",
+    "iso3": "VNM",
+    "baci_code": "704",
+    "v2023_kusd": 232055,
+    "years": 3
+   },
+   {
+    "kcs": "US",
+    "iso3": "USA",
+    "baci_code": "842",
+    "v2023_kusd": 195303,
+    "years": 3
+   },
+   {
+    "kcs": "PH",
+    "iso3": "PHL",
+    "baci_code": "608",
+    "v2023_kusd": 195296,
+    "years": 3
+   },
+   {
+    "kcs": "TW",
+    "iso3": "S19",
+    "baci_code": "490",
+    "v2023_kusd": 73947,
+    "years": 3
+   },
+   {
+    "kcs": "FR",
+    "iso3": "FRA",
+    "baci_code": "251",
+    "v2023_kusd": 73799,
+    "years": 3
+   },
+   {
+    "kcs": "FI",
+    "iso3": "FIN",
+    "baci_code": "246",
+    "v2023_kusd": 53541,
+    "years": 3
+   },
+   {
+    "kcs": "SE",
+    "iso3": "SWE",
+    "baci_code": "752",
+    "v2023_kusd": 43271,
+    "years": 3
+   }
+  ],
+  "8544": [
+   {
+    "kcs": "CN",
+    "iso3": "CHN",
+    "baci_code": "156",
+    "v2023_kusd": 2413744,
+    "years": 3
+   },
+   {
+    "kcs": "VN",
+    "iso3": "VNM",
+    "baci_code": "704",
+    "v2023_kusd": 973242,
+    "years": 3
+   },
+   {
+    "kcs": "PH",
+    "iso3": "PHL",
+    "baci_code": "608",
+    "v2023_kusd": 315106,
+    "years": 3
+   },
+   {
+    "kcs": "US",
+    "iso3": "USA",
+    "baci_code": "842",
+    "v2023_kusd": 138116,
+    "years": 3
+   },
+   {
+    "kcs": "KH",
+    "iso3": "KHM",
+    "baci_code": "116",
+    "v2023_kusd": 79877,
+    "years": 3
+   },
+   {
+    "kcs": "DE",
+    "iso3": "DEU",
+    "baci_code": "276",
+    "v2023_kusd": 72869,
+    "years": 3
+   },
+   {
+    "kcs": "JP",
+    "iso3": "JPN",
+    "baci_code": "392",
+    "v2023_kusd": 56194,
+    "years": 3
+   },
+   {
+    "kcs": "NL",
+    "iso3": "NLD",
+    "baci_code": "528",
+    "v2023_kusd": 28159,
+    "years": 3
+   },
+   {
+    "kcs": "ID",
+    "iso3": "IDN",
+    "baci_code": "360",
+    "v2023_kusd": 24023,
+    "years": 3
+   },
+   {
+    "kcs": "IN",
+    "iso3": "IND",
+    "baci_code": "699",
+    "v2023_kusd": 20926,
+    "years": 3
+   }
+  ],
+  "8536": [
+   {
+    "kcs": "CN",
+    "iso3": "CHN",
+    "baci_code": "156",
+    "v2023_kusd": 720515,
+    "years": 3
+   },
+   {
+    "kcs": "JP",
+    "iso3": "JPN",
+    "baci_code": "392",
+    "v2023_kusd": 360441,
+    "years": 3
+   },
+   {
+    "kcs": "VN",
+    "iso3": "VNM",
+    "baci_code": "704",
+    "v2023_kusd": 266293,
+    "years": 3
+   },
+   {
+    "kcs": "US",
+    "iso3": "USA",
+    "baci_code": "842",
+    "v2023_kusd": 248980,
+    "years": 3
+   },
+   {
+    "kcs": "DE",
+    "iso3": "DEU",
+    "baci_code": "276",
+    "v2023_kusd": 192018,
+    "years": 3
+   },
+   {
+    "kcs": "PH",
+    "iso3": "PHL",
+    "baci_code": "608",
+    "v2023_kusd": 110764,
+    "years": 3
+   },
+   {
+    "kcs": "MX",
+    "iso3": "MEX",
+    "baci_code": "484",
+    "v2023_kusd": 68856,
+    "years": 3
+   },
+   {
+    "kcs": "FR",
+    "iso3": "FRA",
+    "baci_code": "251",
+    "v2023_kusd": 33145,
+    "years": 3
+   },
+   {
+    "kcs": "MY",
+    "iso3": "MYS",
+    "baci_code": "458",
+    "v2023_kusd": 24761,
+    "years": 3
+   },
+   {
+    "kcs": "NL",
+    "iso3": "NLD",
+    "baci_code": "528",
+    "v2023_kusd": 24562,
+    "years": 3
+   }
+  ]
+ },
+ "union_kcs": [
+  "CN",
+  "DE",
+  "FI",
+  "FR",
+  "ID",
+  "IN",
+  "JP",
+  "KH",
+  "MX",
+  "MY",
+  "NL",
+  "PH",
+  "SE",
+  "TW",
+  "US",
+  "VN"
+ ],
+ "note": "S19(BACI 490 Asia n.e.s.) -> TW 매핑; KCS cntyCd 존재 확인됨"
+}

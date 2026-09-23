@@ -1,0 +1,113 @@
+{
+ "snapshot_id": "probe_20260923_205425",
+ "probe_at": "2026-09-23T20:54:25+09:00",
+ "results": [
+  {
+   "request_id": "d421884afc89229a",
+   "status": "OK",
+   "rows": 7,
+   "result_code": "00",
+   "result_msg": "정상서비스.",
+   "envelope": "response",
+   "http_status": 200,
+   "attempts": 1,
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202401",
+    "hsSgn": "850450",
+    "cntyCd": "CN"
+   },
+   "first_item": {
+    "_row": 0,
+    "balPayments": "-15176954",
+    "expDlr": "6699727",
+    "expWgt": "263471",
+    "hsCd": "-",
+    "impDlr": "21876681",
+    "impWgt": "1075490",
+    "statCd": "-",
+    "statCdCntnKor1": "-",
+    "statKor": "-",
+    "year": "총계"
+   },
+   "distinct_year_values": [
+    "2024.01",
+    "총계"
+   ]
+  },
+  {
+   "request_id": "e54cad99639de91e",
+   "status": "OK",
+   "rows": 7,
+   "result_code": "00",
+   "result_msg": "정상서비스.",
+   "envelope": "response",
+   "http_status": 200,
+   "attempts": 1,
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202401",
+    "hsSgn": "850450"
+   },
+   "first_item": {
+    "_row": 0,
+    "balPayments": "-50064",
+    "expDlr": "3150",
+    "expWgt": "275",
+    "hsCode": "8504501010",
+    "impDlr": "53214",
+    "impWgt": "197",
+    "statKor": "자동자료처리기계와 그 단위기기(제8471호, 제8443.31호, 제8443.32호, 제8528.42호, 제8528.52호, 제8528.62호)의 것 및 전기통신용 기기의 것",
+    "year": "2024.01"
+   },
+   "distinct_year_values": [
+    "2024.01",
+    "총계"
+   ]
+  },
+  {
+   "request_id": "ee3d376ecdc0bb5c",
+   "status": "OK",
+   "rows": 73,
+   "result_code": "00",
+   "result_msg": "정상서비스.",
+   "envelope": "response",
+   "http_status": 200,
+   "attempts": 1,
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850450",
+    "cntyCd": "CN"
+   },
+   "first_item": {
+    "_row": 0,
+    "balPayments": "-174714794",
+    "expDlr": "75261584",
+    "expWgt": "2619071",
+    "hsCd": "-",
+    "impDlr": "249976378",
+    "impWgt": "10438822",
+    "statCd": "-",
+    "statCdCntnKor1": "-",
+    "statKor": "-",
+    "year": "총계"
+   },
+   "distinct_year_values": [
+    "2024.01",
+    "2024.02",
+    "2024.03",
+    "2024.04",
+    "2024.05",
+    "2024.06",
+    "2024.07",
+    "2024.08",
+    "2024.09",
+    "2024.10",
+    "2024.11",
+    "2024.12",
+    "총계"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,7 @@
+{
+ "snapshot_id": "kcs_202201_202412_v1",
+ "frozen_at": "2026-09-23T21:20+09:00",
+ "raw_files": 306,
+ "raw_combined_sha256": "8b9f1a11e6850d31e649f3d4018dc992cc67707e4e1b2d8abe48e075bfec8e8f",
+ "status": "COLLECTED_NOT_FROZEN (선정 후 동결)"
+}

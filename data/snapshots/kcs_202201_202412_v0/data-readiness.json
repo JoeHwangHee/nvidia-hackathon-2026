@@ -1,0 +1,31 @@
+{
+ "snapshot_id": "kcs_202201_202412_v0",
+ "status": "NOT_STARTED (dry-run manifest only)",
+ "as_of": "2026-09-23T19:45+09:00",
+ "blocker": "DATA_GO_KR_SERVICE_KEY 미확보 (data.go.kr 로그인·활용신청 대기)",
+ "period": {
+  "start": "202201",
+  "end": "202412",
+  "months": 36,
+  "analysis_window": "202301-202412"
+ },
+ "planned_logical_requests": 54,
+ "planned_max_monthly_records": 540,
+ "collection_http_attempts": 0,
+ "units_confirmed": false,
+ "precision_rule": "UNKNOWN",
+ "hs_version": "HSK by year - 미확인",
+ "gates": {
+  "G0_event_rules": "UNVERIFIED",
+  "G1_new_collection_access": "BLOCKED_KEY",
+  "G2_36m_quality": "PENDING",
+  "G3_hs10_decomposition": "PENDING",
+  "G4_nim_toolcall": "BLOCKED_NVIDIA_KEY"
+ },
+ "next_commands": [
+  "python3 src/tradesentry/ingest.py probe --hs6 850450 --country CN --month 202401",
+  "python3 src/tradesentry/ingest.py collect --config configs/collection_plan.json",
+  "python3 src/tradesentry/ingest.py verify --snapshot kcs_202201_202412_v0",
+  "python3 scripts/g4_nim_toolcall_probe.py"
+ ]
+}

@@ -1,0 +1,10 @@
+.env
+.data/
+data/snapshots/*/raw/
+data/snapshots/*/snapshot.sqlite
+artifacts/runs/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+tmp/
+files.zip

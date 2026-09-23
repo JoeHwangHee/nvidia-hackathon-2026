@@ -1,0 +1,106 @@
+{
+ "snapshot_id": "probe_20260923_205425",
+ "verified_at": "2026-09-23T20:59:44+09:00",
+ "receipts_by_status": {
+  "OK": 5
+ },
+ "import_obs_by_status": {
+  "OBSERVED": 99,
+  "UNRESOLVED_ZERO": 1
+ },
+ "coverage_hs6_from_hs4_scan": [
+  {
+   "hs6": "850410",
+   "partner": "CN",
+   "months": 1
+  },
+  {
+   "hs6": "850421",
+   "partner": "CN",
+   "months": 1
+  },
+  {
+   "hs6": "850422",
+   "partner": "CN",
+   "months": 1
+  },
+  {
+   "hs6": "850423",
+   "partner": "CN",
+   "months": 1
+  },
+  {
+   "hs6": "850431",
+   "partner": "CN",
+   "months": 1
+  },
+  {
+   "hs6": "850432",
+   "partner": "CN",
+   "months": 1
+  },
+  {
+   "hs6": "850433",
+   "partner": "CN",
+   "months": 1
+  },
+  {
+   "hs6": "850434",
+   "partner": "CN",
+   "months": 1
+  },
+  {
+   "hs6": "850440",
+   "partner": "CN",
+   "months": 1
+  },
+  {
+   "hs6": "850450",
+   "partner": "CN",
+   "months": 1
+  },
+  {
+   "hs6": "850490",
+   "partner": "CN",
+   "months": 1
+  }
+ ],
+ "coverage_hs6_from_hs10_rows": [
+  {
+   "hs6": "850450",
+   "partner": "ALL",
+   "months": 1,
+   "n_hs10_codes": 6
+  },
+  {
+   "hs6": "850450",
+   "partner": "CN",
+   "months": 12,
+   "n_hs10_codes": 6
+  }
+ ],
+ "non_integer_values": 0,
+ "positive_amount_zero_or_null_weight": 0,
+ "total_row_checks": 4,
+ "total_row_mismatches": [],
+ "cross_checks_hs4_vs_hs10": 1,
+ "cross_check_mismatches": [],
+ "confirmed_no_trade_candidates": [],
+ "units_confirmed": "false",
+ "precision_rule": "UNKNOWN (probe/verify에서 확정)",
+ "hs_version": "HSK by year (2022/2023/2024) - 미확인",
+ "gates": {
+  "G1_new_collection_access": true,
+  "G2_full_period_quality": {
+   "months_required": 36,
+   "hs6_partner_pairs_full": 0,
+   "hs6_partner_pairs_total": 2
+  },
+  "G3_hs10_decomposition": true
+ },
+ "notes": [
+  "금액은 정확 일치, 중량은 행별 정수 kg 반올림(허용 0.5kg×(행수+1)) - probe 2026-09-23 실측 기반.",
+  "CONFIRMED_NO_TRADE 는 후보만 나열. 승격은 정책 결정(9/24).",
+  "G2 는 수집 기간 전체 기준. 24개월 분석창은 2023-01~2024-12."
+ ]
+}
