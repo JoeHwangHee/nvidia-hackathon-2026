@@ -422,8 +422,8 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 | `controlled_fixture_v0` | 네 모드 모두 가능 | 개발과 시험 |
 | `dev20` | `checklist`, `agent`, `full` | 개발 점수표(등급 D) |
 | `holdout40` | `checklist`, `agent`, `full` | 보조 지표(등급 C) |
-| `real_dev` | `freeform`, `full`(참고로 `agent` 가능) | 대표 지표의 개발 값(등급 D), 산문 패턴 보강 |
-| `real_sealed` | `freeform`, `full`(참고로 `agent` 가능) | 대표 지표(등급 A, B3-3 조건). 두 모드는 같은 사례 집합에서 돈다 |
+| `real_dev` | `freeform`, `full`(참고로 `agent` 가능. 평가 스킬 ②는 교차 배치와 A등급 조건 4를 지키려고 실자료 묶음의 예정 실행 목록에 `agent`를 넣지 않는다) | 대표 지표의 개발 값(등급 D), 산문 패턴 보강 |
+| `real_sealed` | `freeform`, `full`(참고로 `agent` 가능. 평가 스킬 ②는 예정 실행 목록에 넣지 않는다) | 대표 지표(등급 A, B3-3 조건). 두 모드는 같은 사례 집합에서 돈다 |
 
 ### B3. 대표 지표
 
