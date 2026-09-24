@@ -142,6 +142,7 @@ class Row:
     log_host: str = ""
     denial_type: str | None = None
     info: bool = False
+    fill_from_policy: bool = False
     rc: int | None = None
     http: str = "—"
     classification: str = "—"
@@ -405,6 +406,11 @@ def check_logs(row: Row, ctx: Context) -> tuple[bool, str]:
     landlock_ok = bool(skipped) and not any(skipped)
     note += f"; 시험 기간 CONFIG:LOADED {loaded}행; Landlock 적용 행 {len(skipped)}개" + (
         ", 모두 skipped:0" if landlock_ok else (", skipped가 0이 아닌 행이 있다" if skipped else ", 없음"))
+    if row.kind == KIND_DEMO:
+        # 시연 샌드박스의 정적 계층은 NemoClaw가 온보딩 때 고정한다. Landlock 규칙은 허용 목록이라 없는 경로의 규칙을
+        # 건너뛰어도 접근이 넓어지지 않는다. 그래서 시연 쪽 skipped는 판정에 넣지 않고 정보로 적는다(결정 기록 ⑥·⑭).
+        # skipped 건수의 까닭은 같은 샌드박스의 정책 경로 존재 확인 행(DL1)에 있다.
+        return state.log_rc == 0, note + " (시연 샌드박스: Landlock skipped는 정보, 판정은 수집 종료 코드만)"
     return state.log_rc == 0 and landlock_ok, note
 
 
@@ -540,6 +546,8 @@ def demo_rows(name: str, args: argparse.Namespace) -> list[Row]:
         Row("DB5", name, kind, "(b) 차단 조건", "node가 띄운 시스템 파이썬 → inference.local GET /v1/models(작업 공간 추론 경로)",
             "2xx 아님(경로 없음 503 또는 거부)", _node_child(SYSTEM_PY, f"{PROBE_DIR}/net_probe.py", "GET", INFERENCE_LOCAL_URL),
             check_not_success, "inference_local", "inference.local"),
+        Row("DL1", name, kind, "기록", "라이브 정책 filesystem_policy 경로 가운데 샌드박스에 없는 것(Landlock skipped의 까닭)",
+            "정보", None, check_missing_info, info=True, fill_from_policy=True),
         Row("DC1", name, kind, "(c) 키 조회", "exec 세션에서 키 조회(값 출력 없음)", "실제 키 0건(종료 코드 0)",
             _probe(SYSTEM_PY, "key_check.py", "/"), check_key),
         Row("DC2", name, kind, "(c) 키 조회", "하네스(OpenClaw)가 띄운 프로세스에서 키 조회(오케스트레이터 명령 결과)",
@@ -549,6 +557,14 @@ def demo_rows(name: str, args: argparse.Namespace) -> list[Row]:
             _node_child(SYSTEM_PY, f"{PROBE_DIR}/net_probe.py", "NIM", NIM_URL, "--key-env", "NVIDIA_INFERENCE_API_KEY"),
             check_allow_nim, "nim", oc.NVIDIA_INFERENCE_HOST),
     ]
+
+
+def check_missing_info(row: Row, ctx: Context) -> tuple[None, str]:
+    missing = row.data.get("missing")
+    if missing is None:
+        return None, "판정 불가(탐침 출력 없음)" if row.command else "라이브 정책을 읽지 못해 돌리지 않았다"
+    return None, (f"정책 경로 {row.data.get('checked', '?')}개 가운데 이 샌드박스에 없는 것 {len(missing)}개"
+                  + (": " + ", ".join(missing) if missing else ""))
 
 
 def log_row(name: str, kind: str, rid: str) -> Row:
@@ -682,6 +698,10 @@ def collect_sandbox(runner: Runner, ctx: Context, state: SandboxState, rows: lis
         got = runner.run(["sandbox", "upload", state.name, (PROBE_LOCAL / probe).as_posix(), PROBE_DIR + "/"], timeout)
         if got.rc != 0:
             state.upload_failures.append(probe)
+    for row in rows:  # 라이브 정책 경로로 명령을 채우는 행(DL1)
+        if row.fill_from_policy and state.policy is not None:
+            paths = sorted({entry for _, entry in oc.allowlist_entries(state.policy)})
+            row.command = [SYSTEM_PY, f"{PROBE_DIR}/fs_probe.py", "missing", *paths]
     first = runner.now()
     for row in rows:
         if row.command is None:

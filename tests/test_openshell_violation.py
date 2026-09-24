@@ -47,7 +47,8 @@ class FakeOpenShell(ovt.Runner):
     """openshell 대역. 시계는 명령마다 1초씩 간다. 샌드박스 명령에는 X1 형식의 감사 로그 행을 남긴다."""
 
     def __init__(self, *, overrides=None, log_warning=False, inference_provider=False, extra_text="",
-                 deny_logs=True, landlock_skipped=0, b4_l4_allowed=False, nim_logs=True):
+                 deny_logs=True, landlock_skipped=0, b4_l4_allowed=False, nim_logs=True, demo_skipped=0):
+        self.demo_skipped = demo_skipped
         self.deny_logs, self.landlock_skipped = deny_logs, landlock_skipped
         self.b4_l4_allowed, self.nim_logs = b4_l4_allowed, nim_logs
         self.program = "openshell"
@@ -107,7 +108,12 @@ class FakeOpenShell(ovt.Runner):
 
     def exec(self, sandbox, command):
         joined = " ".join(command)
-        self.log(sandbox, f"CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:{self.landlock_skipped}]")
+        skipped = self.demo_skipped if sandbox == DEMO else self.landlock_skipped
+        self.log(sandbox, f"CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:{skipped}]")
+        if "fs_probe.py missing" in joined:
+            paths = command[command.index("missing") + 1:]
+            gone = [path for path in paths if path in ("/app", "/var/lib/dpkg")]
+            return 0, json.dumps({"mode": "missing", "checked": len(paths), "missing": gone}) + "\n", ""
         for key, value in self.overrides.items():
             if key in joined:
                 return value
@@ -361,6 +367,22 @@ class RunTest(RunHarness):
         row = next(line for line in table.splitlines() if line.startswith("| D1 |"))
         self.assertIn("skipped가 0이 아닌 행이 있다", row)
 
+    def test_demo_landlock_skipped_is_information_only(self):
+        """시연 샌드박스의 Landlock skipped는 정보로만 적는다(2026-09-25(금) 실측 skipped:2, 결정 기록 ⑥·⑭)."""
+        runner = FakeOpenShell(demo_skipped=2)
+        code, out, _ = self.run_tool(runner)
+        self.assertEqual(code, 0, out)
+        table = next(self.run_dir().glob("*.md")).read_text(encoding="utf-8")
+        rows = {line.split("|")[1].strip(): line for line in table.split("## 2. 시험표", 1)[1].splitlines()
+                if line.startswith("| ")}
+        self.assertIn("| O |", rows["DD1"])
+        self.assertIn("skipped가 0이 아닌 행이 있다", rows["DD1"])
+        self.assertIn("| 정보 |", rows["DL1"])
+        self.assertIn("없는 것 2개: /app, /var/lib/dpkg", rows["DL1"])
+        probe = [call for call in runner.calls if "fs_probe.py" in " ".join(call) and "missing" in call]
+        self.assertEqual(len(probe), 1)
+        self.assertIn("/sandbox/.openclaw", probe[0])  # 라이브 정책(X1 시연 4판)의 경로로 채운다
+
     def test_notes_name_the_blocking_device(self):
         code, _, _ = self.run_tool(FakeOpenShell())
         self.assertEqual(code, 0)
@@ -483,6 +505,12 @@ class ProbeTest(unittest.TestCase):
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
             code = func(*args)
         return code, out.getvalue()
+
+    def test_fs_probe_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code, out = self.quiet(fs_probe.main, ["missing", tmp, os.path.join(tmp, "nope")])
+            self.assertEqual(code, 0)
+            self.assertEqual(json.loads(out)["missing"], [os.path.join(tmp, "nope")])
 
     def test_fs_probe_write_and_absent(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -4,6 +4,7 @@
     python fs_probe.py write <경로>               탐침 파일(새로 만드는 빈 파일)을 만들어 본다. 기존 파일은 고치지 않는다
     python fs_probe.py absent <뿌리> [...] [--name <파일 이름>]... [--skip <경로>]...   정답표·채점기·outputs 흔적을 훑는다
     python fs_probe.py sha256 <경로>              파일 sha256(이미지 포함 목록 기록 대조용)
+    python fs_probe.py missing <경로>...          없는 경로 목록(정책 filesystem_policy 경로 가운데 이 샌드박스에 없는 것)
 
 write는 이미 있으면 실패하는 방식(O_CREAT|O_EXCL)으로 만들고, 만들어지면 바로 지운다. 거부되면 errno 이름(EACCES:
 정책 read_only 등 권한 거부, EROFS: 읽기 전용 마운트)을 적는다(docs/plan/DEV_PLAN.md §4.4 공식 채점용 최소 시험).
@@ -84,6 +85,12 @@ def probe_sha256(path):
     return out, 0
 
 
+def probe_missing(paths):
+    """os.path.lexists가 거짓인 경로 목록. 내용은 열지 않는다. 늘 종료 코드 0(정보용)."""
+    missing = [path for path in paths if not os.path.lexists(path)]
+    return {"mode": "missing", "checked": len(paths), "missing": missing}, 0
+
+
 def main(argv):
     if len(argv) < 2:
         sys.stderr.write("usage: fs_probe.py write <path> | absent <root>... [--name <n>]... [--skip <p>]... "
@@ -92,6 +99,8 @@ def main(argv):
     mode, rest = argv[0], argv[1:]
     if mode == "write" and len(rest) == 1:
         out, code = probe_write(rest[0])
+    elif mode == "missing" and rest:
+        out, code = probe_missing(rest)
     elif mode == "sha256" and len(rest) == 1:
         out, code = probe_sha256(rest[0])
     elif mode == "absent":
