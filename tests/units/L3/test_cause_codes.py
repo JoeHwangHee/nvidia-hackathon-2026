@@ -20,8 +20,11 @@ class CauseCodeRuleTest(unittest.TestCase):
             ({"kind": "schema"}, cc.SCHEMA_INVALID, "INVALID", False),
             ({"kind": "validator"}, cc.VALIDATOR_BLOCKED, "INVALID", False),
             ({"kind": "exception"}, cc.CODE_ERROR, "FAILED", False),
+            # 샌드박스 정책 프록시 거부: 새 코드 없이 CODE_ERROR, 재실행 대상 아님(모델 제공자 쪽 오류가 아니다)
+            ({"kind": "policy_denied"}, cc.CODE_ERROR, "FAILED", False),
         ]
-        self.assertEqual(len(cases), len(cc.CODES))
+        self.assertEqual({code for _, code, _, _ in cases}, set(cc.CODES))  # 코드 11개를 모두 지난다
+        self.assertEqual(len(cc.CODES), 11)
         for inp, code, status, rerun in cases:
             with self.subTest(inp=inp):
                 self.assertEqual(cc.run(inp), {"code": code, "execution_status": status, "infra_rerun": rerun})
@@ -38,6 +41,8 @@ class CauseCodeRuleTest(unittest.TestCase):
         self.assertFalse(cc.infra_rerun_eligible("BUDGET_EXCEEDED", [entry(cc.BUDGET_MODEL_REQUESTS)]))
         self.assertFalse(cc.infra_rerun_eligible("TIMEOUT", [entry(cc.DEADLINE)]))
         self.assertFalse(cc.infra_rerun_eligible("FAILED", [entry(cc.PROVIDER_REQUEST_TIMEOUT)]))
+        denied = cc.error_entry(cc.classify("policy_denied"), "basic", ATTEMPTS, [], "policy_denied(connect) 403")
+        self.assertFalse(cc.infra_rerun_eligible("FAILED", [denied]))
 
     def test_error_entry_keeps_attempts_and_last_good_evidence(self):
         entry = cc.error_entry(cc.DEADLINE, "revision", dict(ATTEMPTS, extra=1),
