@@ -8,13 +8,13 @@ TradeSentry의 도메인 규칙은 아래 정본에만 있다. 같은 규칙이 
 | 객체(스냅샷·관측치·지표·사례·비교 대상 집합)와 필드, 객체 사이 관계 | 같은 문서 §2 |
 | 관측치 행 규칙: 상대국 HS6(6자리 품목분류 코드) 월 금액·중량의 원천(부모 HS6 행), 전체국가(`ALL`) 분모와 중복 제거, 총계 행 취급 | 같은 문서 §2.3.2 |
 | 상태값 집합(판정·실행·관측·승인 유효)과 뜻 | 같은 문서 §3 |
-| 지표 공식(단가 U, 단가 변화율 r_U, 점유율 s, 점유율 변화 d_s, HS10 구성효과 분해)과 0·미상 처리 | `docs/plan/DEV_PLAN.md` §6.1·§6.2 |
+| 지표 공식(단가 U, 단가 변화율 r_U, 점유율 s, 점유율 변화 d_s, HS10(10자리 품목 코드) 구성효과 분해(하위 품목 비중 변화가 평균 단가를 바꾼 몫을 따로 떼는 계산))과 0·미상 처리 | `docs/plan/DEV_PLAN.md` §6.1·§6.2 |
 | 신호별 판정표와 사례 판정 집계 | 같은 문서 §6.3·§6.4 |
-| 조회 도구 5개, 공통 출력 봉투, 도구·모델 예산 | 같은 문서 §6.5·§6.6, `docs/rules/DATA_CONTRACT_V1.md` §5 |
+| 조회 도구 5개, 공통 출력 봉투(모든 조회 도구가 같은 키로 돌려주는 응답 형식), 도구·모델 예산 | 같은 문서 §6.5·§6.6, `docs/rules/DATA_CONTRACT_V1.md` §5 |
 | 조사 흐름(조사자 → 검수자 → 수정 1회 → 최종 검증) | `docs/plan/DEV_PLAN.md` §6.7 |
 | typed claim(정해진 필드로 쓰는 사실 주장), 보고서, 검증기, 실행 상태, 모의 승인 | 같은 문서 §7, `docs/rules/DATA_CONTRACT_V1.md` §6·§8·§9 |
 | 단위, 표시 자릿수, 반올림 | `docs/rules/DATA_CONTRACT_V1.md` §11 |
-| 비교 대상 집합: `g0`(대상국을 뺀 수입 상위 5개국, 해석은 사용자 확인 대기)와 `g1`(BACI 수출 바구니 유사도 상위 5개국) | `docs/plan/DEV_PLAN.md` §8, `docs/rules/DATA_CONTRACT_V1.md` §2.3.6 |
-| 탐지 임계값과 승격 규칙 같은 정책 수치(승인 뒤 `configs/policy_v1.json`) | `docs/plan/DEV_PLAN.md` §6.2, `docs/plan/ROADMAP.md` §6.3 |
+| 비교 대상 집합: `g0`(대상국을 뺀 수입 상위 5개국, 해석은 사용자 확인 대기)와 `g1`(BACI(CEPII가 정리한 국가 간 연간 무역 자료)의 수출 바구니 유사도 상위 5개국) | `docs/plan/DEV_PLAN.md` §8, `docs/rules/DATA_CONTRACT_V1.md` §2.3.6 |
+| 탐지 임계값과 승격 규칙(빈 응답 달을 무거래 확정 `CONFIRMED_NO_TRADE`로 바꾸는 규칙) 같은 정책 수치(사용자 승인 뒤 동결 판정 정책 `configs/policy_v1.json`) | `docs/plan/DEV_PLAN.md` §6.2, `docs/plan/ROADMAP.md` §6.3 |
 | 평가 자료 묶음, 비교 모드, 대표 지표, 숫자 등급 | `docs/plan/DEV_PLAN.md` §9, `docs/eval/RULEBOOK.md` Part B |
 | 쓰면 안 되는 표현(위법·원인 단정 등)과 정직한 주장 규칙 | `docs/plan/DEV_PLAN.md` §7.2·§12.2 |
