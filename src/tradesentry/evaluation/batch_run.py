@@ -73,11 +73,37 @@ CONDITION_REQUIRED = ("dataset", "planned_cases", "planned_modes", "policy_detec
 SEALED_FORBIDDEN = ("nat_profile_summary", "korean_sample_review")  # 봉인 출력이 있어야 하는 값(자료 계약 §8.2)
 LIMIT_KEYS = ("tool_attempts", "reinvestigation", "model_requests", "wall_time_s", "tokens")  # 요약 한도 칸(룰북 B7)
 
+# 자료 묶음 → 예정 모드(평가 스킬 ② 실행 행렬, 룰북 B2. 실자료 묶음에는 참고용 agent를 넣지 않는다). controlled_fixture_v0은
+# 네 모드 모두 가능하다. 사용자 결정 12(2026-09-25 08:47): evaluate가 --mode 없이 돌 때 이 표의 모드 전부를 한 묶음으로 돈다
+# (배선은 조립 AS3). 모드 하나만 준 묶음은 스모크용이고 점수표로 합치지 않는다. E2도 같은 표를 쓴다(따로 옮겨 적는다).
+PLANNED_MODES = {"controlled_fixture_v0": tuple(types.MODES), "dev20": ("checklist", "agent", "full"),
+                 "holdout40": ("checklist", "agent", "full"), "real_dev": ("freeform", "full"),
+                 "real_sealed": ("freeform", "full")}
+
 # 로컬 절대경로 모양(N13)과 키 모양(절대 규칙 1). 채점기 코드는 import하지 않고, 채점기가 거부하는 모양보다 넓게 잡는다:
-# 값의 처음이나 공백·따옴표·구분 기호 뒤의 "/", 역슬래시 두 개(UNC), 드라이브 문자, 값의 처음이나 구분 기호 뒤의 물결표.
-_PATH_START = r"(?:^|(?<=[\s\"'=(,;:<>\[{|]))"
-PATH_SHAPE = re.compile(_PATH_START + r"/(?=[^\s/])|\\\\|(?<![A-Za-z0-9])[A-Za-z]:[\\/]|" + _PATH_START + r"~")
+# 값의 처음이나 영숫자·"."·"_"·"-"가 아닌 글자 뒤의 "/"(그래서 "//x", "file:///x", "`/x"도 잡는다. "USD/kg"처럼 글자 뒤의
+# "/"는 잡지 않는다), 역슬래시 두 개(UNC), 드라이브 문자, 같은 자리의 물결표.
+_PATH_START = r"(?:^|(?<=[^A-Za-z0-9._-]))"
+PATH_SHAPE = re.compile(_PATH_START + r"/(?=\S)|\\\\|(?<![A-Za-z0-9])[A-Za-z]:[\\/]|" + _PATH_START + r"~")
 SECRET_SHAPE = re.compile("nv" + "api-|service" + r"Key\s*=", re.I)  # 패턴 글자를 나눠 적는다(이 파일이 검사에 걸리지 않게)
+
+
+def sealed_place(run_dir: Path) -> bool:
+    """실행 폴더가 봉인 자리(outputs/sealed/ 아래)인가(자료 계약 §10.3 N10). 적힌 경로와 풀린 경로(심볼릭 링크)를 둘 다
+    보고, outputs 폴더까지의 조상 이름에 sealed(대소문자 무시)가 있으면 봉인이다. 풀 수 없으면 봉인으로 본다.
+    E3·E4도 같은 규칙을 쓴다(허용 import 때문에 따로 옮겨 적었다)."""
+    try:
+        paths = (run_dir.absolute(), run_dir.resolve())
+    except (OSError, RuntimeError):
+        return True
+    for path in paths:
+        for ancestor in path.parents:
+            name = ancestor.name.lower()
+            if name == "sealed":
+                return True
+            if name == "outputs":
+                break
+    return False
 
 
 class BatchError(ValueError):
@@ -204,7 +230,7 @@ def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_pa
     사례 실행명을 확보하지 못하면(RunNameError) 거기서 멈춘다. 쓴 줄은 남고, 남은 계획 조합은 미실행으로 분모에 남는다.
     """
     check_spec(spec)
-    if parent.name == "sealed":
+    if sealed_place(parent / BATCH_RUN_NAME):
         raise BatchError("묶음 실행 E1은 outputs/sealed/ 아래에 쓰지 않는다(봉인 묶음은 E2)")
     clock = clock or trace_log.now_kst
     reserve_kw: dict = {"clock": clock}
@@ -343,8 +369,7 @@ def write_run_conditions(run_dir: Path, doc: dict) -> Path:
     """실행 조건 입력 파일을 이미 있으면 실패하는 방식(O_EXCL)으로 쓴다. 폴더는 부르는 호스트 쪽 프로그램이 확보한
     실행 폴더다. 봉인 묶음 여부와 폴더 위치(outputs/sealed/ 아래인지)가 맞지 않으면 쓰지 않는다."""
     check_run_conditions(doc)
-    sealed_place = run_dir.parent.name == "sealed"
-    if (doc["dataset"] in types.SEALED_DATASETS) != sealed_place:
+    if (doc["dataset"] in types.SEALED_DATASETS) != sealed_place(run_dir):
         raise BatchError("봉인 묶음은 outputs/sealed/ 아래, 봉인 묶음이 아니면 outputs/ 아래 실행 폴더에만 쓴다")
     path = conditions_path(run_dir)
     payload = (trace_log.dumps(doc) + "\n").encode("utf-8")

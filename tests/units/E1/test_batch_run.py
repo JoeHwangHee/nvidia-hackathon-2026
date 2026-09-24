@@ -171,9 +171,10 @@ class RefusalAndInterruptTest(TempOutputs, unittest.TestCase):
         for s in bad:
             with self.subTest(s=s), self.assertRaises(batch_run.BatchError):
                 self.execute(hf.FakeRunner(self.clock), s)
-        with self.assertRaises(batch_run.BatchError):  # 봉인 자리에는 쓰지 않는다
-            batch_run.execute_batch(spec(), hf.FakeRunner(self.clock), parent=self.sealed, other_parent=self.parent,
-                                    clock=self.clock, sleep=self.clock.sleep)
+        for place in (self.sealed, self.parent / "Sealed", self.sealed / "holdout40"):
+            with self.subTest(place=place), self.assertRaises(batch_run.BatchError):  # 봉인 자리에는 쓰지 않는다
+                batch_run.execute_batch(spec(), hf.FakeRunner(self.clock), parent=place, other_parent=self.parent,
+                                        clock=self.clock, sleep=self.clock.sleep)
         self.assertFalse(self.parent.exists())
 
     def test_interrupt_keeps_finished_lines(self):
@@ -247,12 +248,37 @@ class RunConditionsTest(unittest.TestCase):
         with self.assertRaises(batch_run.BatchError):  # 개발 묶음을 outputs/sealed/ 아래에
             batch_run.write_run_conditions(self.parent / "sealed" / "evaluate-260925100001", self.doc())
 
+    def test_sealed_place_through_symlink_or_case_variant(self):
+        sealed = self.parent / "sealed"
+        sealed.mkdir()
+        alias = self.parent / "alias"
+        alias.symlink_to(sealed, target_is_directory=True)
+        (alias / "evaluate-260925100002").mkdir()
+        with self.assertRaises(batch_run.BatchError):  # 개발 묶음을 심볼릭 링크로 봉인 자리에 쓰지 않는다
+            batch_run.write_run_conditions(alias / "evaluate-260925100002", self.doc())
+        self.assertTrue(batch_run.sealed_place(self.parent / "SEALED" / "evaluate-260925100000"))
+
+    def test_planned_modes_table_matches_eval_skill_matrix(self):
+        """평가 스킬 ② 실행 행렬(자료 묶음 × 모드)을 문서에서 읽어 E1 표와 대조한다(사용자 결정 12의 기본 모드 집합)."""
+        text = (hf.ROOT / "skills" / "tradesentry-eval" / "SKILL.md").read_text(encoding="utf-8")
+        table = text.split("### 실행 행렬", 1)[1].split("###", 1)[0]
+        rows = {}
+        for line in table.splitlines():
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) == 4 and cells[0].startswith("`"):
+                rows[cells[0].strip("`")] = tuple(m.strip(" `") for m in cells[2].split(","))
+        self.assertEqual(set(rows), {"dev20", "real_dev", "holdout40", "real_sealed"})
+        for dataset, modes in rows.items():
+            self.assertEqual(batch_run.PLANNED_MODES[dataset], modes)
+        self.assertEqual(batch_run.PLANNED_MODES["controlled_fixture_v0"], ("checklist", "agent", "full", "freeform"))
+
     def test_bad_values_are_refused(self):
         home_path = "~" + "/x"
         bad = [dict(thresholds=[30.0]), dict(thresholds=["30"]), dict(thresholds=[]), dict(thresholds=[True]),
                dict(extra={"unknown_key": 1}), dict(extra={"scorer_commit": "/" + "Users/x"}),
                dict(extra={"grouping_reason": home_path}), dict(extra={"precheck": "C:\\x"}),
-               dict(extra={"precheck": "nv" + "api-abc"}), dict(concurrency=True), dict(modes=["full", "full"]),
+               dict(extra={"precheck": "nv" + "api-abc"}), dict(extra={"precheck": "//" + "srv/x"}),
+               dict(extra={"precheck": "file:" + "///x"}), dict(extra={"precheck": "`" + "/x`"}), dict(concurrency=True), dict(modes=["full", "full"]),
                dict(cases=[{**hf.dev20_cases(1)[0], "partner": "ALL"}]), dict(extra={"dataset": "dev20"})]
         for over in bad:
             with self.subTest(over=over), self.assertRaises(batch_run.BatchError):
