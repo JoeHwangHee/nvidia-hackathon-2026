@@ -4,7 +4,9 @@
   실제 64개 시계열로 run을 부르는 곳은 골든 쌍(input.json·expected.json, test_golden.py)뿐이다.
 - 순위 값과 그 순서의 기대치는 이 모듈의 코드가 아니라 shasum -a 256으로 따로 계산해 적었다.
 - 수집 설정 시험(CollectionPlanTest)은 추적 파일 configs/collection_plan.json과 골든 입력만 읽고 run은 부르지 않는다.
+- 공식 분할 파일 시험(OfficialSplitFilesTest)은 골든 쌍의 바이트 sha256을 결정 기록 값에 고정하고 run은 부르지 않는다.
 """
+import hashlib
 import json
 import unittest
 from decimal import Decimal
@@ -67,6 +69,24 @@ class AllocationTest(unittest.TestCase):
         series = grid(["990001", "990002"], ["XA", "XB"])
         self.assertEqual(split.run(make_input(series, seed=7))["real_dev"], [{"hs6": "990002", "partner": "XB"}])
         self.assertEqual(split.run(make_input(series, seed=8))["real_dev"], [{"hs6": "990001", "partner": "XB"}])
+
+    def test_tie_break_uses_the_next_key_not_the_first_key(self):
+        # 몫이 1 이상인 동점: 2 × 8 = 16키, 1:2면 real_dev 5개. 두 층의 몫이 2(5 × 8 ÷ 16의 정수 부분)이고 나머지가
+        # 8로 같아, 남은 1자리를 동점 처리로 준다. 규칙은 층 안 순위 (몫+1)번째 = 3번째 키의 순위 값이 작은 층이다.
+        # seed 3은 0부터 차례로 찾아 처음으로 아래 조건을 채운 값이다(split을 부르지 않는 hashlib 스크립트로 찾고,
+        # shasum -a 256으로 다시 확인). 층 안 순위 1~3번째 키와 순위 값 앞 8자리:
+        #   990001: XB 07866a34 < XA 13fa7ff9 < XG 5697e1a9
+        #   990002: XA 2599b30b < XF 3fbc220c < XB 4a1707df
+        # (몫+1)번째(3번째) 키 규칙: 4a1707df < 5697e1a9 → 990002가 남은 자리를 가진다. 이 시험의 기대값이다.
+        # 1번째 키 규칙이었다면 07866a34 < 2599b30b → 990001. 한 칸 어긋난 몫번째(2번째) 키 규칙도
+        # 13fa7ff9 < 3fbc220c → 990001이고, 층 입력 순서나 hs6 순으로 고르는 규칙도 990001이다. 그래서 이 시험은
+        # 그 규칙들과 (몫+1)번째 키 규칙을 가른다.
+        out = split.run(make_input(grid(["990001", "990002"], ["XA", "XB", "XC", "XD", "XE", "XF", "XG", "XH"]),
+                                   seed=3))
+        self.assertEqual(out["real_dev"], [{"hs6": "990001", "partner": "XA"}, {"hs6": "990001", "partner": "XB"},
+                                           {"hs6": "990002", "partner": "XA"}, {"hs6": "990002", "partner": "XB"},
+                                           {"hs6": "990002", "partner": "XF"}])
+        self.assertEqual(per_hs6(out["real_dev"]), {"990001": 2, "990002": 3})
 
     def test_total_is_rounded_down_for_real_dev(self):
         keys = grid(HS6_CODES, PARTNERS)
@@ -226,6 +246,25 @@ class ValidationTest(unittest.TestCase):
         error = self.assert_rejected(make_input(grid(["990001"], ["XA", "XB"]) + [{"hs6": "odd_text", "partner": "XC"}]))
         self.assertNotIn("odd_text", str(error))
         self.assertIn("series[2]", str(error))
+
+
+class OfficialSplitFilesTest(unittest.TestCase):
+    """공식 분할의 입력·결과 파일을 바이트 sha256으로 고정한다(결정 기록 20260924-2340). run은 부르지 않는다.
+
+    골든 틀은 의도한 변경이면 expected.json을 새로 쓰는 흐름을 허용한다. 그러나 이 두 파일은 공식 분할(실행명
+    datagen_split-260924233410)의 입력과 출력이라, 다시 만들면 재분할이 된다.
+    """
+
+    PINNED = {
+        "input.json": "3fd15807d48d3c64a96e30a303232f79d25c8f4bf413e47b9bbb0875a28a935e",
+        "expected.json": "fe9797d2ef57f97fa2de5be6e8924b6615915d92bab0a20899f5e468407db2d0",
+    }
+    MESSAGE = "공식 분할 결과다. 바꾸면 재분할이며 사용자 판단이 필요하다(결정 기록 20260924-2340)"
+
+    def test_official_split_files_are_pinned(self):
+        for name, digest in self.PINNED.items():
+            with self.subTest(file=name):
+                self.assertEqual(hashlib.sha256((HERE / name).read_bytes()).hexdigest(), digest, self.MESSAGE)
 
 
 class CollectionPlanTest(unittest.TestCase):
