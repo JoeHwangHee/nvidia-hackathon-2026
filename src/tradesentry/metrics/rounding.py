@@ -3,12 +3,14 @@
 단위 ID: X4
 도메인명: metrics_rounding
 소유: D
-입력: 값(지표 기호와 수)·중량 대조(부모 중량, HS10 행 중량 합, 행수, 행당 반올림 kg)
+입력: 값
 출력: 표시 값(`ROUND_HALF_UP`)·중량 허용오차 판정
 허용 import: 표준 라이브러리, tradesentry.contract
 
 지표 패키지(단위 X1~X4)의 공통 유틸이다. 단위 X1~X3과 보고서·검증기 단위(R2·R3)가 쓴다. 다른 지표 단위를 부르지
-않는 잎 모듈이다. 정본은 자료 계약 docs/rules/DATA_CONTRACT_V1.md §11(단위와 정밀도)이다.
+않는 잎 모듈이다. 정본은 자료 계약 docs/rules/DATA_CONTRACT_V1.md §11(단위와 정밀도)이다. 머리 주석의 입력·출력
+줄은 단위 표 docs/plan/UNITS.md §3.3의 문구이고, 구체적인 모양은 아래와 결정 기록
+docs/tracking/decisions/의 DT2 기록(data-decision-dt2-metrics)에 있다.
 
 - 기호표: §11.2의 단위와 §11.3의 표시 자릿수. HS10 하위 기호는 U@·r_U@·w@ 뒤에 10자리 코드만 받는다(§6.2).
 - 반올림: 값을 분수(fractions.Fraction)로 정확히 바꾼 뒤 사사오입(ROUND_HALF_UP, 절댓값 기준 5 이상이면 0에서
@@ -18,9 +20,10 @@
   코드에 두지 않고 인자로 받는다. 판정은 기존 수집기와 같게 |부모 Q − HS10 Q 합| ≤ 허용오차면 통과다.
 - metric 객체: §2.3.4의 키 8개(metric_id, formula_version, inputs, evidence_ids, value, unit,
   comparability_flags, tolerance)를 만든다. value는 정확 계산 값을 §11.3 자릿수로 한 번 반올림한 값이다.
-  반올림 전 값은 inputs의 정수로 다시 계산한다(단위 X1·X2의 exact_value, 어긋남 검사는 checked_exact).
-  metric_id는 metric_id를 뺀 나머지 내용의 sha256 앞 16자에 기호를 붙인 결정적 문자열이다(형식은 계약이
-  정하지 않는다, §4.5).
+  반올림 전 값은 inputs의 정수로 다시 계산한다(단위 X1·X2·X3의 exact_value, 어긋남 검사는 checked_exact).
+  metric_id는 스냅샷 ID와 metric_id를 뺀 나머지 내용의 sha256 앞 16자에 기호를 붙인 결정적 문자열이다(형식은
+  계약이 정하지 않는다, §4.5). 스냅샷 ID를 해시에 넣으므로 근거 ID가 빈 지표도 스냅샷이 다르면 ID가 다르다. 단위
+  X1~X3은 스냅샷 ID를 늘 넘기고, 근거 ID는 모두 `ev:<그 스냅샷 ID>:`로 시작해야 한다(§4.4 풀림 규칙 2).
 - 입력 검사: 대상(hs6·partner·period·baseline_period)과 관측 행(observation 키 month·hs_code·amount_usd·
   net_weight_kg·observation_status와 근거 ID 목록 evidence_ids)을 본다. 계약과 다른 입력은 ValueError·TypeError로
   멈춘다. 행 규칙(부모 HS6 행 고르기, ALL 중복 제거)은 자료 접근층이 적용한 뒤 넘긴다고 보고, 여기서는 섞이면 안 되는
@@ -147,15 +150,22 @@ def weight_within_tolerance(q_parent: int, q_hs10: int, row_count: int, weight_r
 
 def metric(symbol: str, *, hs6: str, partner: str, period: str, baseline_period: str | None,
            values: dict[str, object], evidence_ids: list[str], value: object,
-           flags: list[str] | tuple[str, ...] = (), tolerance: Decimal | None = None) -> dict[str, object]:
+           flags: list[str] | tuple[str, ...] = (), tolerance: Decimal | None = None,
+           snapshot_id: str | None = None) -> dict[str, object]:
     """자료 계약 §2.3.4 `metric` 객체를 만든다.
 
     value는 정확한 값(int·Fraction) 또는 None이다. 표시 자릿수로 한 번 반올림해 담는다. None이면 사유(flags)가
-    있어야 한다. values는 계산에 쓴 입력값(정수나 null)이다. 근거 ID는 순서를 지키며 중복을 뺀다.
+    있어야 한다. values는 계산에 쓴 입력값(정수나 null)이다. 근거 ID는 순서를 지키며 중복을 뺀다. snapshot_id를
+    주면 근거 ID가 모두 그 스냅샷의 것인지 보고, metric_id 해시에 넣는다(단위 X1~X3은 늘 준다).
     """
     unit, _ = unit_and_places(symbol)
     if value is None and not flags:
         raise ValueError(f"{symbol}: 값이 null이면 사유를 comparability_flags에 적는다(§2.3.4)")
+    if snapshot_id is not None:
+        check_snapshot_id(snapshot_id)
+        for ev in evidence_ids:
+            if not ev.startswith(f"ev:{snapshot_id}:"):
+                raise ValueError(f"{symbol}: 근거 ID가 스냅샷 {snapshot_id}의 것이 아니다(§4.4 풀림 규칙 2): {ev!r}")
     inputs: dict[str, object] = {"metric": symbol, "hs6": hs6, "partner": partner, "period": period,
                                  "baseline_period": baseline_period}
     inputs.update(values)
@@ -168,8 +178,24 @@ def metric(symbol: str, *, hs6: str, partner: str, period: str, baseline_period:
         "comparability_flags": sorted(set(flags)),
         "tolerance": tolerance,
     }
-    text = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=_json_default)
+    hashed = body if snapshot_id is None else {"snapshot_id": snapshot_id, **body}
+    text = json.dumps(hashed, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=_json_default)
     return {"metric_id": f"{symbol}-{hashlib.sha256(text.encode('utf-8')).hexdigest()[:16]}", **body}
+
+
+def check_snapshot_id(snapshot_id: object) -> str:
+    """스냅샷 ID 형식: 빈 문자열이 아니고 `:`와 공백이 없다(§4.4 근거 ID 조각 규칙)."""
+    if not isinstance(snapshot_id, str) or not snapshot_id or ":" in snapshot_id \
+            or any(ch.isspace() for ch in snapshot_id):
+        raise ValueError(f"snapshot_id 형식이 계약과 다르다: {snapshot_id!r}")
+    return snapshot_id
+
+
+def parse_snapshot_id(inp: dict) -> str:
+    """단위 X1~X3 입력의 snapshot_id(필수)."""
+    if "snapshot_id" not in inp:
+        raise ValueError("snapshot_id가 없다(근거 ID와 metric_id가 가리키는 스냅샷)")
+    return check_snapshot_id(inp["snapshot_id"])
 
 
 def checked_exact(metric: dict, exact: Fraction | None) -> Fraction | None:

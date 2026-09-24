@@ -122,6 +122,27 @@ class MetricObjectTest(unittest.TestCase):
         self.assertNotEqual(self.build()["metric_id"], self.build(value=Fraction(37, 10))["metric_id"])
         self.assertNotEqual(self.build()["metric_id"], self.build(period="202301")["metric_id"])
 
+    def test_snapshot_id_scopes_metric_id(self):
+        # 근거 ID가 빈 지표(예: hs10_absent)도 스냅샷이 다르면 metric_id가 다르다(무역통계 검토 권고 7)
+        empty = dict(evidence_ids=[], value=None, flags=["hs10_absent"], values={"V": None, "Q": None})
+        ids = {self.build(**empty, snapshot_id=s)["metric_id"] for s in ("controlled_fixture_v0",
+                                                                        "kcs_202201_202412_v2")}
+        self.assertEqual(len(ids), 2)
+        self.assertNotIn(self.build(**empty)["metric_id"], ids)
+        same = self.build(snapshot_id="golden_metrics")
+        self.assertEqual(same["metric_id"], self.build(snapshot_id="golden_metrics")["metric_id"])
+        self.assertNotIn("snapshot_id", same["inputs"])  # 객체 모양(§2.3.4 키 8개)은 그대로다
+
+    def test_evidence_must_belong_to_the_snapshot(self):
+        with self.assertRaises(ValueError):
+            self.build(snapshot_id="kcs_202201_202412_v2")  # 근거 ID는 golden_metrics의 것
+        for bad in ("", "a:b", "a b", 5, None):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                x4.check_snapshot_id(bad)
+        with self.assertRaises(ValueError):
+            x4.parse_snapshot_id({"hs6": "850450"})
+        self.assertEqual(x4.parse_snapshot_id({"snapshot_id": "golden_metrics"}), "golden_metrics")
+
     def test_checked_exact(self):
         made = self.build()
         self.assertEqual(x4.checked_exact(made, Fraction(36, 10)), Fraction(36, 10))
