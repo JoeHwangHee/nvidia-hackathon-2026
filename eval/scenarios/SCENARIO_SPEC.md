@@ -34,10 +34,11 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 
 - 두 묶음 모두 `source_kind`=`controlled`(합성)이다 `[사실: 자료 계약 §4.1]`.
 - 발동 여부와 기대 상태는 그 묶음의 정책 버전 기준값으로 정한다. 기준값이 바뀌면(예: `policy_v1` 승인, `min_amount`·`min_weight` 도입) 발동 여부와 기대 상태가 달라질 수 있으므로 dev20은 다시 검증하고, holdout40은 다시 만든다 `[사실: 병렬 개발 규칙 §4.2 3, §6.7]`.
+- `policy_v1` 제안값(사용자 승인 전)과도 같은 결과가 나오게 만든다. 제안은 단가 신호에 최소 기준 `min_amount` 100 USD·`min_weight` 10 kg을 두 달 모두의 부모 HS6 행에 걸고, 미달이면 사례가 아니라 데이터 품질 목록으로 보낸다(U2). 그래서 단가 신호를 발동시키는 사례는 두 달 모두 부모 행 금액 100 USD 이상·중량 10 kg 이상으로 만든다. 반올림 불안정 규칙 후보(U4, §4 분류 6)도 모든 단가 발동 사례에 적용해, `rounding_unstable` 사례만 불안정이고 나머지는 안정이게 만든다. 생성 도구의 자체 검산이 둘을 본다.
 
 ### 2.2 합성 세계
 
-- 품목과 상대국: HS4(4자리 품목 묶음 코드) 하나 아래 HS6 코드들과 상대국 여러 개(관세청 2자리 국가코드 `KCS_cntyCd` 형식), 그리고 전체국가 분모 `ALL`. 실자료와 같은 코드 체계를 써도 되고, 사례는 늘 `snapshot_id`와 `dataset`을 함께 적어 가리킨다(판정 정책 결정 기록 `docs/tracking/decisions/20260925-0025-model-decision-mt1-policy.md` ⑩).
+- 품목과 상대국: HS4(4자리 품목 묶음 코드) 하나 아래 HS6 코드들과 상대국 여러 개(관세청 2자리 국가코드 `KCS_cntyCd` 형식), 그리고 전체국가 분모 `ALL`. HS 코드는 실자료와 같은 품목분류 번호를 쓴다. 상대국은 어느 나라에도 배정되지 않은 합성 코드(ISO 3166-1(국가 코드 국제 표준)의 사용자 지정 범위 `XA`~`XZ` 가운데, 널리 코소보로 쓰이는 `XK`를 뺀 것)만 쓴다. 실제 나라 코드에 합성 수치가 붙으면 커밋되는 보고서 사본에서 실제 무역에 대한 주장으로 읽힐 수 있기 때문이다. 합성 코드는 관세청 국가코드 목록(`data/reference/kcs_country_codes.json`)과 국가 코드 대응표(`data/reference/country_map.csv`)에 없어야 한다. dev20은 `XL`~`XQ` 여섯 개, 합성 시험자료(DT3)는 `XA`~`XJ`를 쓴다. 사례는 늘 `snapshot_id`와 `dataset`을 함께 적어 가리킨다(판정 정책 결정 기록 `docs/tracking/decisions/20260925-0025-model-decision-mt1-policy.md` ⑩).
 - 기간: 실자료 스냅샷과 같게 36개월(2022-01~2024-12)을 쓴다. 비교월은 기준월(12개월 전)이 기간 안에 있는 달이다.
 - 하위품목: HS6마다 HS10(10자리 세부 코드) 하위품목이 있다. 상대국 월 값은 HS10 하위 값의 합과 같은 부모 HS6 행이다(분류 5의 불일치 사례만 예외).
 - 나머지 세계: 수집하지 않은 나라들의 HS10 값. 전체국가(`ALL`) 분모에만 들어간다. 그래서 분모는 수집한 상대국 금액의 합보다 크다(분류 7만 예외).
@@ -46,7 +47,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 
 ### 2.3 사례와 식별자
 
-- 사례 식별자 `case_id`는 판정 정책 단위 P2의 형식 `{hs6}-{partner}-{month}`(예: `850450-CN-202403`)를 쓴다. CLI가 받는 형식(영문·숫자로 시작하고 끝나며 영문·숫자·밑줄·하이픈, 64자 이하)이고, 묶음 안에서 고유하다. 기대 상태·분류를 식별자에 넣지 않는다.
+- 사례 식별자 `case_id`는 판정 정책 단위 P2의 형식 `{hs6}-{partner}-{month}`(예: `850450-XL-202403`)를 쓴다. CLI가 받는 형식(영문·숫자로 시작하고 끝나며 영문·숫자·밑줄·하이픈, 64자 이하)이고, 묶음 안에서 고유하다. 기대 상태·분류를 식별자에 넣지 않는다.
 - 사례 목록은 식별자 순으로 적는다(순서가 분류를 드러내지 않게).
 - 파일 이름에도 기대 상태·분류를 넣지 않는다(봉인 해시 목록이 커밋되어 누구나 본다) `[사실: 자료 계약 §12.2]`.
 
@@ -122,10 +123,10 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 ### 분류 6 — 작은 기준월 값·반올림 불확실·중량 0
 
 - 자료 구성(단가 신호만 발동): 다음 가운데 하나.
-  - 반올림 불안정: 부모 HS6 행의 중량이 작아, 기준월·비교월 중량을 각각 ±0.5 kg(`tolerance.weight_rounding_kg`) 안에서 움직였을 때 단가 변화율의 범위가 0과 +θ·−θ를 **모두** 가로지른다(판정 정책 결정 기록 ⑤의 제안 규칙을 어느 쪽으로 읽어도 불안정). 사건 달의 앞뒤 비교(e, e+12)가 사례 밖 경보를 만들지 않게 기준월을 기간 첫해에 둘 수 있다.
+  - 반올림 불안정: 두 달 부모 HS6 행이 최소 기준(100 USD·10 kg, §2.1) 이상이면서 중량이 작아 반올림에 민감하다. 규칙 후보(U4, 사용자 승인 전): 발동한 단가 신호에만, 금액은 그대로 두고 두 달 부모 중량을 Q ± 0.5 kg로 움직일 때의 단가 변화율 r_U 구간이 r_U ≥ 0이면 하한 < θ, r_U < 0이면 상한 > −θ일 때 불안정이다(구간 끝이 기준과 같으면 안정). 구간 끝도 기준에서 0.05 이상 떨어지게 한다. dev20의 1건은 기준월 120 USD·12 kg, 비교월 162 USD·12 kg(r_U +35.0%, 구간 약 +24.2%~+46.7%)이다. 사건 달의 앞뒤 비교(e, e+12)가 사례 밖 경보를 만들지 않게 기준월을 기간 첫해에 둘 수 있다.
   - 중량 0: 하위품목 하나가 금액 > 0, 중량 0이라 그 품목 단가를 계산할 수 없어 분해가 성립하지 않는다(부모 대조는 맞다).
 - 기대 처리: 반올림 불안정은 단가 `rounding_unstable` → `HOLD`, 중량 0은 단가 `hold_inconsistent` → `HOLD`.
-- 한계: 반올림 불안정의 판정 규칙은 사용자 확인 U4 대기다. `policy_v1`에 `min_amount`·`min_weight`가 생기면 작은 값 사례가 경보가 아니게 될 수 있다(판정 정책 결정 기록 ③, U2). 그때 이 분류의 사례를 다시 검증한다.
+- 한계: 반올림 불안정의 판정 규칙(U4)과 최소 기준(U2)은 사용자 확인 대기다. 위 제안과 다르게 승인되면(예: 최소 기준이 이 사례의 값보다 커지거나, 구간 규칙이 달라지면) 이 분류의 사례를 다시 검증하고 필요하면 다시 만든다(판정 정책 결정 기록 ③·⑤).
 
 ### 분류 7 — 분모 완전성 부족·국가 집합 변경
 
@@ -166,7 +167,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 | 점유율 | `hold_missing` | `HOLD` | `missingness_listed`, `failure_vs_not_collected_distinguished`, `no_zero_fill` | `data_insufficient`·`comparison_incomplete` |
 | 점유율 | `hold_inconsistent`(잠정) | `HOLD` | `country_and_world_change_shown`, `comparability_ok`, `no_zero_fill` | 없음(분모 불완전 규칙이 아직 없다) |
 
-- 두 신호가 모두 발동하면 필수 근거는 단가 규칙의 근거, 이어서 점유율 규칙의 근거에서 아직 없는 것을 순서대로 붙인다.
+- 필수 근거의 모양: 발동한 신호가 하나면 그 규칙의 근거 목록이다. 두 신호가 모두 발동하면 신호별 목록 객체 `{"unit_value": [...], "share": [...]}`다(두 신호에 함께 쓰이는 코드, 예: `comparability_ok`가 어느 신호의 근거인지 드러나게. 독립 채점기의 정답표 형식과 같다 `[사실: 브랜치 data/DT8-scorer 46f85ac의 eval/scorer/results.py _required_evidence]`).
 - 사례 상태 `review_status`는 신호별 상태의 집계다: 우선순위 `MAINTAIN > HOLD > MONITOR`, 발동한 신호가 모두 `MONITOR`일 때만 `MONITOR`, `MAINTAIN`과 `HOLD`가 섞이면 `MAINTAIN`에 `unresolved_evidence`=true, 그 밖에는 false `[사실: 자료 계약 §3.1]`.
 - `resolved_after_correction`(교정 전후 스냅샷, `MONITOR`)은 스냅샷 하나로 도는 합성 묶음에서 쓰지 않는다.
 
@@ -217,10 +218,18 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 | 경로(묶음 기준) | 내용 | 샌드박스 |
 |---|---|---|
 | `input/cases.json` | 사례 목록 | 읽는다(입력 하위 경로) |
-| `input/source/` | 수집기 형식 원천(§7.3)과 합성 비교국 표 | 빌드한 스냅샷만 넣는다 |
+| `input/source/raw/` | 응답 XML(§7.3). 스냅샷 폴더의 `raw/`는 `.gitignore`가 빼므로 여기에 둔다 | 넣지 않는다(빌드한 스냅샷만 넣는다) |
 | `answers/answers.json` | 정답표 | 넣지 않는다 |
 | `answers/parent_series_ids.json` | 부모 원본 계열 ID 목록 | 넣지 않는다 |
 | `answers/generation_rules.json` | 생성 규칙(dev20만 공개) | 넣지 않는다 |
+
+묶음 밖(dev20. 단위 S3와 CLI `tradesentry snapshot-verify`가 기본 경로로 찾는 자리):
+
+| 경로(저장소 기준) | 내용 |
+|---|---|
+| `data/snapshots/dev20/manifest.json`, `collection_log.json`, `snapshot_hash.json` | 수집기 형식 원천의 텍스트(§7.3) |
+| `data/snapshots/dev20/snapshot_build.json` | 빌드 기록(`normalized_sha256` 등). 설치 명령이 처음 쓰고 커밋한다 |
+| `data/reference/peer_group_dev20.csv` | 합성 비교국 표. 단위 S3가 빌드 기록의 파일 이름을 `data/reference/`에서 찾는다 |
 
 - 입력과 정답표를 서로 다른 하위 경로에 두는 이유: 샌드박스 파일시스템 허용 목록은 경로 앞부분 일치라서, 입력 하위 경로만 허용 목록에 넣고 상위 폴더를 넣지 않아야 정답표를 막을 수 있다 `[사실: 병렬 개발 규칙 §6.5 ①]`.
 - dev20은 `eval/dev/dev20/`에 이 배치 그대로 둔다. holdout40은 봉인 폴더에 두고, 파일 이름에 기대 상태·분류를 넣지 않는다. 봉인 폴더의 모든 파일(생성 코드·seed·제외 목록 포함)은 해시 목록 `eval/sealed_manifest.json`에 올린다 `[사실: 병렬 개발 규칙 §6.2]`.
@@ -253,6 +262,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 
 - `expected`의 키와 값은 독립 채점기가 읽는 형식(`eval/dev/oracle_ABC.json`의 사례 구조, 상태는 계약 코드)과 같다. `rule`·`scenario_class`·`parent_series_id`·`note`는 검사와 검토용이고 채점기는 쓰지 않는다 `[사실: 독립 채점기 PR #30(병합 전)의 eval/scorer/results.py read_answer_table]`.
 - `thresholds`는 선택이며 그 묶음 정책 버전의 탐지 기준을 옮겨 적는다.
+- `required_evidence`는 발동한 신호가 하나면 목록, 두 신호가 모두 발동하면 `{"unit_value": [...], "share": [...]}`다(§5.1).
 
 부모 원본 계열 ID 목록(`parent_series_ids.json`): `{"schema_version": 1, "dataset": "dev20", "id_rule": "<§6의 설명>", "parent_series_ids": ["ps_…", …]}`(정렬, 중복 없음).
 
@@ -263,9 +273,9 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
   - `raw/<request_id>.xml`: 요청마다 관세청 정상 봉투(`resultCode` `00`) 응답. 국가별(`nitemtrade`) 응답의 품목 코드는 `hsCd`, 품목별 전체국가(`itemtrade`) 응답은 `hsCode`, 달은 `YYYY.MM`, 첫 행은 총계 행(`총계`, 코드 `-`)이다. 수입금액 `impDlr`(USD 정수), 수입중량 `impWgt`(kg 정수).
   - `collection_log.json`: 요청 결과. `raw/`에 파일이 있는 요청은 OK, `FAILED` 목록은 실패(HTTP 500, 응답 본문 없음), `NOT_COLLECTED` 목록은 수신 기록 없음.
   - `snapshot_hash.json`: raw 결합 sha256(`shasum -a 256 raw/*.xml | shasum -a 256`과 같은 계산).
-  - 합성 비교국 표 CSV(`peer_group_<dataset>_g0.csv`): 열은 자료 계약 §2.3.6 필드 17개.
+  - 합성 비교국 표 CSV(`peer_group_<snapshot_id>.csv`, `data/reference/`): 열은 자료 계약 §2.3.6 필드 17개.
 - 빌드: 원천으로 수집기 SQLite를 재현하고(수집기 `store_result`, 시각은 기록의 고정 시각) 단위 S2 `build_to`(정책 객체는 그 묶음의 정책 버전)로 파생 SQLite를 만든 뒤, 단위 S3 `verify_snapshot`(비교국 표 파일을 명시)이 통과해야 한다. 스냅샷 메타의 `source_kind`는 `controlled`, `source_url`은 생성 규칙 문서와 생성 코드의 저장소 상대경로다 `[사실: 자료 계약 §2.3.1]`.
-- dev20은 명령 `uv run --locked python -m eval.datagen.dev20 install`로 `data/snapshots/dev20/snapshot_build.sqlite`(git이 추적하지 않는 자리)에 설치한다. 자료 접근층은 `open_snapshot("dev20")`으로 연다.
+- dev20은 명령 `uv run --locked python -m eval.datagen.dev20 install`로 `data/snapshots/dev20/`에 `raw/`, 수집기 `snapshot.sqlite`, `snapshot_build.sqlite`(모두 `.gitignore`가 빼는 자리)를 만든다. 이미 있는 것은 대조만 하고 덮지 않는다. 그 뒤 `uv run --locked tradesentry snapshot-verify --snapshot dev20`이 raw 대조까지 통과하고(종료 코드 0, 보고 `ok` 참), `git status`에 바뀐 파일·추적 안 된 파일이 생기지 않는다. 자료 접근층은 `open_snapshot("dev20")`으로 연다.
 
 ### 7.4 생성 규칙 형식(dev20의 생성 도구)
 
