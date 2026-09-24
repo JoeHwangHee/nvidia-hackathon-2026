@@ -97,13 +97,12 @@ class RealSnapshotCommandsTest(unittest.TestCase):
                     "WHERE rowid = (SELECT MIN(rowid) FROM observation WHERE amount_usd IS NOT NULL)")
         con.commit()
         con.close()
-        report_folders_before = {p.name for p in self.outputs.iterdir() if p.name.startswith("snapshot_verify-")}
-        code, out, err = call(["snapshot-verify", "--snapshot", fx.SNAPSHOT_ID])
+        self.outputs = self.root / "outputs_after_tampering"  # 새 부모 폴더: 같은 초의 실행명을 다투며 기다리지 않는다
+        with mock.patch.object(dispatch, "OUTPUT_PARENT", self.outputs):
+            code, out, err = call(["snapshot-verify", "--snapshot", fx.SNAPSHOT_ID])
         self.assertEqual(code, dispatch.EXIT_FAILED)
         self.assertIn("불합격", err)
-        [new_folder] = [p for p in self.outputs.iterdir()
-                        if p.name.startswith("snapshot_verify-") and p.name not in report_folders_before]
-        [report_file] = list(new_folder.iterdir())
+        [report_file] = list(self.run_dir("snapshot_verify").iterdir())
         self.assertIs(json.loads(report_file.read_text(encoding="utf-8"))["ok"], False)  # 불합격 보고도 남는다
 
     def test_build_error_from_the_real_unit(self):
