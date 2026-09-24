@@ -36,7 +36,8 @@ docs/plan/DEV_PLAN.md §6.5). 정본: 자료 계약 docs/rules/DATA_CONTRACT_V1.
   "observation_status"}을 그대로 싣는다. 무거래 확정(`CONFIRMED_NO_TRADE`)은 빠진 자료가 아니라 싣지 않는다(근거 ID에는
   싣는다). `ALL` 분모는 행 규칙 5·6의 중복 제거 뒤에도 값 행이 없는 달만 빠진 자료로 싣는다(자료 접근층이 그렇게 준다).
 - 지표는 지표 단위(X1 unit_value, X2 share, X3 decompose)의 run으로만 계산한다(모듈 속성으로 불러 시험에서 대역으로
-  바꿀 수 있다). 자료 접근층의 행을 지표 단위의 역할별 입력(parent·world·children 관측 행)으로 옮기는 일은 이 틀이 한다.
+  바꿀 수 있다). 자료 접근층의 행을 지표 단위의 역할별 입력(snapshot_id·대상 네 키와 parent·world·children 관측 행)으로
+  옮기는 일은 이 틀이 한다.
 
 check_comparability 봉투
 - metrics: 없다(존재 상태만 본다). evidence_ids: 본 행 전부(부모 행, `ALL` HS10 행, 대상국 HS10 행, 상태 행).
@@ -331,9 +332,10 @@ def children_rows(snap: dal.Snapshot, hs6: str, partner: str, months: list[str])
 
 
 def target(request: dict, partner: str | None = None) -> dict:
-    """지표 단위 입력의 대상 네 키(hs6·partner·period·baseline_period)."""
-    return {"hs6": request["hs6"], "partner": partner or request["partner"], "period": request["month"],
-            "baseline_period": request["baseline_month"]}
+    """지표 단위 입력의 대상 키: snapshot_id(근거 ID와 metric_id가 가리키는 스냅샷, 지표 단위의 필수 입력)와
+    hs6·partner·period·baseline_period."""
+    return {"snapshot_id": request["snapshot_id"], "hs6": request["hs6"], "partner": partner or request["partner"],
+            "period": request["month"], "baseline_period": request["baseline_month"]}
 
 
 def metrics_of(output: object, unit: str) -> list[dict]:

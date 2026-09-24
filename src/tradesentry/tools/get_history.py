@@ -48,7 +48,8 @@ def _body(snap: dal.Snapshot, request: dict, started: int) -> dict:
         history.append({"month": value["month"], "observation_status": value["observation_status"], "evidence_ids": ids})
         history_evidence += ids
     comparability = {"history": history, "denominator": {"partner": types.ALL_PARTNER}}
-    evidence = parent.evidence + world.evidence + [e for m in metrics for e in m["evidence_ids"]] + history_evidence
+    evidence = parent.evidence + world.evidence + [e for m in metrics for e in m["evidence_ids"]]
+    evidence += history_evidence
     scope = common.case_scope(request, months=window, partners=[partner, types.ALL_PARTNER], hs10=[])
     return common.finish(request, TOOL, snap, started, scope=scope, evidence_ids=evidence, metrics=metrics,
                          comparability=comparability, missingness=parent.missing + world.missing)

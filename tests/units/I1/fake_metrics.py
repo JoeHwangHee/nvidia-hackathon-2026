@@ -1,9 +1,10 @@
 """지표 단위 X1(unit_value)·X2(share)·X3(decompose)의 시험 대역(stub: 정해진 규칙으로 값을 돌려주는 가짜 함수).
 
 이 작업 폴더의 지표 단위는 아직 뼈대라(데이터 트랙 DT2가 따로 만든다) 도구 시험은 run을 이 대역으로 바꿔 끼운다.
-- 입출력 모양은 DT2 지표 단위가 보고한 모양을 따른다: 입력은 대상(hs6·partner·period·baseline_period)과 역할별 관측
-  행(parent·world·children), X3는 weight_rounding_kg. 출력은 {"metrics": [metric 객체…]}(X3는 parent_check를 더한다).
-  metric 객체는 자료 계약 §2.3.4의 키 8개이고 inputs에 지표 기호 "metric"과 대상 네 키를 둔다.
+- 입출력 모양은 DT2 지표 단위(데이터 트랙 브랜치 data/DT2-metrics c5f7134)의 모양을 따른다: 입력은 snapshot_id(필수)와
+  대상(hs6·partner·period·baseline_period), 역할별 관측 행(parent·world·children), X3는 weight_rounding_kg.
+  출력은 {"metrics": [metric 객체…]}(X3는 parent_check를 더한다). metric 객체는 자료 계약 §2.3.4의 키 8개이고
+  inputs에 지표 기호 "metric"과 대상 네 키를 둔다. metric_id 해시에 snapshot_id를 넣는 것도 DT2와 같다.
 - 값은 정확한 분수로 계산해 표시 자릿수로 사사오입한다(대역 안의 단순 계산이다. 정본 계산은 지표 단위다).
 - metric_id는 "fake-"로 시작하고 formula_version은 "fake-1"이라 진짜 지표와 섞이지 않는다. 같은 입력이면 같은 객체다.
 - calls에 받은 입력을 모은다(도구가 지표 단위에 넘긴 역할별 행을 시험이 확인한다).
@@ -40,8 +41,21 @@ def metric(symbol, inp, partner, period, baseline, values, evidence, value, flag
     body = {"formula_version": "fake-1", "inputs": inputs, "evidence_ids": list(dict.fromkeys(evidence)),
             "value": shown(symbol, value), "unit": PLACES[symbol.partition("@")[0]][0], "comparability_flags": flags,
             "tolerance": None}
-    text = json.dumps(body, sort_keys=True, ensure_ascii=False, default=str)
+    text = json.dumps({"snapshot_id": inp["snapshot_id"], **body}, sort_keys=True, ensure_ascii=False, default=str)
     return {"metric_id": f"fake-{symbol}-{hashlib.sha256(text.encode('utf-8')).hexdigest()[:12]}", **body}
+
+
+def check_input(inp, keys):
+    """DT2 지표 단위처럼 입력 키를 본다(snapshot_id 필수, 모르는 키 거부, 근거 ID는 그 스냅샷의 것)."""
+    assert "snapshot_id" in inp, "snapshot_id가 없다"
+    assert not set(inp) - set(keys), f"모르는 입력 키: {sorted(set(inp) - set(keys))}"
+    prefix = f"ev:{inp['snapshot_id']}:"
+    for role in ("parent", "world", "children"):
+        for row in inp.get(role, []):
+            assert all(e.startswith(prefix) for e in row["evidence_ids"]), "다른 스냅샷의 근거 ID"
+
+
+TARGET_KEYS = ("snapshot_id", "hs6", "partner", "period", "baseline_period")
 
 
 def by_month(rows, months):
@@ -87,6 +101,7 @@ class FakeMetrics:
         self.calls = []
 
     def x1(self, inp):
+        check_input(inp, TARGET_KEYS + ("parent",))
         self.calls.append(("X1", inp))
         base, period = inp["baseline_period"], inp["period"]
         parent = by_month(inp["parent"], (base, period))
@@ -102,6 +117,7 @@ class FakeMetrics:
                    evidence(parent[base]) + evidence(parent[period]), *rate)]}
 
     def x2(self, inp):
+        check_input(inp, TARGET_KEYS + ("parent", "world"))
         self.calls.append(("X2", inp))
         base, period = inp["baseline_period"], inp["period"]
         parent, world = by_month(inp["parent"], (base, period)), by_month(inp["world"], (base, period))
@@ -134,6 +150,7 @@ class FakeMetrics:
         return {"metrics": out}
 
     def x3(self, inp):
+        check_input(inp, TARGET_KEYS + ("parent", "children", "weight_rounding_kg"))
         self.calls.append(("X3", inp))
         base, period = inp["baseline_period"], inp["period"]
         months = (base, period)
