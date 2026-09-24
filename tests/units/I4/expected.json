@@ -123,6 +123,46 @@
    "tolerance": null
   },
   {
+   "metric_id": "fake-U@8504311000-ec14d605b0d7",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "U@8504311000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202301",
+    "baseline_period": null,
+    "V": 1000,
+    "Q": 500
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:209"
+   ],
+   "value": 2.00,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-U@8504311000-616ff675c311",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "U@8504311000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": null,
+    "V": 1600,
+    "Q": 800
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:239"
+   ],
+   "value": 2.00,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
    "metric_id": "fake-r_U@8504311000-082aa4dd07f8",
    "formula_version": "fake-1",
    "inputs": {
@@ -184,6 +224,46 @@
    ],
    "value": 80.0,
    "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-U@8504312000-3e64e3eafabf",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "U@8504312000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202301",
+    "baseline_period": null,
+    "V": 5000,
+    "Q": 500
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:211"
+   ],
+   "value": 10.00,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-U@8504312000-4ab945da5088",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "U@8504312000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": null,
+    "V": 2000,
+    "Q": 200
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:241"
+   ],
+   "value": 10.00,
+   "unit": "USD/kg",
    "comparability_flags": [],
    "tolerance": null
   },

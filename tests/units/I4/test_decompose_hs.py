@@ -1,4 +1,4 @@
-"""단위 I4(tools_decompose_hs) 보조 시험: X3에 넘기는 역할별 행과 정책 수치, 하위자료 실패·무거래 확정, 싣는 지표.
+"""단위 I4(tools_decompose_hs) 보조 시험: X3에 넘기는 역할별 행과 정책 수치, 하위자료 실패·무거래 확정, 싣는 지표(U@·r_U@·w@).
 
 자료는 I1 폴더의 합성 스냅샷(tools_fixture.py)이고 지표 단위 X3은 대역(fake_metrics.py)이다. 값은 합성이다.
 """
@@ -31,7 +31,10 @@ class DecomposeTest(unittest.TestCase):
                          ("0.00", "-2.40", "0.00"))
         self.assertEqual(values[f"r_U@{fx.C1}:202401"], "0.0")
         self.assertEqual((values[f"w@{fx.C1}:202301"], values[f"w@{fx.C1}:202401"]), ("50.0", "80.0"))
-        self.assertFalse([m for m in out["metrics"] if m["inputs"]["metric"].startswith("U@")])
+        self.assertEqual(values[f"U@{fx.C1}:202301"], "2.00")  # 계약 §2.3.4: U@·r_U@·w@를 모두 싣는다
+        self.assertEqual(sorted({m["inputs"]["metric"].partition("@")[0] for m in out["metrics"]}),
+                         ["U", "mix_effect", "r_U", "residual", "w", "within_effect"])
+        self.assertEqual(len(out["metrics"]), 3 + 5 * 2)
         self.assertTrue(all(c["V_match"] and c["Q_match"] for c in out["comparability"]["parent_check"]))
         self.assertTrue(out["comparability"]["same_hs10_set"])
 
