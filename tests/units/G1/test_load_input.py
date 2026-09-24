@@ -70,6 +70,9 @@ ROWS = [
     ("a000000000000004", "RAW:총계", "CN", "850450", "import", 300, "OBSERVED"),  # HS6 요청의 총계 행
     ("a000000000000004", "202303", "CN", "850450", "import", None, "UNRESOLVED_ZERO"),  # 상태 행
     ("a000000000000004", "202304", "CN", "850450", "import", 12345, "OBSERVED"),  # HS6 요청의 HS6 행: 부모 아님
+    # 부모 요청(HS4 스캔)이 남긴 관측 아닌 상태 행: OBSERVED 조건이 빼야 한다(금액은 계약대로 null)
+    ("a000000000000001", "202306", "CN", "850450", "import", None, "UNRESOLVED_ZERO"),
+    ("a000000000000003", "202307", "JP", "850450", "import", None, "NOT_COLLECTED"),  # 스냅샷 빌드가 만드는 행
     ("a000000000000003", "202301", "JP", "850450", "import", 0, "OBSERVED"),  # 씀(수입 0 명시)
     ("a000000000000003", "202305", "JP", "850431", "import", 30, "OBSERVED"),  # 씀
     ("a000000000000005", "202301", "ALL", "8504501000", "import", 1000, "OBSERVED"),  # 전체국가
@@ -136,6 +139,12 @@ class LoadInputTest(unittest.TestCase):
 
     def test_sums_only_parent_hs6_rows(self):
         self.assertEqual(self.load(self.snapshot()), EXPECTED)
+
+    def test_status_rows_of_the_parent_request_are_not_summed(self):
+        # 부모 요청의 상태 행에 금액이 들어 있어도(계약상으로는 null) 합에 넣지 않는다: OBSERVED 조건만이 이 행을 거른다.
+        status_rows = [("a000000000000001", "202308", "CN", "850450", "import", 70, "REQUEST_FAILED"),
+                       ("a000000000000001", "202309", "CN", "850450", "import", 80, "CONFIRMED_NO_TRADE")]
+        self.assertEqual(self.load(self.snapshot(rows=status_rows)), EXPECTED)
 
     def test_opens_read_only_and_changes_nothing(self):
         folder = self.snapshot()
