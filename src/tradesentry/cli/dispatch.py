@@ -846,6 +846,7 @@ def investigate_case(snap, policy: dict, case: dict, request: args.Request, run_
                                                                                              policy))
     ports.tool = port.call
     ports.required_tools = required_tools
+    ports.drafts_only_without_tools = True  # 초안은 구조화 출력(json_object) 차례에서만 받는다(AS2 결정 기록 ⑱)
     ctx = orchestrate.RunContext(run_id=run_id, case=case, mode=request.mode, dataset=dataset,
                                  rulebook_version=types.RULEBOOK_VERSION, grouping_version=grouping_version,
                                  code_version=code_version())

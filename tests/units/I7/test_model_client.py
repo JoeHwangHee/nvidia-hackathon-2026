@@ -146,7 +146,7 @@ class RetransmitTest(NoNetworkMixin, unittest.TestCase):
         with self.assertRaises(mc.RunStop) as caught:
             client.chat(MESSAGES, stage="basic")
         self.assertEqual(caught.exception.code, cause_codes.BUDGET_TOKENS)
-        self.assertEqual(transport.payloads[0]["max_tokens"], 2048)
+        self.assertEqual(transport.payloads[0]["max_tokens"], mc.load_model_config().settings.max_tokens)  # 설정 값(model-0.8 4096)
         client, _, transport, _ = make_client([{"body": ok_body("{}")}], used_tokens=31_000)
         client.chat(MESSAGES, stage="basic")
         self.assertEqual(transport.payloads[0]["max_tokens"], 1000)  # 남은 토큰으로 줄인다

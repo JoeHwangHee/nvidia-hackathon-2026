@@ -51,7 +51,10 @@ checklist: 모델 없이 check_comparability → get_history → decompose_hs(�
   같음)로 돌려보낸다. trace에는 state_change draft_refused(missing_tools)로 남는다.
 - 규칙 참고값(Ports.reference_status, 조립 AS2가 근거 상태 변환을 넘길 때만): 모델 모드에서 필수 도구 결과를 받은 뒤 첫
   조사자 요청 앞에 코드가 계산한 P3 신호별 판정·판정 근거를 고정 문구로 한 번 싣고 Critic에게도 준다(MT1 결정 ⑬의
-  "모델 상태와 나란히 적는 참고값"). 모델 상태를 덮어쓰지 않는다. trace state_change rule_reference.
+  "모델 상태와 나란히 적는 참고값"). 모델 상태를 덮어쓰지 않는다. trace state_change rule_reference. 계산할 수 없었으면
+  필수 도구 결과가 갖춰진 뒤(수정 단계 재조회 포함) 다시 계산해 싣는다.
+- 초안은 도구 없는 차례에서만(Ports.drafts_only_without_tools, 조립 AS2가 켠다): 도구를 준 차례에 온 초안 본문은 버리고
+  (state_change draft_discarded) 곧바로 도구 없는 초안 요청(구조화 출력 json_object)으로 다시 받는다.
 
 다른 작업 단위를 부르는 자리(Ports). unit_ports가 그 단위들의 run을 부르는 얇은 배선을 한곳에 모았다. 보고서·
 검증기(MT3 R1~R4)와 정책(MT1 P3~P5)은 각 작업 브랜치에 커밋된 입출력에 맞췄고(병합 전 대조), 도구 5개·도구 예산(MT2)은
@@ -110,7 +113,9 @@ class Ports:
     checklist_draft({"case","evidence"}) -> 초안 / required_evidence(사례) -> 필수 근거(단위 P5 출력, 없으면 None) /
     required_tools(사례) -> 조사자가 초안 전에 받아야 하는 도구 이름 목록(없으면 None: 강제하지 않음. 조립 AS2가 넘긴다) /
     reference_status(봉투 목록) -> 판정 정책 P3 출력(신호별 판정·판정 근거). 모델 모드의 규칙 참고값(없으면 None: 싣지 않음.
-    unit_ports가 근거 상태 변환 evidence_state를 받았을 때만 만든다). 계산할 수 없으면 예외를 낸다
+    unit_ports가 근거 상태 변환 evidence_state를 받았을 때만 만든다). 계산할 수 없으면 예외를 낸다 /
+    drafts_only_without_tools: 참이면 초안은 도구를 주지 않는 차례(초안 요청 메시지, 구조화 출력 json_object)에서만 받는다.
+    도구를 준 차례에 도구 호출 없이 온 본문은 버리고 곧바로 도구 없는 초안 요청으로 다시 받는다(조립 AS2가 켠다)
     """
 
     tool: Callable[[str, dict], dict]
@@ -121,6 +126,7 @@ class Ports:
     required_evidence: Callable[[dict], object] | None = None
     required_tools: Callable[[dict], list] | None = None
     reference_status: Callable[[list], dict] | None = None
+    drafts_only_without_tools: bool = False
 
 
 @dataclass(frozen=True)
@@ -424,7 +430,8 @@ class _Flow:
         self.required = None  # 필수 근거(P5)는 orchestrate의 try 안에서 채운다(실패도 기록으로 남게)
         self.rejected: list = []
         self.verify_skipped = False  # 바로 앞 verify_evidence를 대조할 것이 없어 건너뛰었나(다음 validator_result에 남긴다)
-        self.reference_text: str | None = None  # 모델 모드에 실은 규칙 참고값 문구(한 번만 싣고 Critic에도 준다)
+        self.reference_text: str | None = None  # 모델 모드에 실은 규칙 참고값 문구(Critic에도 준다)
+        self.reference_available = False  # 마지막으로 실은 참고값이 계산된 값이었나(계산 불가였으면 근거가 갖춰질 때 다시 싣는다)
 
     # 한도와 도구 시도 ---------------------------------------------------------------------------------------------
     @property
@@ -517,12 +524,14 @@ class _Flow:
         {"draft": 초안 또는 None, "problems": 형식 문제, "status_notes": 허용 상태 관찰, "message": 마지막 모델 메시지,
         "was_draft": 마지막 답이 초안 글이었나}를 돌려준다. tools_enabled가 거짓(비교 불가)이면 도구를 주지 않고, 모델이
         불러도 not_comparable로 막는다."""
-        tool_turns, refused_turns, nudged = 0, 0, False
+        tool_turns, refused_turns, nudged, force_draft = 0, 0, False, False
         while True:
             self.check_deadline()
-            allow = tools_enabled and tool_turns < max_tool_turns and self._allowance_left(allowance) > 0
-            if self.ports.reference_status is not None and self.reference_text is None \
-                    and (not allow or nudged or not self.missing_required_tools()):
+            allow = tools_enabled and tool_turns < max_tool_turns and self._allowance_left(allowance) > 0 \
+                and not force_draft
+            if self.ports.reference_status is not None and (not allow or nudged or not self.missing_required_tools()) \
+                    and (self.reference_text is None
+                         or (not self.reference_available and not self.missing_required_tools())):
                 messages.append(self.reference_message())
             result = investigator.step(self.client, messages, stage=self.stage, mode=self.mode,
                                        signals=self.signals, allow_tools=allow)
@@ -533,6 +542,11 @@ class _Flow:
                 self.state("draft_refused", result["draft"], missing_tools=missing)
                 messages.append(investigator.assistant_message({"content": result["message"].get("content") or ""}))
                 messages.append(investigator.required_tools_message(missing))
+                continue
+            if result["kind"] == "draft" and allow and self.ports.drafts_only_without_tools:
+                # 도구를 준 차례의 초안 본문은 구조화 출력이 실리지 않은 답이다. 버리고 도구 없는 초안 요청으로 다시 받는다
+                force_draft = True
+                self.state("draft_discarded", result["draft"], problems=result["problems"])
                 continue
             if result["kind"] == "draft":
                 return {"draft": result["draft"], "problems": result["problems"],
@@ -563,14 +577,17 @@ class _Flow:
         try:
             decided = self.ports.reference_status(list(self.evidence))
             statuses, basis = decided["signal_status"], decided["basis"]
-        except Exception as exc:  # noqa: BLE001 - 계산할 수 없는 까닭은 예외 이름만 남긴다
+        except Exception as exc:  # noqa: BLE001 - 예외 이름과 문장(키 이름만, 값 없음)을 남긴다
             statuses, basis, reason = None, None, type(exc).__name__
+            detail = str(exc)[:300] if isinstance(exc, (ValueError, KeyError)) else None
             self.reference_text = investigator.reference_unavailable_text(self.missing_required_tools())
         else:
-            reason = None
+            reason, detail = None, None
             self.reference_text = investigator.reference_text(self.signals, statuses, basis)
+        self.reference_available = statuses is not None
         self.sink.emit("state_change", self.stage, {"phase": "rule_reference", "available": statuses is not None,
-                                                    "signal_status": statuses, "basis": basis, "error": reason})
+                                                    "signal_status": statuses, "basis": basis, "error": reason,
+                                                    "error_detail": detail})
         return {"role": "user", "content": self.reference_text}
 
     def missing_required_tools(self) -> list:

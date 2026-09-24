@@ -731,5 +731,55 @@ class RuleReferenceTest(unittest.TestCase):
         self.assertFalse([r for r in h.events(records, "state_change") if r["data"]["phase"] == "rule_reference"])
 
 
+class DraftTurnAndReferenceRetryTest(unittest.TestCase):
+    """조립 AS2 7회차: 초안은 도구 없는 차례에서만(Ports.drafts_only_without_tools), 계산 불가였던 참고값은 필수 도구 결과가
+    갖춰지면 다시 싣는다."""
+
+    def run_with(self, mode, script, *, drafts_only=False, reference=None):
+        fake = h.FakePorts()
+        ports = fake.ports()
+        ports.required_tools = lambda case: ["decompose_hs"]
+        ports.drafts_only_without_tools = drafts_only
+        if reference is not None:
+            ports.reference_status = reference
+        clock = FakeClock()
+        transport = ScriptedTransport(script, clock)
+        sink = orchestrate.trace_log.MemoryTrace(h.RUN_ID)
+        ctx = orchestrate.RunContext(run_id=h.RUN_ID, case=h.CASE_A, mode=mode, dataset="controlled_fixture_v0",
+                                     rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
+        result = orchestrate.orchestrate(ctx, ports, mc.load_model_config(), transport=transport, sink=sink,
+                                         clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)
+        return result, sink.records, transport
+
+    def test_draft_in_a_tools_turn_is_discarded_and_asked_again_without_tools(self):
+        for mode in ("agent", "full", "freeform"):
+            with self.subTest(mode=mode):
+                draft = h.draft_answer(claims=[dict(FREEFORM_CLAIM)]) if mode == "freeform" else h.draft_answer()
+                script = [h.tools_answer("decompose_hs"), draft, draft] + ([h.critic_answer()] if mode != "agent" else [])
+                config = mc.load_model_config()
+                # 비교 몫을 1회 남겨 두 번째 요청에도 도구가 실리게 한다(기본 몫 5 = I1·I2·분해 + 1 + verify 예약)
+                result, records, transport = self.run_with(mode, script, drafts_only=True)
+                self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+                phases = [r["data"]["phase"] for r in h.events(records, "state_change")]
+                self.assertEqual(phases.count("draft_discarded"), 1)
+                self.assertIn("tools", transport.payloads[1])  # 버린 초안의 요청: 도구를 실었다
+                self.assertNotIn("tools", transport.payloads[2])  # 다시 받는 요청: 도구 없음
+                if config.settings.structured_output == "json_object":
+                    self.assertEqual(transport.payloads[2]["response_format"], {"type": "json_object"})
+
+    def test_unavailable_reference_is_recomputed_when_the_tool_arrives(self):
+        def decided(evidence):
+            if "decompose_hs" not in [e["tool"] for e in evidence]:
+                raise ValueError("단가 신호의 이력·분해 조회를 받지 못했다")
+            return RuleReferenceTest.DECIDED
+        script = [h.draft_answer(), h.draft_answer(), h.critic_answer(needs_revision=True),
+                  h.tools_answer("decompose_hs"), h.draft_answer()]
+        result, records, _ = self.run_with("full", script, reference=decided)
+        self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+        refs = [r["data"] for r in h.events(records, "state_change") if r["data"]["phase"] == "rule_reference"]
+        self.assertEqual([(r["available"], r["error"]) for r in refs], [(False, "ValueError"), (True, None)])
+        self.assertEqual(refs[0]["error_detail"], "단가 신호의 이력·분해 조회를 받지 못했다")
+
+
 if __name__ == "__main__":
     unittest.main()
