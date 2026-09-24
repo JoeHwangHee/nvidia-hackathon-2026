@@ -4,7 +4,7 @@ X1(구현 첫날의 세로형 최소 통합 시험)에서 쓴 임시 코드와 �
 
 - 결과와 증거: `artifacts/openshell/violation_tests.md`, `artifacts/openshell/logs/`
 - 결정 기록: `docs/tracking/decisions/20260924-1556-x1-key-injection.md`
-- 용어: OpenShell(에이전트를 격리해 돌리는 NVIDIA 샌드박스 런타임), 게이트웨이(샌드박스의 바깥 요청을 받아 정책을 적용하고 전달하는 OpenShell 구성요소), provider(게이트웨이에 등록한 자격 증명 묶음), NAT(NVIDIA NeMo Agent Toolkit, 실행 추적·평가 도구 모음), NIM(NVIDIA 클라우드 추론 API), NemoClaw(OpenShell 위에서 에이전트를 돌리는 NVIDIA 참조 스택), OpenClaw(NemoClaw의 기본 하네스, 곧 모델이 도구를 부르며 일하도록 감싸는 실행 틀), colima(macOS에서 Docker용 리눅스 가상 머신을 띄우는 도구), 자리표시 값(placeholder, 실제 키 대신 샌드박스에 넣는 참조 문자열).
+- 용어: OpenShell(에이전트를 격리해 돌리는 NVIDIA 샌드박스 런타임), 게이트웨이(OpenShell의 제어면, 곧 상태·정책·provider 설정을 보관하고 샌드박스에 내려보내는 부분. 샌드박스 밖 호스트에서 돈다), 감독 프로세스(supervisor, 샌드박스 컨테이너 안에서 root로 도는 `openshell-sandbox`. 정책 프록시로 바깥 요청을 검사하고, 게이트웨이에서 받은 자격 증명으로 요청 시점에 자리표시 값을 실제 키로 바꾼다. 근거는 OpenShell v0.0.116 `docs/about/how-it-works.mdx` 14·116행), provider(게이트웨이에 등록한 자격 증명 묶음), NAT(NVIDIA NeMo Agent Toolkit, 실행 추적·평가 도구 모음), NIM(NVIDIA 클라우드 추론 API), NemoClaw(OpenShell 위에서 에이전트를 돌리는 NVIDIA 참조 스택), OpenClaw(NemoClaw의 기본 하네스, 곧 모델이 도구를 부르며 일하도록 감싸는 실행 틀), colima(macOS에서 Docker용 리눅스 가상 머신을 띄우는 도구), 자리표시 값(placeholder, 실제 키 대신 샌드박스에 넣는 참조 문자열).
 
 ## 자리표시
 
@@ -28,7 +28,7 @@ X1(구현 첫날의 세로형 최소 통합 시험)에서 쓴 임시 코드와 �
 | `key_check.py` | 요건 (c) 키 조회 시험. 값은 출력하지 않고 있음/없음·개수만 낸다. 실제 키 형식이 있으면 종료 코드 1. 일반 파일만 연다(FIFO·소켓에서 멈추지 않게) |
 | `net_probe.py` | 위반 시험용 네트워크 탐침. 2xx가 아니면 0이 아닌 종료 코드 |
 | `Dockerfile`, `.dockerignore` | 시험 샌드박스 이미지. 공동체 base 이미지 위에 Python 3.12(`/opt/x1/python`)와 `nvidia-nat==1.9.0`, CLI, 미끼 파일(`/srv/x1-decoy/`, 가짜 정답)을 넣는다 |
-| `policy/x1-nvidia-chat.profile.yaml` | provider 프로필 초안. `integrate.api.nvidia.com:443` `POST /v1/chat/completions`, 키는 `authorization` 헤더 bearer |
+| `policy/x1-nvidia-chat.profile.yaml` | provider 프로필 초안. `integrate.api.nvidia.com:443` `POST /v1/chat/completions`, 키 자리는 `authorization` 헤더 bearer로 선언했다. 이 선언(`auth_style`·`header_name`)은 OpenShell 0.0.116에서 저장·검증되는 메타데이터이고, 치환은 CLI가 헤더에 실은 자리표시 값을 감독 프로세스의 정책 프록시가 바꿔서 일어난다(OpenShell v0.0.116 `docs/sandboxes/providers-v2.mdx` 216행) |
 | `policy/x1-os-test.policy.yaml` | 시험 샌드박스 정책 1판(네트워크 블록 없음) |
 | `policy/x1-os-test.nim.policy.yaml` | 2판. 정적 계층은 1판과 같고, 블록 `x1_nim_chat` 하나(`POST /v1/chat/completions`, `/opt/x1/python/**`)를 더했다 |
 | `policy/x1-demo-narrowed.policy.yaml` | 시연 샌드박스 `x1-demo` 축소 정책(최종 4판). NemoClaw 기본 정책의 블록 7개 가운데 6개를 빼고 `nvidia` 블록 하나를 `POST /v1/chat/completions` 하나로 좁혔다. 바이너리는 `openclaw`와 실제 실행 파일 `/usr/local/bin/node` |

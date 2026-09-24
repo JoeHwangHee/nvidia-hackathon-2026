@@ -7,7 +7,8 @@ NAT(NVIDIA NeMo Agent Toolkit)의 파일 추적 내보내기로 실행 추적 1�
     python x1_probe.py --input "<한 줄>" [--mode rewrite|inference-local] [--runs-dir <경로>]
 
 - 키는 코드·인자·파일에 없다. rewrite 방식에서는 OpenShell provider가 샌드박스 환경에 넣은
-  자리표시 값(환경변수 NVIDIA_API_KEY)을 Authorization 헤더에 싣고, 게이트웨이가 나가는 요청에서
+  자리표시 값(환경변수 NVIDIA_API_KEY)을 Authorization 헤더에 싣고, 샌드박스 안 감독 프로세스
+  (root로 도는 openshell-sandbox)의 정책 프록시가 게이트웨이에서 받은 자격 증명으로 요청 시점에
   실제 키로 바꾼다. inference-local 방식에서는 헤더를 싣지 않고 https://inference.local/v1로 보낸다.
 - 5xx는 코드가 명시적으로 다시 보낸다(요청당 최대 3회, 지수 대기). 4xx는 다시 보내지 않는다.
 - 산출물: <runs-dir>/<run_id>/nat_trace.jsonl(NAT 추적), app_trace.jsonl(앱 기록, 비밀값 없음),
