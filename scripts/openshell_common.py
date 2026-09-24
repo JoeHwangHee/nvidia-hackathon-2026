@@ -326,6 +326,13 @@ def judge_requirement_b(policy: dict, *, allowed_hosts: tuple[str, ...] = (NVIDI
             host = str(endpoint.get("host", ""))
             if host not in allowed_hosts:
                 reasons.append(f"블록 {name}: 허용하지 않은 목적지 {host or '(host 없음)'}")
+            # L7 규칙이 실제로 걸리려면 protocol rest와 enforcement enforce가 있어야 한다(audit는 기록만 하고 통과시킨다)
+            if endpoint.get("port") != 443:
+                reasons.append(f"블록 {name}: {host} port가 443이 아니다")
+            if endpoint.get("protocol") != "rest":
+                reasons.append(f"블록 {name}: {host} protocol이 rest가 아니다(L7 검사 없음)")
+            if endpoint.get("enforcement") != "enforce":
+                reasons.append(f"블록 {name}: {host} enforcement가 enforce가 아니다")
             rules = endpoint.get("rules")
             if not rules:
                 reasons.append(f"블록 {name}: {host} rules 생략(host:port 전체 개방)")

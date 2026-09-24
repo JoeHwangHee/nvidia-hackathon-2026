@@ -36,6 +36,27 @@ def x1_demo(label: str, end: str) -> str:
     return x1_section("20260924-x1-demo-policy.txt", f"## openshell policy get x1-demo --full ({label}", end)
 
 
+class RequirementBEndpointTest(unittest.TestCase):
+    """요건 (b) 판정이 port·protocol·enforcement도 본다(MT5b NVIDIA 검토 1 권고 3)."""
+
+    def policy(self, **endpoint_changes):
+        endpoint = {"host": "integrate.api.nvidia.com", "port": 443, "protocol": "rest", "enforcement": "enforce",
+                    "rules": CHAT_RULES}
+        endpoint.update(endpoint_changes)
+        for key in [k for k, v in endpoint.items() if v is None]:
+            del endpoint[key]
+        return {"network_policies": {"b": {"endpoints": [endpoint], "binaries": [{"path": "/x/python"}]}}}
+
+    def test_fields(self):
+        self.assertEqual(oc.judge_requirement_b(self.policy()), (True, []))
+        for change, word in ((dict(enforcement="audit"), "enforcement"), (dict(protocol=None), "protocol"),
+                             (dict(port=8443), "port")):
+            with self.subTest(change=change):
+                ok, reasons = oc.judge_requirement_b(self.policy(**change))
+                self.assertFalse(ok)
+                self.assertTrue(any(word in reason for reason in reasons), reasons)
+
+
 class YamlSubsetTest(unittest.TestCase):
     def test_block_forms(self):
         text = ("# 주석\nversion: 1\nlist:\n- /usr  # 끝 주석\n- 'a # b'\nnested:\n  flag: true\n  items:\n"
