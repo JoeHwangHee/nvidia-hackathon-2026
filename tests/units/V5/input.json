@@ -1,0 +1,266 @@
+{
+  "snapshot_id": "kcs_202201_202412_v2",
+  "seed": 20260924,
+  "ratio": {
+    "real_dev": 1,
+    "real_sealed": 2
+  },
+  "series": [
+    {
+      "hs6": "850450",
+      "partner": "CN"
+    },
+    {
+      "hs6": "850450",
+      "partner": "JP"
+    },
+    {
+      "hs6": "850450",
+      "partner": "DE"
+    },
+    {
+      "hs6": "850450",
+      "partner": "VN"
+    },
+    {
+      "hs6": "850450",
+      "partner": "US"
+    },
+    {
+      "hs6": "850450",
+      "partner": "PH"
+    },
+    {
+      "hs6": "850450",
+      "partner": "TW"
+    },
+    {
+      "hs6": "850450",
+      "partner": "FR"
+    },
+    {
+      "hs6": "850450",
+      "partner": "FI"
+    },
+    {
+      "hs6": "850450",
+      "partner": "SE"
+    },
+    {
+      "hs6": "850450",
+      "partner": "KH"
+    },
+    {
+      "hs6": "850450",
+      "partner": "NL"
+    },
+    {
+      "hs6": "850450",
+      "partner": "ID"
+    },
+    {
+      "hs6": "850450",
+      "partner": "IN"
+    },
+    {
+      "hs6": "850450",
+      "partner": "MX"
+    },
+    {
+      "hs6": "850450",
+      "partner": "MY"
+    },
+    {
+      "hs6": "850431",
+      "partner": "CN"
+    },
+    {
+      "hs6": "850431",
+      "partner": "JP"
+    },
+    {
+      "hs6": "850431",
+      "partner": "DE"
+    },
+    {
+      "hs6": "850431",
+      "partner": "VN"
+    },
+    {
+      "hs6": "850431",
+      "partner": "US"
+    },
+    {
+      "hs6": "850431",
+      "partner": "PH"
+    },
+    {
+      "hs6": "850431",
+      "partner": "TW"
+    },
+    {
+      "hs6": "850431",
+      "partner": "FR"
+    },
+    {
+      "hs6": "850431",
+      "partner": "FI"
+    },
+    {
+      "hs6": "850431",
+      "partner": "SE"
+    },
+    {
+      "hs6": "850431",
+      "partner": "KH"
+    },
+    {
+      "hs6": "850431",
+      "partner": "NL"
+    },
+    {
+      "hs6": "850431",
+      "partner": "ID"
+    },
+    {
+      "hs6": "850431",
+      "partner": "IN"
+    },
+    {
+      "hs6": "850431",
+      "partner": "MX"
+    },
+    {
+      "hs6": "850431",
+      "partner": "MY"
+    },
+    {
+      "hs6": "850432",
+      "partner": "CN"
+    },
+    {
+      "hs6": "850432",
+      "partner": "JP"
+    },
+    {
+      "hs6": "850432",
+      "partner": "DE"
+    },
+    {
+      "hs6": "850432",
+      "partner": "VN"
+    },
+    {
+      "hs6": "850432",
+      "partner": "US"
+    },
+    {
+      "hs6": "850432",
+      "partner": "PH"
+    },
+    {
+      "hs6": "850432",
+      "partner": "TW"
+    },
+    {
+      "hs6": "850432",
+      "partner": "FR"
+    },
+    {
+      "hs6": "850432",
+      "partner": "FI"
+    },
+    {
+      "hs6": "850432",
+      "partner": "SE"
+    },
+    {
+      "hs6": "850432",
+      "partner": "KH"
+    },
+    {
+      "hs6": "850432",
+      "partner": "NL"
+    },
+    {
+      "hs6": "850432",
+      "partner": "ID"
+    },
+    {
+      "hs6": "850432",
+      "partner": "IN"
+    },
+    {
+      "hs6": "850432",
+      "partner": "MX"
+    },
+    {
+      "hs6": "850432",
+      "partner": "MY"
+    },
+    {
+      "hs6": "850490",
+      "partner": "CN"
+    },
+    {
+      "hs6": "850490",
+      "partner": "JP"
+    },
+    {
+      "hs6": "850490",
+      "partner": "DE"
+    },
+    {
+      "hs6": "850490",
+      "partner": "VN"
+    },
+    {
+      "hs6": "850490",
+      "partner": "US"
+    },
+    {
+      "hs6": "850490",
+      "partner": "PH"
+    },
+    {
+      "hs6": "850490",
+      "partner": "TW"
+    },
+    {
+      "hs6": "850490",
+      "partner": "FR"
+    },
+    {
+      "hs6": "850490",
+      "partner": "FI"
+    },
+    {
+      "hs6": "850490",
+      "partner": "SE"
+    },
+    {
+      "hs6": "850490",
+      "partner": "KH"
+    },
+    {
+      "hs6": "850490",
+      "partner": "NL"
+    },
+    {
+      "hs6": "850490",
+      "partner": "ID"
+    },
+    {
+      "hs6": "850490",
+      "partner": "IN"
+    },
+    {
+      "hs6": "850490",
+      "partner": "MX"
+    },
+    {
+      "hs6": "850490",
+      "partner": "MY"
+    }
+  ]
+}
