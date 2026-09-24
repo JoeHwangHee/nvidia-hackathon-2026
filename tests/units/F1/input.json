@@ -1,0 +1,1 @@
+["run-case", "--snapshot", "controlled_fixture_v0", "--policy", "dev-0.1", "--mode", "full", "--case", "A-composition"]
