@@ -181,7 +181,8 @@ OPTIONS = {
     "policy": {"metavar": "POLICY_VERSION", "type": check_policy_version,
                "help": "정책 버전 이름(예: policy_v1, dev-0.1). 파일 경로가 아니다"},
     "mode": {"choices": MODES, "help": "실행 모드. " + ", ".join(MODES) + " 가운데 하나"},
-    "case": {"metavar": "CASE", "type": check_case, "help": "조사할 사례(예: A-composition)"},
+    "case": {"metavar": "CASE", "type": check_case,
+             "help": "조사할 사례의 식별자 {hs6}-{partner}-{month}(예: 850450-XA-202412). 합성 사례도 같은 꼴이다"},
 }
 
 

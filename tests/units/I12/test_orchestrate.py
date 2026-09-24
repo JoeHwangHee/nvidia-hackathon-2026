@@ -771,6 +771,11 @@ class DraftTurnAndReferenceRetryTest(unittest.TestCase):
                 self.assertIn("code_finding", phases)
                 self.assertEqual(result["record"]["critic_used"], mode != "agent")
                 self.assertEqual(result["record"]["revision_used"], True)
+                # 버린 초안·required 차례도 모델 요청 수와 토큰에 든다(9회차, 평 권고 7)
+                usage = [r["data"]["usage"] for r in h.events(records, "model_response")]
+                self.assertEqual(result["record"]["model_requests"], len(transport.payloads))
+                self.assertEqual(result["record"]["tokens_in"] + result["record"]["tokens_out"],
+                                 sum(u["total_tokens"] for u in usage))
                 revision = [r["data"] for r in h.events(records, "model_request") if r["stage"] == "revision"]
                 self.assertEqual(revision[0].get("tool_choice"), "required")
                 self.assertNotIn("tool_choice", revision[-1])  # 결과를 받은 뒤: 도구 없는 초안 차례
@@ -813,6 +818,82 @@ class DraftTurnAndReferenceRetryTest(unittest.TestCase):
         refs = [r["data"] for r in h.events(records, "state_change") if r["data"]["phase"] == "rule_reference"]
         self.assertEqual([(r["available"], r["error"]) for r in refs], [(False, "ValueError"), (True, None)])
         self.assertEqual(refs[0]["error_detail"], "단가 신호의 이력·분해 조회를 받지 못했다")
+
+
+class DirectedFlowModeParityTest(unittest.TestCase):
+    """9회차(평 권고 8): 차례 규칙(directed)을 켠 흐름에서 모드 사이 동일성."""
+
+    def run_with(self, mode, script, *, checks=None, comparisons=None, reference=None):
+        fake = h.FakePorts(checks=checks)
+        ports = fake.ports()
+        ports.required_tools = lambda case: ["decompose_hs"]
+        ports.drafts_only_without_tools = True
+        if reference is not None:
+            ports.reference_status = reference
+        config = mc.load_model_config()
+        if comparisons is not None:
+            config = dataclasses.replace(config, limits=dataclasses.replace(config.limits,
+                                                                            investigator_comparisons=comparisons))
+        clock = FakeClock()
+        transport = ScriptedTransport(script, clock)
+        sink = orchestrate.trace_log.MemoryTrace(h.RUN_ID)
+        ctx = orchestrate.RunContext(run_id=h.RUN_ID, case=h.CASE_A, mode=mode, dataset="controlled_fixture_v0",
+                                     rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
+        result = orchestrate.orchestrate(ctx, ports, config, transport=transport, sink=sink,
+                                         clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)
+        return result, sink.records, transport
+
+    @staticmethod
+    def draft(mode):
+        return h.draft_answer(claims=[dict(FREEFORM_CLAIM)]) if mode == "freeform" else h.draft_answer()
+
+    def test_first_draft_schema_failure_with_missing_results_skips_critic_and_requires_tools(self):
+        for mode in ("full", "freeform"):
+            with self.subTest(mode=mode):
+                script = [self.draft(mode), h.tools_answer("decompose_hs"), self.draft(mode)]
+                result, records, transport = self.run_with(mode, script, checks=[h.SCHEMA_FAIL], comparisons=0)
+                record = result["record"]
+                self.assertEqual((record["execution_status"], record["critic_used"], record["revision_used"]),
+                                 (cause_codes.COMPLETED, False, True))
+                self.assertEqual([r for r in h.events(records, "model_request") if r["stage"] == "critic"], [])
+                revision = [r["data"] for r in h.events(records, "model_request") if r["stage"] == "revision"]
+                self.assertEqual(revision[0].get("tool_choice"), "required")
+                self.assertEqual(record["model_requests"], len(transport.payloads))
+
+    def test_reference_turn_order_is_the_same_for_every_mode(self):
+        orders = {}
+        for mode in ("agent", "full", "freeform"):
+            script = [h.tools_answer("decompose_hs"), self.draft(mode)] + ([h.critic_answer()] if mode != "agent" else [])
+            result, records, _ = self.run_with(mode, script, reference=lambda evidence: RuleReferenceTest.DECIDED)
+            self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+            orders[mode] = [(r["event"], r["data"].get("phase") or r["data"].get("tool") or r["data"].get("tool_choice"))
+                            for r in records if r["stage"] != "critic"
+                            and r["event"] in ("model_request", "tool_result", "state_change")]
+        self.assertEqual(orders["agent"], orders["full"])
+        self.assertEqual(orders["full"], orders["freeform"])
+        self.assertIn(("state_change", "rule_reference"), orders["agent"])
+
+    def test_reference_is_recomputed_after_new_revision_envelopes(self):
+        calls = []
+
+        def decided(evidence):
+            calls.append([e["tool"] for e in evidence if e["tool"] != "verify_evidence"])
+            return RuleReferenceTest.DECIDED
+        script = [h.tools_answer("decompose_hs"), self.draft("full"),
+                  h.critic_answer(needs_revision=True, requery=[{"tool": "compare_partners", "args": {}}]),
+                  h.tools_answer("compare_partners"), self.draft("full")]
+        result, records, _ = self.run_with("full", script, reference=decided)
+        self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+        self.assertEqual(calls, [["check_comparability", "get_history", "decompose_hs"],
+                                 ["check_comparability", "get_history", "decompose_hs", "compare_partners"]])
+        self.assertEqual(len([r for r in h.events(records, "state_change") if r["data"]["phase"] == "rule_reference"]),
+                         2)
+
+    def test_wiring_error_in_the_reference_is_a_code_error(self):
+        def broken(evidence):
+            raise KeyError("signal_status")
+        result, _, _ = self.run_with("agent", [h.tools_answer("decompose_hs"), self.draft("agent")], reference=broken)
+        self.assertEqual([e["code"] for e in result["record"]["errors"]], [cause_codes.CODE_ERROR])
 
 
 if __name__ == "__main__":

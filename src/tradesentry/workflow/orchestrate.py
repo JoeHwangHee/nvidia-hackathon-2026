@@ -52,7 +52,8 @@ checklist: 모델 없이 check_comparability → get_history → decompose_hs(�
 - 규칙 참고값(Ports.reference_status, 조립 AS2가 근거 상태 변환을 넘길 때만): 모델 모드에서 필수 도구 결과를 받은 뒤 첫
   조사자 요청 앞에 코드가 계산한 P3 신호별 판정·판정 근거를 고정 문구로 한 번 싣고 Critic에게도 준다(MT1 결정 ⑬의
   "모델 상태와 나란히 적는 참고값"). 모델 상태를 덮어쓰지 않는다. trace state_change rule_reference. 계산할 수 없었으면
-  필수 도구 결과가 갖춰진 뒤(수정 단계 재조회 포함) 다시 계산해 싣는다.
+  필수 도구 결과가 갖춰진 뒤, 계산된 뒤에도 새 봉투를 받으면(수정 단계 재조회) 다시 계산해 싣는다(계산할 때마다 trace).
+  계산 불가는 입력 검사 오류(ValueError)만이고, 배선 오류(WiringError 등)는 흐름의 CODE_ERROR로 올린다.
 - 초안은 도구 없는 차례에서만(Ports.drafts_only_without_tools, 조립 AS2가 켠다): 도구를 준 차례에 온 초안 본문은 버리고
   (state_change draft_discarded) 곧바로 도구 없는 초안 요청(구조화 출력 json_object)으로 다시 받는다.
 - 차례 규칙(조립이 위 둘을 켰을 때, AS2 ⑲): 필수 결과(필수 도구 + 수정 단계의 Critic 재조회 요청)가 빠졌고 그 차례에 예산이
@@ -436,6 +437,7 @@ class _Flow:
         self.verify_skipped = False  # 바로 앞 verify_evidence를 대조할 것이 없어 건너뛰었나(다음 validator_result에 남긴다)
         self.reference_text: str | None = None  # 모델 모드에 실은 규칙 참고값 문구(Critic에도 준다)
         self.reference_available = False  # 마지막으로 실은 참고값이 계산된 값이었나(계산 불가였으면 근거가 갖춰질 때 다시 싣는다)
+        self.reference_seen = 0  # 마지막 참고값을 계산할 때의 봉투 수(수정 단계에서 새 봉투를 받으면 다시 계산한다)
 
     # 한도와 도구 시도 ---------------------------------------------------------------------------------------------
     @property
@@ -551,7 +553,8 @@ class _Flow:
             allow = (can_call and bool(pending) if directed else can_call) and not force_draft
             if self.ports.reference_status is not None and (not allow or nudged or not self.missing_required_tools()) \
                     and (self.reference_text is None
-                         or (not self.reference_available and not self.missing_required_tools())):
+                         or (not self.missing_required_tools()
+                             and (not self.reference_available or self.lookup_count() > self.reference_seen))):
                 messages.append(self.reference_message())
             if directed and allow:
                 messages.append(investigator.pending_tools_message(pending))
@@ -594,18 +597,23 @@ class _Flow:
                 return {"draft": None, "problems": ["도구 없이 초안을 쓰라는 요청에 두 번 도구를 불렀다"],
                         "status_notes": [], "message": result["message"], "was_draft": False}
 
+    def lookup_count(self) -> int:
+        """받은 조회 봉투 수(verify_evidence 빼고). 참고값을 계산한 뒤 새 조회 결과가 왔는지 가른다."""
+        return len([e for e in self.evidence if isinstance(e, dict) and e.get("tool") != "verify_evidence"])
+
     def reference_message(self) -> dict:
         """규칙 참고값 메시지(모든 모델 모드에 같은 문구·같은 시점): 필수 도구 결과를 받은 뒤(또는 도구를 더 줄 수 없는
         차례, 필수 조회를 한 번 돌려보낸 뒤) 첫 조사자 요청 앞에 한 번 싣는다. P3을 돌릴 수 없으면 계산 불가 문구다.
         trace에는 state_change rule_reference로 남긴다. 모델 상태를 고치지 않는다(MT1 결정 ⑬)."""
+        self.reference_seen = self.lookup_count()
         try:
             decided = self.ports.reference_status(list(self.evidence))
-            statuses, basis = decided["signal_status"], decided["basis"]
-        except Exception as exc:  # noqa: BLE001 - 예외 이름과 문장(키 이름만, 값 없음)을 남긴다
+        except ValueError as exc:  # P3·근거 상태 변환의 입력 검사 오류만 계산 불가로 둔다(배선 오류 등은 CODE_ERROR로 올린다)
             statuses, basis, reason = None, None, type(exc).__name__
-            detail = str(exc)[:300] if isinstance(exc, (ValueError, KeyError)) else None
+            detail = str(exc)[:300]
             self.reference_text = investigator.reference_unavailable_text(self.missing_required_tools())
         else:
+            statuses, basis = decided["signal_status"], decided["basis"]
             reason, detail = None, None
             self.reference_text = investigator.reference_text(self.signals, statuses, basis)
         self.reference_available = statuses is not None

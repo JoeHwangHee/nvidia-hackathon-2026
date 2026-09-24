@@ -296,9 +296,14 @@ class ModelModesTest(RunCaseBase):
         files, record, _, _ = self.run_ok(CASES["A"], "full", script)
         self.assertEqual((record["execution_status"], record["critic_used"], record["revision_used"],
                           record["review_status_final"]), (cause_codes.COMPLETED, True, True, "MONITOR"))
-        phases = [e["data"]["phase"] for e in self.trace(files) if e["event"] == "state_change"]
+        events = self.trace(files)
+        phases = [e["data"]["phase"] for e in events if e["event"] == "state_change"]
         self.assertEqual([p for p in phases if p in ("draft_discarded", "after_critic", "code_finding")],
                          ["draft_discarded", "after_critic", "code_finding"])
+        # 버린 초안·required 차례도 모델 요청 수와 토큰에 든다(평 권고 7)
+        responses = [e["data"]["usage"] for e in events if e["event"] == "model_response"]
+        self.assertEqual(record["model_requests"], len(responses))
+        self.assertEqual(record["tokens_in"] + record["tokens_out"], sum(u["total_tokens"] for u in responses))
 
     def test_rule_reference_is_the_p3_status_of_the_received_evidence(self):
         """6회차: 모델 모드에 싣는 규칙 참고값은 받은 봉투로 P3을 돌린 신호별 판정이다(사례마다 checklist와 같은 값)."""
@@ -311,10 +316,38 @@ class ModelModesTest(RunCaseBase):
                 sent = [m["content"] for m in transport.payloads[1]["messages"] if m["role"] == "user"]
                 self.assertTrue(any(c.startswith("[규칙 계산 결과(참고값)]") for c in sent))
 
+    def test_model_status_different_from_the_reference_is_kept(self):
+        """9회차(평 권고 6): 가짜 모델이 참고값(A: MONITOR)과 다른 MAINTAIN을 내도 코드는 덮어쓰지 않는다. 허용 상태 조합이라
+        검증기가 막지 않아 세 모드 모두 모델 상태 그대로 끝난다."""
+        for mode in ("agent", "full", "freeform"):
+            with self.subTest(mode=mode):
+                draft = dict(draft_for("A", mode), review_status="MAINTAIN",
+                             signal_status={"unit_value": "MAINTAIN", "share": N})
+                script = [tools_answer("decompose_hs", "compare_partners"), draft_answer(draft)]
+                if mode != "agent":
+                    script.append(critic_answer(needs_revision=False))
+                files, record, report, transport = self.run_ok(CASES["A"], mode, script)
+                [ref] = [e["data"] for e in self.trace(files)
+                         if e["event"] == "state_change" and e["data"]["phase"] == "rule_reference"]
+                self.assertEqual(ref["signal_status"]["unit_value"], "MONITOR")
+                self.assertEqual((record["execution_status"], record["review_status_final"], record["signal_status"]),
+                                 (cause_codes.COMPLETED, "MAINTAIN", {"unit_value": "MAINTAIN", "share": N}))
+                self.assertEqual(record["model_requests"], len(transport.payloads))
+
     def test_model_mode_keeps_c_type_expansion(self):
         _, _, report, _ = self.run_ok(CASES["C"], "agent", script_for("C", "agent"))
         self.assertEqual([c["metric"] for c in report["claims"] if c["claim_type"] == "data_status"],
                          ["observation_status@8504321000", "observation_status@8504322000"])
+
+
+class EmptyCTypeCodesTest(RunCaseBase):
+    def test_hold_report_without_c_type_status_claims_is_not_blocked(self):
+        """9회차(무 권고 7): C형 항목의 hs10_codes가 비면(출처 none) 자료 상태 주장이 없지만, checklist HOLD 보고서는
+        검증기에 막히지 않는다(발동 계열 주장 r_U가 스키마 요건을 채운다)."""
+        with mock.patch.object(check_comparability, "missing_hs10_codes", lambda *a: ([], "none")):
+            files, record, report, _ = self.run_ok(CASES["C"], "checklist")
+        self.assertEqual((record["review_status_final"], report["validator_findings"]), ("HOLD", []))
+        self.assertFalse([c for c in report["claims"] if c["claim_type"] == "data_status"])
 
 
 class TwoDirectionTest(RunCaseBase):

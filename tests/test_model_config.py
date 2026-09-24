@@ -77,7 +77,8 @@ class ModelConfigTest(unittest.TestCase):
         # model-0.7: 규칙 참고값(코드가 계산한 P3 판정)을 전제로 판정 절 압축, Critic 참고값 점검(AS2 6회차)
         # model-0.8: max_tokens 4096(실측 잘림, AS2 결정 기록 ⑱. MT4 결정 ⑪의 값을 대체)
         # model-0.9: 증감 어휘는 지표 주장에만(narrative·가설 금지), compare_partners 설명(AS2 8회차, 결정 기록 ⑲)
-        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-0.9", "json_object"))
+        # model-1.0: 판정 정책 설명 바로잡음(무역 검토 막음 1), 검증기 산문 패턴 목록, max_tokens 8192(AS2 9회차, ⑳)
+        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-1.0", "json_object"))
         for value in walk(cfg):
             if isinstance(value, str):
                 self.assertNotRegex(value, r"(?i)bearer|secret")
