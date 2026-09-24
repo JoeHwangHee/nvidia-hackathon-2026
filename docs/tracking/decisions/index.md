@@ -9,4 +9,5 @@
 | `20260924-1504-user-approval-contract-design.md` | 2026-09-24(목) 15:04 | 자료 계약 v1의 `[DESIGN]`(팀 설계 규칙) 항목 사용자 승인 | 사용자 | 유효 |
 | `20260924-1504-user-approval-x1-exception.md` | 2026-09-24(목) 15:04 | X1(구현 첫날의 세로형 최소 통합 시험) 대체 경로 규칙의 두 예외 사용자 승인 | 사용자 | 유효 |
 | `20260924-1720-user-decision-domain-restructure.md` | 2026-09-24(목) 17:20 | 도메인 재편 A안(패키지 재배치)과 이름·출력 규칙(`outputs/`, `{도메인명}-{yymmddhhmmss}.{확장자}`) | 사용자 | 유효 |
-| `20260924-1720-user-decision-x1-option-ga.md` | 2026-09-24(목) 17:20 | X1 (가)안: NemoClaw(OpenShell 위에서 에이전트를 돌리는 NVIDIA 참조 스택) 제3자 소프트웨어 고지 수락과 재시도 | 사용자·오케스트레이터 | 유효 |
+| `20260924-1720-user-decision-x1-option-ga.md` | 2026-09-24(목) 17:20 | X1 (가)안: NemoClaw(OpenShell 위에서 에이전트를 돌리는 NVIDIA 참조 스택) 제3자 소프트웨어 고지 수락과 재시도 | 사용자 | 유효 |
+| `20260924-1741-orchestrator-decision-x1-retry.md` | 2026-09-24(목) 17:41 | X1 NemoClaw 재시도의 마감(19:30)과 시험 방식 | 오케스트레이터 | 유효 |
