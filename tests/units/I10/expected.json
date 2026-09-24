@@ -1,0 +1,21 @@
+{
+ "kind": "draft",
+ "draft": {
+  "review_status": "MONITOR",
+  "signal_status": {
+   "unit_value": "MONITOR",
+   "share": "NOT_TRIGGERED"
+  },
+  "claims": [
+   {
+    "claim_type": "change",
+    "metric_id": "m-rU"
+   }
+  ],
+  "narrative": "단가 신호는 하위품목 구성 변화로 설명될 가능성이 있다. 하위품목 분해를 더 확인하면 판단이 단단해진다.",
+  "hypotheses": [
+   "하위품목 중량 비중이 저가 품목 쪽으로 옮겨 갔을 수 있다."
+  ]
+ },
+ "problems": []
+}

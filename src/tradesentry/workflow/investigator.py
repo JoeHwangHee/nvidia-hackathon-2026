@@ -5,12 +5,294 @@
 소유: M
 입력: 상태
 출력: 다음 비교·초안
-허용 import: 표준 라이브러리, tradesentry.contract, tradesentry.workflow
+허용 import: 표준 라이브러리, tradesentry.contract, tradesentry.runlog, tradesentry.workflow
 
-S0 뼈대다. 진입 함수 run의 몸통은 아직 NotImplementedError다. 정본: docs/plan/UNITS.md §3.6.
+허용 import에 tradesentry.runlog를 더했다(MT4): 근거를 모델에게 보낼 때 Decimal 표기를 지키는 JSON 쓰기(단위 L1
+dumps)를 쓴다. S0 결정의 계층(contract → dal·runlog → … → workflow) 안이다.
+
+조사자(Nemotron) 한 차례: 지금까지의 근거(도구 봉투)를 보고 추가 비교(도구 호출)를 고르거나 초안을 쓴다.
+- 모델이 부를 수 있는 도구는 MODEL_TOOLS 넷이다. verify_evidence는 코드가 예약한 차례에만 부른다(개발 플랜 §6.7).
+  도구 인자는 좁게 받는다: compare_partners의 partners(관세청 2자리 국가코드 최대 5개)만 있고 나머지는 인자가 없다.
+  경로·SQL·URL·셸 명령은 받지 않는다(자료 계약 §5.1). 허용 밖 도구·인자는 호출하지 않고 오류로 돌려준다.
+- 도구를 줄지(allow_tools)와 몇 번 허용할지는 흐름 조정(단위 I12)이 코드로 정한다. 프롬프트는 한도를 알릴 뿐이다.
+- 초안 형식 검사(스키마 검사의 초안 쪽): JSON 객체 하나, review_status·signal_status·claims·narrative·hypotheses,
+  상태값 집합, 발동하지 않은 신호는 NOT_TRIGGERED이고 발동한 신호는 NOT_TRIGGERED가 아니다, 사례 판정은 발동 신호
+  판정을 MAINTAIN > HOLD > MONITOR로 묶은 값이다. claims는 freeform이면 typed claim 12필드(자료 계약 §6),
+  나머지 모드면 metric_id나 근거 ID로 가리키는 주장(값은 코드가 검증된 지표로 채운다). 검사는 틀린 초안을 고치지
+  않고 문제 목록만 돌려준다. 보고서 쪽 스키마 요건(자료 계약 §9.4)은 검증기 자리가 본다.
+- 모델 응답의 소수는 Decimal로 읽는다(freeform 값의 끝자리 0 보존, 자료 계약 §9.1).
 """
+import json
+import re
+from decimal import Decimal
+
+from tradesentry.runlog import trace as trace_log
+from tradesentry.workflow import model_client
+from tradesentry.workflow import replay
+
+MODEL_TOOLS = ("check_comparability", "get_history", "compare_partners", "decompose_hs")
+MODES = ("checklist", "agent", "full", "freeform")
+REVIEW_STATUSES = ("MAINTAIN", "MONITOR", "HOLD")
+SIGNAL_STATUSES = ("MAINTAIN", "MONITOR", "HOLD", "NOT_TRIGGERED")
+SIGNAL_CODES = ("unit_value", "share")
+CLAIM_TYPES = ("value", "change", "share", "share_change", "decomposition", "comparison", "data_status")
+DIRECTIONS = ("UP", "DOWN", "FLAT", "NA")
+CLAIM_FIELDS = ("claim_id", "claim_type", "hs6", "partner", "period", "baseline_period", "metric", "value", "unit",
+                "direction", "evidence_ids", "text")
+DRAFT_KEYS = ("review_status", "signal_status", "claims", "narrative", "hypotheses")
+ENVELOPE_KEYS = ("query_id", "tool", "scope", "snapshot_id", "source_kind", "evidence_ids", "metrics",
+                 "comparability", "missingness", "retryable_error")
+METRIC_KEYS = ("metric_id", "inputs", "value", "unit", "comparability_flags", "evidence_ids")
+PRIORITY = {"MAINTAIN": 3, "HOLD": 2, "MONITOR": 1}
+PARTNER_RE = re.compile(r"^[A-Z]{2}$")
+MONTH_RE = re.compile(r"^\d{6}$")
+
+TOOL_DESCRIPTIONS = {
+    "check_comparability": "사례의 기간·요청 완료·단위·HS 버전·분모·하위자료(HS10)의 존재 상태를 본다. 판정을 내리지 않는다.",
+    "get_history": "대상 HS6·상대국의 이력과 전년동월 비교(단가·점유율 지표)를 근거 ID와 함께 본다.",
+    "compare_partners": "사전에 허용된 비교국을 같은 HS6·월·기준으로 비교한다. partners를 주면 그 가운데 일부만 본다.",
+    "decompose_hs": "두 시점의 HS10 하위품목으로 단가 변화를 within_effect·mix_effect·residual로 나누고 부모 대조를 본다.",
+}
+
+
+def tool_specs(names=MODEL_TOOLS) -> list[dict]:
+    """chat completions의 tools 인자(native tool call, 구 개발계획 G4에서 확인한 모양)."""
+    specs = []
+    for name in names:
+        if name not in MODEL_TOOLS:
+            raise ValueError(f"모델에게 줄 수 없는 도구: {name}")
+        properties = {}
+        if name == "compare_partners":
+            properties["partners"] = {"type": "array", "items": {"type": "string", "pattern": "^[A-Z]{2}$"},
+                                      "maxItems": 5, "description": "비교할 국가코드(허용된 비교국 가운데)"}
+        specs.append({"type": "function", "function": {"name": name, "description": TOOL_DESCRIPTIONS[name],
+                                                       "parameters": {"type": "object", "properties": properties,
+                                                                      "required": []}}})
+    return specs
+
+
+def system_prompt(prompts: dict, mode: str) -> str:
+    claims = prompts["claims_freeform"] if mode == "freeform" else prompts["claims_template"]
+    return prompts["investigator"].rstrip() + "\n\n" + claims.rstrip() + "\n"
+
+
+def compact_metric(metric: object) -> object:
+    if not isinstance(metric, dict):
+        return metric
+    return {key: metric[key] for key in METRIC_KEYS if key in metric}
+
+
+def compact_envelope(envelope: object) -> object:
+    """모델에게 보여 줄 근거. 봉투 키 11개 가운데 elapsed_ms를 빼고 지표는 필요한 필드만 남긴다(토큰 절약)."""
+    if not isinstance(envelope, dict):
+        return envelope
+    out = {key: envelope[key] for key in ENVELOPE_KEYS if key in envelope}
+    if isinstance(out.get("metrics"), list):
+        out["metrics"] = [compact_metric(m) for m in out["metrics"]]
+    return out
+
+
+def dumps_for_model(value: object) -> str:
+    """모델에게 보내는 JSON 글. Decimal은 원문 표기의 숫자로 쓴다."""
+    return trace_log.dumps(value)
+
+
+def case_message(case: dict, mode: str, evidence: list, required: list | None, remaining: dict) -> str:
+    lines = ["[사례]", dumps_for_model({k: case.get(k) for k in ("case_id", "hs6", "partner", "month", "baseline_month",
+                                                               "signals", "snapshot_id")}),
+             f"[모드] {mode}"]
+    if required:
+        lines += ["[필수 근거(공개 정책)]", dumps_for_model(required)]
+    lines += ["[이미 받은 근거(도구 봉투)]", dumps_for_model([compact_envelope(e) for e in evidence]),
+              f"[남은 횟수] 추가 비교 {remaining.get('comparisons', 0)}회, 모델 요청 {remaining.get('model_requests', 0)}회",
+              "필요하면 도구로 추가 비교를 하고, 아니면 초안 JSON을 답하라."]
+    return "\n".join(lines)
+
+
+def initial_messages(prompts: dict, case: dict, mode: str, evidence: list, required: list | None,
+                     remaining: dict) -> list[dict]:
+    return [{"role": "system", "content": system_prompt(prompts, mode)},
+            {"role": "user", "content": case_message(case, mode, evidence, required, remaining)}]
+
+
+def assistant_message(message: dict) -> dict:
+    """모델이 도구를 부른 응답을 대화에 그대로 되돌려 넣는 메시지."""
+    out = {"role": "assistant", "content": message.get("content") or ""}
+    if message.get("tool_calls"):
+        out["tool_calls"] = message["tool_calls"]
+    return out
+
+
+def tool_result_message(call_id: str | None, tool: str, result: object) -> dict:
+    return {"role": "tool", "tool_call_id": call_id or "", "name": tool, "content": dumps_for_model(result)}
+
+
+def feedback_message(problems: list, critic: dict | None, findings: list | None, remaining: dict) -> dict:
+    """수정 단계(1회) 지시. 스키마 문제·Critic 지적·검증기 findings를 받아 한 번만 고친다."""
+    lines = ["[수정 단계] 아래 지적을 반영해 초안을 한 번만 고쳐 쓴다. 이번이 마지막 수정 기회다."]
+    if problems:
+        lines += ["[초안 형식 문제]", dumps_for_model(problems)]
+    if critic:
+        lines += ["[검수자(Critic) 지적]", dumps_for_model({k: critic.get(k) for k in ("findings", "requery")})]
+    if findings:
+        lines += ["[검증기 지적]", dumps_for_model(findings)]
+    lines += [f"[남은 횟수] 재조회 {remaining.get('requeries', 0)}회, 모델 요청 {remaining.get('model_requests', 0)}회",
+              "재조회가 필요하면 도구로 하고, 아니면 고친 초안 JSON 하나만 답하라."]
+    return {"role": "user", "content": "\n".join(lines)}
+
+
+def parse_tool_calls(message: dict) -> list[dict]:
+    """모델의 tool_calls를 [{id, tool, args, error}]로 바꾼다. error가 있으면 그 호출은 하지 않는다."""
+    calls = []
+    for raw in message.get("tool_calls") or []:
+        function = (raw or {}).get("function") or {}
+        name, error, args = function.get("name"), None, {}
+        try:
+            parsed = json.loads(function.get("arguments") or "{}", parse_float=Decimal)
+            args = parsed if isinstance(parsed, dict) else None
+        except (TypeError, ValueError):
+            args = None
+        if name not in MODEL_TOOLS:
+            error = "허용 밖 도구"
+        elif args is None:
+            error = "인자가 JSON 객체가 아니다"
+        else:
+            allowed = {"partners"} if name == "compare_partners" else set()
+            partners = args.get("partners", [])
+            if set(args) - allowed:
+                error = "허용 밖 인자"
+            elif not isinstance(partners, list) or len(partners) > 5 or \
+                    not all(isinstance(p, str) and PARTNER_RE.match(p) for p in partners):
+                error = "partners는 2자리 국가코드 최대 5개다"
+        calls.append({"id": (raw or {}).get("id"), "tool": name, "args": args if error is None else {},
+                      "error": error})
+    return calls
+
+
+def _strip_fence(text: str) -> str:
+    text = text.strip()
+    match = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", text, flags=re.S)
+    return match.group(1) if match else text
+
+
+def _claim_problems(claims: object, mode: str) -> list[str]:
+    if not isinstance(claims, list):
+        return ["claims는 목록이다"]
+    problems = []
+    for index, claim in enumerate(claims):
+        where = f"claims[{index}]"
+        if not isinstance(claim, dict):
+            problems.append(f"{where}는 객체다")
+            continue
+        if claim.get("claim_type") not in CLAIM_TYPES:
+            problems.append(f"{where}.claim_type이 값 집합 밖이다")
+        if mode == "freeform":
+            missing = [f for f in CLAIM_FIELDS if f not in claim]
+            if missing:
+                problems.append(f"{where}에 필드가 없다: {', '.join(missing)}")
+                continue
+            if not all(isinstance(claim[f], str) and claim[f] for f in ("claim_id", "hs6", "partner", "metric", "text")):
+                problems.append(f"{where}의 claim_id·hs6·partner·metric·text는 빈 문자열이 아닌 문자열이다")
+            if not isinstance(claim["period"], str) or not MONTH_RE.match(claim["period"]):
+                problems.append(f"{where}.period는 YYYYMM이다")
+            if claim["baseline_period"] is not None and (not isinstance(claim["baseline_period"], str)
+                                                         or not MONTH_RE.match(claim["baseline_period"])):
+                problems.append(f"{where}.baseline_period는 YYYYMM이거나 null이다")
+            if claim["direction"] not in DIRECTIONS:
+                problems.append(f"{where}.direction이 값 집합 밖이다")
+            if claim["unit"] is not None and not isinstance(claim["unit"], str):
+                problems.append(f"{where}.unit은 문자열이거나 null이다")
+            value = claim["value"]
+            if isinstance(value, bool) or not (value is None or isinstance(value, (int, Decimal, str))):
+                problems.append(f"{where}.value는 수·문자열·null이다")
+            if not isinstance(claim["evidence_ids"], list) or \
+                    not all(isinstance(e, str) and e.startswith("ev:") for e in claim["evidence_ids"]):
+                problems.append(f"{where}.evidence_ids는 ev: 근거 ID 목록이다")
+        else:
+            refs = [claim.get("metric_id"), claim.get("evidence_id")]
+            if sum(isinstance(r, str) and bool(r) for r in refs) != 1:
+                problems.append(f"{where}는 metric_id나 evidence_id 하나로 근거를 가리킨다")
+            elif isinstance(claim.get("evidence_id"), str) and not claim["evidence_id"].startswith("ev:"):
+                problems.append(f"{where}.evidence_id는 ev: 근거 ID다")
+    return problems
+
+
+def check_draft(draft: object, mode: str, signals: dict) -> list[str]:
+    """초안 형식 검사. 문제 목록을 돌려준다(빈 목록이면 통과). 초안을 고치지 않는다."""
+    if not isinstance(draft, dict):
+        return ["초안은 JSON 객체다"]
+    problems = [f"{key}가 없다" for key in DRAFT_KEYS if key not in draft]
+    if problems:
+        return problems
+    if draft["review_status"] not in REVIEW_STATUSES:
+        problems.append("review_status가 MAINTAIN·MONITOR·HOLD가 아니다")
+    status = draft["signal_status"]
+    if not isinstance(status, dict) or set(status) != set(SIGNAL_CODES) \
+            or any(v not in SIGNAL_STATUSES for v in status.values()):
+        problems.append("signal_status는 unit_value·share를 키로 하는 신호별 판정이다")
+    else:
+        triggered = [code for code in SIGNAL_CODES if (signals or {}).get(code) == "TRIGGERED"]
+        for code in SIGNAL_CODES:
+            if (code in triggered) == (status[code] == "NOT_TRIGGERED"):
+                problems.append(f"signal_status.{code}가 발동 여부({(signals or {}).get(code)})와 맞지 않는다")
+        judged = [status[c] for c in triggered if status[c] in PRIORITY]
+        if judged and draft["review_status"] in PRIORITY \
+                and draft["review_status"] != max(judged, key=PRIORITY.__getitem__):
+            problems.append("review_status가 신호별 판정을 MAINTAIN > HOLD > MONITOR로 묶은 값과 다르다")
+    problems += _claim_problems(draft["claims"], mode)
+    if not isinstance(draft["narrative"], str):
+        problems.append("narrative는 문자열이다")
+    if not isinstance(draft["hypotheses"], list) or not all(isinstance(h, str) for h in draft["hypotheses"]):
+        problems.append("hypotheses는 문자열 목록이다")
+    return problems
+
+
+def parse_draft(content: str, mode: str, signals: dict) -> tuple[dict | None, list[str]]:
+    """모델 답을 초안으로 읽고 형식을 검사한다. 읽지 못하면 (None, 문제)다."""
+    try:
+        draft = json.loads(_strip_fence(content or ""), parse_float=Decimal)
+    except ValueError:
+        return None, ["초안이 JSON 객체 하나가 아니다"]
+    problems = check_draft(draft, mode, signals)
+    if isinstance(draft, dict):
+        draft = {key: draft[key] for key in DRAFT_KEYS if key in draft}
+    return (draft if isinstance(draft, dict) else None), problems
+
+
+def step(client: model_client.ModelClient, messages: list[dict], *, stage: str, mode: str, signals: dict,
+         allow_tools: bool) -> dict:
+    """조사자 한 차례. 돌려주는 값: {"kind": "tool_calls", "message", "calls"} 또는
+    {"kind": "draft", "message", "draft"(없으면 None), "problems"}. 도구를 주지 않았는데 부르면 도구 호출로 돌려주고,
+    흐름 조정이 그 시도를 막는다."""
+    answer = client.chat(messages, stage=stage, tools=tool_specs() if allow_tools else None)
+    message = answer["message"]
+    if message.get("tool_calls"):
+        return {"kind": "tool_calls", "message": message, "calls": parse_tool_calls(message)}
+    draft, problems = parse_draft(message.get("content") or "", mode, signals)
+    return {"kind": "draft", "message": message, "draft": draft, "problems": problems}
 
 
 def run(inp: object) -> object:
-    """진입 함수. 입력과 출력은 머리 주석과 같다."""
-    raise NotImplementedError("단위 I10(workflow_investigator)의 run은 아직 구현하지 않았다")
+    """기록 재생(단위 I8)으로 조사자 한 차례를 돈다(키·네트워크 없음).
+
+    입력: {"case": 사례, "mode": 모드, "evidence": [도구 봉투], "required_evidence": 목록(선택),
+    "remaining": {"comparisons", "model_requests"}(선택), "allow_tools": 참/거짓, "stage": 단계(선택),
+    "replay": [trace 레코드], "config_dir"(선택)}.
+    출력: {"kind": "tool_calls", "calls": [...]} 또는 {"kind": "draft", "draft": 초안 또는 null, "problems": [...]}.
+    """
+    if not isinstance(inp, dict) or inp.get("mode") not in MODES or not isinstance(inp.get("case"), dict):
+        raise ValueError("입력은 {case, mode, evidence[], replay[], ...}다")
+    config = model_client.load_model_config(inp.get("config_dir"))
+    clock = replay.ReplayClock()
+    budget = model_client.Budget(config.limits, clock.now_ms(), config.settings.end_reserve_ms)
+    client = model_client.ModelClient(config.settings, budget, replay.ReplayTransport(inp.get("replay") or [], clock),
+                                      trace_log.NullSink(), clock_ms=clock.now_ms,
+                                      sleep_ms=clock.sleep_ms)
+    case = inp["case"]
+    messages = initial_messages(config.prompts, case, inp["mode"], inp.get("evidence") or [],
+                                inp.get("required_evidence"), inp.get("remaining") or {})
+    result = step(client, messages, stage=inp.get("stage", "basic"), mode=inp["mode"],
+                  signals=case.get("signals") or {}, allow_tools=bool(inp.get("allow_tools")))
+    if result["kind"] == "tool_calls":
+        return {"kind": "tool_calls", "calls": result["calls"]}
+    return {"kind": "draft", "draft": result["draft"], "problems": result["problems"]}
