@@ -25,14 +25,14 @@ MT4(조사 흐름·NIM 호출·NAT 감싸기·실행 기록, 모델 트랙) 구�
 | 결정 | 아래 "결정 내용" ①~⑯ |
 | 이유와 근거 | 아래 "결정 내용"의 항목마다 적었다 |
 | 검토한 대안 | 아래 "검토한 대안" |
-| 결정 주체 | 소유 트랙(M). ①·②·⑨는 사용자 결정(09:00 안건) 뒤 확정하고, ③은 사용자 확인 뒤 확정한다. ⑮의 남은 위험(비교 뒤 수정 단계가 붙는 경로)을 어떻게 풀지는 오케스트레이터와 사용자가 정한다. ⑯의 구조화 출력 켜기(`json_object`)는 3회차 실측 뒤 오케스트레이터가 정했다 |
+| 결정 주체 | 소유 트랙(M). ①·③은 2026-09-25(금) 08:41 사용자 결정 5·6으로 확정했다(③은 (가) 도구에 닿은 시도만). ②·⑨는 D12 결정 뒤 확정한다. ⑮의 남은 위험(비교 뒤 수정 단계가 붙는 경로)을 어떻게 풀지는 오케스트레이터와 사용자가 정한다. ⑯의 구조화 출력 켜기(`json_object`)는 3회차 실측 뒤 오케스트레이터가 정했다 |
 | 공용 약속 여부 | ①(원인 분류 코드 이름)은 평가 구성에 닿아 공용 약속으로 본다(병렬 개발 규칙 §4.5: 애매하면 공용 약속). ③은 계약 필드 `tool_attempts`의 해석이라 사용자 확인을 받는다. 나머지는 M 소유 단위의 입출력과 흐름 세부다. 자료 계약의 필드·상태값·기준값·한도 값은 바꾸지 않았다 |
 | 영향 | 아래 "영향과 넘길 곳" |
 | 관련 PR | #29 |
 
 ## 결정 내용
 
-① **원인 분류 코드 11개와 실행 상태** — 잠정(2026-09-25(금) 09:00 사용자 결정 안건. 이름 전체가 D12에서 바뀔 수 있다)
+① **원인 분류 코드 11개와 실행 상태** — 확정(2026-09-25(금) 08:41 사용자 결정 5: 이 이름 그대로 자료 계약에 더함. 결정 기록 `20260925-0847-user-decision-morning-shared-promises.md`. ②의 재실행 빈칸은 D12로 남는다)
 
 - `PROVIDER_HTTP_5XX`·`PROVIDER_CONNECTION`(`FAILED`, 재실행 대상), `PROVIDER_HTTP_4XX`·`PROVIDER_REQUEST_TIMEOUT`·`PROVIDER_BAD_RESPONSE`·`CODE_ERROR`(`FAILED`, 재실행 대상 아님), `BUDGET_MODEL_REQUESTS`·`BUDGET_TOKENS`(`BUDGET_EXCEEDED`), `DEADLINE`(`TIMEOUT`), `SCHEMA_INVALID`·`VALIDATOR_BLOCKED`(`INVALID`)다. 코드와 실행 상태의 대응은 `src/tradesentry/runlog/cause_codes.py` 한 곳에 있다.
 - 재실행 대상 판정은 `infra_rerun_eligible` 하나로 한다: 실행 상태가 `FAILED`이고 `errors`의 모든 코드가 `PROVIDER_HTTP_5XX`·`PROVIDER_CONNECTION`일 때만 참이다. 룰북 B5의 "모델 제공자 쪽 오류(… 연결 실패)"를 옮긴 것이다 `[사실: cause_codes.py, 시험 tests/units/L3]`.
@@ -47,7 +47,7 @@ MT4(조사 흐름·NIM 호출·NAT 감싸기·실행 기록, 모델 트랙) 구�
 - 본문을 받는 도중 끊김(`http.client.IncompleteRead`): 전송 자리에서 잡지 않아 흐름 조정이 예외 이름을 적는 `CODE_ERROR`가 된다(detail `IncompleteRead`), 재실행 대상 아님 `[사실: 검토 1회차 탐침]`.
 - 평가 스킬 ②의 "중단 원인 코드"에 해당하는 코드는 단위 L3에 없다. `CODE_ERROR`로 쓸지 새 코드를 둘지 D12에서 함께 정한다.
 
-③ **`tool_attempts`의 뜻** — 잠정(계약 필드의 해석, 사용자 확인 대상)
+③ **`tool_attempts`의 뜻** — 확정(2026-09-25(금) 08:41 사용자 결정 6 (가): 도구에 닿아 예산을 쓴 시도만 센다. `COUNT_BLOCKED_TOOL_ATTEMPTS` = 거짓. 아래 둘째 문단은 결정 전 기본값(참)의 설명으로 남긴다)
 
 - 실행한 도구는 사례당 8회를 넘지 않는다. 흐름 조정(단위 I12)의 단계별 몫(기본 경로 5회: `check_comparability`·`get_history`·조사자 비교 최대 2회와 `verify_evidence` 1회 예약, 수정 단계 재조회 2회, 최종 `verify_evidence` 1회)과 도구 예산 단위 I6가 함께 막는다.
 - 실행 결과 기록의 `tool_attempts`는 막힌 시도까지 센 기록 값이다(자료 계약 §8.1 "넘은 실행은 실제 값"). 그래서 `COMPLETED` 실행도 `tool_attempts`가 8을 넘을 수 있다(예: 실행 8회 + 막힌 시도 2회 = 10) `[사실: tests/units/I12/test_orchestrate.py test_tool_shares_cap_executed_tools_at_eight]`. MT2의 단위 I6도 같은 해석이다(막힌 시도는 기록에만 들고 예산을 쓰지 않는다) `[사실: MT2 브랜치 src/tradesentry/tools/budget.py 머리말]`.
