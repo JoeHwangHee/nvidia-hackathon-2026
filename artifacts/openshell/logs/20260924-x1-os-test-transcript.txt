@@ -107,3 +107,12 @@ curl: (22) The requested URL returned error: 400
 curl: (22) The requested URL returned error: 403
 000
      로그 338행 DENIED endpoint api.github.com:443 — 상속돼도 목적지 제한은 그대로
+
+# 사후 보충(2026-09-24(목) 20:53 KST, PR #19 검토 2회차 수정). X1 시험 뒤 개발 환경에서 돌린 읽기 전용 명령이고 이 샌드박스와는 관계없다.
+# 저장소 밖 임시 폴더에서, 키 변수(NVIDIA_API_KEY, NVIDIA_INFERENCE_API_KEY, DATA_GO_KR_SERVICE_KEY)와 TRADESENTRY_SEALED_DIR을 env -u로 빼고 표준 입력을 /dev/null로 돌린 채 실행했다. 설치는 하지 않았다.
+[SK1] 20:53:26 npx skills --version -> exit=0
+1.7.0
+[SK2] 20:53:33 NO_COLOR=1 npx skills add NVIDIA/OpenShell --list -> exit=0 (공개 저장소를 받아 목록만 출력하고 끝남, 임시 폴더에 새 파일 없음)
+     첫 줄: "claude-code_2-1-280_agent  Agent detected — installing non-interactively"
+     "Found 4 skills": debug-inference, debug-openshell-cluster, generate-sandbox-policy, openshell-cli
+     마지막 줄: "Use --skill <name> to install specific skills"
