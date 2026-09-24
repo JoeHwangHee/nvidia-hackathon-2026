@@ -91,7 +91,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | P1 | 신호 발동 | `policy_trigger` | `src/tradesentry/policy/trigger.py` | 앱 | M | 지표 + 정책 → 계열·월별 신호 발동 | 유지 | 2 | 예 | — |
-| P2 | 사례 만들기 | `policy_case_build` | `src/tradesentry/policy/case_build.py` | 앱 | M | 발동·분할 기록과 묶음 선택(`real_dev`/`real_sealed`) → 사례(`case_id`·scope). 지정한 묶음의 시계열로 제한(수단은 S0 자문 Q18, 고르는 방법은 병렬 개발 규칙 §7.2의 5) | 합침 후보(→ P1) | 2 | 예 | `detect` 한 흐름 |
+| P2 | 사례 만들기 | `policy_case_build` | `src/tradesentry/policy/case_build.py` | 앱 | M | 발동·분할 기록과 묶음 선택(실자료 스냅샷일 때, `real_dev`/`real_sealed`) → 사례(`case_id`·scope). 지정한 묶음의 시계열로 제한(수단은 S0 자문 Q18, 고르는 방법은 병렬 개발 규칙 §7.2의 5) | 합침 후보(→ P1) | 2 | 예 | `detect` 한 흐름 |
 | P3 | 신호별 판정 | `policy_signal_decide` | `src/tradesentry/policy/signal_decide.py` | 앱 | M | 근거 상태 → 신호별 `HOLD`·`MONITOR`·`MAINTAIN`·`NOT_TRIGGERED` | 유지 | 3 | 예 | — |
 | P4 | 사례 집계 | `policy_case_aggregate` | `src/tradesentry/policy/case_aggregate.py` | 앱 | M | 신호별 상태 → 최종(`MAINTAIN > HOLD > MONITOR`)·`unresolved_evidence` | 합침 후보(→ P3) | 3 | 예 | — |
 | P5 | 필수 근거 규칙 | `policy_required_evidence` | `src/tradesentry/policy/required_evidence.py` | 앱 | M | 신호 계열 → 필수 주장·근거 목록 | 유지 | 3 | 예 | 도구·검증기가 함께 쓰는 규칙 |
