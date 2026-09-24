@@ -71,7 +71,8 @@ class ModelConfigTest(unittest.TestCase):
         self.assertIs(cfg["request"]["enable_thinking"], False)
         # model-0.2: 도구 없는 조사자 초안 요청에 response_format json_object(실측 뒤 켬, 결정 기록 ⑯)
         # model-0.3: 조사자·Critic 프롬프트에 신호별 판정 규칙·도구 인자·재조회 인자 모양(AS2 2회차, AS2 결정 기록 ⑬)
-        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-0.3", "json_object"))
+        # model-0.4: 판정 규칙을 분해 보기의 판정 보조 값(rule_view, %)으로, 필수 근거 보기 압축(AS2 3회차)
+        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-0.4", "json_object"))
         for value in walk(cfg):
             if isinstance(value, str):
                 self.assertNotRegex(value, r"(?i)bearer|secret")

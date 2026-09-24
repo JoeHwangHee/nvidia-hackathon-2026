@@ -132,11 +132,16 @@ class CumulativeTokenTest(unittest.TestCase):
         self.assertLess(one_turn, two_turns)
 
     def test_decomposition_path_with_critic_fits_but_a_revision_after_it_does_not(self):
-        # full: 추가 비교 2(비교국·분해), Critic, 수정 없음 → 한도 안
-        record, total = run_path("full", [(None, calls("compare_partners"), 60), (None, calls("decompose_hs"), 60),
-                                          (DRAFT, None, 1200), (CRITIC_OK, None, 400)], [h.PASS, h.PASS])
+        # full: 추가 비교 2(비교국·분해)를 지침대로 한 차례에, Critic, 수정 없음 → 한도 안
+        record, total = run_path("full", [(None, calls("compare_partners", "decompose_hs"), 60), (DRAFT, None, 1200),
+                                          (CRITIC_OK, None, 400)], [h.PASS, h.PASS])
         self.assertEqual(record["execution_status"], "COMPLETED")
         self.assertLess(total, LIMIT)
+        # 같은 비교를 두 차례로 나눠 부르면(모델이 지침을 따르지 않은 경우) model-0.4 지침으로는 한도에 닿는다(남은 위험,
+        # AS2 3회차. 2026-09-25(금) 09:00 한도 결정 대상)
+        _, split = run_path("full", [(None, calls("compare_partners"), 60), (None, calls("decompose_hs"), 60),
+                                     (DRAFT, None, 1200), (CRITIC_OK, None, 400)], [h.PASS, h.PASS])
+        self.assertGreater(split, total)
         # 같은 경로에 검증기 차단으로 수정 단계(재조회 1)가 붙으면 한도를 넘는다(모든 모드에 같은 한도, 남은 위험)
         record, total = run_path("full", [(None, calls("compare_partners"), 60), (None, calls("decompose_hs"), 60),
                                           (DRAFT, None, 1200), (CRITIC_OK, None, 400),

@@ -5,10 +5,12 @@
 소유: M
 입력: 상태
 출력: 다음 비교·초안
-허용 import: 표준 라이브러리, tradesentry.contract, tradesentry.runlog, tradesentry.workflow
+허용 import: 표준 라이브러리, tradesentry.contract, tradesentry.metrics, tradesentry.runlog, tradesentry.workflow
 
 허용 import에 tradesentry.runlog를 더했다(MT4): 근거를 모델에게 보낼 때 Decimal 표기를 지키는 JSON 쓰기(단위 L1
 dumps)를 쓴다. S0 결정의 계층(contract → dal·runlog → … → workflow) 안이다.
+허용 import에 tradesentry.metrics를 더했다(AS2 3회차): 분해 봉투의 모델용 보기에 판정 보조 값(rule_view)을 반올림 전
+정확값(지표 단위 exact_value)으로 계산해 싣는다. 도구(단위 I1~I5)도 import하는 아래 계층이다.
 
 조사자(Nemotron) 한 차례: 지금까지의 근거(도구 봉투)를 보고 추가 비교(도구 호출)를 고르거나 초안을 쓴다.
 - 모델이 부를 수 있는 도구는 MODEL_TOOLS 넷이다. verify_evidence는 코드가 예약한 차례에만 부른다(개발 플랜 §6.7).
@@ -35,7 +37,10 @@ dumps)를 쓴다. S0 결정의 계층(contract → dal·runlog → … → workf
 import json
 import re
 from decimal import Decimal
+from fractions import Fraction
 
+from tradesentry.metrics import decompose as metrics_decompose
+from tradesentry.metrics import rounding as metrics_rounding
 from tradesentry.runlog import trace as trace_log
 from tradesentry.workflow import model_client
 from tradesentry.workflow import replay
@@ -140,7 +145,8 @@ def compact_envelope(envelope: object) -> object:
     빼는 것: query_id·snapshot_id·source_kind(사례 머리와 코드가 안다), elapsed_ms, 사례 머리와 같은 범위 값, 지표의
     계산 입력 원값·formula_version·tolerance, 빠진 자료의 request_id·flow. 원본 봉투는 흐름 조정이 그대로 들고
     검증기(R3)·틀 채우기(R1)·정책(P3)에 쓴다. 도구 결과가 커서 누적 토큰 한도(32,000)를 넘지 않게 하려는 것이다
-    (실자료 크기 합성 봉투에서 약 0.5~0.85배, 시험 tests/units/I12/test_token_estimate.py)."""
+    (실자료 크기 합성 봉투에서 약 0.5~0.85배, 시험 tests/units/I12/test_token_estimate.py).
+    decompose_hs 봉투에는 판정 보조 값 rule_view를 더한다(아래 rule_view)."""
     if not isinstance(envelope, dict):
         return envelope
     view: dict = {"tool": envelope.get("tool")}
@@ -163,7 +169,52 @@ def compact_envelope(envelope: object) -> object:
         view["evidence_ids"] = rest
     if envelope.get("retryable_error") is not None:
         view["retryable_error"] = envelope["retryable_error"]
+    rule = rule_view(envelope)
+    if rule is not None:
+        view["rule_view"] = rule
     return view
+
+
+RULE_EFFECTS = ("within_effect", "mix_effect", "residual")
+
+
+def _pct(value: Fraction | None, base: Fraction | None) -> Decimal | None:
+    if value is None or base is None or base <= 0:
+        return None
+    return metrics_rounding.round_half_up(value / base * 100, 2)
+
+
+def rule_view(envelope: dict) -> dict | None:
+    """decompose_hs 봉투의 판정 보조 값(AS2 3회차, 모든 모드와 Critic이 같은 보기). 공개 판정 규칙(단위 P3과 같은 조건)이
+    비교하는 양을 같은 단위(%)로 모은다: U0(기준월 부모 HS6 단가, USD/kg), within_effect·residual·within_effect+residual의
+    U0 대비 %, HS10 하위품목 r_U@의 절댓값 최대(%). 계산은 반올림 전 정확값(X3 exact_value)으로 하고 소수 2자리로 사사오입해
+    보인다. 값이 없으면(분해 불가·하위 r_U@ null) 그 칸은 null이다. 분해 지표가 없거나 입력이 모양 밖이면 None(싣지 않음)."""
+    if not isinstance(envelope, dict) or envelope.get("tool") != "decompose_hs":
+        return None
+    try:
+        effects, children = {}, []
+        base = None
+        for metric in envelope.get("metrics") or []:
+            inputs = metric.get("inputs") if isinstance(metric, dict) else None
+            symbol = inputs.get("metric") if isinstance(inputs, dict) else None
+            if symbol in RULE_EFFECTS:
+                effects[symbol] = metrics_decompose.exact_value(metric)
+                if symbol == "within_effect" and type(inputs.get("V_0")) is int and type(inputs.get("Q_0")) is int \
+                        and inputs["Q_0"] > 0:
+                    base = Fraction(inputs["V_0"], inputs["Q_0"])
+            elif isinstance(symbol, str) and symbol.startswith("r_U@"):
+                children.append(metrics_decompose.exact_value(metric))
+        if set(effects) != set(RULE_EFFECTS):
+            return None
+    except (KeyError, TypeError, ValueError, ArithmeticError):
+        return None
+    within, residual = effects["within_effect"], effects["residual"]
+    both = None if within is None or residual is None else within + residual
+    top = None if not children or any(c is None for c in children) else max(abs(c) for c in children)
+    return {"U0": None if base is None else metrics_rounding.round_half_up(base, 2),
+            "within_pct_of_U0": _pct(within, base), "residual_pct_of_U0": _pct(residual, base),
+            "within_plus_residual_pct_of_U0": _pct(both, base),
+            "max_abs_child_r_U": None if top is None else metrics_rounding.round_half_up(top, 2)}
 
 
 def dumps_for_model(value: object) -> str:
@@ -171,12 +222,28 @@ def dumps_for_model(value: object) -> str:
     return trace_log.dumps(value)
 
 
+def compact_required(required: object) -> object:
+    """필수 근거(단위 P5 출력)의 모델용 보기(AS2 3회차, 모든 모드 같음): 신호 계열마다 {"판정/판정 근거": [필수 근거 코드]}만
+    남긴다. 주장 기호 목록(지침에 있다)과 코드 설명은 뺀다(사례당 누적 토큰). 모양이 다르면 그대로 돌려준다."""
+    families = required.get("families") if isinstance(required, dict) else None
+    if not isinstance(families, dict):
+        return required
+    out = {}
+    for family, block in families.items():
+        rules = block.get("rules") if isinstance(block, dict) else None
+        if not isinstance(rules, list):
+            return required
+        out[family] = {f"{r.get('status')}/{r.get('basis')}": r.get("required_evidence") for r in rules
+                       if isinstance(r, dict)}
+    return out
+
+
 def case_message(case: dict, evidence: list, required: list | None, remaining: dict) -> str:
     """조사자의 첫 사용자 메시지. 모드를 받지 않는다(모드 사이에 같은 글이어야 한다, 룰북 B2)."""
     lines = ["[사례]", dumps_for_model({k: case.get(k) for k in ("case_id", "hs6", "partner", "month", "baseline_month",
                                                                "signals", "snapshot_id")})]
     if required:
-        lines += ["[필수 근거(공개 정책)]", dumps_for_model(required)]
+        lines += ["[필수 근거(공개 정책)]", dumps_for_model(compact_required(required))]
     lines += ["[이미 받은 근거(도구 봉투)]", dumps_for_model([compact_envelope(e) for e in evidence]),
               f"[남은 횟수] 추가 비교 {remaining.get('comparisons', 0)}회, 모델 요청 {remaining.get('model_requests', 0)}회",
               "필요하면 도구로 추가 비교를 하고, 아니면 초안 JSON을 답하라."]

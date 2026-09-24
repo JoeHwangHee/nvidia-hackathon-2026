@@ -13,7 +13,7 @@
     "snapshot_id": "controlled_fixture_v0",
     "policy_version": "dev-0.1",
     "grouping_version": "g0",
-    "model_config": "model-0.3",
+    "model_config": "model-0.4",
     "api_key_env": "NVIDIA_API_KEY",
     "limits": {
      "model_requests": 10,

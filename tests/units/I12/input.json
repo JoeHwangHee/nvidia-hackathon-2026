@@ -32,7 +32,7 @@
     "snapshot_id": "controlled_fixture_v0",
     "policy_version": "dev-0.1",
     "grouping_version": "g0",
-    "model_config": "model-0.3",
+    "model_config": "model-0.4",
     "api_key_env": "NVIDIA_API_KEY",
     "limits": {
      "model_requests": 10,
@@ -174,7 +174,7 @@
     "request_no": 1,
     "attempt": 1,
     "model_requests": 1,
-    "request_sha256": "7ce3950e35d9fda65398b696878d1de79f6dfdb15521187fcafcd42572cf709d",
+    "request_sha256": "44fc1cfc035f868e2996a9e7ceec80601fbf0c9c304c3504f8bb89a19be061a5",
     "timeout_ms": 60000,
     "messages": 2,
     "tools": 4
@@ -269,7 +269,7 @@
     "request_no": 2,
     "attempt": 1,
     "model_requests": 2,
-    "request_sha256": "7393ccc12bc2b4baf576227a5f7b0c0cdfe46868879652ad45a87f8f6f711c44",
+    "request_sha256": "71a73232c77d4adae01998294aea26877858fbb40f877a526ed531c9a7bb5a53",
     "timeout_ms": 60000,
     "messages": 2,
     "tools": 0
