@@ -1,0 +1,5 @@
+{
+ "cases_file": "tests/units/V4/fixture_cases.json",
+ "answers_file": "tests/units/V4/fixture_answers.json",
+ "dev20_parent_series_ids_file": "tests/units/V4/fixture_dev20_ids.json"
+}

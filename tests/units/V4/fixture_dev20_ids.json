@@ -1,0 +1,9 @@
+{
+ "schema_version": 1,
+ "dataset": "dev20",
+ "id_rule": "시험용 가짜 목록(실제 dev20 목록이 아니다)",
+ "parent_series_ids": [
+  "ps_1ebfaba5bb21fc4b",
+  "ps_c7256fdddac4a47c"
+ ]
+}
