@@ -1,0 +1,31 @@
+{
+  "hs6": "850450",
+  "partner": "CN",
+  "period": "202401",
+  "baseline_period": "202301",
+  "parent": [
+    {"month": "202301", "partner_code": "CN", "hs_code": "850450", "hs_level": 6, "flow": "import",
+     "amount_usd": 1006, "net_weight_kg": 50, "observation_status": "OBSERVED",
+     "evidence_ids": ["ev:golden_metrics:observation:201"]},
+    {"month": "202401", "partner_code": "CN", "hs_code": "850450", "hs_level": 6, "flow": "import",
+     "amount_usd": 2014, "net_weight_kg": 90, "observation_status": "OBSERVED",
+     "evidence_ids": ["ev:golden_metrics:observation:202"]}
+  ],
+  "world": [
+    {"month": "202301", "partner_code": "ALL", "hs_code": "8504509000", "hs_level": 10, "flow": "import",
+     "amount_usd": 2000, "net_weight_kg": 80, "observation_status": "OBSERVED",
+     "evidence_ids": ["ev:golden_metrics:observation:213"]},
+    {"month": "202301", "partner_code": "ALL", "hs_code": "8504501000", "hs_level": 10, "flow": "import",
+     "amount_usd": 5000, "net_weight_kg": 200, "observation_status": "OBSERVED",
+     "evidence_ids": ["ev:golden_metrics:observation:211"]},
+    {"month": "202301", "partner_code": "ALL", "hs_code": "8504502000", "hs_level": 10, "flow": "import",
+     "amount_usd": 3000, "net_weight_kg": 150, "observation_status": "OBSERVED",
+     "evidence_ids": ["ev:golden_metrics:observation:212"]},
+    {"month": "202401", "partner_code": "ALL", "hs_code": "8504501000", "hs_level": 10, "flow": "import",
+     "amount_usd": 7000, "net_weight_kg": 260, "observation_status": "OBSERVED",
+     "evidence_ids": ["ev:golden_metrics:observation:221"]},
+    {"month": "202401", "partner_code": "ALL", "hs_code": "8504509000", "hs_level": 10, "flow": "import",
+     "amount_usd": 3000, "net_weight_kg": 110, "observation_status": "OBSERVED",
+     "evidence_ids": ["ev:golden_metrics:observation:223"]}
+  ]
+}
