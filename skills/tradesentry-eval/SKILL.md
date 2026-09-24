@@ -116,7 +116,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | 1 | CLI `tradesentry`와 명령 `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate`, 공통 옵션 `--snapshot`, `--policy`, `--mode` | 명령 | `command -v tradesentry`의 종료 코드 0. 명령 다섯 개와 옵션 세 개가 CLI 사용 안내에 있는지 본다. 안내를 부르는 방법은 S0(구현 첫 작업 단위인 앱 스캐폴딩. 외부 자문 체크포인트) 뒤에 정한다 `[미확인]` | 전부 |
 | 2 | 독립 채점기 `eval/scorer/`와 실행 명령 `python -m eval.scorer --run <run_dir>` | 파일·명령 | `test -d eval/scorer`의 종료 코드 0 | 전부 |
 | 3 | 채점기 사전 검증 시험: `eval/dev/oracle_ABC.json`의 합성 사례 A/B/C 기대값과 손계산 예제를 재현하는 시험(룰북 B3 절차 0) | 파일 | `tests/`에 그 시험이 있다 | 전부 |
-| 4 | 정책 수치 `configs/policy_v1.json` | 파일 | `test -f`의 종료 코드 0. 사용자 승인 전(MVP 시험)이면 결과 요약에 "정책 승인 전"을 적는다 `[추론: 자료 계약 §1.3]` | 전부 |
+| 4 | 정책 수치 `configs/policy_v1.json` | 파일 | `test -f`의 종료 코드 0. `policy_v1` 승인 전에는 `configs/policy_dev.json`(개발용 정책 `dev-0.1`)을 본다(결정 기록 `20260924-2315-user-decision-impl-plan-approval.md` D2). 사용자 승인 전(MVP 시험)이면 결과 요약에 "정책 승인 전"을 적는다 `[추론: 자료 계약 §1.3]` | 전부 |
 | 5 | OpenShell 정책 `configs/openshell/policy.yaml` | 파일 | `test -f`의 종료 코드 0 | 전부 |
 | 6 | 스냅샷 SQLite(파일 하나로 된 데이터베이스)와 raw 응답(API 원본 응답 파일) | 파일 | 실행할 곳에 있다. git이 추적하지 않아 새 worktree(작업마다 따로 여는 git 작업 복사본)에는 없다(AGENT_OPS §1.3) | 전부 |
 | 7 | 스냅샷 정규화 해시 `normalized_sha256`(스냅샷 SQLite 행을 rowid(SQLite가 행마다 붙이는 정수 번호)까지 넣어 정해진 방식으로 직렬화해 구한 sha256. sha256은 내용이 조금만 바뀌어도 값이 달라지는 파일 지문이다)의 기록값과 재계산 방법 | 해시 | 기록값이 SQLite 밖의 커밋된 기록(스냅샷 폴더의 해시 파일이나 결정 기록)에 있고, 재계산 방법이 결정 기록(결정과 이유를 남기는 문서, `docs/tracking/decisions/`)에 있다(자료 계약 §2.3.1, §4.4 규칙 4). v2의 `data/snapshots/kcs_202201_202412_v2/snapshot_hash.json`에는 지금 raw 결합 해시만 있다 `[사실]` | 전부 |

@@ -185,7 +185,7 @@
 | 앱 패키지 | `src/tradesentry/` — `ingest.py`(기존), 패키지 `contract/`, `snapshot/`, `dal/`, `metrics/`, `policy/`, `grouping/`, `tools/`, `workflow/`, `reports/`, `validator/`, `runlog/`, `evaluation/`, `approval/`, `cli/`. 단위 파일은 `{패키지}/{단위}.py` | D: ingest·contract·snapshot·dal·metrics / M: policy·grouping·tools·workflow·reports·validator·evaluation·approval·cli / 공동: runlog |
 | 단위 등록부·공통 실행기(개발 전용) | `src/tradesentry/units/`, 실행 `python -m tradesentry.units <단위 ID> --in <입력 파일>` | 공동 |
 | CLI | `tradesentry <명령>` — `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate`, 공통 옵션 `--snapshot`, `--policy`, `--mode`(값은 `checklist`, `agent`, `full`, `freeform`) | M |
-| 정책 수치 | `configs/policy_v1.json` | D 제안·사용자 승인 |
+| 정책 수치 | `configs/policy_v1.json`(사용자 승인 뒤), 개발용 `configs/policy_dev.json`(`policy_version` `dev-0.1`, oracle 기준값, 승인 전 실행용) | D 제안·사용자 승인(개발용은 D) |
 | NAT 설정 | `configs/nat/workflow.yml` | M |
 | OpenShell 정책 | `configs/openshell/policy.yaml` | M(보안 검토) |
 | 런타임 스킬 | `skills/tradesentry/SKILL.md` | M |
@@ -389,7 +389,7 @@ eval/scorer/(샌드박스 밖, tradesentry 패키지·eval/datagen import 금지
 | 키 | 무엇의 버전인가 | 값 |
 |---|---|---|
 | `schema_version` | 자료 계약 | 1 |
-| `policy_version` | 탐지·판정 정책 | `policy_v1`(승인 전에는 개발용 정책) |
+| `policy_version` | 탐지·판정 정책 | `policy_v1`(승인 전에는 개발용 정책 `dev-0.1`, `configs/policy_dev.json`) |
 | `grouping_version` | 비교 대상 집합 | `g0`(2026-09-25(금) MVP 시험까지), `g1`(동결 뒤 기본) |
 | `rulebook_version` | 평가 룰북 | `RB-1` |
 | `formula_version` | 지표 공식 | D가 정한다 |
