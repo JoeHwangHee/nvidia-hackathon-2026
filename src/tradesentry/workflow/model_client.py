@@ -14,7 +14,7 @@ NIM(NVIDIA 클라우드 추론 API) chat completions를 부르는 클라이언�
 - 자동 재시도는 없다(urllib 직접 호출). HTTP 5xx만 코드가 명시적으로 재전송한다: 요청당 최대 3회, 지수 대기
   (1초부터 2배, 조정값). 재전송도 HTTP 시도 한 번이므로 모델 요청 수(model_requests)에 센다.
 - 4xx·연결 실패·요청별 제한 시간 초과·읽을 수 없는 본문은 재전송하지 않고 실행을 멈춘다(원인 분류 코드는 단위 L3).
-- 한도 확인 순서: 사례 deadline이 먼저다(전체 deadline 우선). 그다음 모델 요청 10회, 그다음 누적 토큰 32,000.
+- 한도 확인 순서: 사례 deadline이 먼저다(전체 deadline 우선). 그다음 모델 요청 10회, 그다음 누적 토큰(설정 limits.tokens, 128,000).
   재전송하기 전에도 같은 순서로 본다. 대기가 deadline을 넘으면 DEADLINE(TIMEOUT), 재전송 중 모델 요청 10회에 먼저
   닿으면 BUDGET_MODEL_REQUESTS(BUDGET_EXCEEDED)로 멈춘다. 후자는 인프라 실패 재실행 대상이 아니다.
 - 요청별 제한 시간은 min(60초, deadline까지 남은 시간 − 종료 기록 예약 시간)이다. 남은 시간이 없으면 보내지 않는다.

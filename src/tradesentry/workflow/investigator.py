@@ -194,7 +194,7 @@ def compact_envelope(envelope: object) -> object:
     어딘가에 한 번 이상 나온다(freeform 주장과 자료 상태 주장이 인용할 수 있다).
     빼는 것: query_id·snapshot_id·source_kind(사례 머리와 코드가 안다), elapsed_ms, 사례 머리와 같은 범위 값, 지표의
     계산 입력 원값·formula_version·tolerance, 빠진 자료의 request_id·flow. 원본 봉투는 흐름 조정이 그대로 들고
-    검증기(R3)·틀 채우기(R1)·정책(P3)에 쓴다. 도구 결과가 커서 누적 토큰 한도(32,000)를 넘지 않게 하려는 것이다
+    검증기(R3)·틀 채우기(R1)·정책(P3)에 쓴다. 도구 결과가 커서 누적 토큰 한도(설정 limits.tokens, 128,000)를 넘지 않게 하려는 것이다
     (실자료 크기 합성 봉투에서 약 0.5~0.85배, 시험 tests/units/I12/test_token_estimate.py).
     decompose_hs 봉투에는 판정 보조 값 rule_view를 더한다(아래 rule_view)."""
     if not isinstance(envelope, dict):

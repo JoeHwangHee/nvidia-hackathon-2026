@@ -23,7 +23,7 @@ Critic(별도 문맥의 검수자)은 조사자가 받은 근거와 초안만 �
 - Critic이 보는 근거는 조사자의 모델용 보기(단위 I10 compact_envelope)에서 지표마다의 근거 ID 목록을 걷어 봉투마다 한
   목록(중복 없음)으로 모은 것이다(evidence_view). 근거 ID와 metric_id는 하나도 잃지 않는다. Critic은 근거의 짝을
   대조하지 않고(그 일은 검증기 R3), 누락·반대 설명·비교조건·근거에 없는 ID를 지적하므로 목록 하나로 충분하다. 조사자의
-  대화보다 짧아 사례 누적 토큰(32,000)을 덜 쓴다. full·freeform이 같은 보기를 받는다.
+  대화보다 짧아 사례 누적 토큰(설정 limits.tokens, 128,000)을 덜 쓴다. full·freeform이 같은 보기를 받는다.
 """
 import json
 import re
