@@ -2,13 +2,14 @@
 
 - 도움말은 종료 코드 0, 모드는 4개 값만, 옵션 줄임은 종료 코드 2다.
 - 명령 배선은 처리 함수 표(dispatch.HANDLERS)를 가짜로 바꿔 시험한다. 그래서 실제 명령을 조립체와 이어도(구현
-  상태가 바뀌어도) 이 시험들은 깨지지 않는다. "처리 함수가 NotImplementedError를 내면 분명한 오류 문장과 종료
-  코드 3"은 명령마다 따로 시험해, 한 명령을 잇는 PR이 다른 명령의 시험을 건드리지 않게 한다.
+  상태가 바뀌어도) 이 시험들은 깨지지 않는다. "아직 잇지 않은 명령(항목이 자리표시 dispatch._not_wired)은 분명한
+  오류 문장과 종료 코드 3"은 명령마다 따로 시험해, 한 명령을 잇는 PR이 다른 명령의 시험을 건드리지 않게 한다.
+  이은 처리 함수 안에서 난 NotImplementedError는 3이 아니다(tests/units/F2/test_dispatch.py).
+- 처리 함수는 단위 F1이 검증한 요청(args.Request)을 받는다.
 - 명령마다 받는 옵션과 꼭 있어야 하는 옵션은 단위 F1의 표(args.COMMAND_OPTIONS)가 정한다. VALID_ARGV는 그 표와 따로
   적은, 문서에 있는 호출 모양이다(평가 스킬 ② 사전 점검의 snapshot-verify, 룰북 B7의 evaluate). 값 형식의 세부 시험은
   tests/units/F1/test_args.py에 있다.
 """
-import argparse
 import io
 import subprocess
 import sys
@@ -41,20 +42,15 @@ def call(argv: list[str]) -> tuple[int, str, str]:
     return code, out.getvalue(), err.getvalue()
 
 
-def not_wired(namespace: argparse.Namespace) -> int:
-    """아직 잇지 않은 명령을 흉내 내는 가짜 처리 함수."""
-    raise NotImplementedError("가짜 처리 함수: 아직 잇지 않았다")
-
-
 class FakeHandler:
-    """받은 인자를 적어 두고 정해진 종료 코드를 돌려주는 가짜 처리 함수."""
+    """받은 요청을 적어 두고 정해진 종료 코드를 돌려주는 가짜 처리 함수."""
 
     def __init__(self, code: int = 0):
         self.code = code
-        self.seen: list[argparse.Namespace] = []
+        self.seen: list[args.Request] = []
 
-    def __call__(self, namespace: argparse.Namespace) -> int:
-        self.seen.append(namespace)
+    def __call__(self, request: args.Request) -> int:
+        self.seen.append(request)
         return self.code
 
 
@@ -92,9 +88,10 @@ class CliTest(unittest.TestCase):
                                  "--mode", "full"])
         self.assertEqual(code, 5)
         self.assertEqual(err, "")
-        namespace = handler.seen[0]
-        self.assertEqual((namespace.command, namespace.snapshot, namespace.policy, namespace.mode),
-                         ("evaluate", "controlled_fixture_v0", "policy_v1", "full"))
+        request = handler.seen[0]
+        self.assertIsInstance(request, args.Request)
+        self.assertEqual((request.command, request.snapshot_id, request.policy_version, request.mode, request.case),
+                         ("evaluate", "controlled_fixture_v0", "policy_v1", "full", None))
 
     def test_mode_accepts_only_four_values(self):
         base = VALID_ARGV["run-case"][:-4]  # --mode와 --case를 뺀 앞부분
@@ -124,7 +121,7 @@ class CliTest(unittest.TestCase):
         handler = FakeHandler()
         with mock.patch.dict(dispatch.HANDLERS, {"detect": handler}):
             self.assertEqual(call(["detect", "--snapshot", "x", "--policy", "dev-0.1"])[0], 0)  # 온전한 이름은 받는다
-        self.assertEqual(handler.seen[0].snapshot, "x")
+        self.assertEqual(handler.seen[0].snapshot_id, "x")
 
     def test_module_and_installed_script(self):
         result = subprocess.run([sys.executable, "-m", "tradesentry.cli", "--help"], capture_output=True, text=True)
@@ -139,10 +136,10 @@ class CliTest(unittest.TestCase):
 
 
 class NotImplementedCommandTest(unittest.TestCase):
-    """명령마다 따로: 처리 함수가 NotImplementedError를 내면 분명한 오류 문장과 종료 코드 3으로 끝난다."""
+    """명령마다 따로: 아직 잇지 않은 명령(자리표시 처리 함수)은 분명한 오류 문장과 종료 코드 3으로 끝난다."""
 
     def check(self, command: str) -> None:
-        with mock.patch.dict(dispatch.HANDLERS, {command: not_wired}):
+        with mock.patch.dict(dispatch.HANDLERS, {command: dispatch._not_wired}):
             code, out, err = call(VALID_ARGV[command])
         self.assertEqual(code, dispatch.EXIT_NOT_IMPLEMENTED)
         self.assertEqual(out, "")
