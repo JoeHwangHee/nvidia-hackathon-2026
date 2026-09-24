@@ -20,8 +20,10 @@ kg, 정책 tolerance.weight_rounding_kg). 모델 인자는 받지 않는다(하�
   지표 33개) 모델에게 보일 때 줄이는 일은 흐름 조정(단위 I12)의 몫이다.
 - comparability: {"parent_check": X3의 달별 부모 대조(행 수, 금액·중량 합, 허용오차, 일치 여부),
   "hs10": [{"month", "observation_status", "codes"}] (달별 하위자료 상태와 코드), "same_hs10_set": 참거짓 또는 null}.
-- missingness: 두 달의 대상국 부모 행과 HS10 하위자료의 빠진 자료. scope: months는 두 달, partners는 대상국,
-  hs10은 읽은 코드.
+- missingness: 두 달의 대상국 부모 행과 HS10 하위자료의 빠진 자료. C형 달(부모 HS6 행은 있고 하위자료만 상태 행)의
+  하위자료 상태 항목에는 hs10_codes(빠진 HS10 코드 목록)와 hs10_codes_source가 붙는다(도구 공통 틀). 그 달의 U@·w@·r_U@
+  지표는 X3가 null과 상태 코드 사유·상태 행 근거로 낸다(다른 달에 관측된 코드만 지표가 생긴다).
+  scope: months는 두 달, partners는 대상국, hs10은 읽은 코드.
 """
 from tradesentry.dal import query as dal
 from tradesentry.metrics import decompose as metrics_decompose
