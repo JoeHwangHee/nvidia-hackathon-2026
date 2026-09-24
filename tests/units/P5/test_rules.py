@@ -69,7 +69,7 @@ class RuleTableTest(unittest.TestCase):
             for basis in ("data_insufficient", "comparison_incomplete", "resolved_after_correction"):
                 self.assertEqual(p5.required_comparisons(family, basis), ())
         self.assertLessEqual(set(p5.COMPARISON_EVIDENCE.values()), set(p5.EVIDENCE_DESCRIPTIONS))
-        self.assertEqual(p5.COMPARISON_STATES, ("done", "incomplete"))
+        self.assertEqual(p5.COMPARISON_STATES, ("done", "incomplete", "not_performed"))
 
     def test_comparison_incomplete_is_a_hold_with_hold_evidence(self):
         for family in p5.SIGNAL_CODES:

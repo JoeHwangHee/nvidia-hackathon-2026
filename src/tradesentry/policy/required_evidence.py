@@ -22,9 +22,12 @@
 
 필수 비교: 근거 코드 가운데 셋은 조사 중에 해야 하는 비교다. `comparability_ok`는 비교 조건 점검(`comparability`),
 `partner_comparison_done`은 비교국 비교(`partners`), `country_and_world_change_shown`은 해당국 금액과 전체국가 분모의
-변화 확인(`country_and_world`)이다(COMPARISON_EVIDENCE). 단위 P3은 판정 근거를 정하기 전에 그 근거의 규칙이 요구하는
-비교가 끝났는지(`done`) 근거 상태에서 확인하고, 수행했지만 자료가 모자라 끝내지 못했으면(`incomplete`)
-`comparison_incomplete`(`HOLD`)로 낸다. 어느 규칙이 어느 비교를 요구하는지는 이 파일의 규칙표 하나에서 나온다.
+변화 확인(`country_and_world`)이다(COMPARISON_EVIDENCE). 근거 상태는 비교마다 완료 표시 셋 가운데 하나를 적는다:
+`done`(수행해서 결과를 얻음), `incomplete`(수행했지만 빠진 관측 때문에 결과를 얻지 못함), `not_performed`(수행하지
+않음. 비교 불가로 조기 종료했거나 도구 호출이 실패한 경우). 단위 P3은 판정 근거를 정하기 전에 그 근거의 규칙이 요구하는
+비교가 끝났는지(`done`) 확인하고, `incomplete`면 `comparison_incomplete`(`HOLD`)로 낸다. 요구하는 비교가
+`not_performed`인데 자료 부족 같은 앞 단계 사유가 없으면 입력 오류다. 어느 규칙이 어느 비교를 요구하는지는 이 파일의
+규칙표 하나에서 나온다.
 
 계약 상수: 커널 K1(tradesentry.contract.types)이 아직 뼈대라, 판정 정책 단위가 쓰는 계약 값(상태값·신호 코드·관측
 상태·출처·자료 묶음 이름)을 이 파일에 한 번만 적고 P1~P4가 여기서 import한다. 글자는 자료 계약과 같다. 조립 점검
@@ -108,12 +111,13 @@ RULES = {
     ),
 }
 
-# 필수 비교 → 그 비교가 채우는 근거 코드. 근거 상태의 비교 완료 표시는 COMPARISON_STATES 둘 중 하나다.
+# 필수 비교 → 그 비교가 채우는 근거 코드. 근거 상태의 비교 완료 표시는 COMPARISON_STATES 셋 중 하나다.
 COMPARISON_EVIDENCE = {"comparability": "comparability_ok", "partners": "partner_comparison_done",
                        "country_and_world": "country_and_world_change_shown"}
 COMPARISON_DONE = "done"
 COMPARISON_INCOMPLETE = "incomplete"
-COMPARISON_STATES = (COMPARISON_DONE, COMPARISON_INCOMPLETE)
+COMPARISON_NOT_PERFORMED = "not_performed"
+COMPARISON_STATES = (COMPARISON_DONE, COMPARISON_INCOMPLETE, COMPARISON_NOT_PERFORMED)
 
 # 자료 계약 §9.4 신호 계열 대응. HS10 하위 기호는 `<기호>@<HS10 코드>`다(§6.2).
 CLAIM_METRICS = {UNIT_VALUE: ("U", "r_U", "within_effect", "mix_effect", "residual"), SHARE: ("s", "d_s")}
