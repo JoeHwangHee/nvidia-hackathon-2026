@@ -50,7 +50,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 ## 3. 단위 표
 
-- 64행이다. 판정 집계는 유지 41, 합침 후보 13, 버림 후보 1, 런타임 밖 9이고, 형식 집계는 앱 54, 커널 1, 구성 9다 `[사실: 이 표를 센 결과]`.
+- 64행이다. 판정 집계는 유지 44, 합침 후보 10, 버림 후보 1, 런타임 밖 9이고, 형식 집계는 앱 54, 커널 1, 구성 9다 `[사실: 이 표를 센 결과]`.
 - **조립 판정 열은 후보다.** 조립 점검(§5)에서 확정하고, 확정한 판정으로 이 표를 고친다. "합침 후보(→ X)"의 X가 합칠 대상이다. "런타임 밖"은 수집·합성·평가 자료 도구처럼 런타임 조립에 들지 않는 단위다(§6).
 - **동결 경로 열**의 "예"는 `RB-1`(평가 룰북의 첫 동결 버전) 전에 끝내야 하는 판정 정책·검증기 단위다. 이 단위들의 합치기는 조립 점검 작업 AS4에서만 하고, MVP(최소 기능 제품) 시험 뒤에는 건드리지 않는다(§7).
 - **비고의 "고정 규칙과 충돌"**은 조립 판정을 그대로 따르면 이미 정한 규칙과 부딪치는 단위다. 판정을 바꾸려면 그 규칙의 절차(사용자 승인 등)를 거친다.
@@ -64,7 +64,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 |---|---|---|---|---|---|---|---|---|---|---|
 | S1 | 수집기 | `ingest` | `src/tradesentry/ingest.py`(기존 그대로) | 앱 | D | 공공데이터포털 API 요청 → raw 응답·manifest | 런타임 밖 | 8 | — | 동결 스냅샷(v1·v2)에는 다시 돌리지 않는다 |
 | S2 | 스냅샷 빌더 | `snapshot_build` | `src/tradesentry/snapshot/build.py` | 앱 | D | raw·manifest·`peer_group_g1.csv`·승격 규칙 → 파생 SQLite(결정적 rowid) | 유지 | 1 | — | — |
-| S3 | 스냅샷 검증 | `snapshot_verify` | `src/tradesentry/snapshot/verify.py` | 앱 | D | SQLite·raw → 검증 보고·`normalized_sha256`·계약 검사 | 합침 후보(→ S2) | 1 | — | 단위 S2와 입력이 같고 같은 명령 묶음이다 |
+| S3 | 스냅샷 검증 | `snapshot_verify` | `src/tradesentry/snapshot/verify.py` | 앱 | D | SQLite·raw → 검증 보고·`normalized_sha256`·계약 검사 | 유지 | 1 | — | 단위 S2와 입력이 다르고(S2는 raw·manifest로 SQLite를 만들고, S3은 만든 SQLite를 raw와 대조해 검증한다) 명령도 따로다(`snapshot-build`, `snapshot-verify`). 평가 스킬 ② 사전 점검과 로드맵 F2도 `snapshot-verify`를 따로 부른다 |
 | S4 | 합성 스냅샷 생성 | `snapshot_fixture` | `src/tradesentry/snapshot/fixture.py` | 앱 | D | 생성 규칙 → `controlled_fixture_v0` | 런타임 밖 | 8 | — | 시험 자료 도구 |
 
 ### 3.2 K — 계약 커널·자료 접근(5개)
@@ -74,35 +74,35 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | K1 | 계약 타입 | `contract_types` | `src/tradesentry/contract/types.py` | 커널 | D | 정의 모음(상태값·키·typed dict·`schema_version`). 입출력 없음 | 유지 | 공유 | — | 합침의 목적지 |
 | K2 | 근거 ID | `contract_evidence_id` | `src/tradesentry/contract/evidence_id.py` | 앱 | D | (`snapshot_id`, `table`, `rowid`) ↔ `ev:` 문자열, 풀림 규칙 | 합침 후보(→ K1) | 공유 | — | 채점기는 따로 구현한다(독립성) |
 | K3 | 읽기 전용 조회 | `dal_query` | `src/tradesentry/dal/query.py` | 앱 | D | `snapshot_id` + 허용 scope → 계약 객체(빠진 자료는 관측 상태 코드) | 유지 | 공유 | — | — |
-| K4 | 정책 수치 읽기 | `contract_policy_load` | `src/tradesentry/contract/policy_load.py` | 앱 | D | `configs/policy_v1.json` → 정책 객체 | 합침 후보(→ K1) | 공유 | — | 단위 S2와 판정 정책(P 묶음)이 함께 쓴다 |
+| K4 | 정책 수치 읽기 | `contract_policy_load` | `src/tradesentry/contract/policy_load.py` | 앱 | D | `configs/policy_v1.json` → 정책 객체 | 합침 후보(→ K1) | 공유 | — | 단위 S2, 판정 정책(P 묶음), 지표 단위 X3·X4가 함께 쓴다 |
 | K5 | 공통 봉투 | `contract_envelope` | `src/tradesentry/contract/envelope.py` | 앱 | D | 도구 결과 → 키 11개 봉투 | 합침 후보(→ K1) | 공유 | — | 키 목록이 계약이라 커널로 모은다 |
 
 ### 3.3 X — 지표(4개)
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| X1 | 단가·변화율 | `metrics_unit_value` | `src/tradesentry/metrics/unit_value.py` | 앱 | D | V·Q(t, t−12) → `U`, `r_U` | 유지 | 2 | — | — |
-| X2 | 점유율·변화 | `metrics_share` | `src/tradesentry/metrics/share.py` | 앱 | D | 상대국 V·`ALL` V(중복 제거) → `s`, `d_s`(pp) | 유지 | 2 | — | — |
+| X1 | 단가·변화율 | `metrics_unit_value` | `src/tradesentry/metrics/unit_value.py` | 앱 | D | V·Q(t, t−12) → `U`, `r_U` | 유지 | 2·3 | — | — |
+| X2 | 점유율·변화 | `metrics_share` | `src/tradesentry/metrics/share.py` | 앱 | D | 상대국 V·`ALL` V(중복 제거) → `s`, `d_s`(pp) | 유지 | 2·3 | — | — |
 | X3 | 구성효과 분해 | `metrics_decompose` | `src/tradesentry/metrics/decompose.py` | 앱 | D | HS10 두 시점 → `within_effect`·`mix_effect`·`residual`, 부모 대조 | 유지 | 3 | — | 도구 `decompose_hs`(단위 I4)가 부른다 |
-| X4 | 자릿수·반올림 | `metrics_rounding` | `src/tradesentry/metrics/rounding.py` | 앱 | D | 값 → 표시 값(`ROUND_HALF_UP`)·중량 허용오차 판정 | 합침 후보(→ 지표 묶음 공통) | 2·3 | — | 형제 단위가 함께 쓰는 공통 유틸 |
+| X4 | 자릿수·반올림 | `metrics_rounding` | `src/tradesentry/metrics/rounding.py` | 앱 | D | 값 → 표시 값(`ROUND_HALF_UP`)·중량 허용오차 판정 | 유지 | 2·3 | — | 공통 유틸이다. 소비자는 지표 단위 X1~X3과 보고서·검증기 단위 R2·R3(표시 자릿수와 반올림)이라 소비자가 둘 이상이다 |
 
 ### 3.4 P — 판정 정책(5개)
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | P1 | 신호 발동 | `policy_trigger` | `src/tradesentry/policy/trigger.py` | 앱 | M | 지표 + 정책 → 계열·월별 신호 발동 | 유지 | 2 | 예 | — |
-| P2 | 사례 만들기 | `policy_case_build` | `src/tradesentry/policy/case_build.py` | 앱 | M | 발동 → 사례(`case_id`·scope), `real_dev` 시계열 제한 | 합침 후보(→ P1) | 2 | 예 | `detect` 한 흐름 |
-| P3 | 신호별 판정 | `policy_signal_decide` | `src/tradesentry/policy/signal_decide.py` | 앱 | M | 근거 상태 → 신호별 `HOLD`·`MONITOR`·`MAINTAIN` | 유지 | 3 | 예 | — |
-| P4 | 사례 집계 | `policy_case_aggregate` | `src/tradesentry/policy/case_aggregate.py` | 앱 | M | 신호별 상태 → 최종(`MAINTAIN > HOLD > MONITOR`) | 합침 후보(→ P3) | 3 | 예 | — |
+| P2 | 사례 만들기 | `policy_case_build` | `src/tradesentry/policy/case_build.py` | 앱 | M | 발동·분할 기록과 묶음 선택(`real_dev`/`real_sealed`) → 사례(`case_id`·scope). 지정한 묶음의 시계열로 제한(수단은 S0 자문 Q18, 고르는 방법은 병렬 개발 규칙 §7.2의 5) | 합침 후보(→ P1) | 2 | 예 | `detect` 한 흐름 |
+| P3 | 신호별 판정 | `policy_signal_decide` | `src/tradesentry/policy/signal_decide.py` | 앱 | M | 근거 상태 → 신호별 `HOLD`·`MONITOR`·`MAINTAIN`·`NOT_TRIGGERED` | 유지 | 3 | 예 | — |
+| P4 | 사례 집계 | `policy_case_aggregate` | `src/tradesentry/policy/case_aggregate.py` | 앱 | M | 신호별 상태 → 최종(`MAINTAIN > HOLD > MONITOR`)·`unresolved_evidence` | 합침 후보(→ P3) | 3 | 예 | — |
 | P5 | 필수 근거 규칙 | `policy_required_evidence` | `src/tradesentry/policy/required_evidence.py` | 앱 | M | 신호 계열 → 필수 주장·근거 목록 | 유지 | 3 | 예 | 도구·검증기가 함께 쓰는 규칙 |
 
 ### 3.5 G — 비교 대상(3개)
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| G1 | g0 고정 목록 | `grouping_g0` | `src/tradesentry/grouping/g0.py` | 앱 | M | v2 2023 수입액 → 대상국 뺀 상위 5개국 | 유지 | 3 | — | **고정 규칙과 충돌**: `g1`이 동결되지 않으면 채점의 대체 기본값이 `g0`이다(자료 계약 §4.2). 그래서 버릴 수 없다 |
+| G1 | g0 고정 목록 | `grouping_g0` | `src/tradesentry/grouping/g0.py` | 앱 | M | v2 2023 수입액 → 대상국 뺀 상위 5개국 | 유지 | 3 | — | **고정 규칙과 충돌**: `g1`이 동결되지 않으면 채점의 대체 기본값이 `g0`이다(자료 계약 §4.2). 그래서 버릴 수 없다. HS6별 목록이다. 해석은 사용자 확인 대기(로드맵 §6.1) |
 | G2 | g1 유사도 | `grouping_g1` | `src/tradesentry/grouping/g1.py` | 앱 | M | BACI + 국가 코드 대응 → `peer_group_g1.csv` | 유지 | 1 | — | 결과는 D가 검수한다 |
-| G3 | 국가 코드 대응 | 없음(구성) | `data/reference/` 아래 국가 코드 대응표(파일 이름은 S0 자문 Q20) | 구성 | D | 관세청 2자리 ↔ BACI 코드, 대만 주석 | 합침 후보(→ G2) | 1 | — | 단위 G2의 입력 자료 |
+| G3 | 국가 코드 대응 | 없음(구성) | `data/reference/` 아래 국가 코드 대응표(파일 이름은 S0 자문 Q20) | 구성 | D | 관세청 2자리 ↔ BACI 코드, 대만 주석 | 유지 | 1 | — | 단위 G2의 입력 자료. D 소유 파일(`data/reference/`)이라 M 소유 단위 G2와 합치면 트랙 경계를 넘는다(병렬 개발 규칙 §1). 맡는 작업은 로드맵 DT1이다 |
 
 ### 3.6 I — 조사: 도구·흐름(13개)
 
@@ -195,7 +195,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 |---|---|---|---|---|
 | 1 | 스냅샷 빌드·검증 | S2, S3, G2, G3 | `tradesentry snapshot-build`, `tradesentry snapshot-verify` | DT1(자료 쪽 구현), DT7(단위 S2 최종 빌드). 점검은 AS4 |
 | 2 | 탐지 | X1, X2, X4, P1, P2 | `tradesentry detect` | AS1 |
-| 3 | 사례 조사 | X3, X4, P3, P4, P5, G1, I1~I13, R1~R4, L1~L3 | `tradesentry run-case` | AS2 |
+| 3 | 사례 조사 | X1, X2, X3, X4, P3, P4, P5, G1, I1~I13, R1~R4, L1~L3 | `tradesentry run-case` | AS2 |
 | 4 | 평가 실행 | E1~E4, L1~L3 | `tradesentry evaluate`, 샌드박스 밖 실행기 | AS3 |
 | 5 | 독립 채점기 | C1~C3 | `python -m eval.scorer --run <run_dir>` | AS3(결과 파일 형식 맞춤) |
 | 6 | NVIDIA 연동 구성 | F3~F7 | 런타임 스킬, OpenShell 정책·샌드박스 이미지·키 주입 설정, 위반 시험 | MT5. 점검은 AS4 |
@@ -204,7 +204,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | 공유 | 계약 커널·자료 접근 | K1~K5 | 모든 조립체가 import한다 | 점검은 AS4 |
 | CLI 조립 층 | 명령 배선 | F1, F2 | `tradesentry <명령>`이 인자를 검증하고 조립체 1~4를 부른다 | AS1~AS3에서 명령마다 잇는다 |
 
-- 단위 X4(자릿수·반올림)와 L1~L3(실행 기록)은 두 조립체에 함께 든다.
+- 단위 X1·X2·X4와 L1~L3은 두 조립체에 함께 든다. X1(단가·변화율)·X2(점유율·변화)·X4(자릿수·반올림)는 조립체 2·3에, L1~L3(실행 기록)은 조립체 3·4에 든다.
 - CLI 조립 층은 조립체 1~4를 부르기만 한다. 채점기(조립체 5)는 CLI가 부르지 않고 샌드박스 밖에서 따로 돈다. 채점기가 `tradesentry` 패키지를 import하지 않는다는 경계(§2)는 조립 뒤에도 그대로다.
 - 조립체 6의 구성 단위(OpenShell 정책·이미지·키 주입 설정)는 X1(구현 첫날의 세로형 최소 통합 시험)의 결과를 이어받는다. X1 임시 코드(`spikes/x1/`) 자체는 조립에 넣지 않는다(§6).
 
