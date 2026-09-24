@@ -19,7 +19,7 @@
 |---|---|
 | 날짜 | 2026-09-25(금) 06:05(기록 시각). 바탕은 `main` cf9d607 + MT4 브랜치 6dfc489(병합 02ebeb5)이고, 작업 중 AS1(#32)이 병합된 `main` d945792를 받았다(f9e5633). 코드 커밋은 c9085f8(단위 I12)·81b9df9(단위 F2) |
 | 제목 | `run-case` 배선 순서·도구 자리·근거 상태 변환·C형 펼치기·출력 파일, 실자료 스냅샷 거부(잠정), 조립 점검 1·2·5단계 결과와 단위 표 판정 갱신 |
-| 결정 | 아래 "결정 내용" ①~⑫. ⑬은 2회차(실제 NIM 실측 6회 뒤, 같은 날 06:3x), ⑭는 3회차(실측 27회 뒤, 07:0x), ⑮는 4회차(실측 20회 뒤, 07:2x), ⑯은 5회차(07:4x), ⑰은 6회차(08:0x, 오케스트레이터 판단), ⑱은 7회차(08:3x), ⑲는 8회차(09:0x), ⑳은 9회차(검토 반영, 09:3x), ㉑은 10회차(마지막 조정, 10:0x)에 더했다 |
+| 결정 | 아래 "결정 내용" ①~⑫. ⑬은 2회차(실제 NIM 실측 6회 뒤, 같은 날 06:3x), ⑭는 3회차(실측 27회 뒤, 07:0x), ⑮는 4회차(실측 20회 뒤, 07:2x), ⑯은 5회차(07:4x), ⑰은 6회차(08:0x, 오케스트레이터 판단), ⑱은 7회차(08:3x), ⑲는 8회차(09:0x), ⑳은 9회차(검토 반영, 09:3x), ㉑은 10회차(마지막 조정, 10:0x), ㉒는 병합 준비(사용자 결정 반영)에 더했다 |
 | 이유와 근거 | 항목마다 적었다 |
 | 검토한 대안 | 아래 "검토한 대안" |
 | 결정 주체 | 소유 트랙(M). ⑩은 AS1 결정 ⑤와 같은 오케스트레이터 결정(작업 지시)을 따른다 |
@@ -363,6 +363,23 @@
      - 도구 차례 1024, 초안 차례 8192.
    - I10: 막힌 산문 나열, 계산 불가 안내에 "모자라면 HOLD"가 없음.
 
+㉒ **사용자 결정 반영과 조정 종료(병합 준비, `model-1.2`)** — 확정
+
+- 반영한 사용자 결정(2026-09-25(금) 08:41, "전부 권장안대로, 단 10은 나")
+  - 결정 1(`policy_v1` 승인·U1~U4, 결정 기록 `20260925-0846-user-decision-policy-v1-approval.md`)
+    - U4 반올림 불안정 → HOLD를 채택했다. `dispatch.ROUNDING_UNSTABLE_ENABLED`를 참으로 켰다(⑧의 규칙 그대로). 조사자 지침 규칙 요약과 Critic의 상태 뜻에 반올림 불안정 → HOLD를 더했다.
+    - δ는 정책의 `tolerance.weight_rounding_kg`(0.5 kg)에서 읽는다.
+  - 결정 4(누적 토큰 한도 128,000, 결정 기록 `20260925-0847-user-decision-morning-shared-promises.md`): `configs/model/model.json` `limits.tokens` 128000이다. 토큰 추정 시험과 I7 한도 시험은 설정 값을 읽는다.
+  - 결정 6(`tool_attempts`는 도구에 닿은 시도만): MT4(#29)가 `COUNT_BLOCKED_TOOL_ATTEMPTS`를 거짓으로 바꿨다. `origin/main` 병합 결과도 거짓이다(병합 커밋 2a60a52).
+  - 결정 13(규칙 참고값·도구 호출 요구 유지) 승인으로 ⑰~㉑을 확정한다. 모델 모드의 판정이 규칙 참고값을 보고 정해진다는 공개 문구 초안은 "영향과 넘길 곳"에 있다.
+- `config_version` `model-1.2`.
+- 10회차 출하본(`model-1.1`) 실측(오케스트레이터, 한도 128K 조건 18회, 합성 A·B·C × agent·full·freeform × 2회, `scratchpad/as2_live_matrix_r10_128k.tsv`, 커밋하지 않은 실측) `[사실]`
+  - 기대 일치 16/18: agent 5/6(A 1회 VALIDATOR_BLOCKED), full 5/6(B 1회 SCHEMA_INVALID. 수정 초안이 `max_tokens`에서 잘림), freeform 6/6.
+  - 규칙 참고값은 18/18 끝내 계산됐다(3회는 처음 계산 불가 뒤 다시 계산). 키 접두어 0이다.
+  - 누적 토큰은 중앙값 29,956, 최대 43,026이었다. 옛 한도 32,000을 넘은 실행은 7/18이다.
+- **조정 종료**: 오케스트레이터 지시로 이 뒤로는 실측 결과를 보고 지침·흐름을 더 조정하지 않는다. 설정 조정은 합성 A·B·C 3건으로 했다(`model-0.2`~`1.2`, 결과 요약 공개 항목).
+- 단위 표(`docs/plan/UNITS.md`) 판정 칸은 1회차의 AS2 점검 문구 28행 그대로다. 이후 회차는 판정(유지·합침 후보)을 바꾸지 않았다. 단위 I10의 허용 import에 `tradesentry.metrics`를 더한 것(⑭)은 머리 주석과 경계 시험으로 확인한다.
+
 ## 조립 점검 결과(조립체 3, `docs/plan/UNITS.md` §5의 1·2·5단계)
 
 AS2는 합치거나 버린 단위가 없다. 동결 경로(판정 정책 P3~P5, 검증기 R3·R4) 단위의 코드는 고치지 않았다. 고친 단위는 F2(배선)와 I12(C형 펼치기)다. 3·4·6단계의 확정은 조립 점검 작업 AS4가 한다.
@@ -371,7 +388,7 @@ AS2는 합치거나 버린 단위가 없다. 동결 경로(판정 정책 P3~P5, 
 |---|---|---|
 | 1. 정적 import 그래프 | `cli.dispatch` → `cli.args`, `contract.policy_load`·`types`, `dal.query`, `metrics.unit_value`·`share`·`decompose`, `policy.trigger`·`case_build`, `runlog.cause_codes`·`trace`, `workflow.model_client`·`nat_wrap`·`orchestrate`(+ 기존 `snapshot.build`·`verify`). `workflow.orchestrate` → `policy.signal_decide`·`case_aggregate`·`required_evidence`, `reports.claims`·`render_ko`, `runlog` 셋, `tools` 여섯, `validator.validate`·`gate`, `workflow.investigator`·`critic`·`model_client`·`replay`. 도구 넷 → `tools.check_comparability`(공통 틀)·`dal.query`·`metrics`. `validator.validate` → `reports.render_ko`. 모두 각 단위 머리 주석의 허용 import 안이다. `src/tradesentry` 모듈 그래프에 순환 0 `[사실: 경계 시험 도우미(tests/test_boundaries.py의 repo_modules·import_targets)로 커밋 81b9df9에서 뽑은 그래프]` | `env -u NVIDIA_API_KEY -u DATA_GO_KR_SERVICE_KEY -u TRADESENTRY_SEALED_DIR uv run --locked python -m unittest discover -s tests -p "test_boundaries.py"` → 0 |
 | 2. 실행 커버리지 | `run-case`를 합성 시험자료 A·B·C × 네 모드(모델 모드는 가짜 모델)로 돌려 `sys.setprofile`로 `src/tradesentry` 함수 호출의 파일을 모았다. 네 모드 모두: X1~X4, P4, P5, I1~I7, I12, I13, R1~R4, L1, L2. `checklist`만: P3. 모델 세 모드: I10. `full`·`freeform`: I11. 불리지 않음: G1(비교국 표는 미리 계산된 `peer_group` 행을 K3로 읽는다), I8(기록 재생, 시험·골든 전용. I10~I12는 오류 형식만 import한다), L3(성공 경로에서는 상수만 쓴다. 실패 경로(키 없는 `agent` 실행 → `FAILED`·`CODE_ERROR`)에서는 불린다). I9(구성)는 모델 설정·프롬프트로 읽힌다 `[사실: scratch 스크립트, 12회 모두 종료 코드 0]` | 조립 시험 `tests/units/F2/test_run_case_command.py`(16개)·`test_run_case_evidence.py`(15개) → 0 |
-| 5. 동작 불변 | 합치거나 버린 것이 없다. `detection_row` 추출 뒤 AS1 조립 시험이 그대로 통과하고, I12 골든의 `request_sha256`도 그대로다. 출력 파일 도메인명은 단위 표 글자(`runlog_trace`, `workflow_nat_wrap`, `runlog_run_record`, `reports_render_ko`)와 같다(N4, 시험이 글자로 확인) | 단위별 `env -u … uv run --locked python -m unittest discover -s tests/units/<ID> -t tests`: 조립체 3의 X1~X4·P3~P5·G1·I1~I13·R1~R4·L1~L3과 F2 모두 0, skipped 0(보고 AS2-1 §2). 전체 `env -u … uv run --locked python -m unittest discover -s tests -v` → 0. 1회차 머리 81b9df9에서 Ran 893, 9회차 머리(⑳ 커밋, `origin/main` acd4240 병합 뒤)에서 Ran 997, 10회차 머리(㉑ 커밋)에서 Ran 1000, 모두 skipped 15(조립체 3 밖의 뼈대 단위 골든) |
+| 5. 동작 불변 | 합치거나 버린 것이 없다. `detection_row` 추출 뒤 AS1 조립 시험이 그대로 통과하고, I12 골든의 `request_sha256`도 그대로다. 출력 파일 도메인명은 단위 표 글자(`runlog_trace`, `workflow_nat_wrap`, `runlog_run_record`, `reports_render_ko`)와 같다(N4, 시험이 글자로 확인) | 단위별 `env -u … uv run --locked python -m unittest discover -s tests/units/<ID> -t tests`: 조립체 3의 X1~X4·P3~P5·G1·I1~I13·R1~R4·L1~L3과 F2 모두 0, skipped 0(보고 AS2-1 §2). 전체 `env -u … uv run --locked python -m unittest discover -s tests -v` → 0. 1회차 머리 81b9df9에서 Ran 893, 9회차 머리(⑳ 커밋, `origin/main` acd4240 병합 뒤)에서 Ran 997, 10회차 머리(㉑ 커밋)에서 Ran 1000, 병합 준비 머리(㉒ 커밋, `origin/main` deb8128 병합 뒤)에서 Ran 1228(skipped 9), 모두 skipped 15(조립체 3 밖의 뼈대 단위 골든) |
 
 **AS4에 넘기는 관찰**(3·4단계의 입력, 판정은 AS4)
 
@@ -431,10 +448,10 @@ AS2는 합치거나 버린 단위가 없다. 동결 경로(판정 정책 P3~P5, 
     - 모델 설정을 합성 A·B·C로 조정한 사실(`model-0.2`~`1.1`)
   - B2 "모든 모드에 같은 조건"에 더할 문구(초안): "규칙 참고값과 필수 조회: 모델 모드(`agent`·`full`·`freeform`)의 조사자와 Critic은, 코드가 공개 판정 규칙(판정 정책 P3)을 그 초안을 쓸 때까지 받은 근거에 적용한 신호별 판정을 규칙 참고값으로 받는다(수정 단계에서 새 조회 결과를 받으면 다시 계산한다). 지침은 참고값을 따르게 하고, 규칙이 보지 않는 도구 결과 속 사실이 있을 때만 narrative에 반대 근거를 적고 벗어나게 한다. 코드는 모델의 판정을 덮어쓰지 않는다. 필수 도구(발동 신호가 있으면 `compare_partners`, 단가 신호가 발동했으면 `decompose_hs`)의 결과가 없고 그 단계의 도구 몫이 남은 차례에는 `tool_choice: "required"`와 빠진 도구 이름을 적은 알림을 싣는다(부를 도구를 API로 지정하지는 않는다). Critic 뒤(agent는 첫 검증 뒤)에도 필수 결과가 없으면 코드 지적을 붙여 같은 수정 1회로 보낸다. 문구·시점은 세 모델 모드에 글자까지 같다."
   - B4(또는 결과 요약 2절)에 더할 문구(초안): "holdout40에서 `agent`·`full`과 `checklist`의 판정 일치는 모델이 규칙을 스스로 적용한 정도가 아니라, 규칙 참고값을 따르거나 반대 근거로 벗어난 정도다. 두 모드가 `checklist`보다 나을 수 있는 길은 정책 규칙과 독립 정답표가 다른 사례에서 반대 근거로 옳게 벗어나는 경우와, 필수 조회·주장 작성·검증 통과의 차이뿐이다. 개선이 없으면 "이 범위에서 LLM 추가 가치 미확인"으로 보고한다."
-- dev20 개발 점수표(평 권고 3): `RB-1` 전에 이 설정(`model-1.0`)으로 dev20을 한 번 돌린다. 결과로 설정을 바꾸면 그 사실과 회차를 기록한다. 지금 `RUN_CASE_DATASETS`에 dev20이 없어 먼저 한 줄을 더해야 한다.
-- 2026-09-25(금) 09:00 사용자 결정
-  - U4: 켜기로 하면 `ROUNDING_UNSTABLE_ENABLED`를 참으로 바꾼다(한 줄, 시험 있음).
-  - 원인 분류 코드 이름·`tool_attempts` 뜻(MT4 ①·③): 이 배선은 이름을 쓰지 않는다. 시험은 `cause_codes` 상수로 단언하고 `tool_attempts`는 막힌 시도가 없는 경로라 두 뜻의 값이 같다.
+- dev20 개발 점수표(평 권고 3): `RB-1` 전에 이 설정(`model-1.2`)으로 dev20을 한 번 돌린다. 결과로 설정을 바꾸면 그 사실과 회차를 기록한다. 지금 `RUN_CASE_DATASETS`에 dev20이 없어 먼저 한 줄을 더해야 한다.
+- 2026-09-25(금) 08:41 사용자 결정(반영은 ㉒)
+  - U4: 채택돼 `ROUNDING_UNSTABLE_ENABLED`를 참으로 켰다.
+  - 원인 분류 코드 이름(결정 5)·`tool_attempts` 뜻(결정 6, 도구에 닿은 시도만): 이 배선은 코드 이름을 쓰지 않는다. 시험은 `cause_codes` 상수로 단언한다. `COUNT_BLOCKED_TOOL_ATTEMPTS`는 거짓이다.
 - AS1 두 번째 PR·분할 기록 정본 위치 승인: ⑩의 좁히는 자리. `run-case`도 `real_dev` 사례만 받는다.
 - DT1(K3): 비교국 표의 `grouping_version` 목록을 주는 함수가 있으면 rowid 훑기(⑨)를 바꾼다(요청 후보).
 - DT5·DT8: 분류 7의 점유율 사유 문자열(⑦)은 이 조립이 정한 이름이다. 정답표·채점기가 문자열을 보면 맞춘다.
