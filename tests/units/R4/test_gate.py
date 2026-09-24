@@ -3,13 +3,14 @@
 - 모드별 차단: 스키마 사유는 모든 모드에서 막고, 검증기 사유는 freeform에서 기록만 한다(자료 계약 §6.3, 룰북 B2).
 - 막혔을 때: 수정이 남았으면 수정으로, 수정을 썼거나 checklist면 INVALID(결정 D1, 새 상태값 없음).
 - MVP 3번: 숫자·단위·근거 ID·스냅샷 변조와 뒷받침 없는 산문 숫자·증감을 full·agent·checklist에서 막고,
-  freeform에서는 막지 않고 validator_findings에 기록만 한다.
+  freeform에서는 막지 않고 validator_findings에 기록만 한다. 보고서 해시 변조는 스키마 사유라 모든 모드에서 막는다.
 시험 값은 모두 합성이다(실제 통계가 아니다).
 """
 import copy
 import unittest
 from decimal import Decimal
 
+from tradesentry.reports import render_ko
 from tradesentry.validator import gate, validate
 from units.R3.test_validate import EV, clean_input, index_of
 
@@ -181,6 +182,26 @@ class MvpTamperTest(unittest.TestCase):
         self.assertTrue(decision["blocked"] and decision["schema_failed"] and decision["revise"])
         _, after = self.run_mode("freeform", float_value, revision_used=True)
         self.assertEqual(after["execution_status"], "INVALID")
+
+    def test_report_hash_tamper_is_blocked_in_every_mode(self):
+        # Codex 검토 지적 1: R2가 해시를 만든 뒤 내용을 바꾼 보고서는 스키마 사유라 freeform에서도 막는다.
+        for mode in validate.MODES:
+            with self.subTest(mode=mode):
+                inp = clean_input()
+                inp["run"]["mode"] = inp["report"]["mode"] = mode
+                draft = inp["report"]
+                keys = ("report_id", "run_id", "mode", "created_at", "policy_version", "snapshot_id",
+                        "grouping_version", "claims", "narrative", "hypotheses", "review_status", "signal_status",
+                        "unresolved_evidence")
+                inp["report"] = render_ko.run({**{k: draft[k] for k in keys}, "case": inp["case"],
+                                               "validator_findings": []})["report"]
+                self.assertEqual(validate.run(inp)["findings"], [])
+                inp["report"]["hypotheses"].append("하위품목 구성은 바뀌지 않았다.")  # 해시를 만든 뒤 바꾼 내용
+                findings = validate.run(inp)["findings"]
+                self.assertEqual([(f["check"], f["code"]) for f in findings], [("schema", "SCHEMA_REPORT_HASH")])
+                decision = gate.run({"mode": mode, "findings": findings, "revision_used": False})
+                self.assertTrue(decision["blocked"] and decision["schema_failed"])
+                self.assertEqual(decision["execution_status"], "INVALID" if mode == "checklist" else None)
 
 
 if __name__ == "__main__":
