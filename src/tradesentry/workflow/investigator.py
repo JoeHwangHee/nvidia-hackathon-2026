@@ -45,9 +45,10 @@ DIRECTIONS = ("UP", "DOWN", "FLAT", "NA")
 CLAIM_FIELDS = ("claim_id", "claim_type", "hs6", "partner", "period", "baseline_period", "metric", "value", "unit",
                 "direction", "evidence_ids", "text")
 DRAFT_KEYS = ("review_status", "signal_status", "claims", "narrative", "hypotheses")
-ENVELOPE_KEYS = ("query_id", "tool", "scope", "snapshot_id", "source_kind", "evidence_ids", "metrics",
-                 "comparability", "missingness", "retryable_error")
-METRIC_KEYS = ("metric_id", "inputs", "value", "unit", "comparability_flags", "evidence_ids")
+# 모델용 봉투 보기(compact_envelope)가 남기는 것. 원본 봉투는 코드가 들고 검증기·틀 채우기·정책에 쓴다.
+SCOPE_VIEW_KEYS = ("partners", "hs10")  # 사례 머리에 없는, 도구가 실제로 본 상대국·HS10
+METRIC_TARGET_KEYS = ("metric", "partner", "period", "baseline_period")  # inputs에서 기호와 대상만
+MISSING_DROP_KEYS = ("request_id", "flow")  # 빠진 자료 항목에서 빼는 것(수집 요청 ID, 늘 수입인 흐름). 나머지는 남긴다
 PRIORITY = {"MAINTAIN": 3, "HOLD": 2, "MONITOR": 1}
 TRUNCATED = "응답이 max_tokens에서 잘렸다(finish_reason length)"
 PARTNER_RE = re.compile(r"^[A-Z]{2}$")
@@ -83,19 +84,69 @@ def system_prompt(prompts: dict, mode: str) -> str:
 
 
 def compact_metric(metric: object) -> object:
+    """모델에게 보여 줄 지표: metric_id, 기호와 대상(inputs의 metric·partner·period·baseline_period), 값·단위, 비교 표시
+    (있을 때), 근거 ID. 계산 입력 원값(V·Q·hs10_values 등), formula_version, tolerance는 뺀다."""
     if not isinstance(metric, dict):
         return metric
-    return {key: metric[key] for key in METRIC_KEYS if key in metric}
+    inputs = metric.get("inputs") if isinstance(metric.get("inputs"), dict) else {}
+    view = {"metric_id": metric.get("metric_id")}
+    view.update({key: inputs[key] for key in METRIC_TARGET_KEYS if inputs.get(key) is not None})
+    view["value"] = metric.get("value")
+    view["unit"] = metric.get("unit")
+    if metric.get("comparability_flags"):
+        view["comparability_flags"] = metric["comparability_flags"]
+    view["evidence_ids"] = list(metric.get("evidence_ids") or [])
+    return view
+
+
+def _evidence_ids_in(value: object, found: set) -> set:
+    if isinstance(value, str):
+        if value.startswith("ev:"):
+            found.add(value)
+    elif isinstance(value, dict):
+        for item in value.values():
+            _evidence_ids_in(item, found)
+    elif isinstance(value, list):
+        for item in value:
+            _evidence_ids_in(item, found)
+    return found
 
 
 def compact_envelope(envelope: object) -> object:
-    """모델에게 보여 줄 근거. 봉투 키 11개 가운데 elapsed_ms를 빼고 지표는 필요한 필드만 남긴다(토큰 절약)."""
+    """모델에게 보여 줄 근거(도구 봉투의 모델용 보기). 모든 모드와 Critic이 같은 보기를 받는다(룰북 B2).
+
+    남기는 것: 도구 이름, 도구가 실제로 본 범위 가운데 사례 머리에 없는 것(partners·hs10), 지표(compact_metric),
+    비교 가능성(comparability 전체), 빠진 자료(request_id·flow 밖의 키 전부. 도구가 더하는 키도 남는다), 재시도할 수 있는
+    오류(있을 때).
+    봉투 수준 evidence_ids는 보기의 다른 곳에 이미 나온 근거 ID를 빼고 남긴다. 그래서 봉투의 모든 근거 ID가 보기
+    어딘가에 한 번 이상 나온다(freeform 주장과 자료 상태 주장이 인용할 수 있다).
+    빼는 것: query_id·snapshot_id·source_kind(사례 머리와 코드가 안다), elapsed_ms, 사례 머리와 같은 범위 값, 지표의
+    계산 입력 원값·formula_version·tolerance, 빠진 자료의 request_id·flow. 원본 봉투는 흐름 조정이 그대로 들고
+    검증기(R3)·틀 채우기(R1)·정책(P3)에 쓴다. 도구 결과가 커서 누적 토큰 한도(32,000)를 넘지 않게 하려는 것이다
+    (실자료 크기 합성 봉투에서 약 0.5~0.85배, 시험 tests/units/I12/test_token_estimate.py)."""
     if not isinstance(envelope, dict):
         return envelope
-    out = {key: envelope[key] for key in ENVELOPE_KEYS if key in envelope}
-    if isinstance(out.get("metrics"), list):
-        out["metrics"] = [compact_metric(m) for m in out["metrics"]]
-    return out
+    view: dict = {"tool": envelope.get("tool")}
+    scope = envelope.get("scope") if isinstance(envelope.get("scope"), dict) else {}
+    seen_scope = {key: scope[key] for key in SCOPE_VIEW_KEYS if scope.get(key)}
+    if seen_scope:
+        view["scope"] = seen_scope
+    metrics = [compact_metric(m) for m in envelope.get("metrics") or []]
+    if metrics:
+        view["metrics"] = metrics
+    if envelope.get("comparability"):
+        view["comparability"] = envelope["comparability"]
+    missing = [{key: value for key, value in item.items() if key not in MISSING_DROP_KEYS} if isinstance(item, dict)
+               else item for item in envelope.get("missingness") or []]
+    if missing:
+        view["missingness"] = missing
+    shown = _evidence_ids_in(view, set())
+    rest = [e for e in envelope.get("evidence_ids") or [] if e not in shown]
+    if rest:
+        view["evidence_ids"] = rest
+    if envelope.get("retryable_error") is not None:
+        view["retryable_error"] = envelope["retryable_error"]
+    return view
 
 
 def dumps_for_model(value: object) -> str:

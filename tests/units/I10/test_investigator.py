@@ -181,5 +181,45 @@ class DraftCheckTest(unittest.TestCase):
         self.assertEqual((problems, "extra" in parsed), ([], False))
 
 
+class ModelViewTest(unittest.TestCase):
+    """모델용 봉투 보기(모든 모드·Critic 공통): 필요한 필드만 남기고 근거 ID·metric_id는 하나도 잃지 않는다."""
+
+    ENVELOPE = {
+        "query_id": "decompose_hs-00000000000000aa", "tool": "decompose_hs",
+        "scope": {"hs6": "850450", "partner": "CN", "month": "202401", "baseline_month": "202301",
+                  "months": ["202301", "202401"], "partners": ["CN"], "hs10": ["8504501000"]},
+        "snapshot_id": "controlled_fixture_v0", "source_kind": "controlled",
+        "evidence_ids": ["ev:controlled_fixture_v0:observation:1", "ev:controlled_fixture_v0:observation:2",
+                         "ev:controlled_fixture_v0:observation:3", "ev:controlled_fixture_v0:observation:9"],
+        "metrics": [{"metric_id": "r_U@8504501000-01", "formula_version": "1",
+                     "inputs": {"metric": "r_U@8504501000", "hs6": "850450", "partner": "CN", "period": "202401",
+                                "baseline_period": "202301", "V_0": 100, "Q_0": 10, "V_1": 60, "Q_1": 10},
+                     "evidence_ids": ["ev:controlled_fixture_v0:observation:1", "ev:controlled_fixture_v0:observation:2"],
+                     "value": Decimal("-40.0"), "unit": "%", "comparability_flags": [], "tolerance": Decimal("1.5")}],
+        "comparability": {"hs10": [{"month": "202401", "observation_status": "OBSERVED", "codes": ["8504501000"]}]},
+        "missingness": [{"evidence_id": "ev:controlled_fixture_v0:observation:3", "request_id": "r3",
+                         "partner_code": "CN", "hs_code": "8504502000", "month": "202301", "flow": "import",
+                         "observation_status": "NOT_COLLECTED", "missing_hs10": ["8504502000"]}],
+        "retryable_error": None, "elapsed_ms": 7}
+
+    def test_view_keeps_what_the_model_needs_and_every_evidence_id(self):
+        view = inv.compact_envelope(self.ENVELOPE)
+        self.assertEqual(list(view), ["tool", "scope", "metrics", "comparability", "missingness", "evidence_ids"])
+        self.assertEqual(view["scope"], {"partners": ["CN"], "hs10": ["8504501000"]})
+        self.assertEqual(view["metrics"], [{"metric_id": "r_U@8504501000-01", "metric": "r_U@8504501000",
+                                            "partner": "CN", "period": "202401", "baseline_period": "202301",
+                                            "value": Decimal("-40.0"), "unit": "%",
+                                            "evidence_ids": ["ev:controlled_fixture_v0:observation:1",
+                                                             "ev:controlled_fixture_v0:observation:2"]}])
+        missing = view["missingness"][0]
+        self.assertNotIn("request_id", missing)
+        self.assertNotIn("flow", missing)
+        self.assertEqual(missing["missing_hs10"], ["8504502000"])  # 도구가 더한 키는 남는다
+        self.assertEqual(view["evidence_ids"], ["ev:controlled_fixture_v0:observation:9"])  # 다른 곳에 없는 ID만
+        self.assertEqual(inv._evidence_ids_in(view, set()), set(self.ENVELOPE["evidence_ids"]))
+        failed = inv.compact_envelope(dict(self.ENVELOPE, retryable_error={"code": "invalid_args"}))
+        self.assertEqual(failed["retryable_error"], {"code": "invalid_args"})
+
+
 if __name__ == "__main__":
     unittest.main()
