@@ -37,13 +37,21 @@
 - 출력 파일은 이미 있으면 실패하는 방식("xb")으로 쓴다. 표준 출력에는 outputs부터의 상대경로만 적는다.
 
 스냅샷 명령(결정 D18: 배선은 로드맵 MT5가, 단위 S2·S3 구현은 로드맵 DT1이 맡는다)
-- snapshot-build: 단위 S2 run({"snapshot_id", "policy_version"})의 출력(바이트)을
-  outputs/snapshot_build-{시각}/snapshot_build-{시각}.sqlite에 쓰고 0으로 끝난다.
+- snapshot-build: 실행명을 확보한 뒤 --policy가 있으면 단위 K4(tradesentry.contract.policy_load.load_policy)로 정책 객체를
+  읽고, 단위 S2의 build_snapshot(snapshot_id, out_dir=실행 폴더, stamp=시각, policy=정책 객체 또는 None)을 부른다. S2가
+  실행 폴더에 파생 SQLite snapshot_build-{시각}.sqlite와 빌드 기록 snapshot_build-{시각}.json을 쓴다(빌드 기록은 정본
+  옮기기 install_build와 출처 대조가 읽는다). 두 파일의 상대경로를 한 줄씩 적고 0으로 끝난다. 반환이 빌드 기록(dict)이
+  아니거나 두 파일 가운데 하나라도 없으면 4다. 정책을 읽지 못하면(PolicyError) 1이고 S2를 부르지 않는다. 빌드가 실패하면
+  (BuildError 등) 1이다. 둘 다 예외 이름만 적는다.
+  - 스냅샷 원천은 S2의 기본값(data/snapshots/{snapshot_id}/의 manifest·raw·수집기 SQLite)이다.
+  - 비교국 표 파일(peer_group_files)은 넘기지 않는다. 빌드의 peer_group 표와 빌드 기록의 peer_group_files는 빈다. 넘기는
+    수단은 새 CLI 옵션(계획 경로·명령 표 변경)이 필요해 결정 D10(g1 동결과 최종 빌드의 순서)과 함께 정한다.
 - snapshot-verify: 단위 S3 run({"snapshot_id"})의 출력(JSON 객체)을 outputs/snapshot_verify-{시각}/snapshot_verify-{시각}.json에
-  쓴다. 그 객체의 합격 표시 ok가 참이면 0, 거짓이면 1이다. ok가 없거나 참·거짓 값이 아니면 합격으로 보지 않고 4로 끝난다.
-- 단위 입력은 snapshot_build_input·snapshot_verify_input 두 함수에서만 만든다. 단위 S2·S3의 입력 모양이 바뀌면 여기만 고친다.
-  명령이 쓰지 않는 공통 옵션(snapshot-build의 --mode, snapshot-verify의 --policy·--mode. args.COMMAND_OPTIONS의 UNUSED)은
-  요청에는 남지만 단위 입력에는 넣지 않는다.
+  쓴다. S3는 정본 빌드(data/snapshots/{snapshot_id}/snapshot_build.sqlite)와 그 옆 빌드 기록을 대조한다. 보고의 합격 표시
+  ok가 참이면 0, 거짓이면 1이다. ok가 없거나 참·거짓 값이 아니면 합격으로 보지 않고 4로 끝난다. 개발 빌드(outputs 아래)를
+  CLI로 검증하는 수단은 없다(S3의 build_file 입력을 잇지 않았고, 새 옵션도 만들지 않았다).
+- 명령이 쓰지 않는 공통 옵션(snapshot-build의 --mode, snapshot-verify의 --policy·--mode. args.COMMAND_OPTIONS의 UNUSED)은
+  요청에는 남지만 단위에는 넘기지 않는다.
 
 평가 하네스는 모듈 단위로만 허용한다. 호스트 전용 샌드박스 밖 실행기(단위 E2, tradesentry.evaluation.sealed_runner)는
 CLI가 부르지 않는다.
@@ -160,29 +168,20 @@ def _json_default(value: object) -> object:
 def write_output(run_dir: Path, run_id: str, domain: str, stamp: str, ext: str, value: object) -> str:
     """출력 값을 {도메인명}-{시각}.{확장자}로 쓰고 표준 출력에 적을 상대경로를 돌려준다.
 
-    json이면 JSON 값(Decimal은 글자 그대로의 문자열), sqlite면 바이트다. 파일은 이미 있으면 실패하는 방식("xb")으로 쓴다.
+    확장자는 json 하나다(JSON 값, Decimal은 글자 그대로의 문자열). 파일은 이미 있으면 실패하는 방식("xb")으로 쓴다.
+    snapshot-build의 두 파일은 단위 S2가 직접 쓴다.
     """
-    if ext == "json":
-        try:
-            payload = (json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False, default=_json_default)
-                       + "\n").encode("utf-8")
-        except (TypeError, ValueError) as exc:
-            raise WiringError(f"{domain} 출력을 JSON으로 쓸 수 없다({type(exc).__name__})") from None
-    elif ext == "sqlite":
-        if not isinstance(value, (bytes, bytearray)):
-            raise WiringError(f"{domain} 출력이 바이트가 아니다({type(value).__name__})")
-        payload = bytes(value)
-    else:
+    if ext != "json":
         raise WiringError(f"배선이 모르는 출력 확장자다({ext})")
+    try:
+        payload = (json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False, default=_json_default)
+                   + "\n").encode("utf-8")
+    except (TypeError, ValueError) as exc:
+        raise WiringError(f"{domain} 출력을 JSON으로 쓸 수 없다({type(exc).__name__})") from None
     name = f"{domain}-{stamp}.{ext}"
     with open(run_dir / name, "xb") as handle:
         handle.write(payload)
     return f"{OUTPUT_LABEL}/{run_id}/{name}"
-
-
-def snapshot_build_input(request: args.Request) -> dict[str, object]:
-    """단위 S2(스냅샷 빌더)의 입력. --policy가 없으면 policy_version은 None이다(그때의 뜻은 단위 S2가 정한다)."""
-    return {"snapshot_id": request.snapshot_id, "policy_version": request.policy_version}
 
 
 def snapshot_verify_input(request: args.Request) -> dict[str, object]:
@@ -191,12 +190,31 @@ def snapshot_verify_input(request: args.Request) -> dict[str, object]:
 
 
 def _snapshot_build(request: args.Request) -> int:
-    """snapshot-build: 조립체 1의 단위 S2를 부르고 파생 SQLite를 실행 폴더에 쓴다."""
-    from tradesentry.snapshot import build  # 명령을 부를 때만 import한다(도움말·인자 오류는 조립체를 불러오지 않는다)
+    """snapshot-build: 실행명을 확보하고, 정책을 읽고(--policy가 있을 때), 단위 S2 build_snapshot으로 실행 폴더에 파생
+    SQLite와 빌드 기록을 쓴다(위 "스냅샷 명령")."""
+    # 명령을 부를 때만 import한다(도움말·인자 오류는 조립체를 불러오지 않는다). 모듈 속성으로 불러 시험 대역이 걸리게 한다.
+    from tradesentry.contract import policy_load
+    from tradesentry.snapshot import build
 
     run_id, stamp, run_dir = reserve_run_dir("snapshot_build")
-    value = build.run(snapshot_build_input(request))
-    _emit(write_output(run_dir, run_id, "snapshot_build", stamp, "sqlite", value))
+    policy = None
+    if request.policy_version is not None:
+        try:
+            policy = policy_load.load_policy(request.policy_version)
+        except policy_load.PolicyError:
+            _report("오류: tradesentry snapshot-build가 --policy의 정책을 읽지 못했다(PolicyError). "
+                    "정책 버전 이름과 configs/의 정책 파일을 확인한다.")
+            return EXIT_FAILED
+    try:
+        record = build.build_snapshot(request.snapshot_id, out_dir=run_dir, stamp=stamp, policy=policy)
+    except build.BuildError:
+        _report("오류: tradesentry snapshot-build가 스냅샷을 빌드하지 못했다(BuildError).")
+        return EXIT_FAILED
+    names = (f"snapshot_build-{stamp}.sqlite", f"snapshot_build-{stamp}.json")
+    if not isinstance(record, dict) or not all((run_dir / name).is_file() for name in names):
+        raise WiringError("단위 S2(build_snapshot)가 실행 폴더에 파생 SQLite와 빌드 기록을 모두 쓰지 않았다")
+    for name in names:
+        _emit(f"{OUTPUT_LABEL}/{run_id}/{name}")
     return EXIT_OK
 
 

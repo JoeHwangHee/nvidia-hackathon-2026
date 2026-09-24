@@ -4,8 +4,9 @@
 - 종료 코드: 아직 잇지 않은 명령(자리표시)만 3, 이은 처리 함수의 예외는 1(예외 이름만 적는다), 허용하지 않는 반환값·
   SystemExit·배선 계약 위반은 4, 중단(KeyboardInterrupt)은 130. main 밖으로 호출 경로 기록이 나가지 않는다(표준 출력·
   오류가 한국어를 못 쓰는 인코딩일 때 포함).
-- snapshot-build·snapshot-verify 배선: 단위 S2·S3은 대역으로 바꾼다(로드맵 DT1이 구현한다). 실행 폴더의 부모는 시험마다
-  새 임시 폴더다. 대역은 불리는 순간 실행 폴더가 이미 하나 있고 비어 있는지 본다(실행명은 단위보다 먼저 확보한다, N8).
+- snapshot-build·snapshot-verify 배선: 단위 S2 build_snapshot·단위 K4 load_policy·단위 S3 run을 대역으로 바꾼다. 실행
+  폴더의 부모는 시험마다 새 임시 폴더다. 대역은 불리는 순간 실행 폴더가 이미 하나 있고 비어 있는지 본다(실행명은 단위보다
+  먼저 확보한다, N8). 실제 단위 S2·S3로 도는 시험은 test_snapshot_commands.py다.
 - 실행명 확보(자료 계약 §10.3 N8): 가짜 시계로 이름 형식(KST), 충돌 때 다음 초, 다른 부모 폴더의 같은 이름, 기다리기,
   포기를 본다.
 시험에 쓰는 절대경로 모양 값은 개발 기계에 없는 가짜 경로(/srv/probe 아래)다.
@@ -246,24 +247,27 @@ class TempOutputs(unittest.TestCase):
 
 
 class SnapshotWiringTest(TempOutputs):
-    SQLITE = b"SQLite format 3\x00probe"
+    """snapshot-build·snapshot-verify 배선을 단위 대역으로 본다. 실제 단위 S2·S3로 도는 시험은 test_snapshot_commands.py다."""
 
-    def call_unit(self, target: str, run_name: str, argv: list[str], result: object,
-                  error: BaseException | None) -> tuple[int, str, str, mock.Mock]:
+    FAKE_POLICY = {"policy_version": "dev-0.1", "confirmed_no_trade": None}
+
+    def call_unit(self, target: str, run_name: str, argv: list[str], behave, *,
+                  expect_call: bool = True) -> tuple[int, str, str, mock.Mock]:
         """단위를 대역으로 바꿔 명령을 부른다. 대역은 불리는 순간의 실행 폴더를 적어 두고, 부른 뒤 그 폴더가 정확히 하나이고
         비어 있었는지 본다. 실행명은 단위를 부르기 전에 확보한다(자료 계약 §10.3 N8, 평가 검토 1회차 권고 4)."""
         seen: list[list[tuple[str, list[str]]]] = []
 
-        def unit(inp: object) -> object:
+        def unit(*positional: object, **keywords: object) -> object:
             dirs = self.run_dirs(run_name) if self.outputs.exists() else []
             seen.append([(p.name, sorted(q.name for q in p.iterdir())) for p in dirs])
-            if error is not None:
-                raise error
-            return result
+            return behave(*positional, **keywords)
 
         stub = mock.Mock(side_effect=unit)
         with mock.patch(target, stub), mock.patch.object(dispatch, "OUTPUT_PARENT", self.fresh_outputs()):
             code, out, err = call(argv)
+        if not expect_call:
+            self.assertEqual(seen, [], "단위를 부르지 않았다")
+            return code, out, err, stub
         self.assertEqual(len(seen), 1, "단위를 한 번 불렀다")
         self.assertEqual(len(seen[0]), 1, f"단위를 부를 때 {run_name} 실행 폴더가 정확히 하나 있다")
         name, contents = seen[0][0]
@@ -271,38 +275,84 @@ class SnapshotWiringTest(TempOutputs):
         self.assertEqual(contents, [], "단위를 부를 때 실행 폴더는 비어 있다")
         return code, out, err, stub
 
-    def build(self, value: object, argv: list[str] | None = None,
-              error: BaseException | None = None) -> tuple[int, str, str, mock.Mock]:
-        return self.call_unit("tradesentry.snapshot.build.run", "snapshot_build", argv or ARGV["snapshot-build"],
-                              value, error)
+    def build(self, argv: list[str] | None = None, *, write: tuple[str, ...] = ("sqlite", "json"),
+              result: object = "record", error: BaseException | None = None,
+              policy_error: BaseException | None = None) -> tuple[int, str, str, mock.Mock, mock.Mock]:
+        """snapshot-build를 부른다. 단위 S2 build_snapshot과 단위 K4 load_policy를 대역으로 바꾼다. build_snapshot 대역은
+        받은 인자를 self.build_calls에 적고, write의 확장자마다 out_dir에 파일을 쓴 뒤 빌드 기록(dict)이나 result를 돌려준다."""
+        self.build_calls: list[dict] = []
+
+        def build_snapshot(snapshot_id: str, *, out_dir: Path, stamp: str, policy: object, **extra: object) -> object:
+            self.build_calls.append({"snapshot_id": snapshot_id, "out_dir": Path(out_dir), "stamp": stamp,
+                                     "policy": policy, "extra": extra})
+            if error is not None:
+                raise error
+            for ext in write:
+                (Path(out_dir) / f"snapshot_build-{stamp}.{ext}").write_bytes(b"probe")
+            return {"snapshot_id": snapshot_id} if result == "record" else result
+
+        policy_stub = (mock.Mock(side_effect=policy_error) if policy_error is not None
+                       else mock.Mock(return_value=dict(self.FAKE_POLICY)))
+        with mock.patch("tradesentry.contract.policy_load.load_policy", policy_stub):
+            code, out, err, stub = self.call_unit("tradesentry.snapshot.build.build_snapshot", "snapshot_build",
+                                                  argv or ARGV["snapshot-build"], build_snapshot,
+                                                  expect_call=policy_error is None)
+        return code, out, err, stub, policy_stub
 
     def verify(self, value: object, argv: list[str] | None = None,
                error: BaseException | None = None) -> tuple[int, str, str, mock.Mock]:
-        return self.call_unit("tradesentry.snapshot.verify.run", "snapshot_verify", argv or ARGV["snapshot-verify"],
-                              value, error)
+        def run(inp: object) -> object:
+            if error is not None:
+                raise error
+            return value
 
-    def test_snapshot_build_writes_the_sqlite_bytes(self):
-        code, out, err, stub = self.build(self.SQLITE, ARGV["snapshot-build"] + ["--policy", "dev-0.1"])
+        return self.call_unit("tradesentry.snapshot.verify.run", "snapshot_verify", argv or ARGV["snapshot-verify"], run)
+
+    def test_snapshot_build_calls_build_snapshot_in_the_reserved_folder(self):
+        code, out, err, _, policy_stub = self.build(ARGV["snapshot-build"] + ["--policy", "dev-0.1"])
         self.assertEqual((code, err), (0, ""))
-        stub.assert_called_once_with({"snapshot_id": "controlled_fixture_v0", "policy_version": "dev-0.1"})
+        policy_stub.assert_called_once_with("dev-0.1")  # 정책은 단위 K4로 읽는다
         [run_dir] = self.run_dirs("snapshot_build")
         stamp = run_dir.name.split("-")[1]
-        output = run_dir / f"snapshot_build-{stamp}.sqlite"
-        self.assertEqual([p.name for p in run_dir.iterdir()], [output.name])
-        self.assertEqual(output.read_bytes(), self.SQLITE)
-        self.assertEqual(out, f"outputs/{run_dir.name}/{output.name}\n")  # 상대경로만 적는다(N13)
+        self.assertEqual(self.build_calls, [{"snapshot_id": "controlled_fixture_v0", "out_dir": run_dir, "stamp": stamp,
+                                             "policy": self.FAKE_POLICY, "extra": {}}])  # 비교국 표 파일은 넘기지 않는다
+        names = [f"snapshot_build-{stamp}.sqlite", f"snapshot_build-{stamp}.json"]
+        self.assertEqual(sorted(p.name for p in run_dir.iterdir()), sorted(names))
+        self.assertEqual(out, "".join(f"outputs/{run_dir.name}/{name}\n" for name in names))  # 상대경로만 적는다(N13)
 
     def test_snapshot_build_without_policy(self):
-        code, _, _, stub = self.build(bytearray(self.SQLITE), ARGV["snapshot-build"])
+        code, _, _, _, policy_stub = self.build()
         self.assertEqual(code, 0)
-        stub.assert_called_once_with({"snapshot_id": "controlled_fixture_v0", "policy_version": None})
+        policy_stub.assert_not_called()
+        self.assertIsNone(self.build_calls[0]["policy"])
 
-    def test_snapshot_build_output_must_be_bytes(self):
-        code, out, err, _ = self.build({"rows": 1}, ARGV["snapshot-build"])
-        self.assertEqual(code, dispatch.EXIT_WIRING)
-        self.assertEqual(out, "")
-        self.assertIn("바이트가 아니다", err)
-        self.assertEqual(list(self.outputs.rglob("*.sqlite")), [])
+    def test_snapshot_build_needs_the_build_file_its_record_and_a_record_value(self):
+        for write, result in ((("sqlite",), "record"), (("json",), "record"), ((), "record"),
+                              (("sqlite", "json"), None), (("sqlite", "json"), b"bytes")):
+            with self.subTest(write=write, result=result):
+                code, out, err, _, _ = self.build(write=write, result=result)
+                self.assertEqual((code, out), (dispatch.EXIT_WIRING, ""))
+                self.assertIn("빌드 기록을 모두 쓰지 않았다", err)
+
+    def test_policy_error_is_a_failure_before_building(self):
+        from tradesentry.contract import policy_load
+
+        code, out, err, stub, _ = self.build(ARGV["snapshot-build"] + ["--policy", "policy_v1"],
+                                             policy_error=policy_load.PolicyError("configs/policy_v1.json이 없다"))
+        self.assertEqual((code, out), (dispatch.EXIT_FAILED, ""))
+        self.assertIn("PolicyError", err)
+        self.assertNotIn("policy_v1.json", err)  # 예외 문장은 적지 않고 예외 이름만 적는다
+        stub.assert_not_called()
+        [run_dir] = self.run_dirs("snapshot_build")
+        self.assertEqual(list(run_dir.iterdir()), [])  # 정책을 읽기 전에 확보한 빈 실행 폴더가 남는다
+
+    def test_build_error_is_a_failure(self):
+        from tradesentry.snapshot import build
+
+        code, out, err, _, _ = self.build(error=build.BuildError("/srv/probe/raw 폴더가 없다"))
+        self.assertEqual((code, out), (dispatch.EXIT_FAILED, ""))
+        self.assertIn("BuildError", err)
+        self.assertNotIn("/srv", err)
 
     def test_snapshot_verify_pass(self):
         report = {"ok": True, "snapshot_id": "controlled_fixture_v0", "share": Decimal("20.30")}
@@ -339,25 +389,24 @@ class SnapshotWiringTest(TempOutputs):
         self.assertEqual(list(self.outputs.rglob("*.json")), [])
 
     def test_unit_errors_are_failures_not_3_and_leave_the_reserved_folder(self):
-        for helper, run_name in ((self.build, "snapshot_build"), (self.verify, "snapshot_verify")):
+        for run_name, invoke in (("snapshot_build", lambda: self.build(error=NotImplementedError("뼈대"))[:3]),
+                                 ("snapshot_verify", lambda: self.verify(None, error=NotImplementedError("뼈대"))[:3])):
             with self.subTest(run_name=run_name):
-                code, out, err, _ = helper(None, error=NotImplementedError("뼈대"))
+                code, out, err = invoke()
                 self.assertEqual((code, out), (dispatch.EXIT_FAILED, ""))
                 self.assertIn("NotImplementedError", err)
                 [run_dir] = self.run_dirs(run_name)
                 self.assertEqual(list(run_dir.iterdir()), [])  # 단위보다 먼저 확보한 빈 실행 폴더가 남는다(N8)
 
     def test_unit_inputs(self):
-        request = args.parse(ARGV["snapshot-build"] + ["--policy", "policy_v1"])
-        self.assertEqual(dispatch.snapshot_build_input(request),
-                         {"snapshot_id": "controlled_fixture_v0", "policy_version": "policy_v1"})
         self.assertEqual(dispatch.snapshot_verify_input(args.parse(ARGV["snapshot-verify"])),
                          {"snapshot_id": "controlled_fixture_v0"})
 
     def test_unused_common_options_are_not_passed_to_the_units(self):
-        code, _, _, stub = self.build(self.SQLITE, ARGV["snapshot-build"] + ["--mode", "agent"])
+        code, _, _, _, policy_stub = self.build(ARGV["snapshot-build"] + ["--mode", "agent"])
         self.assertEqual(code, 0)
-        stub.assert_called_once_with({"snapshot_id": "controlled_fixture_v0", "policy_version": None})
+        policy_stub.assert_not_called()
+        self.assertEqual((self.build_calls[0]["policy"], self.build_calls[0]["extra"]), (None, {}))
         code, _, _, stub = self.verify({"ok": True}, ARGV["snapshot-verify"] + ["--policy", "dev-0.1", "--mode", "full"])
         self.assertEqual(code, 0)
         stub.assert_called_once_with({"snapshot_id": "controlled_fixture_v0"})
