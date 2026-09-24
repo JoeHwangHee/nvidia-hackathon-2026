@@ -79,7 +79,12 @@ class NatWrapTest(unittest.TestCase):
         self.assertEqual(record["execution_status"], "COMPLETED")
         self.assertTrue(summary["workflow_end"])
         self.assertEqual(summary["llm_spans"], record["model_requests"])
-        self.assertEqual(summary["tool_spans"], record["tool_attempts"])  # 막힌 시도도 구간 하나
+        calls = len([r for r in memory.records if r["event"] == "tool_call"])
+        executed = len([r for r in memory.records if r["event"] == "tool_result"])
+        self.assertEqual(summary["tool_spans"], calls)  # 도구 시도마다 구간 하나(막힌 시도도)
+        # tool_attempts는 세는 법(흐름 조정 COUNT_BLOCKED_TOOL_ATTEMPTS, 사용자 확인 대기)을 따른다
+        self.assertEqual(record["tool_attempts"], calls if orchestrate.COUNT_BLOCKED_TOOL_ATTEMPTS else executed)
+        self.assertGreater(calls, executed)  # 이 대본에는 막힌 시도가 있다
         self.assertEqual(summary["tokens"]["prompt_tokens"], record["tokens_in"])
         self.assertEqual(summary["tokens"]["completion_tokens"], record["tokens_out"])
         self.assertEqual(summary["nat_events"][:2], ["WORKFLOW_START", "FUNCTION_START"])
