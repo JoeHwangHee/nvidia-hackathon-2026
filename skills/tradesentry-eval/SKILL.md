@@ -219,7 +219,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
   - 실행기와 채점기는 키 변수를 뺀 환경(`env -u NVIDIA_API_KEY -u DATA_GO_KR_SERVICE_KEY`. `env -u`는 지정한 환경변수를 뺀 환경에서 명령을 실행하는 방법이다)에서 돌리고 `.env`를 읽지 않는다. 둘 다 키가 필요 없다. 기존 `load_env`(`src/tradesentry/ingest.py`)는 저장소 루트의 `.env`로 설정되지 않은 변수를 채우므로 `env -u`로 뺀 키도 다시 채운다. 그래서 두 프로그램은 이 함수를 부르지 않는다 `[사실: src/tradesentry/ingest.py의 load_env]`.
   - 실행기 파일은 단위 E2 `src/tradesentry/evaluation/sealed_runner.py`다(`docs/plan/UNITS.md`). 부르는 형식은 S0 뒤에 정한다 `[미확인]`. 이 스킬에서 새 경로를 짓지 않는다.
 - 저장소 파일과 입력을 샌드박스에 들이는 방식, 샌드박스를 만드는 명령은 로드맵 MT5에서 정한다 `[미확인]`. 이 스킬에서 샌드박스 명령을 짓지 않는다. 이미지 빌드나 upload로 들이는 파일은 명시한 포함 목록으로 고른다. `.env`, `outputs/`, `artifacts/eval/`, 정답표(`eval/dev/oracle_ABC.json`, dev20 정답표), `eval/scorer/`는 빼도록 명시한다. 저장소 루트나 `eval/dev/`를 통째로 올리지 않는다.
-- API 키는 샌드박스 안에 두지 않는다. 주입 방식은 credential placeholder rewrite(샌드박스에는 자리표시 문자열만 두고 게이트웨이가 나가는 요청에 실제 키를 넣는 방식)와 `inference.local`(게이트웨이가 샌드박스에 주는 추론 경로. 게이트웨이당 provider 1개·모델 1개) 가운데 X1에서 실제로 성공한 방식이다(DEV_PLAN §4.6). 게이트웨이는 샌드박스의 바깥 요청과 추론 연결을 중계하는 OpenShell 구성요소다.
+- API 키는 에이전트와 그 자식 프로세스(샌드박스 사용자 권한)가 읽을 수 있는 곳에 두지 않는다(해석 A). 주입 방식은 X1에서 실제로 성공한 credential placeholder rewrite다. 샌드박스 프로그램에는 자리표시 문자열만 두고, 샌드박스 안 감독 프로세스(root로 돌며 정책을 집행하는 OpenShell 프로세스)의 정책 프록시가 게이트웨이에서 받은 자격 증명으로 나가는 요청에 실제 키를 넣는다(DEV_PLAN §4.6). 게이트웨이는 샌드박스의 정책과 provider 설정을 보관하고 내려보내는 OpenShell 제어면이다.
 - 두 주입 방식이 모두 실패했다고 샌드박스 밖에서 채점 대상 실행을 돌리지 않는다. 그 안은 사용자 승인 대상이다(DEV_PLAN §5.3).
 
 ### 실행 행렬(자료 묶음 × 모드)
@@ -620,8 +620,9 @@ env -u NVIDIA_API_KEY -u DATA_GO_KR_SERVICE_KEY python -m eval.scorer --run <run
 - **라이브 정책 조회**: 실제 적용 중인 정책을 읽는 일(`openshell policy get <agent> --full`).
 - **예측 / 실측**: 정책 규칙으로 미리 계산한 허용·차단 결과 / 실제로 돌려 본 결과.
 - **L7 규칙**: HTTP 요청 수준(method·path·query)의 네트워크 규칙.
-- **게이트웨이**: 샌드박스의 바깥 요청과 추론 연결을 중계하는 OpenShell 구성요소.
-- **credential placeholder rewrite / `inference.local`**: 샌드박스에는 자리표시 문자열만 두고 게이트웨이가 실제 키로 바꾸는 방식 / 게이트웨이가 샌드박스에 주는 추론 경로(게이트웨이당 provider 1개·모델 1개). 둘 가운데 X1에서 성공한 방식을 쓴다.
+- **게이트웨이**: 샌드박스의 정책과 provider(등록한 자격 증명 묶음) 설정을 보관하고 샌드박스에 내려보내는 OpenShell 제어면. 요청에 정책을 적용하고 전달하는 일은 감독 프로세스의 정책 프록시가 한다.
+- **감독 프로세스(supervisor)**: 샌드박스 컨테이너 안에서 root로 돌며 정책을 집행하는 OpenShell 프로세스. 나가는 요청의 정책 프록시가 게이트웨이에서 받은 자격 증명으로 자리표시 값을 실제 키로 바꾼다.
+- **credential placeholder rewrite / `inference.local`**: 샌드박스 프로그램에는 자리표시 문자열만 두고 샌드박스 안 감독 프로세스의 정책 프록시가 실제 키로 바꾸는 방식 / 게이트웨이가 샌드박스에 주는 관리형 추론 경로(정책 밖에서 작업 공간 전체에 걸린다). X1은 앞의 방식을 채택했다.
 - **lethal trifecta**: 민감 자료 읽기, 외부 입력 수용, 외부 전송 경로가 한 경로에 겹치는 위험.
 - **NemoClaw / 하네스**: 모델·에이전트 하네스·보안 런타임을 묶은 NVIDIA 참조 스택 / 에이전트를 돌리는 실행 틀.
 - **Brev**: NVIDIA 원클릭 클라우드 개발 환경. X1이 로컬에서 제한 시간을 넘길 때의 대체 경로다.

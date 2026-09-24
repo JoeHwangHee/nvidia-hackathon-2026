@@ -1,0 +1,29 @@
+# X1 NIM 1회 호출 + NAT 실행 추적 발췌 (x1-os-test, 방식 1, 2026-09-24(목) 15:50:36 KST)
+# 원본: artifacts/runs/20260924T065036-x1-2d4332/ (git 무시 폴더). 비밀값 없음(키·자리표시 값 0건 확인).
+## nat_trace.jsonl (NAT 1.9.0 file 내보내기, 이벤트 4개)
+{"parent_id":"root","function_ancestry":{"function_id":"root","function_name":"root","parent_id":null,"parent_name":null},"payload":{"event_type":"WORKFLOW_START","event_timestamp":1790232636.4631083,"span_event_timestamp":null,"framework":null,"name":"x1_nim_once","tags":null,"metadata":{"chat_responses":null,"chat_inputs":null,"tool_inputs":null,"tool_outputs":null,"tool_info":null,"span_inputs":null,"span_outputs":null,"provided_metadata":{"workflow_run_id":"e3f972a1-40df-4716-9970-b01d5589288e","workflow_trace_id":"84ab0cb8ab8c482eb2be8e720fd9f46f","conversation_id":null,"display_name":"<workflow>"},"tools_schema":[]},"data":{"input":"Reply with exactly: X1 OK","output":null,"chunk":null,"payload":null},"usage_info":null,"UUID":"f8583ae0-0b5d-461a-8eb7-8abaf6f2ff4a"}}
+{"parent_id":"f8583ae0-0b5d-461a-8eb7-8abaf6f2ff4a","function_ancestry":{"function_id":"9cc111db-2c18-4971-847b-f9cc7f133602","function_name":"<workflow>","parent_id":"root","parent_name":"root"},"payload":{"event_type":"FUNCTION_START","event_timestamp":1790232636.4632263,"span_event_timestamp":null,"framework":null,"name":"<workflow>","tags":null,"metadata":null,"data":{"input":"Reply with exactly: X1 OK","output":null,"chunk":null,"payload":null},"usage_info":null,"UUID":"9cc111db-2c18-4971-847b-f9cc7f133602"}}
+{"parent_id":"f8583ae0-0b5d-461a-8eb7-8abaf6f2ff4a","function_ancestry":{"function_id":"9cc111db-2c18-4971-847b-f9cc7f133602","function_name":"<workflow>","parent_id":"root","parent_name":"root"},"payload":{"event_type":"FUNCTION_END","event_timestamp":1790232638.193163,"span_event_timestamp":null,"framework":null,"name":"<workflow>","tags":null,"metadata":null,"data":{"input":"Reply with exactly: X1 OK","output":"{\"http_status\": 200, \"attempts\": 1, \"model\": \"nvidia/nemotron-3-super-120b-a12b\", \"content\": \"X1 OK\", \"usage\": {\"prompt_tokens\": 23, \"completion_tokens\": 63, \"total_tokens\": 86}}","chunk":null,"payload":null},"usage_info":null,"UUID":"9cc111db-2c18-4971-847b-f9cc7f133602"}}
+{"parent_id":"root","function_ancestry":{"function_id":"root","function_name":"root","parent_id":null,"parent_name":null},"payload":{"event_type":"WORKFLOW_END","event_timestamp":1790232638.1934426,"span_event_timestamp":null,"framework":null,"name":"x1_nim_once","tags":null,"metadata":{"chat_responses":null,"chat_inputs":null,"tool_inputs":null,"tool_outputs":null,"tool_info":null,"span_inputs":null,"span_outputs":null,"provided_metadata":{"workflow_run_id":"e3f972a1-40df-4716-9970-b01d5589288e","workflow_trace_id":"84ab0cb8ab8c482eb2be8e720fd9f46f","conversation_id":null,"display_name":"<workflow>"},"tools_schema":[]},"data":{"input":null,"output":"{\"http_status\": 200, \"attempts\": 1, \"model\": \"nvidia/nemotron-3-super-120b-a12b\", \"content\": \"X1 OK\", \"usage\": {\"prompt_tokens\": 23, \"completion_tokens\": 63, \"total_tokens\": 86}}","chunk":null,"payload":null},"usage_info":null,"UUID":"f8583ae0-0b5d-461a-8eb7-8abaf6f2ff4a"}}
+## app_trace.jsonl (x1_probe.py 앱 기록)
+{"ts": "2026-09-24T06:50:36.380107+00:00", "event": "run_start", "run_id": "20260924T065036-x1-2d4332", "mode": "rewrite", "model": "nvidia/nemotron-3-super-120b-a12b", "pid": 242, "exe": "/opt/x1/venv/bin/python"}
+{"ts": "2026-09-24T06:50:38.192180+00:00", "event": "nim_request", "attempt": 1, "url": "https://integrate.api.nvidia.com/v1/chat/completions", "method": "POST", "model": "nvidia/nemotron-3-super-120b-a12b", "auth_header_from": "env:NVIDIA_API_KEY", "http_status": 200, "elapsed_s": 1.728, "error": null}
+{"ts": "2026-09-24T06:50:38.196865+00:00", "event": "run_end", "run_id": "20260924T065036-x1-2d4332", "http_status": 200, "exit_code": 0}
+## nat_workflow.yml (이번 실행에 쓴 NAT 설정 사본)
+general:
+  telemetry:
+    tracing:
+      x1_file:
+        _type: file
+        output_path: /sandbox/x1-runs/20260924T065036-x1-2d4332/nat_trace.jsonl
+        project: x1-probe
+        mode: overwrite
+workflow:
+  _type: x1_nim_once
+  base_url: https://integrate.api.nvidia.com/v1
+  model: nvidia/nemotron-3-super-120b-a12b
+  api_key_env: NVIDIA_API_KEY
+  max_tokens: 64
+  timeout_s: 90.0
+  max_5xx_retries: 3
+  app_trace_path: /sandbox/x1-runs/20260924T065036-x1-2d4332/app_trace.jsonl

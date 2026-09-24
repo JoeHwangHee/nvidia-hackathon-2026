@@ -1,0 +1,118 @@
+# X1 OpenShell-only 시험 샌드박스(x1-os-test) 명령 기록 — 2026-09-24(목) KST
+# 이 샌드박스는 시연 샌드박스도 채점 대상 실행 샌드박스도 아니다. 한 줄 경로 증거가 아니다.
+# 형식: [ID] 시각(KST) / 명령 / exit=<종료 코드> / 출력. 키 값·자리표시 값은 어디에도 없다.
+# 공통 접두: NO_COLOR=1. 키가 필요한 명령만 python3 spikes/x1/with_nvidia_key.py --env-file <저장소 .env> -- 로 감쌌다.
+
+[G1] 15:30 gateway: <OpenShell 설정 폴더>/gateway.env = OPENSHELL_DRIVERS=docker, DOCKER_HOST=<colima Docker 소켓> ; brew services restart nvidia/openshell/openshell ; openshell status -> Connected, Authenticated (mTLS), Version 0.0.116, driver=docker
+
+[P1] 15:37 openshell provider profile import -f spikes/x1/policy/x1-nvidia-chat.profile.yaml -> exit=0 (Imported 1 provider profile.)
+[P2] 15:37 python3 spikes/x1/with_nvidia_key.py --env-file <저장소 .env> -- openshell provider create --name x1-nvidia --type x1-nvidia-chat --credential NVIDIA_API_KEY -> exit=0
+[1m[32m✓[39m[0m Created provider x1-nvidia
+[P3] openshell provider get x1-nvidia -> Credential keys: NVIDIA_API_KEY (값 없음)
+
+[S1] 15:38 DOCKER_HOST=<colima Docker 소켓> openshell sandbox create --name x1-os-test --from spikes/x1 --policy spikes/x1/policy/x1-os-test.policy.yaml --provider x1-nvidia --no-auto-providers --detach -> exit=0 (Ready)
+     (앞선 두 시도: DOCKER_HOST 없이 exit=1 'Socket not found: /var/run/docker.sock', .dockerignore가 Dockerfile을 빼서 exit=1 'Cannot locate specified Dockerfile')
+
+[K1] 15:38:47 openshell sandbox exec -n x1-os-test -- /opt/x1/venv/bin/python /opt/x1/app/key_check.py -> exit=0  (NIM 호출 전)
+{"checker": "x1_key_check", "dotenv_files_found": [], "dotenv_files_with_real_key": {}, "env_DATA_GO_KR_SERVICE_KEY": "absent", "env_NVIDIA_API_KEY": "placeholder(openshell:resolve:env:*)", "env_real_key_vars": 0, "env_var_names_with_KEY_or_TOKEN": ["NVIDIA_API_KEY"], "harness_paths": {"/etc/openshell": {"files_scanned": 5, "real_key_hits": 0, "unreadable_or_large": 0}, "/home/sandbox": "absent", "/root": {"files_scanned": 0, "real_key_hits": 0, "unreadable_or_large": 0}, "/sandbox/.config": "absent", "/sandbox/.deepagents": "absent", "/sandbox/.hermes": "absent", "/sandbox/.nemoclaw": "absent", "/sandbox/.openclaw": "absent"}, "pid": 39, "proc_environ_hit_pids": [], "proc_environ_readable": 1, "proc_environ_real_key_hits": 0, "proc_environ_unreadable": 2, "real_key_total": 0, "uid": 998, "verdict": "NO_REAL_KEY"}
+
+[N0] 15:38:56 openshell sandbox exec -n x1-os-test -- /opt/x1/venv/bin/python /opt/x1/app/x1_probe.py --input 'Reply with exactly: X1 OK' --mode rewrite --runs-dir /tmp/x1-runs -> exit=4 (네트워크 블록 없음: 프록시 CONNECT 403)
+{"run_id": "20260924T063857-x1-a68108", "run_dir": "/tmp/x1-runs/20260924T063857-x1-a68108", "exit_code": 4, "http_status": null, "attempts": 1, "model": "nvidia/nemotron-3-super-120b-a12b", "error_body_head": null, "error": "connection_failed"}
+     app_trace: error = URLError: Tunnel connection failed: 403 Forbidden ; 로그 55행 DENIED [reason:network connections not allowed by policy]
+     원인: 0.0.116에서 provider 프로필의 목적지는 providers_v2_enabled(게이트웨이 전역, 미설정)일 때만 정책에 합성된다. 전역 설정은 바꾸지 않고 샌드박스 네트워크 정책을 다시 불러왔다.
+
+[PS1] 15:40:03 openshell policy set x1-os-test --policy spikes/x1/policy/x1-os-test.nim.policy.yaml --wait -> exit=0
+[1m[32m✓[39m[0m Policy version 2 submitted (hash: 112f94f3b36f)
+[1m[32m✓[39m[0m Policy version 2 loaded (active version: 2)
+     로그 69행 CONFIG:DETECTED, 72행 CONFIG:LOADED [policy_hash:3c80...]
+
+[N1] 15:40:18 (N0와 같은 명령) -> exit=0 (방식 1: 헤더 자리표시 값 치환)
+{"run_id": "20260924T064020-x1-bc8a8f", "run_dir": "/tmp/x1-runs/20260924T064020-x1-bc8a8f", "exit_code": 0, "http_status": 200, "attempts": 1, "model": "nvidia/nemotron-3-super-120b-a12b", "content": "X1 OK", "usage": {"prompt_tokens": 23, "completion_tokens": 63, "total_tokens": 86}}
+     로그 80행 NET:OPEN ALLOWED [policy:x1_nim_chat engine:opa], 81행 HTTP:POST ALLOWED [policy:x1_nim_chat engine:l7]
+
+[T1..T4b] 15:40:50 위반 시험 (탐침 net_probe.py는 openshell sandbox upload로 /tmp/x1-tools/에 올림)
+--- T1_endpoint_miss
+{"method": "GET", "url": "https://api.github.com/zen", "exe": "/opt/x1/venv/bin/python", "http_status": null, "error": "URLError: Tunnel connection failed: 403 Forbidden", "exit_code": 4}
+
+--- T2_binary_miss_curl
+curl: (22) The requested URL returned error: 403
+000
+--- T2b_binary_miss_syspython
+{"method": "POST", "url": "https://integrate.api.nvidia.com/v1/chat/completions", "exe": "/usr/bin/python3", "http_status": null, "error": "URLError: Tunnel connection failed: 403 Forbidden", "exit_code": 4}
+
+--- T3_l7_miss
+{"method": "GET", "url": "https://integrate.api.nvidia.com/v1/models", "exe": "/opt/x1/venv/bin/python", "http_status": 403, "body_head": "{\"binary\":\"/opt/x1/python/cpython-3.12.13-linux-aarch64-gnu/bin/python3.12\",\"detail\":\"GET /v1/models not permitted by policy\",\"error\":\"policy_denied\",\"host\":\"integrate.api.nvidia.com\",\"layer\":\"l7\",\"me", "exit_code": 3}
+
+--- T4_landlock_decoy
+cat: /srv/x1-decoy/oracle_decoy.json: Permission denied
+
+--- T4b_decoy_ls
+ls: cannot open directory '/srv/x1-decoy': Permission denied
+
+     exit: T1=4 T2=22 T2b=4 T3=3 T4=1 T4b=2 ; 로그 106·112·118·131행
+
+[I1] 15:41:25 openshell inference set --provider x1-nvidia --model nvidia/nemotron-3-super-120b-a12b -> exit=1
+     Error: provider 'x1-nvidia' has unsupported type 'x1-nvidia-chat' for cluster inference (supported: openai, anthropic, nvidia, deepinfra, google-vertex-ai, aws-bedrock)
+[I2] 15:41:34 python3 spikes/x1/with_nvidia_key.py --env-file <저장소 .env> -- openshell provider create --name x1-nvidia-route --type nvidia --credential NVIDIA_API_KEY -> exit=0 (샌드박스에 첨부하지 않음)
+[I3] 15:41:34 openshell inference set --provider x1-nvidia-route --model nvidia/nemotron-3-super-120b-a12b -> exit=0
+[1m[36mInference configured:[39m[0m
+
+  [2mWorkspace:[0m default
+  [2mRoute:[0m inference.local
+  [2mProvider:[0m x1-nvidia-route
+  [2mModel:[0m nvidia/nemotron-3-super-120b-a12b
+  [2mVersion:[0m 1
+  [2mTimeout:[0m 60s (default)
+  [2mValidated Endpoints:[0m
+    - https://integrate.api.nvidia.com/v1/chat/completions (openai_chat_completions)
+
+[N2] 15:41:49 openshell sandbox exec -n x1-os-test -- /opt/x1/venv/bin/python /opt/x1/app/x1_probe.py --input 'Reply with exactly: X1 LOCAL OK' --mode inference-local --runs-dir /tmp/x1-runs -> exit=0 (방식 2: inference.local, 헤더 없음)
+{"run_id": "20260924T064150-x1-b36dad", "run_dir": "/tmp/x1-runs/20260924T064150-x1-b36dad", "exit_code": 0, "http_status": 200, "attempts": 1, "model": "nvidia/nemotron-3-super-120b-a12b", "content": "X1 LOCAL OK", "usage": {"prompt_tokens": 24, "completion_tokens": 52, "total_tokens": 76}}
+     로그 154행 NET:OPEN [INFO] ALLOWED inference.local:443 (정책 블록 이름 없음), 155행 openshell_router routing ... protocols=openai_chat_completions,openai_completions,openai_responses,openai_embeddings,model_discovery
+
+[T5] 15:42:11 openshell sandbox exec -n x1-os-test -- curl --fail -sS -o /dev/null -w '%{http_code}' https://inference.local/v1/models -> exit=0
+200
+[T5b] 15:42:11 openshell sandbox exec -n x1-os-test -- /usr/bin/python3 /tmp/x1-tools/net_probe.py GET https://inference.local/v1/models -> exit=0
+{"method": "GET", "url": "https://inference.local/v1/models", "exe": "/usr/bin/python3", "http_status": 200, "exit_code": 0}
+     로그 165·176행: 정책 블록 없이 어떤 바이너리든 inference.local의 GET /v1/models까지 허용
+
+[PS2] 15:42:31 openshell policy set x1-os-test --policy <x1-os-test.nim.policy.yaml + x1_inference_local 블록(POST /v1/chat/completions, /opt/x1/python/**)> --wait -> exit=0 (로그 181·184행)
+[T6] 15:42 openshell sandbox exec -n x1-os-test -- curl ... https://inference.local/v1/models -> 응답 없이 멈춤. 로그 행 없음(184~205행 사이). 프로세스를 수동 종료
+[T6b] 15:45 /opt/x1/venv/bin/python /tmp/x1-tools/net_probe.py GET https://inference.local/v1/models -> 30초 제한을 넘겨 멈춤. 로그 행 없음. 수동 종료
+[PS3] 15:48:36 openshell policy set x1-os-test --policy spikes/x1/policy/x1-os-test.nim.policy.yaml --wait -> exit=0 (되돌림, 로그 205·208행: 같은 내용이라 policy_hash 3c80...가 2판과 같다)
+[1m[32m✓[39m[0m Policy version 4 submitted (hash: 112f94f3b36f)
+[1m[32m✓[39m[0m Policy version 4 loaded (active version: 4)
+[T5c] 15:48:37 curl --max-time 20 ... https://inference.local/v1/models -> exit=0
+200
+
+[K2] 15:49 openshell sandbox exec -n x1-os-test --timeout 60 -- sh -c 'sleep 15 & sleep 1; /opt/x1/venv/bin/python /opt/x1/app/key_check.py; ps ...' -> exit=0 (같은 사용자 프로세스 environ 읽기)
+{"checker": "x1_key_check", "dotenv_files_found": [], "dotenv_files_with_real_key": {}, "env_DATA_GO_KR_SERVICE_KEY": "absent", "env_NVIDIA_API_KEY": "placeholder(openshell:resolve:env:*)", "env_real_key_vars": 0, "env_var_names_with_KEY_or_TOKEN": ["NVIDIA_API_KEY"], "harness_paths": {"/etc/openshell": {"files_scanned": 5, "real_key_hits": 0, "unreadable_or_large": 0}, "/home/sandbox": "absent", "/root": {"files_scanned": 0, "real_key_hits": 0, "unreadable_or_large": 0}, "/sandbox/.config": "absent", "/sandbox/.deepagents": "absent", "/sandbox/.hermes": "absent", "/sandbox/.nemoclaw": "absent", "/sandbox/.openclaw": "absent"}, "pid": 179, "proc_environ_hit_pids": [], "proc_environ_readable": 3, "proc_environ_real_key_hits": 0, "proc_environ_unreadable": 2, "real_key_total": 0, "uid": 998, "verdict": "NO_REAL_KEY"}
+    PID USER     COMMAND
+      1 root     /opt/openshell/bin/openshell-sandbox --workdir /sandbox
+     37 sandbox  /bin/bash -l
+    171 sandbox  sh -c sleep 15 & sleep 1; /opt/x1/venv/bin/python /opt/x1/app/key_check.py; rc=$?; ps -eo pid,user,args | head -12; exit $rc
+    177 sandbox  sleep 15
+    180 sandbox  ps -eo pid,user,args
+    181 sandbox  head -12
+
+[N3] 15:50:34 openshell sandbox exec -n x1-os-test --timeout 240 -- /opt/x1/venv/bin/python /tmp/x1-tools/x1_probe.py --input 'Reply with exactly: X1 OK' --mode rewrite --runs-dir /sandbox/x1-runs -> exit=0 (NAT 추적 완전판, 4개 이벤트)
+{"run_id": "20260924T065036-x1-2d4332", "run_dir": "/sandbox/x1-runs/20260924T065036-x1-2d4332", "exit_code": 0, "http_status": 200, "attempts": 1, "model": "nvidia/nemotron-3-super-120b-a12b", "content": "X1 OK", "usage": {"prompt_tokens": 23, "completion_tokens": 63, "total_tokens": 86}}
+     로그 297·298행. 실행 기록: artifacts/runs/20260924T065036-x1-2d4332/ (커밋 안 함, 발췌는 20260924-x1-nim-run-excerpt.txt)
+
+[T7] 15:52:19 openshell sandbox exec -n x1-os-test --timeout 60 -- /opt/x1/venv/bin/python -c 'subprocess.call(["curl", ..., "-X", "POST", ..., "https://integrate.api.nvidia.com/v1/chat/completions"])' -> exit=22
+curl: (22) The requested URL returned error: 400
+400
+     로그 331·332행: /usr/bin/curl이 [policy:x1_nim_chat]로 허용(조상 python의 허가 상속). 400은 상류 응답으로 본다([추론]: 프록시 거부는 403+policy_denied 본문)
+[T7b] 15:52:20 같은 방식으로 curl https://api.github.com/zen -> exit=22
+curl: (22) The requested URL returned error: 403
+000
+     로그 338행 DENIED endpoint api.github.com:443 — 상속돼도 목적지 제한은 그대로
+
+# 사후 보충(2026-09-24(목) 20:53 KST, PR #19 검토 2회차 수정). X1 시험 뒤 개발 환경에서 돌린 읽기 전용 명령이고 이 샌드박스와는 관계없다.
+# 저장소 밖 임시 폴더에서, 키 변수(NVIDIA_API_KEY, NVIDIA_INFERENCE_API_KEY, DATA_GO_KR_SERVICE_KEY)와 TRADESENTRY_SEALED_DIR을 env -u로 빼고 표준 입력을 /dev/null로 돌린 채 실행했다. 설치 명령은 돌리지 않았다.
+[SK1] 20:53:26 npx skills --version -> exit=0
+1.7.0
+[SK2] 20:53:33 NO_COLOR=1 npx skills add NVIDIA/OpenShell --list -> exit=0 (목록 모드: 공개 저장소를 받아 목록만 출력하고 끝남, 설치 단계 출력 없음, 임시 폴더에 새 파일 없음. 임시 폴더 밖은 확인하지 않았다)
+     첫 줄: "claude-code_2-1-280_agent  Agent detected — installing non-interactively"
+     "Found 4 skills": debug-inference, debug-openshell-cluster, generate-sandbox-policy, openshell-cli
+     마지막 줄: "Use --skill <name> to install specific skills"
