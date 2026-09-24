@@ -285,13 +285,4 @@ X1이 개발 기계에 남긴 것과 되돌리는 방법이다. 명령은 태그
 
 ### 키 사본
 
-키 원본은 저장소 `.env`에 있다. 아래는 X1이 만든 사본의 위치와 지우는 방법이다. 어느 곳도 열지 않는다.
-
-- 시연 게이트웨이의 provider `nvidia-prod`(자격 증명 키 이름 `NVIDIA_INFERENCE_API_KEY`, `artifacts/openshell/logs/20260924-x1-demo-policy.txt` 2절). DB 폴더는 `<NemoClaw 게이트웨이 상태 폴더>`다.
-  - `nemoclaw credentials reset nvidia-prod`: 게이트웨이에서 provider를 지우고 그 provider를 쓰는 샌드박스에서 뗀다 `[사실: NemoClaw v0.0.124 docs/reference/commands.mdx 3605·3645~3651행]`. 또는 `openshell provider delete nvidia-prod` `[사실: OpenShell v0.0.116 docs/sandboxes/manage-providers.mdx 278행]`. NemoClaw 등록부와 맞추려면 앞의 명령을 쓴다 `[추론]`.
-  - 지우면 시연 샌드박스가 돌지 않는다.
-- 시연 샌드박스 안 root 감독 프로세스: 샌드박스가 도는 동안 게이트웨이에서 받은 자격 증명을 가진다(demo 로그 7·13행, OpenShell v0.0.116 docs/about/how-it-works.mdx 116행). 샌드박스를 멈추거나(`nemoclaw x1-demo stop`) 지우면(`nemoclaw x1-demo destroy`) 그 프로세스와 함께 사라진다 `[추론]`.
-- 1단계 게이트웨이 상태 저장소(`<1단계 게이트웨이 상태 폴더>`)의 provider `x1-nvidia`·`x1-nvidia-route`(자격 증명 키 이름 `NVIDIA_API_KEY`): 지웠는지 `[미확인]`(정리 기록 없음, `artifacts/openshell/violation_tests.md` §1 "정리" 행). 자격 증명은 그 DB 안에 암호화돼 있다(OpenShell v0.0.116 docs/reference/gateway-config.mdx 392행).
-  - `openshell provider delete x1-nvidia-route`(또는 `x1-nvidia`)를 지금 실행하면 활성 게이트웨이(`nemoclaw`)로 가므로 대상이 없다. 1단계 게이트웨이(`openshell`, 17670)는 NemoClaw가 서비스를 다시 구성한 뒤 뜨지 않는다([N2]). CLI의 `-g`로 게이트웨이를 고를 수는 있지만(manage-gateways.mdx 83행) 1단계 게이트웨이 프로세스가 없어 이 방법은 쓸 수 없다 `[추론]`.
-  - 저장소 파일을 지울지는 사용자 결정이다(`docs/tracking/findings.md`의 키 사본 항목).
-- 호스트 전달 프로세스(127.0.0.1:18789): 키 래퍼 아래에서 돈 온보딩 도중에 시작했다 `[추론: demo transcript [N2]에는 샌드박스가 없었고, [N3] 온보딩 끝에 대시보드 점검이 통과했다]`. NemoClaw는 하위 프로세스 환경을 허용 목록으로 만들고 그 목록에 `NVIDIA_INFERENCE_API_KEY`가 없으므로, 키를 물려받았을 가능성은 낮다 `[추론: NemoClaw v0.0.124 src/lib/subprocess-env.ts 6~62행]`. 그 프로세스의 환경은 열어 보지 않았다.
+키 사본의 위치와 키를 교체할 때 정리할 곳은 오래 가는 운영 문서인 `docs/operations.md`의 "키 사본 위치와 교체 때 정리할 곳" 절로 옮겼다. 어느 곳도 열지 않는다.

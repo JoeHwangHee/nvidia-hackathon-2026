@@ -6,8 +6,8 @@
 |---|---|
 | API 키의 보관·전달·검사, 키가 드러났을 때의 처리 | `docs/rules/PARALLEL_DEV_RULES.md` §10.2·§10.3 |
 | 에이전트와 그 자식 프로세스가 읽을 수 있는 곳에 키를 두지 않는 주입 방식(해석 A): X1(구현 첫날의 세로형 최소 통합 시험)이 채택한 credential placeholder rewrite. 샌드박스 프로그램에는 자리표시자만 두고 감독 프로세스의 정책 프록시가 요청 시점에 실제 키로 바꾼다 | `docs/plan/DEV_PLAN.md` §4.1 (c)·§4.6, 결정 기록 `20260924-1556-x1-key-injection.md` |
-| 키 사본 위치와 교체 때 정리할 곳(키는 대회 마무리 때 재발급) | 결정 기록 `20260924-2010-user-decision-key-rule-interpretation.md`, `spikes/x1/README.md` "개발 기계 되돌리기" 절 |
-| OpenShell 정책 요건 (a)~(e)(정답·봉인 경로 차단, 외부 전송 제한, 키 비보유, 감사 로그 수집, 의도적 위반 시험표), 정적·동적 계층, 파일시스템 허용 목록 방식 | 같은 문서 §4.1~§4.3 |
+| 키 사본 위치와 교체 때 정리할 곳(키는 대회 마무리 때 재발급) | `docs/operations.md` "키 사본 위치와 교체 때 정리할 곳" 절, 결정 기록 `20260924-2010-user-decision-key-rule-interpretation.md` ③ |
+| OpenShell 정책 요건 (a)~(e)(정답·봉인 경로 차단, 외부 전송 제한, 키 비보유, 감사 로그 수집, 의도적 위반 시험표), 정적·동적 계층, 파일시스템 허용 목록 방식 | `docs/plan/DEV_PLAN.md` §4.1~§4.3 |
 | 요건별 의도적 위반 시험과 증거(시험표, 감사 로그 발췌) | 같은 문서 §4.4 |
 | 두 통제의 구분: 저장소 경로 차단과 저장소 밖 봉인 격리 | 같은 문서 §4.5, `docs/rules/PARALLEL_DEV_RULES.md` §6.5 |
 | 시연 샌드박스의 추가 통제 | `docs/plan/DEV_PLAN.md` §4.8 |
