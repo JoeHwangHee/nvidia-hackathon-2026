@@ -25,7 +25,8 @@
 
 시험 환경(GoldenMixin.setUp)
 - TRADESENTRY_SEALED_DIR와 HOME을 존재하지 않는 임시 경로로 고정하고, PYTHON_DOTENV_DISABLED=1로 python-dotenv의
-  .env 자동 로드를 끄며(NAT가 import 때 load_dotenv()를 부른다), 소켓 연결(socket.socket.connect,
+  .env 자동 로드를 끄며(NAT의 `nat` 명령 진입점 nat.cli.entrypoint가 import 때 load_dotenv()를 부른다. 파이썬 API는
+  부르지 않는다), 소켓 연결(socket.socket.connect,
   socket.create_connection)을 예외를 내는 함수로 바꾼다. 시험이 끝나면 되돌린다.
 - 단위 폴더의 시험 파일은 test_golden_pair를 새로 정의하지 않는다. setUp을 새로 쓰면 super().setUp()을 부른다.
   compare나 golden_dir를 바꾼 파일은 허용하되, tests/test_units_registry.py가 목록으로 알린다(검토자가 본다).
