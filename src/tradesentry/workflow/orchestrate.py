@@ -37,9 +37,9 @@ checklist: 모델 없이 check_comparability → get_history → decompose_hs(�
   not_comparable). 이 키가 없거나 참거짓이 아니면 CODE_ERROR로 멈춘다(조기 종료가 조용히 꺼지지 않게).
 - budget_block 종류: {몫}_limit(comparison·requery·basic·verify·final_verify), not_comparable, invalid_call,
   revision_limit(두 번째 수정 단계), 그리고 도구 예산 자리(단위 I6)가 준 거부 사유.
-- tool_attempts 세는 법은 COUNT_BLOCKED_TOOL_ATTEMPTS 한 곳이 정한다(사용자 확인 대기, 결정 기록 ③). 지금은 참:
-  막힌 시도까지 모든 시도를 센다(자료 계약 §8.1 "넘은 실행은 실제 값"). 거짓이면 도구에 닿은 시도만 센다(평가 검토
-  권고 (가)). 흐름의 몫·도구 예산 판정은 이 값과 관계없다. 몫을 통과한 시도는 도구 예산 자리(단위 I6)에 한 번 더
+- tool_attempts 세는 법은 COUNT_BLOCKED_TOOL_ATTEMPTS 한 곳이 정한다(결정 기록 ③). 2026-09-25(금) 사용자 결정 6
+  (가)대로 거짓: 도구에 닿아 예산을 쓴 시도만 센다(항상 8 이하). 막힌 시도는 trace의 budget_block에만 남는다(결정 기록
+  docs/tracking/decisions/20260925-0847-user-decision-morning-shared-promises.md). 흐름의 몫·도구 예산 판정은 이 값과 관계없다. 몫을 통과한 시도는 도구 예산 자리(단위 I6)에 한 번 더
   묻는다(도구 8회, 같은 인자 재호출 등은 I6 규칙). 실행한 도구는 8회를 넘지 않는다.
 - 대조할 것이 없으면 verify_evidence를 부르지 않는다: 초안에서 뽑은 metric_id와 근거 ID가 모두 0개면(단위 I5가
   invalid_args로 거부하면서 시도 1회를 쓰는 호출) 시도로 세지 않고 건너뛰며, 다음 validator_result에 verify_skipped
@@ -98,9 +98,9 @@ TOOL_UNITS = {"check_comparability": check_comparability, "get_history": get_his
 CASE_KEYS = ("case_id", "hs6", "partner", "month", "baseline_month", "signals", "snapshot_id", "policy_version")
 PRIORITY = investigator.PRIORITY
 BUDGET_LIMIT_KEYS = ("tool_attempts", "basic_tool_attempts", "revision_stages", "revision_requeries", "final_verify")
-# 실행 결과 기록 tool_attempts에 막힌 시도(budget_block)를 셀지(2026-09-25(금) 09:00 사용자 확인 대기, 결정 기록 ③).
-# 참: 모든 시도(지금). 거짓: 도구에 닿은 시도만(평가 검토 권고 (가)). 바꾸는 곳은 이 한 줄이다(시험이 두 값을 다 돈다).
-COUNT_BLOCKED_TOOL_ATTEMPTS = True
+# 실행 결과 기록 tool_attempts에 막힌 시도(budget_block)를 셀지(결정 기록 ③). 2026-09-25(금) 사용자 결정 6 (가):
+# 거짓 = 도구에 닿아 예산을 쓴 시도만 센다. 참이면 막힌 시도까지 센다. 바꾸는 곳은 이 한 줄이다(시험이 두 값을 다 돈다).
+COUNT_BLOCKED_TOOL_ATTEMPTS = False
 # 판정 정책 P3 근거 상태의 필수 비교(comparisons)와 그 비교를 하는 도구 `[미확인]`: 조립(AS2)에서 확정한다.
 COMPARISON_TOOLS = {"comparability": "check_comparability", "partners": "compare_partners",
                     "country_and_world": "get_history"}

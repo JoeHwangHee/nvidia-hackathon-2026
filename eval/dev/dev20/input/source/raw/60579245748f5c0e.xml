@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<response><header><resultCode>00</resultCode><resultMsg>정상서비스.</resultMsg></header><body><items>
+<item><year>총계</year><statCd>-</statCd><statKor>-</statKor><hsCd>-</hsCd><impDlr>3462</impDlr><impWgt>232</impWgt><expDlr>0</expDlr><expWgt>0</expWgt></item>
+<item><year>2023.01</year><statCd>XP</statCd><statKor>합성 하위품목 8504901000</statKor><hsCd>8504901000</hsCd><impDlr>301</impDlr><impWgt>20</impWgt><expDlr>0</expDlr><expWgt>0</expWgt></item>
+<item><year>2023.02</year><statCd>XP</statCd><statKor>합성 하위품목 8504901000</statKor><hsCd>8504901000</hsCd><impDlr>301</impDlr><impWgt>20</impWgt><expDlr>0</expDlr><expWgt>0</expWgt></item>
+<item><year>2023.03</year><statCd>XP</statCd><statKor>합성 하위품목 8504901000</statKor><hsCd>8504901000</hsCd><impDlr>300</impDlr><impWgt>20</impWgt><expDlr>0</expDlr><expWgt>0</expWgt></item>
+<item><year>2023.04</year><statCd>XP</statCd><statKor>합성 하위품목 8504901000</statKor><hsCd>8504901000</hsCd><impDlr>297</impDlr><impWgt>20</impWgt><expDlr>0</expDlr><expWgt>0</expWgt></item>
+<item><year>2023.05</year><statCd>XP</statCd><statKor>합성 하위품목 8504901000</statKor><hsCd>8504901000</hsCd><impDlr>299</impDlr><impWgt>20</impWgt><expDlr>0</expDlr><expWgt>0</expWgt></item>
+<item><year>2023.06</year><statCd>XP</statCd><statKor>합성 하위품목 8504901000</statKor><hsCd>8504901000</hsCd><impDlr>301</impDlr><impWgt>20</impWgt><expDlr>0</expDlr><expWgt>0</expWgt></item>
+<item><year>2023.07</year><statCd>XP</statCd><statKor>합성 하위품목 8504901000</statKor><hsCd>8504901000</hsCd><impDlr>302</impDlr><impWgt>20</impWgt><expDlr>0</expDlr><expWgt>0</expWgt></item>
+<item><year>2023.08</year><statCd>XP</statCd><statKor>합성 하위품목 8504901000</statKor><hsCd>8504901000</hsCd><impDlr>302</impDlr><impWgt>20</impWgt><expDlr>0</expDlr><expWgt>0</expWgt></item>
+<item><year>2023.09</year><statCd>XP</statCd><statKor>합성 하위품목 8504901000</statKor><hsCd>8504901000</hsCd><impDlr>162</impDlr><impWgt>12</impWgt><expDlr>0</expDlr><expWgt>0</expWgt></item>
+<item><year>2023.10</year><statCd>XP</statCd><statKor>합성 하위품목 8504901000</statKor><hsCd>8504901000</hsCd><impDlr>299</impDlr><impWgt>20</impWgt><expDlr>0</expDlr><expWgt>0</expWgt></item>
+<item><year>2023.11</year><statCd>XP</statCd><statKor>합성 하위품목 8504901000</statKor><hsCd>8504901000</hsCd><impDlr>299</impDlr><impWgt>20</impWgt><expDlr>0</expDlr><expWgt>0</expWgt></item>
+<item><year>2023.12</year><statCd>XP</statCd><statKor>합성 하위품목 8504901000</statKor><hsCd>8504901000</hsCd><impDlr>299</impDlr><impWgt>20</impWgt><expDlr>0</expDlr><expWgt>0</expWgt></item>
+</items></body></response>

@@ -1,0 +1,51 @@
+{
+ "schema_version": 1,
+ "dataset": "dev20",
+ "snapshot_id": "golden_v2",
+ "policy_version": "dev-0.1",
+ "fixed_time": "2026-09-25T00:00:00+09:00",
+ "world": {
+  "period": {"start": "202301", "end": "202412"},
+  "hs4": "8504",
+  "hs6": ["850450"],
+  "partners": ["XL", "XM", "XN"],
+  "noise": {"seed": 7, "quantity_permille": 20, "price_permille": 10},
+  "series": {
+   "850450": {
+    "XL": {"1000": [900, 75], "2000": [300, 75]},
+    "XM": {"1000": [1000, 100], "2000": [500, 100]},
+    "XN": {"1000": [1400, 100], "9000": [600, 100]}
+   }
+  },
+  "rest_of_world": {"850450": {"1000": [1000, 100], "2000": [500, 100], "9000": [500, 50]}},
+  "peer_k": 5,
+  "peer_source_year": 2023
+ },
+ "cases": [
+  {
+   "case_id": "850450-XL-202403", "hs6": "850450", "partner": "XL", "month": "202403", "scenario_class": 1,
+   "events": [{"type": "exact", "month": "202303"},
+              {"type": "children", "month": "202403", "values": {"1000": [180, 15], "2000": [540, 135]}}],
+   "rule": {"unit_value": "composition_explained", "share": null},
+   "expected": {"signals": {"unit_value": "TRIGGERED", "share": "NOT_TRIGGERED"},
+                "signal_status": {"unit_value": "MONITOR", "share": "NOT_TRIGGERED"},
+                "review_status": "MONITOR", "unresolved_evidence": false,
+                "required_evidence": ["parent_child_match_V_and_Q", "weight_share_decomposition",
+                                      "per_child_unit_value_stable", "comparability_ok"]},
+   "note": "골든 시험용: 하위 단가 고정, 구성비만 변화"
+  },
+  {
+   "case_id": "850450-XM-202405", "hs6": "850450", "partner": "XM", "month": "202405", "scenario_class": 4,
+   "events": [{"type": "exact", "month": "202305"},
+              {"type": "children", "month": "202405", "values": {"1000": [600, 100], "2000": [300, 100]}},
+              {"type": "request", "endpoint": "nitemtrade", "hsSgn": "850450", "cntyCd": "XM", "strtYymm": "202401",
+               "status": "NOT_COLLECTED"}],
+   "rule": {"unit_value": "hold_missing", "share": null},
+   "expected": {"signals": {"unit_value": "TRIGGERED", "share": "NOT_TRIGGERED"},
+                "signal_status": {"unit_value": "HOLD", "share": "NOT_TRIGGERED"},
+                "review_status": "HOLD", "unresolved_evidence": false,
+                "required_evidence": ["missingness_listed", "failure_vs_not_collected_distinguished", "no_zero_fill"]},
+   "note": "골든 시험용: 비교월 연도 HS10 조회 미수집"
+  }
+ ]
+}

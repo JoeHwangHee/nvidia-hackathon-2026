@@ -1,0 +1,178 @@
+{
+ "reports": [
+  {
+   "report_id": "report-run_case-260925100001",
+   "run_id": "run_case-260925100001",
+   "case_id": "A-composition",
+   "mode": "full",
+   "claims": [
+    {
+     "claim_id": "u0",
+     "claim_type": "value",
+     "hs6": "850450",
+     "partner": "CN",
+     "period": "202301",
+     "baseline_period": null,
+     "metric": "U",
+     "value": 6.00,
+     "unit": "USD/kg",
+     "direction": "NA",
+     "evidence_ids": [],
+     "text": "기준월 단가는 kg당 6.00달러였다."
+    },
+    {
+     "claim_id": "u1",
+     "claim_type": "value",
+     "hs6": "850450",
+     "partner": "CN",
+     "period": "202401",
+     "baseline_period": null,
+     "metric": "U",
+     "value": 3.60,
+     "unit": "USD/kg",
+     "direction": "NA",
+     "evidence_ids": [],
+     "text": "비교월 단가는 3.60달러다."
+    },
+    {
+     "claim_id": "ru",
+     "claim_type": "change",
+     "hs6": "850450",
+     "partner": "CN",
+     "period": "202401",
+     "baseline_period": "202301",
+     "metric": "r_U",
+     "value": -40.0,
+     "unit": "%",
+     "direction": "DOWN",
+     "evidence_ids": [],
+     "text": "단가가 전년 같은 달보다 40.0% 낮다."
+    },
+    {
+     "claim_id": "s0",
+     "claim_type": "share",
+     "hs6": "850450",
+     "partner": "CN",
+     "period": "202301",
+     "baseline_period": null,
+     "metric": "s",
+     "value": 10.0,
+     "unit": "%",
+     "direction": "NA",
+     "evidence_ids": [],
+     "text": "기준월 점유율 10.0%"
+    },
+    {
+     "claim_id": "s1",
+     "claim_type": "share",
+     "hs6": "850450",
+     "partner": "CN",
+     "period": "202401",
+     "baseline_period": null,
+     "metric": "s",
+     "value": 6.0,
+     "unit": "%",
+     "direction": "NA",
+     "evidence_ids": [],
+     "text": "비교월 점유율 6.0%"
+    },
+    {
+     "claim_id": "ds",
+     "claim_type": "share_change",
+     "hs6": "850450",
+     "partner": "CN",
+     "period": "202401",
+     "baseline_period": "202301",
+     "metric": "d_s",
+     "value": -4.0,
+     "unit": "pp",
+     "direction": "DOWN",
+     "evidence_ids": [],
+     "text": "점유율이 △4.0%p 줄었다."
+    }
+   ],
+   "narrative": "단가가 kg당 6.0달러에서 3.6달러로 40% 떨어졌다. 점유율이 6%에서 10%로 늘었다. 단가 증가율은 △40.0%였다. 2024년 3월 HS 850450 수입을 조사했고 36개월 중 최저였다.",
+   "hypotheses": ["원자재 가격 상승이 원인일 수 있다.", "원자재 가격 변동이 영향을 주었는지는 이 자료로 확인할 수 없다."],
+   "review_status": "MONITOR",
+   "signal_status": {
+    "unit_value": "MONITOR",
+    "share": "NOT_TRIGGERED"
+   },
+   "unresolved_evidence": false,
+   "evidence_ids": [],
+   "validator_findings": [],
+   "report_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+   "created_at": "2026-09-25T10:00:00+09:00",
+   "policy_version": "dev-0.1",
+   "snapshot_id": "kcs_202201_202412_v2",
+   "grouping_version": "g0"
+  },
+  {
+   "report_id": "report-run_case-260925100002",
+   "run_id": "run_case-260925100002",
+   "case_id": "real-like",
+   "mode": "full",
+   "claims": [
+    {
+     "claim_id": "k1",
+     "claim_type": "change",
+     "hs6": "850450",
+     "partner": "CN",
+     "period": "202401",
+     "baseline_period": "202301",
+     "metric": "r_U",
+     "value": -38.7,
+     "unit": "%",
+     "direction": "DOWN",
+     "evidence_ids": [],
+     "text": ""
+    },
+    {
+     "claim_id": "k2",
+     "claim_type": "value",
+     "hs6": "850450",
+     "partner": "CN",
+     "period": "202401",
+     "baseline_period": null,
+     "metric": "V",
+     "value": 21876681,
+     "unit": "USD",
+     "direction": "NA",
+     "evidence_ids": [],
+     "text": ""
+    },
+    {
+     "claim_id": "k3",
+     "claim_type": "value",
+     "hs6": "850450",
+     "partner": "CN",
+     "period": "202401",
+     "baseline_period": null,
+     "metric": "Q",
+     "value": 1075490,
+     "unit": "kg",
+     "direction": "NA",
+     "evidence_ids": [],
+     "text": ""
+    }
+   ],
+   "narrative": "단가가 약 40% 하락했지만 40%는 아니다. 탐지 임계값 30%를 넘는 하락이다. 금액은 2,188만 달러, USD 21.9백만, 중량은 1,075톤이다. 비교국 5개국 중 4개국에서 하락했다.",
+   "hypotheses": ["절반으로 줄었다고 보기는 어렵다."],
+   "review_status": "MAINTAIN",
+   "signal_status": {
+    "unit_value": "MAINTAIN",
+    "share": "NOT_TRIGGERED"
+   },
+   "unresolved_evidence": false,
+   "evidence_ids": [],
+   "validator_findings": [],
+   "report_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+   "created_at": "2026-09-25T10:00:00+09:00",
+   "policy_version": "dev-0.1",
+   "snapshot_id": "kcs_202201_202412_v2",
+   "grouping_version": "g0"
+  }
+ ],
+ "hs_codes": ["8504", "850450", "8504501010", "8504501020"],
+ "thresholds": [30, 10]
+}
