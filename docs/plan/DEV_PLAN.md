@@ -419,6 +419,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
   - 키 주입 방식: 헤더에 키를 넣을 수 있는지, `inference.local` 전달이 되는지(요건 (c))
   - `openshell logs`의 거부·허용 이벤트 행 형식, 파일시스템 거부가 로그에 남는지(요건 (d))
   - 정책을 `openshell policy set`으로 다시 불러올 때마다 `openshell logs`에 `CONFIG:LOADED` 행이 남는지와 그 형식(§4.4, 실행 중 재적용 탐지의 입력)
+  - 샌드박스 밖 프로그램이 `openshell sandbox exec -n <agent> -- <명령>` 형식으로 채점 대상 실행 샌드박스 안의 `run-case`를 돌릴 수 있는지(샌드박스 밖 실행기의 호출 경로, `docs/plan/SCAFFOLD_BRIEF.md` §4.4.2)
   - 저장소 파일과 봉인 입력을 샌드박스에 들이는 방식(요건 (a), §9.8)
   - NAT 실행 추적 산출물의 위치
   - 하네스 자체의 추론 경로: OpenClaw가 어느 목적지·블록으로 모델을 부르는지(§4.6, §4.8)
