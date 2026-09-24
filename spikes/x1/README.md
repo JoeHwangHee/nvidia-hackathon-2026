@@ -202,6 +202,8 @@ openshell sandbox download x1-demo /sandbox/x1-runs artifacts/runs/
 
 되돌리기(시연 샌드박스)
 
+되돌린 뒤(1판 정책과 추론 경로 복구)의 샌드박스는 요건 (b)를 채우지 않으므로 시연 증거로 쓰지 않는다.
+
 ```bash
 # 0. 증거를 먼저 받는다
 openshell sandbox download x1-demo /sandbox/x1-runs artifacts/runs/
@@ -223,7 +225,9 @@ nemoclaw x1-demo inference set --provider nvidia-prod --model nvidia/nemotron-3-
 #    앞 판에 적었던 openshell inference set --provider nvidia-prod --model nvidia/nemotron-3-super-120b-a12b는
 #    NemoClaw 등록부 검사를 건너뛴다(같은 문서 3441행)
 
-# 4. openclaw.json: 3의 명령이 X1이 바꾼 baseUrl·apiKey까지 되돌리는지는 [미확인]이다. 원본으로 돌리려면 샌드박스 안에서
+# 4. openclaw.json: 3의 명령은 OpenClaw 설정의 provider 항목과 선택 모델을 고친다(commands.mdx 3414행 "For OpenClaw, the patch
+#    updates the OpenClaw config provider namespace and selected model"). 그래서 X1이 바꾼 baseUrl·apiKey도 3에서 다시
+#    쓰일 것으로 본다 [추론]. 원본으로 확실히 돌리려면 샌드박스 안에서
 #    /sandbox/.openclaw/openclaw.json.x1-backup을 openclaw.json으로 되돌리고 .config-hash를 다시 계산한 뒤 백업 파일을 지운다
 #    (X1의 수정 명령이 기록에 없어 되돌리는 명령도 [미확인])
 nemoclaw x1-demo gateway restart
@@ -257,7 +261,7 @@ X1 코드와 시험에서 드러난 한계다. 앱 코드는 MT4(조사 흐름·
 
 ## 개발 기계 되돌리기
 
-X1이 개발 기계에 남긴 것과 되돌리는 방법이다. 명령은 태그를 지정해 읽은 공개 문서·소스(OpenShell v0.0.116, NemoClaw v0.0.124)에서 확인한 것만 적고, 확인하지 못한 것은 `[미확인]`으로 둔다. PR #19 수정 때 이 절의 명령은 실행하지 않았다. 시연 샌드박스, NemoClaw 게이트웨이, provider `nvidia-prod` 가운데 하나라도 지우면 시연 경로가 돌지 않는다.
+X1이 개발 기계에 남긴 것과 되돌리는 방법이다. 명령은 공개 문서에서 확인한 것만 적고, 확인하지 못한 것은 `[미확인]`으로 둔다. 공개 문서는 태그를 지정해 읽은 OpenShell v0.0.116·NemoClaw v0.0.124 문서·소스와, 2026-09-24(목)에 웹에서 읽은 Homebrew 공식 manpage(https://docs.brew.sh/Manpage)·Docker 공식 문서(https://docs.docker.com/reference/cli/docker/image/rm/)다. PR #19 수정 때 이 절의 명령은 Homebrew·Docker 명령 줄을 포함해 실행하지 않았다. 시연 샌드박스, NemoClaw 게이트웨이, provider `nvidia-prod` 가운데 하나라도 지우면 시연 경로가 돌지 않는다.
 
 - 사용자 zsh 시작 설정 파일(`.zshrc`)의 NemoClaw PATH 블록
   - 모양: 빈 줄 하나 뒤에 `# NemoClaw PATH setup` 줄, `export PATH="<NemoClaw CLI 폴더>:$PATH"` 줄, `# end NemoClaw PATH setup` 줄이 온다 `[사실: NemoClaw v0.0.124 scripts/install.sh 2642~2691행]`.
@@ -267,21 +271,21 @@ X1이 개발 기계에 남긴 것과 되돌리는 방법이다. 명령은 태그
   - `nemoclaw uninstall [--yes] [--keep-openshell] [--delete-models] [--destroy-user-data] [--all-gateway-ports] [--gateway <name>]` `[사실: NemoClaw v0.0.124 docs/reference/commands.mdx 3716행]`.
   - 선택한 게이트웨이의 샌드박스(`x1-demo`)를 지우고, 형제 게이트웨이가 없으면 provider 등록과 NemoClaw가 관리하는 게이트웨이의 Docker 이미지도 지운다(같은 문서 3853행). 지우기 전에 등록된 샌드박스마다 호스트 쪽 스냅샷을 만든다(같은 판 docs/manage-sandboxes/uninstall-nemoclaw.mdx 20~24행). CLI는 `npm unlink -g nemoclaw`·`npm uninstall -g nemoclaw`로 지운다(run-plan.ts 1993~2002행).
   - `--keep-openshell`: OpenShell 실행 파일, NemoClaw가 관리하는 게이트웨이 서비스 파일, 로컬 게이트웨이 상태를 남기고 호스트 게이트웨이 프로세스를 멈추지 않는다(commands.mdx 3700행).
-- OpenShell 0.0.116(Homebrew 로컬 tap `nvidia/openshell`의 `openshell`·`openshell-gateway`·`openshell-driver-vm`)
+- OpenShell 0.0.116(Homebrew 로컬 tap `nvidia/openshell`의 `openshell`·`openshell-gateway`·`openshell-driver-vm`). 순서는 서비스 중지, 제거, tap 해제다 `[추론]`.
+  - 서비스 중지: `brew services stop nvidia/openshell/openshell`. Homebrew 공식 manpage는 `brew services stop`을 "Stop the service formula immediately and unregister it from launching at login (or boot), unless --keep is specified"라고 적는다 `[사실: https://docs.brew.sh/Manpage]`. 공식 이름은 1단계 재현 절차 1의 `brew services restart` 줄과 같게 적었다. OpenShell 설치 문서는 중지도 Homebrew 서비스 명령으로 한다고만 적고, 예시는 `brew services list`·`brew services restart openshell`뿐이다 `[사실: OpenShell v0.0.116 docs/about/installation.mdx 51~56행]`. 멈추면 시연 경로가 돌지 않는다.
   - 제거: `brew uninstall nvidia/openshell/openshell`. NemoClaw uninstall은 macOS에서 OpenShell 실행 파일을 남기고, Homebrew가 이 공식을 확인하면 이 명령을 따로 안내한다 `[사실: NemoClaw v0.0.124 docs/manage-sandboxes/uninstall-nemoclaw.mdx 53~63행]`.
-  - 서비스 중지: 명령 줄 `[미확인]`. OpenShell 설치 문서는 중지도 Homebrew 서비스 명령으로 한다고만 적고, 예시는 `brew services list`·`brew services restart openshell`뿐이다 `[사실: OpenShell v0.0.116 docs/about/installation.mdx 51~56행]`.
-  - tap 해제: 공개 문서에 명령이 없다 `[미확인]`. 이 로컬 tap은 설치 스크립트가 `brew tap-new --no-git`으로 만든다 `[사실: OpenShell v0.0.116 install.sh 668~673행]`.
+  - tap 해제: `brew untap nvidia/openshell`. Homebrew 공식 manpage는 `brew untap`을 "Remove a tapped formula repository"라고 적는다 `[사실: https://docs.brew.sh/Manpage]`. 같은 항목의 `--force` 설명("Uninstall all formulae and casks from this tap with --force before untapping")으로 보아 위 제거 뒤에 푼다 `[추론]`. OpenShell·NemoClaw 문서에는 이 명령이 없다. 이 로컬 tap은 설치 스크립트가 `brew tap-new --no-git`으로 만든다 `[사실: OpenShell v0.0.116 install.sh 668~673행]`.
   - CLI의 1단계 게이트웨이 등록 `openshell`(17670): `openshell gateway remove openshell`은 게이트웨이 서비스를 멈추지 않고 사용자 층 등록만 지운다 `[사실: OpenShell v0.0.116 docs/sandboxes/manage-gateways.mdx 85·148~151행]`. 지우기 전에 `openshell gateway list`로 층(`user`·`system`)을 본다.
 - `gateway.env`와 LaunchAgent(로그인할 때 프로그램을 띄우는 macOS 설정) `homebrew.mxcl.openshell`
   - `gateway.env`: 1단계에서 `printf`로 썼고(os-test transcript [G1], 1단계 재현 절차 1), 2단계에서 NemoClaw가 다시 썼다(demo transcript [N2]). `nemoclaw uninstall`(기본 포트 8080, `--keep-openshell` 없이)이 NemoClaw 항목을 지우고 다른 항목은 남긴다 `[사실: commands.mdx 3740~3742행, run-plan.ts 1337~1371·3453~3469행]`. 1단계에 쓴 두 줄이 지금 파일에 남았는지는 `[미확인]`(파일을 열지 않는다).
-  - LaunchAgent: Homebrew 서비스 파일이고 NemoClaw가 다시 썼다([N2]). NemoClaw uninstall은 macOS Homebrew 서비스를 남긴다(commands.mdx 3742행). 지우는 명령은 `[미확인]`.
+  - LaunchAgent: Homebrew 서비스 파일이고 NemoClaw가 다시 썼다([N2]). NemoClaw uninstall은 macOS Homebrew 서비스를 남긴다(commands.mdx 3742행). `brew services stop`(위 OpenShell 항목)은 로그인 때 띄우는 등록을 푼다(manpage). 파일 자체를 지우는 명령은 `[미확인]`.
 - Docker 이미지(openclaw-sandbox, openshell-community base, `x1-probe:x1`, `openshell/sandbox-from:1790231913`)
   - `nemoclaw gc --dry-run`으로 등록된 샌드박스와 연결되지 않은 `openshell/sandbox-from`·`nemoclaw-sandbox-local` 이미지를 먼저 본 뒤 `nemoclaw gc`로 지운다 `[사실: commands.mdx 3657~3668행]`. 1단계 이미지 `openshell/sandbox-from:1790231913`이 여기에 드는지는 `[미확인]`.
   - `nemoclaw x1-demo destroy`는 온보딩 때 만든 호스트 Docker 이미지를 지운다(같은 문서 2013~2015행).
-  - `x1-probe:x1`과 공동체 base 이미지(`ghcr.io/nvidia/openshell-community/sandboxes/base:latest`): 지우는 Docker 명령은 공개 문서로 확인하지 않았다 `[미확인]`.
+  - `x1-probe:x1`과 공동체 base 이미지(`ghcr.io/nvidia/openshell-community/sandboxes/base:latest`): `docker image rm x1-probe:x1 ghcr.io/nvidia/openshell-community/sandboxes/base:latest`. Docker 공식 문서는 `docker image rm`을 "Remove one or more images"라고 적고, "You cannot remove an image of a running container unless you use the -f option"이라고 적는다 `[사실: https://docs.docker.com/reference/cli/docker/image/rm/]`. `nemoclaw gc`가 1단계 이미지 `openshell/sandbox-from:1790231913`을 지우지 않으면 같은 명령으로 지운다 `[추론]`.
 - 게이트웨이(127.0.0.1:8080)와 호스트 전달 프로세스(127.0.0.1:18789)
   - 전달 프로세스: `nemoclaw x1-demo stop`이 컨테이너를 멈춘 뒤 그 샌드박스의 호스트 대시보드 전달을 멈추려 한다. 공유 호스트 게이트웨이는 계속 돈다 `[사실: commands.mdx 1529~1556행]`.
-  - 게이트웨이: Homebrew 서비스다. 중지 명령 줄은 위 OpenShell 항목대로 `[미확인]`.
+  - 게이트웨이: Homebrew 서비스다. 중지는 위 OpenShell 항목의 `brew services stop nvidia/openshell/openshell`이다(manpage). 멈추면 시연 경로가 돌지 않는다.
 
 ### 키 사본
 
