@@ -37,8 +37,10 @@ checklist: 모델 없이 check_comparability → get_history → decompose_hs(�
   not_comparable). 이 키가 없거나 참거짓이 아니면 CODE_ERROR로 멈춘다(조기 종료가 조용히 꺼지지 않게).
 - budget_block 종류: {몫}_limit(comparison·requery·basic·verify·final_verify), not_comparable, invalid_call,
   revision_limit(두 번째 수정 단계), 그리고 도구 예산 자리(단위 I6)가 준 거부 사유.
-- tool_attempts는 막힌 시도까지 모든 시도를 센다(자료 계약 §8.1 "넘은 실행은 실제 값"). 몫을 통과한 시도는 도구
-  예산 자리(단위 I6)에 한 번 더 묻는다(도구 8회, 같은 인자 재호출 등은 I6 규칙). 실행한 도구는 8회를 넘지 않는다.
+- tool_attempts 세는 법은 COUNT_BLOCKED_TOOL_ATTEMPTS 한 곳이 정한다(사용자 확인 대기, 결정 기록 ③). 지금은 참:
+  막힌 시도까지 모든 시도를 센다(자료 계약 §8.1 "넘은 실행은 실제 값"). 거짓이면 도구에 닿은 시도만 센다(평가 검토
+  권고 (가)). 흐름의 몫·도구 예산 판정은 이 값과 관계없다. 몫을 통과한 시도는 도구 예산 자리(단위 I6)에 한 번 더
+  묻는다(도구 8회, 같은 인자 재호출 등은 I6 규칙). 실행한 도구는 8회를 넘지 않는다.
 - 코드는 모델의 틀린 상태를 고치지 않는다. 형식·검증기 문제는 수정 단계로 보내거나 INVALID로 끝낸다.
 
 다른 작업 단위를 부르는 자리(Ports). unit_ports가 그 단위들의 run을 부르는 얇은 배선을 한곳에 모았다. 보고서·
@@ -78,6 +80,9 @@ TOOL_UNITS = {"check_comparability": check_comparability, "get_history": get_his
 CASE_KEYS = ("case_id", "hs6", "partner", "month", "baseline_month", "signals", "snapshot_id", "policy_version")
 PRIORITY = investigator.PRIORITY
 BUDGET_LIMIT_KEYS = ("tool_attempts", "basic_tool_attempts", "revision_stages", "revision_requeries", "final_verify")
+# 실행 결과 기록 tool_attempts에 막힌 시도(budget_block)를 셀지(2026-09-25(금) 09:00 사용자 확인 대기, 결정 기록 ③).
+# 참: 모든 시도(지금). 거짓: 도구에 닿은 시도만(평가 검토 권고 (가)). 바꾸는 곳은 이 한 줄이다(시험이 두 값을 다 돈다).
+COUNT_BLOCKED_TOOL_ATTEMPTS = True
 # 판정 정책 P3 근거 상태의 필수 비교(comparisons)와 그 비교를 하는 도구 `[미확인]`: 조립(AS2)에서 확정한다.
 COMPARISON_TOOLS = {"comparability": "check_comparability", "partners": "compare_partners",
                     "country_and_world": "get_history"}
@@ -366,7 +371,7 @@ class _Flow:
         self.stage = "basic"
         self.evidence: list = []
         self.executed: list = []
-        self.tool_attempts = 0
+        self.attempts = {"executed": 0, "blocked": 0}  # 도구에 닿은 시도, 막은 시도(tool_attempts는 이 둘로 센다)
         self.used = {"basic": 0, "comparison": 0, "requery": 0, "final_verify": 0}
         self.critic_used = False
         self.revision_used = False
@@ -375,6 +380,12 @@ class _Flow:
         self.rejected: list = []
 
     # 한도와 도구 시도 ---------------------------------------------------------------------------------------------
+    @property
+    def tool_attempts(self) -> int:
+        """실행 결과 기록의 tool_attempts(COUNT_BLOCKED_TOOL_ATTEMPTS가 셀 범위를 정한다)."""
+        blocked = self.attempts["blocked"] if COUNT_BLOCKED_TOOL_ATTEMPTS else 0
+        return self.attempts["executed"] + blocked
+
     def check_deadline(self) -> None:
         if self.budget.deadline_passed(self.clock_ms()):
             raise model_client.RunStop(cause_codes.DEADLINE, self.stage, "사례 deadline에 닿았다")
@@ -406,7 +417,7 @@ class _Flow:
     def refuse(self, tool: str | None, args: dict, source: str, kind: str) -> dict:
         """도구를 부르지 않고 막는다. 시도로는 센다. deadline이 먼저다."""
         self.check_deadline()
-        self.tool_attempts += 1
+        self.attempts["blocked"] += 1
         self.sink.emit("tool_call", self.stage, {"tool": tool, "args": args, "source": source,
                                                  "tool_attempts": self.tool_attempts})
         self.sink.emit("budget_block", self.stage, {"kind": kind, "tool": tool, "tool_attempts": self.tool_attempts})
@@ -421,7 +432,7 @@ class _Flow:
         decision = self.ports.budget(list(self.executed), candidate)
         if not decision.get("allowed"):
             return self.refuse(tool, args, source, str(decision.get("reason") or "tool_budget"))
-        self.tool_attempts += 1
+        self.attempts["executed"] += 1
         self._consume(allowance)
         self.sink.emit("tool_call", self.stage, {"tool": tool, "args": args, "source": source,
                                                  "tool_attempts": self.tool_attempts})

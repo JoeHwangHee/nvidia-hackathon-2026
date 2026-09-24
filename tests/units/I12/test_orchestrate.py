@@ -119,6 +119,21 @@ class FlowBudgetTest(unittest.TestCase):
         self.assertEqual(blocks(records), [("basic", "comparison_limit"), ("revision", "requery_limit")])
         self.assertLessEqual(max(fake.budget_asks), 7)  # 도구 예산 자리에 8번째까지만 물었다
 
+    def test_tool_attempts_counting_rule_is_one_switch(self):
+        # 막힌 시도를 셀지(사용자 확인 대기)는 COUNT_BLOCKED_TOOL_ATTEMPTS 한 곳이 정한다. 집행(실행 8회)은 같다
+        script = [h.tools_answer("decompose_hs", "compare_partners", "get_history"), h.draft_answer(status="MAINTAIN"),
+                  h.tools_answer("get_history", "check_comparability", "decompose_hs"),
+                  h.draft_answer(status="MAINTAIN")]
+        for count_blocked, expected in ((True, 10), (False, 8)):
+            with self.subTest(count_blocked=count_blocked), \
+                    mock.patch.object(orchestrate, "COUNT_BLOCKED_TOOL_ATTEMPTS", count_blocked):
+                result, records, fake, _ = h.run_case("agent", list(script), h.FakePorts(checks=[h.PASS, h.BLOCK,
+                                                                                               h.PASS]))
+                self.assertEqual((result["record"]["execution_status"], len(fake.tool_calls)), ("COMPLETED", 8))
+                self.assertEqual(result["record"]["tool_attempts"], expected)
+                self.assertEqual(len(h.events(records, "budget_block")), 2)  # 막은 시도는 어느 쪽이든 trace에 남는다
+                self.assertEqual(h.events(records, "run_end")[0]["data"]["tool_attempts"], expected)
+
     def test_tool_budget_port_refusal_is_counted_and_returned_to_the_model(self):
         fake = h.FakePorts(budget_limit=2)  # 도구 예산 자리가 세 번째 실행부터 거부한다
         script = [h.tools_answer("decompose_hs"), h.draft_answer()]
