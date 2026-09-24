@@ -1,5 +1,6 @@
 """조립 작업 AS1: tradesentry detect 조립 시험(명령 하나를 처음부터 끝까지 돌려 기대 출력과 비교한다). 대역 없이 실제 단위로
-돈다. 네트워크와 키 없이 돈다.
+돈다. 다만 배선 계약 위반(종료 코드 4) 시험 셋은 단위 P2·K3 world_series·X1의 출력을 대역으로 일부러 어긋나게 한다. 네트워크와
+키 없이 돈다.
 
 - 실제로 도는 것: CLI 인자 검증(단위 F1) → 명령 배선(단위 F2의 detect) → 단위 K4 load_policy(저장소의
   configs/policy_dev.json, dev-0.1) → 단위 K3(정본 빌드를 읽기 전용으로 연다) → 어댑터 → 단위 X1·X2(X4) → 단위 P1 → 단위 P2
@@ -342,7 +343,7 @@ class OtherPartnerTest(DetectCase):
 class RealSnapshotRefusalTest(DetectCase):
     """실자료 스냅샷(source_kind가 controlled가 아님)은 K3로 관측 값을 읽거나 지표를 계산하기 전에 거부하고 1로 끝난다.
 
-    자료는 본 스냅샷(13개월 이상, 비교월 쌍이 있다)을 source_kind real로 만든 것이다. 값은 합성이고 수집기 메타의 출처
+    자료는 본 스냅샷(202301~202402의 14개월, 비교월 쌍이 있다)을 source_kind real로 만든 것이다. 값은 합성이고 수집기 메타의 출처
     종류만 real이다. 거부가 없었다면 탐지할 계열·비교월 쌍이 있음을 먼저 단언해 "호출 0"이 공허하지 않게 한다.
     """
 

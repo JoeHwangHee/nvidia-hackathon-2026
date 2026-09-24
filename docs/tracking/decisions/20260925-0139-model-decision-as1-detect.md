@@ -74,7 +74,7 @@
 
 ⑤ **실자료 스냅샷은 이번 PR에서 탐지하지 않는다** — 오케스트레이터 결정(작업 지시), 두 번째 PR에서 대체할 잠정 결정
 
-- 출처 종류가 허용 목록(`controlled`)에 없으면 거부한다. 거부는 K3로 값을 읽거나 지표를 계산하기 전이다. 분명한 오류 문장을 내고 1로 끝난다(`dispatch.DETECT_REFUSAL`). 그때까지 읽은 것은 K3 `open_snapshot`이 열면서 읽는 메타·수신 기록의 요청 목록·비교국 ID뿐이고, 관측 행의 값(금액·중량)은 읽지 않는다 `[사실: dal/query.py Snapshot.__init__. 조립 시험의 거부 시험(RealSnapshotRefusalTest)은 비교월 쌍 2개·계열 10개가 있는 13개월 스냅샷(값은 합성, 출처 종류만 real)을 쓰고, 거부가 없었다면 탐지할 쌍·계열이 있음을 먼저 단언한 뒤, 진짜를 부르는 감시(spy)로 K3 _rows·row·parent_series·parent·world_series·world·children·peers·resolve와 X1·X2·P1·P2의 호출 0을 확인한다. 거부를 지표 계산 뒤로 옮긴 변이에서 이 시험이 실패했다(K3 _rows 12·row 16·parent_series 10·world_series 1·resolve 8, X1·X2 각 20번 호출)]`.
+- 출처 종류가 허용 목록(`controlled`)에 없으면 거부한다. 거부는 K3로 값을 읽거나 지표를 계산하기 전이다. 분명한 오류 문장을 내고 1로 끝난다(`dispatch.DETECT_REFUSAL`). 그때까지 읽은 것은 K3 `open_snapshot`이 열면서 읽는 메타·수신 기록의 요청 목록·비교국 ID뿐이고, 관측 행의 값(금액·중량)은 읽지 않는다 `[사실: dal/query.py Snapshot.__init__. 조립 시험의 거부 시험(RealSnapshotRefusalTest)은 비교월 쌍 2개·계열 10개가 있는 14개월(202301~202402) 스냅샷(값은 합성, 출처 종류만 real)을 쓰고, 거부가 없었다면 탐지할 쌍·계열이 있음을 먼저 단언한 뒤, 진짜를 부르는 감시(spy)로 K3 _rows·row·parent_series·parent·world_series·world·children·peers·resolve와 X1·X2·P1·P2의 호출 0을 확인한다. 거부를 지표 계산 뒤로 옮긴 변이에서 이 시험이 실패했다(K3 _rows 12·row 16·parent_series 10·world_series 1·resolve 8, X1·X2 각 20번 호출)]`.
 - 이유
   - 개발 실행의 `detect`는 지표 계산(X1·X2)과 신호 발동(P1) 앞에서 `real_dev` 계열로 좁혀야 한다(병렬 개발 규칙 §7.2의 5, MT1 결정 ⑭). P2의 묶음 제한은 마지막 방어선이다.
   - 좁히려면 분할 기록을 읽어야 한다. 그런데 기계가 읽는 분할 기록은 지금 `tests/units/V5/expected.json`이 커밋된 유일한 사본이다. 탐지의 묶음 선택(단위 P2)이나 DT7이 다른 위치를 쓰려면 그 작업에서 계획 경로 표 절차로 정한다 `[사실: DT4 결정 기록 20260924-2340-dt4-real-split-and-sample-seed.md "영향" 행]`.
