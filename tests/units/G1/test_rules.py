@@ -1,5 +1,6 @@
 """단위 G1(grouping_g0) 규칙 시험: 선택 규칙의 성질, params_hash 규칙, 입력 검사, CSV 형식.
 
+규칙은 행 목록을 만드는 순수 함수 peer_group_rows로 보고, 진입 함수 run은 그 행 목록의 CSV 문자열(to_csv)인지 본다.
 골든 쌍(input.json·expected.json)은 합성 입력이다. 여기서도 합성 값만 쓴다. 네트워크·키·파일 없이 돈다.
 """
 import copy
@@ -14,6 +15,11 @@ from pathlib import Path
 from tradesentry.grouping import g0
 
 GOLDEN_INPUT = Path(__file__).resolve().parent / "input.json"
+
+# 계약 §2.3.6 peer_group 필드 17개(계약 커널 K1의 PEER_GROUP_KEYS와 같은 순서). CSV 열 순서다.
+CONTRACT_KEYS = ("entity_type", "entity_id", "entity_namespace", "baci_country_code", "scope_type", "scope_id",
+                 "peer_rank", "peer_id", "similarity", "community_id", "method", "grouping_version", "params_hash",
+                 "source_version", "source_year", "input_sha256", "generated_at")
 
 
 def golden_input() -> dict:
@@ -30,7 +36,7 @@ def peers_by_target(rows: list[dict]) -> dict[tuple[str, str], list[str]]:
 class SelectionRuleTest(unittest.TestCase):
     def test_every_target_gets_k_distinct_peers_without_itself(self):
         inp = golden_input()
-        rows = g0.run(inp)
+        rows = g0.peer_group_rows(inp)
         self.assertEqual(len(rows), len(inp["hs6_codes"]) * len(inp["candidates"]) * inp["k"])
         for (hs6, target), peers in peers_by_target(rows).items():
             with self.subTest(hs6=hs6, target=target):
@@ -44,7 +50,7 @@ class SelectionRuleTest(unittest.TestCase):
     def test_item_without_any_record_uses_code_order(self):
         inp = golden_input()
         inp["hs6_codes"].append("850432")  # 기록이 하나도 없는 품목: 모두 합 0이라 사전순으로 고른다
-        peers = peers_by_target(g0.run(inp))
+        peers = peers_by_target(g0.peer_group_rows(inp))
         self.assertEqual(peers[("850432", "CN")], ["DE", "JP", "PH", "TW", "US"])
         self.assertEqual(peers[("850432", "DE")], ["CN", "JP", "PH", "TW", "US"])
         self.assertEqual(peers[("850432", "VN")], ["CN", "DE", "JP", "PH", "TW"])
@@ -52,11 +58,11 @@ class SelectionRuleTest(unittest.TestCase):
     def test_missing_record_and_explicit_zero_tie_by_code(self):
         inp = golden_input()
         # 850450: PH는 기록 없음, US는 합 0(명시). 둘 다 0이라 코드 사전순으로 PH가 앞선다.
-        self.assertEqual(peers_by_target(g0.run(inp))[("850450", "CN")][-1], "PH")
+        self.assertEqual(peers_by_target(g0.peer_group_rows(inp))[("850450", "CN")][-1], "PH")
         inp["import_value_sums"].append({"hs6": "850450", "partner": "PH", "amount_usd": 0})
-        self.assertEqual(peers_by_target(g0.run(inp))[("850450", "CN")][-1], "PH")  # 기록 없음과 명시 0은 같다
+        self.assertEqual(peers_by_target(g0.peer_group_rows(inp))[("850450", "CN")][-1], "PH")  # 기록 없음 = 명시 0
         inp["import_value_sums"][-1]["amount_usd"] = 400  # 금액이 생기면 순위가 금액을 따른다
-        self.assertEqual(peers_by_target(g0.run(inp))[("850450", "CN")], ["DE", "JP", "VN", "PH", "TW"])
+        self.assertEqual(peers_by_target(g0.peer_group_rows(inp))[("850450", "CN")], ["DE", "JP", "VN", "PH", "TW"])
 
     def test_input_order_does_not_change_output(self):
         inp = golden_input()
@@ -64,24 +70,34 @@ class SelectionRuleTest(unittest.TestCase):
         shuffled["candidates"].reverse()
         shuffled["hs6_codes"].reverse()
         shuffled["import_value_sums"].reverse()
+        self.assertEqual(g0.peer_group_rows(shuffled), g0.peer_group_rows(inp))
         self.assertEqual(g0.run(shuffled), g0.run(inp))
 
     def test_run_does_not_change_its_input(self):
         inp = golden_input()
         before = copy.deepcopy(inp)
         g0.run(inp)
+        g0.peer_group_rows(inp)
         self.assertEqual(inp, before)
 
     def test_fixed_field_values(self):
-        row = g0.run(golden_input())[0]
-        self.assertEqual(tuple(row), g0.PEER_GROUP_FIELDS)
+        row = g0.peer_group_rows(golden_input())[0]
+        self.assertEqual(g0.PEER_GROUP_KEYS, CONTRACT_KEYS)
+        self.assertEqual(tuple(row), CONTRACT_KEYS)
         self.assertEqual((row["entity_type"], row["entity_namespace"], row["scope_type"], row["method"],
                           row["grouping_version"]),
                          ("exporter_country", "KCS_cntyCd", "hs6", "import_value_topk", "g0"))
+        self.assertIsNone(row["baci_country_code"])  # g0는 BACI를 쓰지 않는다
         self.assertIsNone(row["similarity"])
         self.assertIsNone(row["community_id"])
         self.assertIs(type(row["peer_rank"]), int)
         self.assertIs(type(row["source_year"]), int)
+
+    def test_run_returns_the_csv_of_the_rows(self):
+        inp = golden_input()
+        output = g0.run(inp)
+        self.assertIsInstance(output, str)
+        self.assertEqual(output, g0.to_csv(g0.peer_group_rows(inp)))
 
 
 class ParamsHashTest(unittest.TestCase):
@@ -92,7 +108,7 @@ class ParamsHashTest(unittest.TestCase):
         self.assertEqual(text, '{"candidates":["CN","DE","JP","PH","TW","US","VN"],"k":5,"source_year":2023}')
         expected = hashlib.sha256(text.encode("utf-8")).hexdigest()
         self.assertEqual(g0.compute_params_hash(5, 2023, inp["candidates"]), expected)
-        self.assertEqual({row["params_hash"] for row in g0.run(inp)}, {expected})
+        self.assertEqual({row["params_hash"] for row in g0.peer_group_rows(inp)}, {expected})
 
     def test_depends_on_k_year_and_candidate_set_only(self):
         base = g0.compute_params_hash(5, 2023, ["CN", "JP", "DE"])
@@ -107,6 +123,8 @@ class InputCheckTest(unittest.TestCase):
         inp = golden_input()
         change(inp)
         with self.assertRaises(ValueError):
+            g0.peer_group_rows(inp)
+        with self.assertRaises(ValueError):
             g0.run(inp)
 
     def test_not_an_object_or_wrong_keys(self):
@@ -119,7 +137,7 @@ class InputCheckTest(unittest.TestCase):
         self.assert_rejected(lambda inp: inp.update(k=7))  # 후보국 7개면 대상국을 빼고 6개뿐이다
         inp = golden_input()
         inp["k"] = 6
-        self.assertEqual(len(g0.run(inp)), 2 * 7 * 6)
+        self.assertEqual(len(g0.peer_group_rows(inp)), 2 * 7 * 6)
 
     def test_bad_scalars(self):
         self.assert_rejected(lambda inp: inp.update(k=True))
@@ -156,31 +174,34 @@ class InputCheckTest(unittest.TestCase):
 
 class CsvTest(unittest.TestCase):
     def test_header_nulls_and_line_ends(self):
-        rows = g0.run(golden_input())
+        rows = g0.peer_group_rows(golden_input())
         text = g0.to_csv(rows)
         lines = text.split("\n")
-        self.assertEqual(lines[0], ",".join(g0.PEER_GROUP_FIELDS))
+        self.assertEqual(lines[0], ",".join(CONTRACT_KEYS))
         self.assertEqual(lines[-1], "")  # 마지막 줄도 LF로 끝난다
         self.assertEqual(len(lines), len(rows) + 2)
         self.assertNotIn("\r", text)
         self.assertEqual(lines[1].split(","),
-                         ["exporter_country", "CN", "KCS_cntyCd", "hs6", "850431", "1", "TW", "null", "null",
+                         ["exporter_country", "CN", "KCS_cntyCd", "null", "hs6", "850431", "1", "TW", "null", "null",
                           "import_value_topk", "g0", rows[0]["params_hash"], "kcs_202201_202412_v2", "2023",
                           "0123456789abcdef" * 4, "2026-09-25T01:00:00+09:00"])
 
     def test_reads_back_to_the_same_rows(self):
-        rows = g0.run(golden_input())
+        rows = g0.peer_group_rows(golden_input())
         back = list(csv.DictReader(io.StringIO(g0.to_csv(rows))))
         as_text = [{k: ("null" if v is None else str(v)) for k, v in row.items()} for row in rows]
         self.assertEqual(back, as_text)
 
     def test_rejects_rows_that_are_not_peer_group_rows(self):
-        row = g0.run(golden_input())[0]
-        reordered = {key: row[key] for key in reversed(g0.PEER_GROUP_FIELDS)}
+        row = g0.peer_group_rows(golden_input())[0]
+        reordered = {key: row[key] for key in reversed(g0.PEER_GROUP_KEYS)}
         with self.assertRaises(ValueError):
             g0.to_csv([reordered])
         with self.assertRaises(ValueError):
             g0.to_csv([{**row, "extra": 1}])
+        without_baci = {key: value for key, value in row.items() if key != "baci_country_code"}
+        with self.assertRaises(ValueError):
+            g0.to_csv([without_baci])  # 16열(옛 형식)은 받지 않는다
         with self.assertRaises(ValueError):
             g0.to_csv([{**row, "similarity": 0.5}])
 

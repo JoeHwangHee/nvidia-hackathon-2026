@@ -1,18 +1,24 @@
-"""단위 G1(grouping_g0) 실자료 입력 준비 load_input 시험.
+"""단위 G1(grouping_g0) 실자료 입력 준비(load_input)와 재현 명령 두 단계(write_input → 공통 실행기) 시험.
 
-임시 폴더에 만든 합성 스냅샷(수집기와 같은 SQLite 스키마, manifest.json, snapshot_hash.json)만 쓴다. 실제 스냅샷
-폴더는 열지 않는다. 확인하는 것: 부모 HS6 행(자료 계약 §2.3.2 행 규칙 4)만 더하는지, 읽기 전용(mode=ro)으로 열고
-스냅샷 파일을 바꾸지 않는지, 빈 금액·중복·기록 불일치를 오류로 내는지.
+임시 폴더에 만든 합성 스냅샷(수집기와 같은 SQLite 스키마, manifest.json, snapshot_hash.json)과 임시 outputs/만 쓴다.
+실제 스냅샷 폴더와 저장소의 outputs/는 열지 않는다. 확인하는 것: 부모 HS6 행(자료 계약 §2.3.2 행 규칙 4)만 더하는지,
+읽기 전용(mode=ro)으로 열고 스냅샷 파일을 바꾸지 않는지, 빈 금액·중복·기록 불일치를 오류로 내는지, 입력 파일을
+덮어쓰지 않고 이름 규칙(자료 계약 §10.3 N5·N6·N8)대로 쓰는지, 공통 실행기가 그 입력으로 CSV를 쓰는지.
 """
 import hashlib
+import io
 import json
 import sqlite3
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
 from tradesentry.grouping import g0
+from tradesentry.units import runner
+
+GOLDEN_DIR = Path(__file__).resolve().parent
 
 # 수집기(src/tradesentry/ingest.py의 open_snapshot)가 만드는 스키마와 같다.
 SCHEMA = """
@@ -172,7 +178,7 @@ class LoadInputTest(unittest.TestCase):
             self.load(folder)
 
     def test_prepared_input_runs(self):
-        rows = g0.run(self.load(self.snapshot()))
+        rows = g0.peer_group_rows(self.load(self.snapshot()))
         self.assertEqual(len(rows), len(HS6_CODES) * len(CANDIDATES) * 5)
         self.assertEqual({row["input_sha256"] for row in rows}, {RAW_SHA})
         self.assertEqual({row["source_version"] for row in rows}, {SNAPSHOT_ID})
@@ -182,6 +188,76 @@ class LoadInputTest(unittest.TestCase):
         self.assertEqual(peers("850450", "CN"), ["DE", "JP", "PH", "US", "VN"])  # JP의 명시 0도 기록 없음과 동점
         self.assertEqual(peers("850450", "JP"), ["CN", "DE", "PH", "US", "VN"])  # CN 합 300이 먼저
         self.assertEqual(peers("850431", "CN"), ["JP", "DE", "PH", "US", "VN"])  # JP 합 30이 먼저
+
+
+def fixed_clock(hour: int, minute: int, second: int):
+    return lambda: datetime(2026, 9, 25, hour, minute, second, 250000, tzinfo=runner.KST)
+
+
+class ReproduceCommandTest(unittest.TestCase):
+    """재현 명령 1단계(write_input)와 2단계(공통 실행기 python -m tradesentry.units G1 --in …)."""
+
+    def setUp(self):
+        super().setUp()
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.snap = self.root / "snap"
+        self.snap.mkdir()
+        make_snapshot(self.snap)
+        self.outputs = self.root / "outputs"
+
+    def write(self, **kwargs) -> Path:
+        return g0.write_input(self.snap, self.outputs, k=5, source_year=2023, clock=fixed_clock(2, 30, 0), **kwargs)
+
+    def run_unit(self, input_path: Path, clock) -> tuple[int, str]:
+        out, err = io.StringIO(), io.StringIO()
+        code = runner.run_unit("G1", input_path, outputs_root=self.outputs, clock=clock, out=out, err=err)
+        return code, out.getvalue() + err.getvalue()
+
+    def test_write_input_uses_run_name_and_writes_prepared_input(self):
+        path = self.write()
+        self.assertEqual(path, self.outputs / "grouping_g0-260925023000" / "grouping_g0-260925023000.json")
+        text = path.read_text(encoding="utf-8")
+        self.assertTrue(text.endswith("}\n"))
+        expected = g0.load_input(self.snap, k=5, source_year=2023, generated_at="2026-09-25T02:30:00+09:00")
+        self.assertEqual(json.loads(text), expected)  # generated_at을 주지 않으면 실행명의 시각(KST)이다
+
+    def test_write_input_keeps_given_generated_at(self):
+        path = self.write(generated_at=GENERATED_AT)
+        self.assertEqual(path.parent.name, "grouping_g0-260925023000")  # 폴더 시각은 지금 시각이다
+        self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["generated_at"], GENERATED_AT)
+
+    def test_write_input_never_overwrites(self):
+        taken = self.outputs / "grouping_g0-260925023000"
+        taken.mkdir(parents=True)
+        with self.assertRaises(FileExistsError):
+            self.write()
+        self.assertEqual(list(taken.iterdir()), [])
+
+    def test_write_input_refuses_a_name_taken_in_sealed(self):
+        (self.outputs / "sealed" / "grouping_g0-260925023000").mkdir(parents=True)
+        with self.assertRaises(FileExistsError):
+            self.write()
+        self.assertFalse((self.outputs / "grouping_g0-260925023000").exists())  # 방금 만든 빈 폴더를 지웠다
+
+    def test_common_runner_writes_the_csv_from_the_prepared_input(self):
+        path = self.write()
+        code, messages = self.run_unit(path, fixed_clock(2, 31, 0))
+        self.assertEqual(code, runner.EXIT_OK, messages)
+        written = self.outputs / "grouping_g0-260925023100" / "grouping_g0-260925023100.csv"
+        data = written.read_bytes()
+        self.assertEqual(data, g0.run(json.loads(path.read_text(encoding="utf-8"))).encode("utf-8"))
+        self.assertTrue(data.startswith(b"entity_type,entity_id,entity_namespace,baci_country_code,"))  # BOM 없음
+        self.assertEqual(data.count(b"\n"), 1 + 2 * 6 * 5)
+        self.assertNotIn(b"\r", data)
+
+    def test_common_runner_runs_the_golden_input(self):
+        code, messages = self.run_unit(GOLDEN_DIR / "input.json", fixed_clock(3, 0, 0))
+        self.assertEqual(code, runner.EXIT_OK, messages)
+        written = self.outputs / "grouping_g0-260925030000" / "grouping_g0-260925030000.csv"
+        lines = json.loads((GOLDEN_DIR / "expected.json").read_text(encoding="utf-8"))
+        self.assertEqual(written.read_text(encoding="utf-8"), "".join(f"{line}\n" for line in lines))
 
 
 if __name__ == "__main__":
