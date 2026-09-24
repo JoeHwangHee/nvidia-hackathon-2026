@@ -18,6 +18,11 @@ KST = runner.KST
 START = datetime(2026, 9, 25, 14, 30, 15, 250000, tzinfo=KST)  # 실행명 시각 260925143015
 
 
+def not_implemented(inp: object) -> object:
+    """구현 상태와 떼어 놓으려고 쓰는 가짜 진입 함수. 실제 단위의 run 대신 넣는다."""
+    raise NotImplementedError("가짜 단위: 아직 구현되지 않았다")
+
+
 class FakeClock:
     """가짜 시계. sleep이 불리면 그만큼 시각을 옮긴다."""
 
@@ -148,8 +153,9 @@ class RunUnitTest(TempOutputsMixin, unittest.TestCase):
             self.assertNotIn(local, text)  # 로컬 절대경로를 출력하지 않는다(N13)
         return code, out.getvalue(), err.getvalue()
 
-    def test_unimplemented_runtime_unit_reserves_run_dir_then_fails(self):
-        code, out, err = self.run_unit("X1", self.empty)
+    def test_not_implemented_run_reserves_run_dir_then_exits_3(self):
+        with mock.patch.object(registry, "load_entry", return_value=not_implemented):
+            code, out, err = self.run_unit("X1", self.empty)
         self.assertEqual(code, runner.EXIT_NOT_IMPLEMENTED)
         run_dir = self.outputs / "metrics_unit_value-260925143015"
         self.assertTrue(run_dir.is_dir())
@@ -157,10 +163,13 @@ class RunUnitTest(TempOutputsMixin, unittest.TestCase):
         self.assertIn("실행명: metrics_unit_value-260925143015", out)
         self.assertIn("아직 구현되지 않았다", err)
 
-    def test_unimplemented_eval_unit_reserves_run_dir_then_fails(self):
-        code, _, _ = self.run_unit("C1", self.empty)
+    def test_eval_unit_run_name_uses_its_domain(self):
+        with mock.patch.object(registry, "load_entry", return_value=not_implemented):
+            code, _, _ = self.run_unit("C1", self.empty)
         self.assertEqual(code, runner.EXIT_NOT_IMPLEMENTED)
-        self.assertTrue((self.outputs / "scorer_claims-260925143015").is_dir())
+        run_dir = self.outputs / "scorer_claims-260925143015"
+        self.assertTrue(run_dir.is_dir())
+        self.assertEqual(list(run_dir.iterdir()), [])
 
     def test_dev_null_is_no_input(self):
         seen = []
@@ -226,6 +235,7 @@ class MainTest(unittest.TestCase):
             empty = root / "empty.json"
             empty.write_bytes(b"")
             with mock.patch.object(runner, "REPO_ROOT", root), \
+                    mock.patch.object(registry, "load_entry", return_value=not_implemented), \
                     mock.patch("sys.stdout", new_callable=io.StringIO), \
                     mock.patch("sys.stderr", new_callable=io.StringIO):
                 code = runner.main(["C4", "--in", str(empty)])

@@ -182,7 +182,6 @@ class GoldenRuleTest(unittest.TestCase):
         self.assertFalse(golden.is_skeleton_source(implemented, "run"))
         self.assertFalse(golden.is_skeleton_source(partial, "run"))
         self.assertFalse(golden.is_skeleton_source(skeleton, "other"))
-        self.assertTrue(all(golden.is_skeleton(u) for u in registry.UNITS.values() if u.entry))
 
     def test_not_implemented_in_non_skeleton_run_is_an_error(self):
         def calls_skeleton(inp):
