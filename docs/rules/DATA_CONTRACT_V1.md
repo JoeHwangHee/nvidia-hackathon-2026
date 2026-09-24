@@ -17,6 +17,7 @@
 ## 0. 읽는 법
 
 - **원문 블록**: "**명세 §4.x 원문**"으로 시작하는 부분은 문서 세트 명세(이번 문서 실행의 목표 명세. 이하 "명세") §4 "계약 고정값"을 글자 그대로 옮긴 것이다. 값·백틱·구분자(`|`, `,`)를 바꾸지 않았다. 원문 블록 안의 "§4.x"는 명세의 절 번호다.
+- **원문 블록의 예외**: §10의 계획 경로·명령 표는 명세 §4.12 원문을 옮긴 블록이었으나, 2026-09-24(목) 사용자 결정(결정 기록 `docs/tracking/decisions/20260924-1720-user-decision-domain-restructure.md`)으로 고쳤다. 그래서 그 블록은 더 이상 원문 그대로가 아니고, 머리 표시도 "사용자 결정으로 고친 표"로 바꿨다. 명세 §4.12와 다른 곳의 근거는 그 결정 기록이다.
 - **해설**: 원문 블록 뒤의 해설과 표는 원문의 뜻, 형식, 기존 자료와의 대응을 적는다. 해설과 원문이 어긋나 보이면 원문을 따른다.
 - **절 번호**: 원문 블록 밖에서 "§n"은 이 문서의 절이고, "명세 §n"은 명세의 절이다.
 - **근거 태그**: [사실] 저장소 파일에서 직접 확인, [추론] 근거 있는 판단, [DESIGN] 팀 설계 규칙(대회 공식 규칙이 아니다), [미확인] 검증하지 않음. 원문 블록의 값은 모두 [DESIGN]이다.
@@ -40,13 +41,13 @@
 | §4.9 주장 채점 결과 | §7 |
 | §4.10 실행 결과 기록 키 | §8 |
 | §4.10-1 보고서 객체 키, §4.10-2 주장 채점 기록 키 | §9 |
-| §4.12 계획 경로·명령 표 | §10 |
+| §4.12 계획 경로·명령 표 | §10(2026-09-24(목) 사용자 결정으로 고친 표) |
 
 ## 1. 범위와 버전
 
 ### 1.1 담는 것과 담지 않는 것
 
-- 담는 것: 객체와 필드(§2), 상태값(§3), 이름과 ID(§4), 도구 입출력 봉투(도구가 돌려주는 공통 출력 틀, §5), typed claim(§6), 주장 채점 결과(§7), 실행 결과 기록(§8), 보고서 객체와 주장 채점 기록(§9), 구현 단계의 예정 경로·명령(§10), 단위와 정밀도(§11), 봉인(평가 자료를 저장소 밖에 격리하고 해시 목록만 커밋하는 보관 방식) 해시 기록(§12), 변경 절차(§13).
+- 담는 것: 객체와 필드(§2), 상태값(§3), 이름과 ID(§4), 도구 입출력 봉투(도구가 돌려주는 공통 출력 틀, §5), typed claim(§6), 주장 채점 결과(§7), 실행 결과 기록(§8), 보고서 객체와 주장 채점 기록(§9), 구현 단계의 예정 경로·명령과 이름·출력 규칙(§10), 단위와 정밀도(§11), 봉인(평가 자료를 저장소 밖에 격리하고 해시 목록만 커밋하는 보관 방식) 해시 기록(§12), 변경 절차(§13).
 - 담지 않는 것
   - 판정 기준값(단가 변화율·점유율 변화 기준, `min_amount`·`min_weight` 등): D가 개발 묶음으로 제안하고 사용자가 승인하면 `configs/policy_v1.json`에 기록한다 [DESIGN: 명세 §3.3].
   - 채점 규칙의 세부(필드별 채점 순서, 산문 패턴 목록, 표본·신뢰구간): 평가 룰북(평가 규칙과 채점 기준을 정한 문서) `docs/eval/RULEBOOK.md`가 정한다.
@@ -59,8 +60,8 @@
 - 인수물(D가 M에게 넘기는 자료·코드 묶음)마다 `schema_version=1`을 표시한다 [DESIGN: 명세 §3.10]. 표시 위치는 다음과 같다 [DESIGN].
   - 스냅샷: `snapshot` 객체에 `schema_version` 값 1을 담는다.
   - 그 밖의 JSON(키와 값으로 된 텍스트 자료 형식) 인수물: 최상위 키 `schema_version`에 1을 담는다(예: §12의 `eval/sealed_manifest.json`).
-  - 줄 단위 기록(`results.jsonl`, `claims.jsonl`): 명세가 정한 키 목록(§8, §9)을 늘리지 않는다. 계약 버전은 같은 폴더의 `summary.md`에 적는다.
-- 나머지 인수 조건(자료 계약 검사 명령 통과, `dal.py`(자료 접근층: 스냅샷을 읽는 함수 모음)로 읽힘, `metrics.py`(지표 계산 모듈)의 oracle A/B/C 재현, 검증 명령과 종료 코드의 PR(pull request: 변경을 합치기 전에 검토받는 요청) 기록)은 병렬 개발 규칙 `docs/rules/PARALLEL_DEV_RULES.md`의 D → M 인수 조건을 따른다.
+  - 줄 단위 기록(채점 결과 `scorer_summary-{시각}.jsonl`, 주장 채점 기록 `scorer_claims-{시각}.jsonl`. 이름 규칙은 §10.3): 명세가 정한 키 목록(§8, §9)을 늘리지 않는다. 계약 버전은 같은 채점 실행 폴더의 요약 `scorer_summary-{시각}.md`에 적는다.
+- 나머지 인수 조건(자료 계약 검사 명령 통과, 자료 접근층 패키지 `dal/`(스냅샷을 읽는 함수 모음)로 읽힘, 지표 계산 패키지 `metrics/`의 oracle A/B/C 재현, 검증 명령과 종료 코드의 PR(pull request: 변경을 합치기 전에 검토받는 요청) 기록)은 병렬 개발 규칙 `docs/rules/PARALLEL_DEV_RULES.md`의 D → M 인수 조건을 따른다.
 
 ### 1.3 함께 기록하는 버전 축
 
@@ -474,7 +475,7 @@ case ──→ snapshot_id, policy_version
 4. 그 테이블에 rowid가 `<rowid>`인 행이 있다.
 
 - 하나라도 어긋나면 풀리지 않는다. 근거 ID가 없거나, 풀리지 않거나, 풀린 행이 주장을 뒷받침하지 않으면 주장 채점 결과는 `UNSUPPORTED`다(§7). "뒷받침"의 판정(행의 품목·상대국·월·값이 주장과 맞는가)은 룰북 B3-1(필드별 채점 규칙)을 따른다.
-- 실행 중 검증기(`validator.py`)와 샌드박스(허용한 파일·네트워크만 쓰게 격리한 실행 환경) 밖 독립 채점기(`eval/scorer/`)는 같은 규칙으로 근거 ID를 푼다.
+- 실행 중 검증기(`validator/` 패키지)와 샌드박스(허용한 파일·네트워크만 쓰게 격리한 실행 환경) 밖 독립 채점기(`eval/scorer/`)는 같은 규칙으로 근거 ID를 푼다.
 
 **rowid 안정성**
 
@@ -485,21 +486,21 @@ case ──→ snapshot_id, policy_version
   2. raw 응답이나 manifest가 바뀌는 재수집은 새 `snapshot_id`로만 한다.
   3. 동결한 SQLite 파일에는 VACUUM을 포함해 파일을 다시 쓰는 작업을 하지 않는다.
   4. 채점 전에 스냅샷의 `normalized_sha256`을 다시 계산해 기록값과 대조한다. 기록값은 SQLite 밖의 커밋된 기록(결정 기록이나 스냅샷 폴더의 해시 파일)에 둔다. v2의 `snapshot_hash.json`에는 지금 raw 해시만 있으므로, D가 `snapshot-build`를 구현할 때 `normalized_sha256`을 그 파일이나 결정 기록에 더해 커밋한다(§2.1 표의 `normalized_sha256` 행). SQLite 안의 값과 비교하면 자기 자신과 대조하는 셈이기 때문이다. 다르면 그 스냅샷으로 채점하지 않고 사용자에게 올린다.
-  5. 평가 결과 폴더의 `summary.md`에 스냅샷 해시(`normalized_sha256`), 채점기 커밋 해시, 산문 패턴 목록 버전을 적는다(§8.2).
+  5. 채점 결과 요약 `scorer_summary-{시각}.md`에 스냅샷 해시(`normalized_sha256`), 채점기 커밋 해시, 산문 패턴 목록 버전을 적는다(§8.2).
 
 ### 4.5 그 밖의 ID
 
 | ID | 붙는 곳 | 요구 [DESIGN] |
 |---|---|---|
 | `case_id` | `case`, 도구 입력, 실행 기록, 보고서 | 사례마다 고유 |
-| `run_id` | 실행 기록, 보고서, 주장 채점 기록 | 사례 실행(한 사례를 한 모드로 한 번 돌린 것)마다 고유 |
+| `run_id` | 실행 기록, 보고서, 주장 채점 기록 | 사례 실행(한 사례를 한 모드로 한 번 돌린 것)마다 고유. 형식은 실행명 `{실행 이름}-{yymmddhhmmss}`다(§10.3 N5) |
 | `report_id` | 보고서, 주장 채점 기록 | 보고서마다 고유. 내용이 바뀌면 새 보고서와 새 ID |
 | `claim_id` | typed claim, 주장 채점 기록 | 한 보고서 안에서 고유 |
 | `query_id` | 도구 봉투 | 도구 호출 1회마다 고유 |
 | `metric_id` | `metric` | 지표 값마다 고유 |
 | `request_id` | `collection_receipt`, `observation` | 기존 수집기 규칙(§2.3.3)을 그대로 쓴다 [사실: 수집기] |
 
-- 한 번 붙인 ID는 바꾸지 않고 다른 대상에 다시 쓰지 않는다. `request_id`를 뺀 ID의 문자열 형식은 v1에서 정하지 않는다 [DESIGN].
+- 한 번 붙인 ID는 바꾸지 않고 다른 대상에 다시 쓰지 않는다. `request_id`와 `run_id`를 뺀 ID의 문자열 형식은 v1에서 정하지 않는다 [DESIGN]. `run_id`의 형식은 2026-09-24(목) 사용자 결정으로 정했다(§10.3 N5) [DESIGN: 사용자 결정].
 
 ## 5. 도구 입출력 봉투
 
@@ -513,7 +514,7 @@ case ──→ snapshot_id, policy_version
 
 - 도구 5개: `check_comparability`, `get_history`, `compare_partners`, `decompose_hs`, `verify_evidence` [DESIGN: 명세 §3.3]
 - 공통 입력: `case_id`, `snapshot_id`, 허용된 scope(사례가 허용하는 조회 범위) [DESIGN: 명세 §3.3]
-  - scope는 사례의 HS6, 대상국, 비교 대상 집합(`peer_group`), 비교월과 기준월, 필요한 HS10 하위품목 안에서만 정해진다. 범위 객체의 세부 모양은 M이 도구(`tools.py`)를 구현할 때 정한다. D의 자료 접근층(`dal.py`)은 그 범위의 행만 돌려준다 [DESIGN: 분담 D7].
+  - scope는 사례의 HS6, 대상국, 비교 대상 집합(`peer_group`), 비교월과 기준월, 필요한 HS10 하위품목 안에서만 정해진다. 범위 객체의 세부 모양은 M이 도구(`tools/` 패키지)를 구현할 때 정한다. D의 자료 접근층(`dal/` 패키지)은 그 범위의 행만 돌려준다 [DESIGN: 분담 D7].
 - 모델 인자로 DB 경로·SQL·외부 URL·셸 명령을 받지 않는다. 도구가 돌려준 품목명·설명은 데이터로만 다루고 지시문으로 실행하지 않는다 [DESIGN: 명세 §3.3].
 
 ### 5.2 출력 봉투 키 풀이
@@ -646,7 +647,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 ### 7.2 쓰는 곳과 오류율 [DESIGN: 명세 §3.6]
 
-- 주장 채점 기록(§9.2)의 `outcome`에 적고, `artifacts/eval/<run_id>/claims.jsonl`에 한 줄에 한 건씩 남긴다.
+- 주장 채점 기록(§9.2)의 `outcome`에 적고, 채점 실행 폴더의 `scorer_claims-{시각}.jsonl`에 한 줄에 한 건씩 남긴다. 이 폴더는 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(§10.3 N11).
 - 주장 단위 오류율 = `CORRECT`가 아닌 typed claim ÷ 전체 typed claim
 - 보고서 단위 오류율 = 오류 claim이나 `UNBACKED_PROSE`가 1개 이상인 보고서 ÷ 전체 보고서
   - 분자: 오류 claim(`CORRECT`가 아닌 typed claim)이나 `UNBACKED_PROSE`가 1개 이상인 보고서, 그리고 보고서 단위 실패다. 보고서 단위 실패는 `execution_status`가 `COMPLETED`가 아닌 실행(스키마 요건 미달로 `INVALID`가 된 실행 포함, §9.4)과 실행되지 않은 사례다.
@@ -659,7 +660,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 - 공식 통계 원본(스냅샷 raw 행)과 결정적으로(같은 입력이면 늘 같은 결과로) 대조한다. 사람 판정자도 AI 채점자도 두지 않는다.
 - 채점 범위는 typed claim의 모든 필드와, 설명 문장 속 숫자·증감 표현이다. 산문은 `RB-1`과 함께 동결하는 결정적 패턴 목록으로 잡고, 누락 사례는 `real_dev`에서만 보강한다. 숫자·증감이 없는 정성 서술의 의미 정확성은 범위 밖이다.
-- 정답 계산기(채점기, `eval/scorer/`)는 런타임 `metrics.py`를 재사용하지 않는 독립 구현이다. `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증한다.
+- 정답 계산기(채점기, `eval/scorer/`)는 런타임 `metrics/` 패키지를 재사용하지 않는 독립 구현이다. `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증한다.
 - 채점기는 샌드박스 밖에서 돈다. 이것이 정답 대조 채점(샌드박스 밖에서 하는 비교)이며, 채점 대상 실행(샌드박스 안에서 돌리는 실행)과 구분한다.
 
 ## 8. 실행 결과 기록
@@ -698,20 +699,22 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 기록 주체 열에서 "채점 대상 실행"은 샌드박스 안 실행이 남기는 값이고, "정답 대조 채점"은 샌드박스 밖 채점기가 채우는 값이다 [DESIGN].
 
-- `required_evidence_ok`·`numeric_ok`·`provenance_ok`는 정답표(사례별 필수 근거·기대 수치)나 원본 대조가 있어야 정할 수 있다. 그래서 샌드박스 밖 정답 대조 채점이 채우고, 런타임 검증기의 자기 보고로 채우지 않는다 [DESIGN]. `results.jsonl`의 한 줄은 채점 대상 실행이 남긴 키에 이 세 키를 채점기가 더한 것이다.
+- `required_evidence_ok`·`numeric_ok`·`provenance_ok`는 정답표(사례별 필수 근거·기대 수치)나 원본 대조가 있어야 정할 수 있다. 그래서 샌드박스 밖 정답 대조 채점이 채우고, 런타임 검증기의 자기 보고로 채우지 않는다 [DESIGN]. 채점 결과 `scorer_summary-{시각}.jsonl`의 한 줄은 채점 대상 실행이 남긴 키(평가 하네스 단위 `evaluation_batch_run`의 출력 `evaluation_batch_run-{시각}.jsonl`)에 채점기가 이 세 키를 더한 것이다. 채점기는 하네스의 파일을 고치지 않고, 둘을 합친 파일을 자기 실행 폴더에 새로 쓴다(§8.2).
 - 세 키는 구 개발계획 §8.3 처리정확도 식의 "필수근거", "수치/단위", "출처/버전"에 대응한다 [사실: 구 개발계획 §7·§8.3]. 식의 나머지 두 항은 키를 따로 두지 않는다. "예상 상태 일치"는 `review_status_final`을 정답표와 비교해 얻고, "정상 실행"은 `execution_status`가 `COMPLETED`인지로 얻는다 [추론].
 - 한도 수치(모델 요청 10회, 300초, 32,000토큰, 도구 8회)는 조정값이며 모든 모드에 같게 쓴다. provider(모델 API를 호출하는 라이브러리) 자동 재시도는 끄고, 5xx(서버 오류를 뜻하는 HTTP 응답 코드) 명시 재전송만 `model_requests`에 센다 [DESIGN: 명세 §3.3].
 - `checklist` 모드는 모델을 쓰지 않으므로 `model_requests`, `tokens_in`, `tokens_out`이 0이다 [사실: 구 개발계획 §8.2 "모델 없는 checklist의 토큰은 0으로 표시"].
 
 ### 8.2 기록 위치와 규칙
 
-- 평가 결과: `artifacts/eval/<run_id>/results.jsonl`에 한 줄에 실행 1건(위 키)을 적는다 [DESIGN: 명세 §4.12]. 폴더 이름의 `<run_id>`는 평가 묶음 실행(여러 사례 실행을 한 번에 돌리는 평가 실행) ID로 읽는다(§10.1) [추론].
-- 실행 추적: `artifacts/runs/<run_id>/`에 trace(실행 중 호출과 응답을 순서대로 남긴 기록) JSONL(JSON 하나를 한 줄에 적는 기록 파일)과 NAT(NeMo Agent Toolkit: 에이전트 실행을 감싸 추적·프로파일·사후 평가를 하는 NVIDIA 도구 모음) 프로파일 결과를 둔다. 커밋하지 않는다 [DESIGN: 명세 §4.12] [사실: `.gitignore`가 `artifacts/runs/`를 제외한다].
+- 이름과 위치는 이름·출력 규칙(§10.3)을 따른다. 실행 하나가 `outputs/{실행명}/` 폴더 하나이고, 그 안의 파일 이름은 `{도메인명}-{시각}.{확장자}`다 [DESIGN: 2026-09-24(목) 사용자 결정].
+- 실행 쪽 키: 평가 묶음 실행(여러 사례 실행을 한 번에 돌리는 평가 실행, `tradesentry evaluate`)이 그 실행 폴더(`outputs/evaluate-{시각}/`. 봉인 묶음이면 `outputs/sealed/` 아래의 실행 폴더)의 `evaluation_batch_run-{시각}.jsonl`에 한 줄에 실행 1건을 적는다. 이 파일에는 채점 대상 실행이 남기는 키만 있다 [DESIGN].
+- 평가 결과: 채점기가 실행 쪽 키에 정답 대조 채점의 세 키를 더해 채점 실행 폴더 `outputs/score-{시각}/`의 `scorer_summary-{시각}.jsonl`에 한 줄에 실행 1건(위 키 전부)을 적는다. 하네스의 `evaluation_batch_run-{시각}.jsonl`은 고치지 않는다. 이 폴더를 이름 그대로 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(승격, §10.3 N11) [DESIGN: 명세 §4.12, 2026-09-24(목) 사용자 결정].
+- 실행 추적: trace(실행 중 호출과 응답을 순서대로 남긴 기록) JSONL(JSON 하나를 한 줄에 적는 기록 파일)과 NAT(NeMo Agent Toolkit: 에이전트 실행을 감싸 추적·프로파일·사후 평가를 하는 NVIDIA 도구 모음) 프로파일 결과는 도메인 출력이라 그 실행 폴더 `outputs/{실행명}/`에 둔다. 봉인 묶음 실행이면 `outputs/sealed/{실행명}/`이다. 커밋하지 않는다 [DESIGN: 2026-09-24(목) 사용자 결정] [사실: `.gitignore`가 `outputs/`를 제외한다].
 - 실패·미실행·timeout·invalid도 기록하고 분모에 남긴다. 결과를 본 뒤 어려운 사례를 지우지 않는다 [DESIGN: 명세 §3.6].
-- 분모는 결과 줄 수가 아니라 고정 사례 목록(`dev20`, `holdout40`, `real_dev`, `real_sealed` 봉인 표본)으로 센다. `real_dev`의 목록은 그 평가 묶음 실행 때의 정책으로 만든 경보 목록이며 `summary.md`에 기록한다(MVP 대표 지표 첫 값의 분모). 실행되지 않아 결과 줄이 없는 사례도 실패로 센다. 세부는 룰북 `docs/eval/RULEBOOK.md` B5를 따른다 [DESIGN].
+- 분모는 결과 줄 수가 아니라 고정 사례 목록(`dev20`, `holdout40`, `real_dev`, `real_sealed` 봉인 표본)으로 센다. `real_dev`의 목록은 그 평가 묶음 실행 때의 정책으로 만든 경보 목록이며 채점 요약 `scorer_summary-{시각}.md`에 기록한다(MVP 대표 지표 첫 값의 분모). 실행되지 않아 결과 줄이 없는 사례도 실패로 센다. 세부는 룰북 `docs/eval/RULEBOOK.md` B5를 따른다 [DESIGN].
 - NIM 오류 등으로 다시 실행하면 같은 (`dataset`, `case_id`, `mode`)에 실행 기록이 여러 건 생긴다. 모든 시도를 지우지 않고 남긴다. 채점 대상으로 고를 실행은 룰북 B5를 따른다 [DESIGN].
-- 모델 원초안 → Critic 뒤 → 검증 뒤의 상태 변화는 trace의 사건으로 `artifacts/runs/<run_id>/`에 남기고 `summary.md`에 집계한다 [DESIGN: 명세 §3.6].
-- `summary.md`에는 계약 버전(`schema_version`), 스냅샷 해시(`normalized_sha256`), 채점기 커밋 해시, 산문 패턴 목록 버전, 채점 대상 `run_id` 목록, `real_dev`를 채점했으면 그때의 경보 목록, 상태 변화 집계를 적는다 [DESIGN].
+- 모델 원초안 → Critic 뒤 → 검증 뒤의 상태 변화는 trace의 사건으로 `outputs/{실행명}/`에 남기고 채점 요약 `scorer_summary-{시각}.md`에 집계한다 [DESIGN: 명세 §3.6].
+- 채점 요약 `scorer_summary-{시각}.md`에는 계약 버전(`schema_version`), 스냅샷 해시(`normalized_sha256`), 채점기 커밋 해시, 산문 패턴 목록 버전, 채점 대상 `run_id` 목록, `real_dev`를 채점했으면 그때의 경보 목록, 상태 변화 집계를 적는다 [DESIGN].
 
 ## 9. 보고서 객체와 주장 채점 기록
 
@@ -753,7 +756,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 | `policy_version`, `snapshot_id`, `grouping_version` | 문자열 | 보고서가 기대는 정책·스냅샷·비교 대상 버전 |
 
 - 명세 §4.10-1 원문의 괄호 `full`은 `freeform`과 대비한 예시다. 검증기는 `freeform`을 뺀 모든 모드(`checklist`·`agent`·`full`)에서 막는다 [DESIGN: 명세 §3.3].
-- 보고서 객체의 저장 위치는 명세 §4.12 표에 없다. 채점기 `python -m eval.scorer --run <run_dir>`의 입력이지만, 실행 기록 폴더 `artifacts/runs/<run_id>/`는 커밋하지 않으므로 명세 §4.12 표대로라면 저장소만으로 다시 채점할 수 없다. 저장 위치는 S0(구현 첫 작업 단위인 앱 스캐폴딩) 외부 자문에서 정한다 [미확인].
+- 보고서 객체는 도메인 출력이므로 이름·출력 규칙(§10.3)대로 그 실행 폴더 `outputs/{실행명}/`에 남는다 [DESIGN: 2026-09-24(목) 사용자 결정]. 채점기 `python -m eval.scorer --run <run_dir>`의 입력이다. 그러나 `outputs/`는 커밋하지 않으므로, 저장소만으로 다시 채점하려면 보고서 원문을 커밋할 곳이 따로 있어야 한다. 그 위치는 S0(구현 첫 작업 단위인 앱 스캐폴딩) 외부 자문에서 정한다 [미확인].
 
 **`report_hash` 정규화 규칙** [DESIGN]
 
@@ -794,7 +797,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 - 유효 상태: `VALID` 또는 `REVIEW_REQUIRED`(명세 §4.5 원문, 이 문서 §4)
 - 의존 자료·정책·수치·보고서가 바뀌면 기존 기록은 보존하고 유효 상태만 `REVIEW_REQUIRED`로 바꾼다. 승인할 때 digest를 다시 계산해 대조한다.
 - `execution_status`가 `COMPLETED`가 아닌 실행의 보고서는 승인할 수 없다.
-- `evidence_digest`(보고서가 기대는 근거 행 내용을 요약한 해시)의 계산 방법은 승인 모듈 `approval.py`를 구현할 때 정하고 결정 기록에 남긴다.
+- `evidence_digest`(보고서가 기대는 근거 행 내용을 요약한 해시)의 계산 방법은 승인 패키지 `approval/`을 구현할 때 정하고 결정 기록에 남긴다.
 - 화면 없이 코드와 시험으로만 구현한다. 실제 기관 승인이나 통관 조치가 아니다.
 
 ### 9.4 보고서 스키마 요건과 신호 계열 [DESIGN]
@@ -815,17 +818,18 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 ## 10. 계획 경로·명령 표
 
-아래 표의 OpenShell은 에이전트를 격리 실행하는 NVIDIA 샌드박스 런타임, NAT는 §8.2의 NVIDIA 에이전트 도구 모음, S0는 구현 첫 단위인 앱 스캐폴딩(프로젝트 뼈대 생성), X1은 세로형 최소 통합 시험(설치부터 차단 로그까지 한 줄로 잇는 첫 시험)이다.
+아래 표의 OpenShell은 에이전트를 격리 실행하는 NVIDIA 샌드박스 런타임, NAT는 §8.2의 NVIDIA 에이전트 도구 모음, S0는 구현 첫 단위인 앱 스캐폴딩(프로젝트 뼈대 생성), X1은 세로형 최소 통합 시험(설치부터 차단 로그까지 한 줄로 잇는 첫 시험)이다. 패키지는 파이썬 모듈 파일을 여럿 담는 폴더, 단위는 혼자 실행하고 시험할 수 있게 파일 하나로 만든 가장 작은 구현 조각, 도메인명은 단위마다 붙인 출력용 이름이다(§10.3, 단위 표 `docs/plan/UNITS.md`).
 
-**명세 §4.12 원문**
+**2026-09-24(목) 사용자 결정(결정 기록 `20260924-1720-user-decision-domain-restructure.md`)으로 고친 표**
 
 - 모든 문서는 아래 표의 경로와 명령만 쓴다. 이름은 조정값이며, S0 외부 자문으로 바뀌면 이 표와 참조 문서를 **함께** 고친다.
 - 기존 파일(`src/tradesentry/ingest.py`, `eval/dev/oracle_ABC.json`, `configs/collection_plan.json`)의 위치는 바꾸지 않는다.
 
 | 대상 | 예정 경로·명령 | 소유 |
 |---|---|---|
-| 앱 패키지 | `src/tradesentry/` — `ingest.py`(기존), `metrics.py`, `dal.py`, `policy.py`, `tools.py`, `workflow.py`, `validator.py`, `reports.py`, `grouping.py`, `approval.py`, `evaluation.py`, `cli.py` | D: ingest·metrics·dal / M: 나머지 |
-| CLI | `tradesentry <명령>` — `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate`, 공통 옵션 `--snapshot`, `--policy`, `--mode`(값은 §4.4의 모드 4개) | M |
+| 앱 패키지 | `src/tradesentry/` — `ingest.py`(기존), 패키지 `contract/`, `snapshot/`, `dal/`, `metrics/`, `policy/`, `grouping/`, `tools/`, `workflow/`, `reports/`, `validator/`, `runlog/`, `evaluation/`, `approval/`, `cli/`. 단위 파일은 `{패키지}/{단위}.py` | D: ingest·contract·snapshot·dal·metrics / M: policy·grouping·tools·workflow·reports·validator·evaluation·approval·cli / 공동: runlog |
+| 단위 등록부·공통 실행기(개발 전용) | `src/tradesentry/units/`, 실행 `python -m tradesentry.units <단위 ID> --in <입력 파일>` | 공동 |
+| CLI | `tradesentry <명령>` — `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate`, 공통 옵션 `--snapshot`, `--policy`, `--mode`(값은 `checklist`, `agent`, `full`, `freeform`) | M |
 | 정책 수치 | `configs/policy_v1.json` | D 제안·사용자 승인 |
 | NAT 설정 | `configs/nat/workflow.yml` | M |
 | OpenShell 정책 | `configs/openshell/policy.yaml` | M(보안 검토) |
@@ -835,31 +839,65 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 | 그룹핑 결과 | `data/reference/peer_group_g1.csv` | M 계산·D 검수 |
 | 시나리오 명세(공개) | `eval/scenarios/SCENARIO_SPEC.md` | D |
 | dev20 | `eval/dev/dev20/`(입력 + 정답표) | D |
+| 평가 자료 도구 | `eval/datagen/` — `dev20.py`(dev20 생성), `holdout40_check.py`(holdout40 결정적 검사), `split.py`(실자료 분할) | D |
 | 봉인 해시 목록 | `eval/sealed_manifest.json` | D |
 | 봉인 폴더 | 환경변수 `TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`(저장소 밖) | D |
-| 독립 채점기 | `eval/scorer/`(런타임 모듈을 import하지 않음), 실행 `python -m eval.scorer --run <run_dir>` | D |
-| 실행 기록(커밋 안 함) | `artifacts/runs/<run_id>/`(trace JSONL, NAT 프로파일 결과) | 공동 |
-| 평가 결과(커밋) | `artifacts/eval/<run_id>/`(`results.jsonl`, `claims.jsonl`, `summary.md`) | 공동 |
-| 자기채점 결과(커밋) | `artifacts/scorecard/<YYYY-MM-DD>-scorecard.md` | 공동 |
-| OpenShell 증거(커밋) | `artifacts/openshell/violation_tests.md`(예측·실측 대조표), `artifacts/openshell/logs/`(감사 로그 발췌) | M(보안 검토) |
+| 독립 채점기 | `eval/scorer/`(런타임 모듈을 import하지 않음), 실행 `python -m eval.scorer --run <run_dir>`, 출력 `outputs/score-{시각}/` | D |
+| 도메인 출력(커밋 안 함) | `outputs/{실행명}/{도메인명}-{시각}.{확장자}`(trace JSONL, NAT 프로파일 결과, 보고서, 실행 결과 기록 등 도메인 출력 전부). 봉인 묶음 실행은 `outputs/sealed/{실행명}/` | 공동 |
+| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더를 복사: `scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`) | 공동 |
+| 자기채점 결과(커밋) | `artifacts/scorecard/scorecard-{시각}/`(자기채점 실행 폴더를 복사: `scorecard-{시각}.md`) | 공동 |
+| OpenShell 증거(커밋) | `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더를 복사: 예측·실측 대조표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`) | M(보안 검토) |
 | X1 임시 시험 코드 | `spikes/x1/` | M |
-| 시험 | `tests/`(기존 `test_ingest.py` 유지) | 공동 |
+| 시험 | `tests/`(기존 `test_ingest.py` 유지), 단위 골든 시험 `tests/units/{단위 ID}/` | 공동 |
 
 ### 10.1 읽는 법
 
 - 이 표는 구현 단계의 예정 위치다. 이 문서를 쓴 2026-09-24(목) 현재 표의 경로 중 저장소에 있는 것은 기존 파일 셋(`src/tradesentry/ingest.py`, `eval/dev/oracle_ABC.json`, `configs/collection_plan.json`)과 `tests/test_ingest.py`뿐이다 [사실].
-- `<run_id>`, `<run_dir>`, `<YYYY-MM-DD>`, `<명령>`은 자리표시(실제 값으로 바꿔 쓰는 자리)다.
-- CLI 행의 "§4.4의 모드 4개"는 설계 명세의 절 번호다. 이 문서에서 모드는 §4.1에 있다.
-- `artifacts/eval/<run_id>/`의 `<run_id>`는 평가 묶음 실행 ID로 읽는다 [추론: `results.jsonl`에 사례 실행 기록 여러 건이 들어간다]. 실행 기록의 `run_id`(사례 1건 실행, §8)와 이름이 겹치므로 S0에서 이름을 확정한다. `artifacts/runs/<run_id>/`의 `<run_id>`가 사례 실행 단위인지 묶음 단위인지도 S0에서 확정한다.
-- 보고서 객체의 저장 위치는 이 표에 없다. 채점기 입력(`<run_dir>`)이 될 위치는 S0 외부 자문에서 정한다 [미확인](§9.1).
+- 중괄호 자리 `{실행명}`, `{도메인명}`, `{시각}`, `{확장자}`, `{패키지}`, `{단위}`, `{단위 ID}`는 이름·출력 규칙(§10.3)과 단위 표로 채운다. `{시각}`은 `yymmddhhmmss`, 곧 그 실행이 시작한 KST(한국 표준시) 24시간 12자리 시각이다(예: `260925143015`). 꺾쇠 자리 `<run_dir>`, `<단위 ID>`, `<입력 파일>`, `<명령>`은 명령을 쓸 때 실제 값으로 바꾸는 자리표시다.
+- `<run_dir>`는 채점할 실행의 폴더 `outputs/{실행명}/`이고, 봉인 묶음 실행이면 `outputs/sealed/{실행명}/`이다. 채점기는 자기 출력을 `outputs/score-{시각}/`에 쓴다. 봉인 묶음을 채점할 때도 같다.
+- `run_id`는 실행명이다(§10.3 N5). 실행 결과 기록(§8)의 `run_id`는 그 사례 실행의 실행명이며, `run-case`로 돌린 사례 실행이면 `run_case-{시각}`이다. 평가 묶음 실행(`evaluate`)은 자기 실행명 `evaluate-{시각}`을 갖고, 그 안의 사례 실행마다 새 실행명을 쓴다. 시각이 초 단위라 같은 초에 시작한 두 실행은 이름이 같아지므로, 배치 실행기는 직전 실행과 같은 초이면 다음 초까지 기다린 뒤 시작한다(N8). 사례 실행의 폴더를 묶음 실행의 폴더와 어떻게 잇는지는 S0에서 정한다 [미확인](`docs/plan/SCAFFOLD_BRIEF.md` Q9).
+- 보고서 객체는 도메인 출력이라 `outputs/{실행명}/`에 남는다. 이 폴더는 커밋하지 않으므로 재채점용 보고서 원문을 커밋할 위치는 S0 외부 자문에서 정한다 [미확인](§9.1).
 - 소유 열의 D·M·공동은 그 파일을 고칠 수 있는 트랙이다. 소유 트랙이 아닌 에이전트는 읽기만 한다 [DESIGN: 명세 §3.10].
 - S0는 구현 첫 작업 단위인 앱 스캐폴딩(프로젝트 뼈대 생성)이며, 뼈대를 만들기 전에 외부 자문을 받는 체크포인트다 [DESIGN: 명세 §3.8].
 
 ### 10.2 2026-09-24(목) 저장소 설정과 맞춰 볼 점 [사실: `.gitignore`]
 
-- `.gitignore`는 `artifacts/runs/`를 제외한다. 표의 "실행 기록(커밋 안 함)"과 맞다.
+- `.gitignore`는 `outputs/`를 제외한다. 표의 "도메인 출력(커밋 안 함)"과 맞다. 이 줄은 2026-09-24(목) 이름·출력 규칙(§10.3)과 같은 PR에서 더했다. 옛 실행 기록 폴더를 빼는 줄도 지우지 않고 남겨 두었다.
 - `.gitignore`는 `data/snapshots/*/raw/`와 `data/snapshots/*/snapshot.sqlite`도 제외한다. 그래서 `data/snapshots/controlled_fixture_v0/` 아래의 SQLite 파일과 raw 폴더는 이 설정으로는 커밋되지 않는다.
-- 키 없이 도는 재현 시험에 합성 픽스처(시험용으로 미리 만든 고정 자료)를 커밋해야 한다면 어떤 형태로 커밋할지 D가 정해야 한다 [미확인]. `.gitignore` 수정은 이 문서의 범위가 아니다.
+- 키 없이 도는 재현 시험에 합성 픽스처(시험용으로 미리 만든 고정 자료)를 커밋해야 한다면 어떤 형태로 커밋할지 D가 정해야 한다 [미확인]. 그 일을 위한 `.gitignore` 수정은 이 문서의 범위가 아니다.
+
+### 10.3 이름·출력 규칙
+
+2026-09-24(목) 사용자 결정(결정 기록 `docs/tracking/decisions/20260924-1720-user-decision-domain-restructure.md`)의 원문 세 가지와 확인 답 네 가지를 규칙으로 옮겼다 [DESIGN: 사용자 결정]. N12만 오케스트레이터(작업을 배분하고 PR을 병합하는 주관 에이전트)가 정리한 것이라 사용자 확인 대기다. 단위와 도메인명의 목록은 단위 표 `docs/plan/UNITS.md`에 있다. 이 절에서 실행은 CLI 명령, 채점기, 스킬·스크립트, 단위 하나를 한 번 돌리는 일이다.
+
+- **N1 문자**: 패키지·단위·도메인명·실행명은 영문 소문자·숫자·밑줄(`_`)만 쓰고 영문 소문자로 시작한다. 하이픈(`-`)은 이름과 시각 사이에만, 점(`.`)은 확장자 앞에만 쓴다. 다른 규약이 정한 이름(CLI 명령 `snapshot-build`·`run-case`, 스킬 이름, 스냅샷·자료 묶음 ID)은 그대로 둔다.
+- **N2 패키지**: 도메인 묶음 하나가 패키지(디렉터리) 하나다. `src/tradesentry/` 아래 15개(`contract`, `snapshot`, `dal`, `metrics`, `policy`, `grouping`, `tools`, `workflow`, `reports`, `validator`, `runlog`, `evaluation`, `approval`, `cli`, `units`)와 `eval/scorer/`·`eval/datagen/`이다. 패키지 밖 모듈 파일은 `ingest.py`(기존)와 `app.py`(위치는 S0 자문 Q14) 둘이다. 계획 모듈을 패키지로 바꿔도 import 경로(예: `tradesentry.metrics`)는 그대로다.
+- **N3 단위 파일**: 단위 하나가 파일 `{패키지}/{단위}.py` 하나다. 단위 이름은 그 패키지 안에서 유일하다.
+- **N4 도메인명**: `{패키지}_{단위}`다(예: `snapshot_build`). `eval/scorer`의 단위는 `scorer_`, `eval/datagen`의 단위는 `datagen_`을 앞에 붙인다. 패키지 밖 모듈은 파일 이름(`ingest`, `app`)을 도메인명으로 쓴다. 단위 표에서 한 번 정한 도메인명은 조립 때 단위를 합쳐도 바꾸지 않는다.
+- **N5 실행명(`run_id`)**: `{실행 이름}-{yymmddhhmmss}`다. 실행 이름은 시각이 붙지 않은 이름이다. CLI 명령은 하이픈을 밑줄로 바꾼 것(`snapshot_build`, `snapshot_verify`, `detect`, `run_case`, `evaluate`), 채점은 `score`, 단위를 혼자 돌리면 그 도메인명, 스킬·스크립트는 그 이름(`scorecard`, `openshell_violation_tests`)을 실행 이름으로 쓴다. 예: `run_case-260925143015`.
+- **N6 출력**: 모든 도메인 출력은 `outputs/{실행명}/{도메인명}-{yymmddhhmmss}.{확장자}`에 쓴다. 실행 폴더는 곧 `outputs/{실행 이름}-{시각}/`이다. 시각은 그 실행이 시작한 KST 24시간 12자리이고, 한 실행의 모든 출력이 같은 시각을 쓴다. 예: `outputs/score-260926150000/scorer_claims-260926150000.jsonl`.
+- **N7 같은 확장자 여러 파일**: 한 단위가 한 실행에서 같은 확장자 파일을 여럿 내면 `outputs/{실행명}/{도메인명}-{시각}/` 폴더에 넣고, 폴더 안 파일 이름은 단위 표에 고정한다.
+- **N8 덮어쓰기 금지**: 쓰려는 이름이 이미 있으면 쓰지 않고 그 실행을 실패로 끝낸다. 이름 충돌 때문에 공식 실행이 실패해 `FAILED`로 분모에 남는 일은 설계로 막는다. 배치 실행기(평가 하네스 단위 `evaluation_batch_run`)는 사례 실행마다 새 실행명을 쓰고, 직전 실행과 같은 초에 시작하게 되면 다음 초까지 기다린 뒤 시작한다. dev20·`real_dev` 실행으로 이름 충돌이 없는지 확인한다.
+- **N9 커밋 안 함**: `outputs/`는 커밋하지 않는다(§10.2). `.gitignore`의 `outputs/` 줄은 이 규칙과 같은 PR로 넣으므로 `outputs/`에 처음 쓰는 코드(S0 이후)보다 먼저 `main`에 들어간다.
+- **N10 봉인**: 봉인 묶음(holdout40·`real_sealed`) 실행의 출력은 `outputs/sealed/{실행명}/`에 같은 규칙으로 두고, 정답 대조 채점이 끝나기 전에는 에이전트가 열지 않는다. `outputs/sealed/`에는 봉인 묶음을 샌드박스에서 실행한 출력만 둔다. 봉인 자료(holdout40 입력·정답표, `real_sealed` 사례 목록·표본, seed)는 계속 저장소 밖 봉인 폴더(`TRADESENTRY_SEALED_DIR`, §12)에만 두고, 봉인 자료 생성(holdout40, `real_sealed` 표본)의 출력도 봉인 폴더에만 쓴다. 그래서 봉인 폴더를 저장소 안에 두지 않는다는 규칙(`docs/rules/PARALLEL_DEV_RULES.md` §6.1)과 부딪치지 않는다. 거꾸로 실행 출력을 봉인 폴더에 두지도 않는다. 봉인 폴더에는 격리된 생성 에이전트만 쓰고(같은 문서 §6.3), 채점 전 해시 재대조는 폴더 안 파일 전부를 해시 목록과 맞춰 보며 목록에 없는 파일도 불일치로 보기 때문이다(같은 문서 §6.2, 이 문서 §12.2).
+- **N11 커밋 증거물(승격)**: 커밋하는 증거물도 같은 이름 규칙을 쓴다. 실행 폴더를 이름 그대로 `artifacts/{종류}/` 아래로 복사해 커밋하며, 이 일을 승격이라 한다. 평가 결과는 채점 실행 폴더(`artifacts/eval/score-{시각}/`), 자기채점은 `artifacts/scorecard/scorecard-{시각}/`, OpenShell 증거는 `artifacts/openshell/openshell_violation_tests-{시각}/`다. 승격하는 폴더도 커밋 전에 비밀값·로컬 경로 검사를 거친다(`docs/rules/PARALLEL_DEV_RULES.md` §10.3).
+- **N12 정본 자료**(오케스트레이터 정리, 사용자 확인 대기): 다른 단위가 이름으로 읽는 입력은 이름이 고정이고, `outputs/`의 결과를 동결·승인 단계를 거쳐 그 자리로 옮긴다. 대상은 동결 스냅샷(`data/snapshots/{snapshot_id}/`), 정책 수치(`configs/policy_v1.json`), 비교국 표(`data/reference/peer_group_g1.csv`), dev20(`eval/dev/dev20/`)이다.
+- **N13 비밀값**: 키 값과 로컬 절대경로는 어떤 출력에도 쓰지 않는다(`docs/rules/PARALLEL_DEV_RULES.md` §10.2·§10.3).
+
+**새 이름 다섯 개의 뜻과 경계**(사용자 결정의 A안)
+
+- `contract`: 공유 커널이다. 계약 타입, 근거 ID, 정책 수치 읽기, 도구 봉투 키를 둔다.
+- `snapshot`: 스냅샷 빌드·검증과 합성 스냅샷 생성을 둔다.
+- `runlog`: trace, 실행 결과 기록, `errors`의 원인 분류 코드를 둔다.
+- `units`: 최소 단위의 등록부(단위 ID와 진입 함수의 대응표)와 공통 실행기(단위 하나를 혼자 돌리는 개발 전용 명령)다. 물리 단위(USD·kg)나 표시 자릿수(§11)와는 관계없다.
+- `eval/datagen`: 평가 자료 도구(dev20 생성, holdout40 결정적 검사, 실자료 분할)다. holdout40 생성 코드는 두지 않는다. 그 코드는 봉인 폴더에만 둔다(`docs/rules/PARALLEL_DEV_RULES.md` §1.2·§6.6).
+- 경계: `src/tradesentry/` 아래 모든 패키지(`units`·`contract` 포함)는 독립 채점기(`eval/scorer/`)가 import하면 안 되는 대상이다(룰북 `docs/eval/RULEBOOK.md` B3, `docs/rules/PARALLEL_DEV_RULES.md` §1.2). 채점기와 dev20 정답표는 지표 단위 구현자와 다른 실행자가 `metrics/` 아래 어느 단위도 보지 않고 만든다(`docs/plan/ROADMAP.md` DT5·DT8).
+
+**그 밖의 약속**
+
+- X1 임시 시험 기록은 옛 이름 `artifacts/openshell/violation_tests.md`, `artifacts/openshell/logs/`를 그대로 쓰고 새 이름 폴더로 옮기지 않는다(X1 결정 기록이 이 경로를 인용하고 결정 기록은 고치지 않는다). 규범 G2(팀 채점 규범 `SCORING_GOLDEN_RULE.md`의 교육 미션 정합성 게이트, 룰북 A1)의 증거로는 이 위치도 읽지만, 평가 묶음의 실행 조건 대조(룰북 B7)는 채점 요약 `scorer_summary-{시각}.md`에 적은 새 이름 폴더만 쓴다.
+- 결정 기록의 표기 `outputs/{실행명}-{시각}/`에서 `{실행명}`은 이 절의 실행 이름이다. 이 절의 실행명은 시각까지 붙은 이름이므로 두 표기는 같은 폴더를 가리킨다. 이 문서 세트는 두 말을 이 절의 뜻으로만 쓴다.
+- 이 규칙은 계약 필드·키·값 집합을 바꾸지 않으므로 `schema_version`을 올리지 않는다(§13.2).
 
 ## 11. 단위와 정밀도
 
@@ -904,7 +942,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 - 분해식은 동일 HS10 집합에서 양 시점 중량이 유효하고 부모 합계가 맞을 때만 쓴다. 비중은 금액 비중이 아닌 중량 비중 `w_i,t = Q_i,t / Σ_i Q_i,t`다. 분해 잔차·개별 하위변화·상쇄를 함께 돌려준다 [DESIGN: 명세 §3.3].
 - **원천 규칙** [DESIGN]: 단가 `U_t`는 부모 HS6 행(HS4 스캔 요청이 준 상대국별 HS6 행, §2.3.2)의 `V`/`Q`다. HS10 하위 행은 구성효과 분해와 부모 대조(금액 정확 일치, 중량 0.5kg×(행수+1))에만 쓴다. 점유율 분자는 부모 HS6 행의 `V`이고, 분모는 그 HS6 아래 `ALL` HS10 월 행의 금액 합(중복 제거 뒤)이다. 부모 행과 HS10 합의 금액은 정확히 같다 [사실: 메모 §2, 국가별 부모-하위 대조 2,096건 일치].
   - 근거: oracle은 `parent`의 V·Q로 `U0`·`U1`을 정하고 `residual`을 따로 둔다 [사실: oracle]. 구 개발계획도 분해 조건으로 "부모 합계"를, 모니터링 근거로 "부모 대조"를 쓴다 [사실: 구 개발계획 §4.2·§5.1].
-  - `metrics.py`, 검증기, 독립 채점기는 모두 이 원천 규칙을 쓴다. 원천이 갈리면 맞는 주장이 `WRONG_VALUE`가 될 수 있기 때문이다.
+  - `metrics/` 패키지, 검증기, 독립 채점기는 모두 이 원천 규칙을 쓴다. 원천이 갈리면 맞는 주장이 `WRONG_VALUE`가 될 수 있기 때문이다.
   - 참고: v2에서 전년동월 비교가 가능한 품목×국가×월 조합은 부모 HS6 행 기준 1,267개(그중 단가 변화율 절댓값 30% 이상 771개), HS10 합 기준 1,265개(767개)다 [사실: v2 SQLite 조회].
 - HS10 하위품목의 지표는 `U@<HS10 코드>`, `r_U@<HS10 코드>`, `w@<HS10 코드>`만 쓴다(§6.2). `U@`·`r_U@`의 단위와 표시 자릿수는 `@` 앞 기호를 따르고, `w@`는 이 표와 §11.3 표를 따른다 [DESIGN].
 - `configs/policy_v1.json`의 탐지 기준값도 이 단위로 적는다. 단위 예: 개발 제안값 30%는 `30`, 10pp는 `10`으로 적는다(`0.3`·`0.1`이 아님). 확정값은 D가 제안하고 사용자가 승인한다 [DESIGN].
@@ -913,7 +951,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 ### 11.3 표시 자릿수와 반올림 [DESIGN, 조정값]
 
-지표별 표시 자릿수는 이 표가 정한다. 보고서 틀(M 트랙 `reports.py`), 검증기, 독립 채점기가 모두 이 형식을 쓰고, 룰북은 이 표를 가리켜 허용오차를 적용한다.
+지표별 표시 자릿수는 이 표가 정한다. 보고서 틀(M 트랙 `reports/` 패키지), 검증기, 독립 채점기가 모두 이 형식을 쓰고, 룰북은 이 표를 가리켜 허용오차를 적용한다.
 
 | 기호 | 단위 | 표시 자릿수 |
 |---|---|---|
@@ -940,7 +978,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 ### 11.5 oracle_ABC 숫자 대응
 
-`metrics.py`는 oracle A/B/C를 그대로 재현해야 한다 [사실: 인계 §3]. oracle 키와 이 계약의 기호는 다음처럼 대응한다(예시 값은 A 사례) [사실: oracle].
+`metrics/` 패키지는 oracle A/B/C를 그대로 재현해야 한다 [사실: 인계 §3]. oracle 키와 이 계약의 기호는 다음처럼 대응한다(예시 값은 A 사례) [사실: oracle].
 
 | oracle 키 | 계약 기호와 단위 | 예(A 사례) |
 |---|---|---|
@@ -1028,6 +1066,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 - 버전을 올린다: 필드·키의 추가·삭제·이름 변경, 값 집합(상태값, 모드, `claim_type`, `direction`, 주장 채점 결과, §11.2의 기호와 단위) 변경, ID 형식 변경, 단위·정밀도 규칙 변경.
 - 버전을 올리지 않는다: 값을 바꾸지 않는 설명 보강과 오탈자 수정. 이런 수정도 PR과 검토를 거친다.
+- 2026-09-24(목) 사용자 결정으로 고친 경로 표(§10)와 새 이름·출력 규칙(§10.3)은 `schema_version`을 올리지 않는다. 계약 필드·키·값 집합(§2~§9, §11)이 그대로이기 때문이다. `run_id`에 형식(§10.3 N5)을 준 일도 위의 "ID 형식 변경"으로 보지 않는다. v1이 형식을 정하지 않았던 ID(§4.5)에 처음 형식을 준 것이고, 그 형식으로 저장된 자료가 아직 없다 [추론].
 - §11.3 표시 자릿수 표는 `RB-1` 동결 대상이다. 동결 뒤 바꾸면 계약 버전 외에 룰북 새 버전과 사유도 필요하다 [DESIGN].
 - 명세 §4와 글자 그대로 같아야 하는 값을 바꾸려면 명세도 사용자 승인을 받아 함께 고친다(명세의 오류는 사용자 승인으로만 고친다).
 
@@ -1037,7 +1076,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 ### 13.4 함께 고칠 것
 
-- §10 경로 표의 이름이 S0 외부 자문으로 바뀌면 그 표와 참조 문서를 함께 고친다(§10 원문).
+- §10 경로 표의 이름이 S0 외부 자문으로 바뀌면 그 표와 참조 문서를 함께 고친다(§10 표 머리의 규칙). 표의 사본은 `docs/plan/DEV_PLAN.md` §10.1과 `docs/plan/SCAFFOLD_BRIEF.md` §2.3에 있고, 세 표는 글자까지 같게 둔다.
 - 외부 자문이 공용 약속을 바꾸자고 하면 13.1 절차와 사용자 승인을 거친다 [DESIGN: 명세 §3.8, §5].
 - 값이 바뀌면 문서 간 값 대조 검사를 다시 돌려 다른 문서에 철자가 다른 변형이 없는지 확인한다 [DESIGN: 명세 §6].
 
@@ -1109,7 +1148,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 - **PR(pull request)**: 변경을 main에 합치기 전에 검토받는 요청.
 - **git 커밋 해시**: 코드의 특정 버전을 가리키는 고유 문자열.
 - **룰북**: 평가 규칙과 채점 기준을 정한 문서(`docs/eval/RULEBOOK.md`).
-- **자료 접근층(`dal.py`)**: 스냅샷을 읽는 함수 모음. 도구는 이것을 거쳐 자료를 읽는다.
+- **자료 접근층(`dal/`)**: 스냅샷을 읽는 함수 모음 패키지. 도구는 이것을 거쳐 자료를 읽는다.
 - **결정 기록**: 결정과 그 이유를 남기는 문서.
 - **JSON**: 키와 값으로 된 텍스트 자료 형식.
 - **trace**: 실행 중 호출과 응답을 순서대로 남긴 기록.
@@ -1135,7 +1174,15 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 - **사사오입(ROUND_HALF_UP)**: 버리는 자리가 절댓값 기준 5 이상이면 올리는 반올림.
 - **`%p`**: 한국어 문장에서 퍼센트포인트를 적는 표기. typed claim의 `unit`으로는 `pp`를 쓴다.
 - **신호 계열**: 주장의 `metric`이 어느 신호(`unit_value`, `share`)에 속하는지의 구분.
-- **평가 묶음 실행**: 여러 사례 실행을 한 번에 돌리는 평가 실행. `artifacts/eval/<run_id>/`의 `<run_id>`가 이것을 가리킨다.
+- **평가 묶음 실행**: 여러 사례 실행을 한 번에 돌리는 평가 실행(`tradesentry evaluate`). 실행명은 `evaluate-{시각}`이다.
+- **패키지**: 파이썬 모듈 파일을 여럿 담는 폴더. `src/tradesentry/` 아래 15개와 `eval/scorer/`·`eval/datagen/`이 있다(§10.3 N2).
+- **단위 / 단위 표**: 혼자 실행하고 시험할 수 있게 파일 하나로 만든 가장 작은 구현 조각 / 단위마다 ID·도메인명·파일·소유·입출력을 적은 표(`docs/plan/UNITS.md`).
+- **조립**: 따로 만든 단위들을 이어 CLI 명령 하나가 도는 묶음으로 만드는 일. 이때 버릴 것과 합칠 것을 가린다.
+- **도메인명**: 단위마다 붙인 출력용 이름 `{패키지}_{단위}`. 출력 파일 이름의 앞부분이 된다(§10.3 N4).
+- **실행 이름 / 실행명(`run_id`)**: 시각이 붙지 않은 실행의 이름(예: `run_case`) / 실행 이름에 시작 시각을 붙인 `{실행 이름}-{yymmddhhmmss}`(예: `run_case-260925143015`). 실행 폴더 `outputs/{실행명}/`의 이름이다(§10.3 N5).
+- **도메인 출력(`outputs/`)**: 실행마다 폴더 하나에 쌓는 도메인별 출력물. 커밋하지 않는다(§10.3 N6·N9).
+- **승격**: 커밋할 증거물이 된 실행 폴더를 이름 그대로 `artifacts/{종류}/` 아래로 복사해 커밋하는 일(§10.3 N11).
+- **정본 자료**: 다른 단위가 이름으로 읽는 고정 위치의 입력(동결 스냅샷, 정책 수치, 비교국 표, dev20). `outputs/`의 결과를 동결·승인 단계를 거쳐 옮긴다(§10.3 N12, 사용자 확인 대기).
 - **NemoClaw**: 에이전트 실행 틀과 보안 런타임을 묶은 NVIDIA 참조 스택.
 - **nonce**: 추측을 막으려고 섞는 한 번 쓰는 임의 값. seed 파일의 해시만 보고 seed를 역산하지 못하게 한다.
 - **우회수입**: 제3국을 거쳐 원산지를 바꿔 들여오는 수입. 보고서는 단가·점유율 변화를 그 증거로 쓰지 않는다.
