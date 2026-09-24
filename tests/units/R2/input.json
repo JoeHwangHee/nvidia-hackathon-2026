@@ -1,0 +1,43 @@
+{
+  "report_id": "rep-C-1",
+  "run_id": "run_case-260925100000",
+  "mode": "full",
+  "created_at": "2026-09-25T10:00:30+09:00",
+  "policy_version": "dev-0.1",
+  "snapshot_id": "controlled_fixture_v0",
+  "grouping_version": "g0",
+  "case": {
+    "case_id": "C-missing-hs10",
+    "hs6": "850450",
+    "partner": "CN",
+    "month": "202401",
+    "baseline_month": "202301",
+    "signals": {"unit_value": "TRIGGERED", "share": "NOT_TRIGGERED"},
+    "snapshot_id": "controlled_fixture_v0",
+    "policy_version": "dev-0.1"
+  },
+  "claims": [
+    {"claim_id": "c1", "claim_type": "value", "hs6": "850450", "partner": "CN", "period": "202301", "baseline_period": null,
+     "metric": "U", "value": 6.00, "unit": "USD/kg", "direction": "NA",
+     "evidence_ids": ["ev:controlled_fixture_v0:observation:101"],
+     "text": "2023년 1월 단가는 kg당 6.00달러다."},
+    {"claim_id": "c2", "claim_type": "value", "hs6": "850450", "partner": "CN", "period": "202401", "baseline_period": null,
+     "metric": "U", "value": 3.60, "unit": "USD/kg", "direction": "NA",
+     "evidence_ids": ["ev:controlled_fixture_v0:observation:201"],
+     "text": "2024년 1월 단가는 kg당 3.60달러다."},
+    {"claim_id": "c3", "claim_type": "change", "hs6": "850450", "partner": "CN", "period": "202401", "baseline_period": "202301",
+     "metric": "r_U", "value": -40.0, "unit": "%", "direction": "DOWN",
+     "evidence_ids": ["ev:controlled_fixture_v0:observation:101", "ev:controlled_fixture_v0:observation:201"],
+     "text": "2024년 1월 단가가 전년 같은 달보다 40.0% 낮다."},
+    {"claim_id": "c5", "claim_type": "data_status", "hs6": "850450", "partner": "CN", "period": "202401", "baseline_period": null,
+     "metric": "observation_status", "value": "REQUEST_FAILED", "unit": null, "direction": "NA",
+     "evidence_ids": ["ev:controlled_fixture_v0:observation:202"],
+     "text": "2024년 1월 CN HS 850450 자료 상태는 REQUEST_FAILED(요청 실패)다."}
+  ],
+  "narrative": "단가가 kg당 6.00달러에서 3.60달러로 낮아졌다. 하위품목 조회가 실패해 구성 변화 효과를 계산하지 못했다.",
+  "hypotheses": ["하위품목 구성이 바뀌었을 수 있으나 이 자료로는 확인할 수 없다."],
+  "review_status": "HOLD",
+  "signal_status": {"unit_value": "HOLD", "share": "NOT_TRIGGERED"},
+  "unresolved_evidence": false,
+  "validator_findings": []
+}
