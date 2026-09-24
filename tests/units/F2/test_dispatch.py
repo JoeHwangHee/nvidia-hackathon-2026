@@ -211,15 +211,27 @@ class EntryPointTest(unittest.TestCase):
         self.assert_name_only(err, "RuntimeError")
 
     def test_ascii_only_standard_streams_keep_the_exit_codes(self):
+        """표준 흐름이 한국어를 못 쓰는 인코딩이어도 종료 코드가 그대로이고 호출 경로 기록이 나가지 않는다.
+
+        detect는 조립 작업 AS1이 이었으므로 종료 코드 3(자리표시 처리 함수)은 하위 프로세스 안에서 detect 항목을 자리표시로
+        바꿔 본다. detect의 실패(1)는 없는 스냅샷으로 본다. 하위 프로세스의 현재 폴더는 임시 폴더라 실행 폴더
+        (outputs/detect-{시각})가 저장소에 생기지 않는다.
+        """
         env = dict(os.environ, PYTHONIOENCODING="ascii", PYTHONUTF8="0")
-        cases = ((["--help"], 0), (["detect", "--snapshot", "Bad", "--policy", "dev-0.1"], 2),
-                 (ARGV["detect"], 3))  # 3은 한국어 오류 문장을 쓰고도 1로 바뀌지 않는다
-        for argv, expected in cases:
-            with self.subTest(argv=argv):
-                result = subprocess.run([sys.executable, "-m", "tradesentry.cli", *argv], capture_output=True, env=env)
-                self.assertEqual(result.returncode, expected, result.stderr[-400:])
-                for leak in (b"Traceback", b'File "'):
-                    self.assertNotIn(leak, result.stderr)
+        module = ["-m", "tradesentry.cli"]
+        placeholder = ["-c", "import sys\nfrom tradesentry.cli import dispatch\n"
+                             "dispatch.HANDLERS['detect'] = dispatch._not_wired\n"
+                             "raise SystemExit(dispatch.main(sys.argv[1:]))\n"]
+        cases = ((module + ["--help"], 0), (module + ["detect", "--snapshot", "Bad", "--policy", "dev-0.1"], 2),
+                 (placeholder + ARGV["detect"], 3),  # 3은 한국어 오류 문장을 쓰고도 1로 바뀌지 않는다
+                 (module + ["detect", "--snapshot", "no_such_snapshot", "--policy", "dev-0.1"], 1))  # 한국어 오류, 1
+        with tempfile.TemporaryDirectory() as folder:
+            for argv, expected in cases:
+                with self.subTest(argv=argv):
+                    result = subprocess.run([sys.executable, *argv], capture_output=True, env=env, cwd=folder)
+                    self.assertEqual(result.returncode, expected, result.stderr[-400:])
+                    for leak in (b"Traceback", b'File "'):
+                        self.assertNotIn(leak, result.stderr)
 
 
 class TempOutputs(unittest.TestCase):
