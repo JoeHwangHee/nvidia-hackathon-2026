@@ -1,0 +1,384 @@
+{
+ "query_id": "get_history-6d8c8478dbe2c2d5",
+ "tool": "get_history",
+ "scope": {
+  "hs6": "850431",
+  "partner": "MX",
+  "month": "202401",
+  "baseline_month": "202301",
+  "months": [
+   "202301",
+   "202302",
+   "202303",
+   "202304",
+   "202305",
+   "202306",
+   "202307",
+   "202308",
+   "202309",
+   "202310",
+   "202311",
+   "202312",
+   "202401"
+  ],
+  "partners": [
+   "MX",
+   "ALL"
+  ],
+  "hs10": []
+ },
+ "snapshot_id": "unit_fixture_tools",
+ "source_kind": "controlled",
+ "evidence_ids": [
+  "ev:unit_fixture_tools:observation:3",
+  "ev:unit_fixture_tools:observation:31",
+  "ev:unit_fixture_tools:observation:375",
+  "ev:unit_fixture_tools:observation:377",
+  "ev:unit_fixture_tools:observation:405",
+  "ev:unit_fixture_tools:observation:407",
+  "ev:unit_fixture_tools:observation:9",
+  "ev:unit_fixture_tools:observation:217",
+  "ev:unit_fixture_tools:observation:11",
+  "ev:unit_fixture_tools:observation:219",
+  "ev:unit_fixture_tools:observation:13",
+  "ev:unit_fixture_tools:observation:221",
+  "ev:unit_fixture_tools:observation:15",
+  "ev:unit_fixture_tools:observation:223",
+  "ev:unit_fixture_tools:observation:7",
+  "ev:unit_fixture_tools:observation:17",
+  "ev:unit_fixture_tools:observation:225",
+  "ev:unit_fixture_tools:observation:19",
+  "ev:unit_fixture_tools:observation:227",
+  "ev:unit_fixture_tools:observation:21",
+  "ev:unit_fixture_tools:observation:229",
+  "ev:unit_fixture_tools:observation:23",
+  "ev:unit_fixture_tools:observation:231",
+  "ev:unit_fixture_tools:observation:25",
+  "ev:unit_fixture_tools:observation:233",
+  "ev:unit_fixture_tools:observation:27",
+  "ev:unit_fixture_tools:observation:235"
+ ],
+ "metrics": [
+  {
+   "metric_id": "fake-U-792a17ef2899",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "U",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202301",
+    "baseline_period": null,
+    "V": 6000,
+    "Q": 1000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:3"
+   ],
+   "value": 6.00,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-U-2ac9bd2d367e",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "U",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": null,
+    "V": 3600,
+    "Q": 1000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:31"
+   ],
+   "value": 3.60,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-r_U-4a491d8db78d",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "r_U",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": "202301",
+    "V_0": 6000,
+    "Q_0": 1000,
+    "V_1": 3600,
+    "Q_1": 1000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:3",
+    "ev:unit_fixture_tools:observation:31"
+   ],
+   "value": -40.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-V-7be02ebc4d35",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "V",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202301",
+    "baseline_period": null
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:3"
+   ],
+   "value": 6000,
+   "unit": "USD",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-V-becc38edf535",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "V",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": null
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:31"
+   ],
+   "value": 3600,
+   "unit": "USD",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-V-977c4db33a92",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "V",
+    "hs6": "850431",
+    "partner": "ALL",
+    "period": "202301",
+    "baseline_period": null,
+    "row_count": 2
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:375",
+    "ev:unit_fixture_tools:observation:377"
+   ],
+   "value": 60000,
+   "unit": "USD",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-V-dd5b6598975e",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "V",
+    "hs6": "850431",
+    "partner": "ALL",
+    "period": "202401",
+    "baseline_period": null,
+    "row_count": 2
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:405",
+    "ev:unit_fixture_tools:observation:407"
+   ],
+   "value": 60000,
+   "unit": "USD",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-s-ddec0fe74232",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "s",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202301",
+    "baseline_period": null,
+    "V_country": 6000,
+    "V_world": 60000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:3",
+    "ev:unit_fixture_tools:observation:375",
+    "ev:unit_fixture_tools:observation:377"
+   ],
+   "value": 10.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-s-cd8bed7a799d",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "s",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": null,
+    "V_country": 3600,
+    "V_world": 60000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:31",
+    "ev:unit_fixture_tools:observation:405",
+    "ev:unit_fixture_tools:observation:407"
+   ],
+   "value": 6.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-d_s-8eac458e1351",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "d_s",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": "202301",
+    "V_country_0": 6000,
+    "V_world_0": 60000,
+    "V_country_1": 3600,
+    "V_world_1": 60000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:3",
+    "ev:unit_fixture_tools:observation:375",
+    "ev:unit_fixture_tools:observation:377",
+    "ev:unit_fixture_tools:observation:31",
+    "ev:unit_fixture_tools:observation:405",
+    "ev:unit_fixture_tools:observation:407"
+   ],
+   "value": -4.0,
+   "unit": "pp",
+   "comparability_flags": [],
+   "tolerance": null
+  }
+ ],
+ "comparability": {
+  "history": [
+   {
+    "month": "202301",
+    "observation_status": "OBSERVED",
+    "evidence_ids": [
+     "ev:unit_fixture_tools:observation:3"
+    ]
+   },
+   {
+    "month": "202302",
+    "observation_status": "UNRESOLVED_ZERO",
+    "evidence_ids": [
+     "ev:unit_fixture_tools:observation:9",
+     "ev:unit_fixture_tools:observation:217"
+    ]
+   },
+   {
+    "month": "202303",
+    "observation_status": "UNRESOLVED_ZERO",
+    "evidence_ids": [
+     "ev:unit_fixture_tools:observation:11",
+     "ev:unit_fixture_tools:observation:219"
+    ]
+   },
+   {
+    "month": "202304",
+    "observation_status": "UNRESOLVED_ZERO",
+    "evidence_ids": [
+     "ev:unit_fixture_tools:observation:13",
+     "ev:unit_fixture_tools:observation:221"
+    ]
+   },
+   {
+    "month": "202305",
+    "observation_status": "UNRESOLVED_ZERO",
+    "evidence_ids": [
+     "ev:unit_fixture_tools:observation:15",
+     "ev:unit_fixture_tools:observation:223"
+    ]
+   },
+   {
+    "month": "202306",
+    "observation_status": "OBSERVED",
+    "evidence_ids": [
+     "ev:unit_fixture_tools:observation:7"
+    ]
+   },
+   {
+    "month": "202307",
+    "observation_status": "UNRESOLVED_ZERO",
+    "evidence_ids": [
+     "ev:unit_fixture_tools:observation:17",
+     "ev:unit_fixture_tools:observation:225"
+    ]
+   },
+   {
+    "month": "202308",
+    "observation_status": "UNRESOLVED_ZERO",
+    "evidence_ids": [
+     "ev:unit_fixture_tools:observation:19",
+     "ev:unit_fixture_tools:observation:227"
+    ]
+   },
+   {
+    "month": "202309",
+    "observation_status": "UNRESOLVED_ZERO",
+    "evidence_ids": [
+     "ev:unit_fixture_tools:observation:21",
+     "ev:unit_fixture_tools:observation:229"
+    ]
+   },
+   {
+    "month": "202310",
+    "observation_status": "UNRESOLVED_ZERO",
+    "evidence_ids": [
+     "ev:unit_fixture_tools:observation:23",
+     "ev:unit_fixture_tools:observation:231"
+    ]
+   },
+   {
+    "month": "202311",
+    "observation_status": "UNRESOLVED_ZERO",
+    "evidence_ids": [
+     "ev:unit_fixture_tools:observation:25",
+     "ev:unit_fixture_tools:observation:233"
+    ]
+   },
+   {
+    "month": "202312",
+    "observation_status": "UNRESOLVED_ZERO",
+    "evidence_ids": [
+     "ev:unit_fixture_tools:observation:27",
+     "ev:unit_fixture_tools:observation:235"
+    ]
+   },
+   {
+    "month": "202401",
+    "observation_status": "OBSERVED",
+    "evidence_ids": [
+     "ev:unit_fixture_tools:observation:31"
+    ]
+   }
+  ],
+  "denominator": {
+   "partner": "ALL"
+  }
+ },
+ "missingness": [],
+ "retryable_error": null,
+ "elapsed_ms": 0
+}
