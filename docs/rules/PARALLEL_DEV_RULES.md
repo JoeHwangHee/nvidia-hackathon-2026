@@ -588,7 +588,8 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 
 이 소절의 규칙은 따로 적지 않으면 `[DESIGN]`이다.
 
-- 키의 원본은 `.env`에 둔다. 쓰는 키는 `NVIDIA_API_KEY`(NVIDIA 추론 API 키)와 `DATA_GO_KR_SERVICE_KEY`(공공데이터포털 관세청 API 키) 둘이다. `.env`는 `.gitignore`에 들어 있다 `[사실: .gitignore]`. NVIDIA 키의 사본은 설계된 주입 경로(OpenShell 게이트웨이의 provider 저장소, 샌드박스 안 root 감독 프로세스, NemoClaw 설정, 옮기면 Brev 호스트)에만 생긴다. 에이전트는 사본 위치도 열거나 출력하지 않는다(키 값이 드러날 수 있는 조회 출력 포함). 키를 교체할 때 갱신하거나 지울 곳은 `spikes/x1/README.md` "개발 기계 되돌리기" 절의 "키 사본"이다(결정 기록 `20260924-2010-user-decision-key-rule-interpretation.md`).
+- 이 소절의 "에이전트"는 두 뜻이다. 사본 위치를 열거나 출력하지 않는 에이전트는 개발 에이전트(Claude 보조 에이전트·Codex)다. "에이전트와 그 자식 프로세스"의 에이전트는 샌드박스 안 에이전트(시연의 OpenClaw(NemoClaw의 기본 에이전트 하네스), 채점 대상 실행의 CLI)다.
+- 키의 원본은 `.env`에 둔다. 쓰는 키는 `NVIDIA_API_KEY`(NVIDIA 추론 API 키)와 `DATA_GO_KR_SERVICE_KEY`(공공데이터포털 관세청 API 키) 둘이다. `.env`는 `.gitignore`에 들어 있다 `[사실: .gitignore]`. 사본은 설계된 주입 경로(OpenShell 게이트웨이의 provider 저장소, 샌드박스 안 root 감독 프로세스, NemoClaw 설정, 옮기면 Brev 호스트)에만 생긴다. 에이전트는 사본 위치도 열거나 출력하지 않는다(키 값이 드러날 수 있는 조회 출력 포함). 키를 교체할 때 갱신하거나 지울 곳은 `spikes/x1/README.md` "개발 기계 되돌리기" 절의 "키 사본"이다(결정 기록 `20260924-2010-user-decision-key-rule-interpretation.md`).
 - 문서·PR·커밋·로그·trace·결정 기록에는 변수 이름만 쓰고 값을 쓰지 않는다.
 - 에이전트는 `.env` 내용을 열람·출력·복사하지 않는다. 서브에이전트·Codex·검토자에게도 넘기지 않는다.
 - 샌드박스 밖에서 키가 필요한 명령은 실행 프로세스가 환경변수로 읽게 한다. 샌드박스 안에는 환경변수로도 키를 넘기지 않는다.
