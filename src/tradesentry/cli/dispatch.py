@@ -53,6 +53,32 @@
 - 명령이 쓰지 않는 공통 옵션(snapshot-build의 --mode, snapshot-verify의 --policy·--mode. args.COMMAND_OPTIONS의 UNUSED)은
   요청에는 남지만 단위에는 넘기지 않는다.
 
+탐지 명령 detect(조립체 2: 단위 X1·X2·X4·P1·P2. 배선은 조립 작업 AS1, 결정 기록 model-decision-as1-detect)
+- 순서: 실행명 확보(N8) → 단위 K4 load_policy(--policy의 정책 객체) → 단위 K3 open_snapshot(정본 빌드
+  data/snapshots/{snapshot_id}/snapshot_build.sqlite, 읽기 전용) → 출처 종류 확인 → 계열·월마다 K3 조회를 지표 입력으로
+  옮기고(아래 "어댑터") 단위 X1·X2를 부른다 → X1·X2의 exact_value(반올림 전 정확값, fractions.Fraction)로 단위 P1 입력 행을
+  만든다 → P1 → 단위 P2 → P2 출력을 outputs/detect-{시각}/policy_case_build-{시각}.json에 쓰고 그 상대경로를 한 줄 적는다.
+  metric 객체의 value(표시 자릿수로 반올림한 값)는 P1에 넘기지 않는다. 경계에서 발동 여부가 뒤집히기 때문이다(DT2 결정 ②,
+  MT1 결정 ②).
+- 출처 종류(source_kind)는 호출자가 아니라 스냅샷 메타에서 읽는다(MT1 결정 ⑭의 AS1 항목). 이 판은 합성 스냅샷
+  (controlled)만 탐지한다. 그 밖(실자료 real)은 지표를 계산하거나 K3로 값을 읽기 전에 거부하고 1로 끝난다. 실자료는 분할
+  기록의 정본 위치가 계획 경로 표에 올라 사용자 승인을 받은 뒤, AS1의 두 번째 PR이 지표·P1 앞에서 real_dev 계열로 좁혀
+  잇는다(병렬 개발 규칙 §7.2의 5). 새 CLI 옵션은 두지 않는다.
+- 계열은 수집 설정의 HS6 × 상대국이다(비교국 표의 계획 밖 국가는 대상이 아니다). 비교월 t는 기준월 t−12도 스냅샷 기간
+  안인 달만이다. 지표 입력은 계열마다 두 달(t−12, t)씩 넘긴다.
+- 어댑터(K3 월 값 → 지표 단위의 역할별 입력 행, DT2 결정 ①): 값이 있는 달(OBSERVED)은 행 하나, 무거래 확정 달
+  (CONFIRMED_NO_TRADE)은 V·Q 칸이 빈 행 하나(근거 ID는 K3가 준 상태 행 전부), 빠진 달은 K3 missingness 항목마다 상태 행
+  하나(근거 ID 하나)다. 전체국가(ALL) 분모는 K3가 중복을 뺀(행 규칙 6) 뒤 고른 HS10 행의 근거 ID를 K3 resolve로 풀어 HS10
+  행으로 다시 만들고, 코드 목록과 금액 합이 K3 값과 같은지 본다(다르면 4).
+- P1 입력 행에는 X1의 r_U 입력(V_0·Q_0·V_1·Q_1)에서 부모 HS6 행의 금액·중량을 옮긴다(네 값이 모두 정수일 때). 정책의
+  min_amount·min_weight가 있을 때 P1이 읽는다.
+- 출력은 P2 출력 그대로 한 파일이다({snapshot_id, dataset, policy_version, cases, data_quality}. 합성 스냅샷은 dataset이
+  null). 도메인명은 그 출력을 만든 단위 P2의 policy_case_build다(N4·N6). P1 전체 발동표와 metric 객체는 쓰지 않는다.
+- 종료 코드: 0 성공(사례가 없어도), 1 정책을 읽지 못함(PolicyError, 스냅샷을 열지 않는다)·스냅샷을 열지 못했거나 행 규칙에
+  맞지 않음(SnapshotError)·실자료 스냅샷 거부·단위의 입력 오류(예상 밖 예외), 4 조립체 출력이 기대한 모양이 아님
+  (WiringError). 오류 문장에는 받은 값(스냅샷 ID·정책 이름)과 스냅샷 안의 값을 넣지 않고 예외 이름만 적는다(N13, MT5 결정 ⑧).
+- 쓰지 않는 공통 옵션 --mode는 요청에 남지만 단위에 넘기지 않는다.
+
 평가 하네스는 모듈 단위로만 허용한다. 호스트 전용 샌드박스 밖 실행기(단위 E2, tradesentry.evaluation.sealed_runner)는
 CLI가 부르지 않는다.
 
@@ -104,7 +130,7 @@ SEALED_NAME = "sealed"  # 봉인 묶음 실행의 부모 폴더 outputs/sealed/
 ASSEMBLIES = {
     "snapshot-build": "조립체 1(스냅샷 빌드·검증)의 단위 S2. 배선은 로드맵 MT5, 단위 구현은 DT1·DT7이 맡는다",
     "snapshot-verify": "조립체 1(스냅샷 빌드·검증)의 단위 S3. 배선은 로드맵 MT5, 단위 구현은 DT1이 맡는다",
-    "detect": "조립체 2(탐지). 조립 작업 AS1이 잇는다",
+    "detect": "조립체 2(탐지)의 단위 X1·X2·X4·P1·P2. 배선은 조립 작업 AS1이 맡는다",
     "run-case": "조립체 3(사례 조사). 조립 작업 AS2가 잇는다",
     "evaluate": "조립체 4(평가 실행). 조립 작업 AS3이 잇는다",
 }
@@ -262,6 +288,171 @@ def _snapshot_verify(request: args.Request) -> int:
     raise WiringError("단위 S3(snapshot_verify)의 출력에 합격 표시 ok(참·거짓)가 없다")
 
 
+# ------------------------------------------------------------------------------ detect(조립체 2, 조립 작업 AS1)
+DETECT_RUN_NAME = "detect"  # 실행 이름(N5: 명령 이름의 하이픈을 밑줄로 바꾼 것)
+DETECT_DOMAIN = "policy_case_build"  # 출력을 만드는 단위 P2의 도메인명(docs/plan/UNITS.md §3.4, N4·N6)
+DETECT_SOURCE_KINDS = ("controlled",)  # 이 판에서 탐지하는 출처 종류(허용 목록). 실자료는 AS1의 두 번째 PR에서 잇는다
+CASE_BUILD_KEYS = frozenset({"snapshot_id", "dataset", "policy_version", "cases", "data_quality"})  # 단위 P2 출력 키
+DETECT_REFUSAL = ("오류: tradesentry detect는 지금 합성 스냅샷(source_kind가 controlled)만 탐지한다. 이 스냅샷은 합성 "
+                  "스냅샷이 아니어서 지표를 계산하지 않고 끝냈다. 실자료 스냅샷은 분할 기록의 정본 위치가 사용자 승인을 받은 "
+                  "뒤, 조립 작업 AS1의 두 번째 PR이 real_dev 계열로 좁혀 잇는다.")
+
+
+def detect_pairs(months: tuple[str, ...] | list[str]) -> list[tuple[str, str]]:
+    """스냅샷 기간의 달에서 (비교월 t, 기준월 t−12) 쌍. 기준월도 기간 안인 비교월만, 달 순서대로."""
+    from tradesentry.policy import trigger
+
+    present = set(months)
+    return [(month, trigger.baseline_of(month)) for month in months if trigger.baseline_of(month) in present]
+
+
+def detect_series(snap) -> list[tuple[str, str]]:
+    """탐지할 계열 (HS6, 상대국): 수집 설정의 HS6 × 상대국. 비교국 표가 가리키는 계획 밖 국가는 넣지 않는다."""
+    return [(hs6, partner) for hs6 in snap.hs6_codes for partner in snap.partners]
+
+
+def _status_rows(value: dict) -> list[dict]:
+    """빠진 달: K3 missingness 항목마다 상태 행 하나(V·Q 칸은 비고, 근거 ID는 그 상태 행 하나)."""
+    entries = value["missingness"]
+    if not entries:
+        raise WiringError("단위 K3의 빠진 달 값에 missingness 항목이 없다")
+    return [{"month": entry["month"], "hs_code": entry["hs_code"], "partner_code": entry["partner_code"],
+             "flow": entry["flow"], "amount_usd": None, "net_weight_kg": None,
+             "observation_status": entry["observation_status"], "evidence_ids": [entry["evidence_id"]]}
+            for entry in entries]
+
+
+def _no_trade_rows(value: dict) -> list[dict]:
+    """무거래 확정 달: V·Q 칸이 빈 행 하나. 근거 ID는 K3가 준 상태 행 전부다(지표 단위가 V·Q를 0으로 본다, 자료 계약 §3.4)."""
+    from tradesentry.contract import types
+
+    return [{"month": value["month"], "partner_code": value["partner"], "flow": types.METRIC_FLOW, "amount_usd": None,
+             "net_weight_kg": None, "observation_status": types.CONFIRMED_NO_TRADE,
+             "evidence_ids": list(value["evidence_ids"])}]
+
+
+def parent_rows(value: dict) -> list[dict]:
+    """단위 K3 parent 월 값 하나 → 지표 단위 X1·X2의 parent 역할 행(DT2 결정 ①)."""
+    from tradesentry.contract import types
+
+    status = value["observation_status"]
+    if status == types.OBSERVED:
+        return [{"month": value["month"], "hs_code": value["hs6"], "partner_code": value["partner"],
+                 "flow": types.METRIC_FLOW, "amount_usd": value["amount_usd"], "net_weight_kg": value["net_weight_kg"],
+                 "observation_status": status, "evidence_ids": list(value["evidence_ids"])}]
+    if status == types.CONFIRMED_NO_TRADE:
+        return _no_trade_rows(value)
+    return _status_rows(value)
+
+
+def world_rows(snap, value: dict) -> list[dict]:
+    """단위 K3 world 월 값 하나 → 지표 단위 X2의 world 역할 행(DT2 결정 ①).
+
+    값이 있는 달은 K3가 중복을 빼고(행 규칙 6) 고른 ALL HS10 행의 근거 ID를 K3 resolve로 풀어 HS10 행으로 다시 만든다.
+    다시 만든 행의 코드 목록과 금액 합이 K3 값과 다르면 배선 계약 위반(4)이다.
+    """
+    from tradesentry.contract import types
+
+    status = value["observation_status"]
+    if status == types.CONFIRMED_NO_TRADE:
+        return _no_trade_rows(value)
+    if status != types.OBSERVED:
+        return _status_rows(value)
+    rows = []
+    for evidence_id in value["evidence_ids"]:
+        found = snap.resolve(evidence_id)
+        row = found.get("row")
+        if found.get("resolved") is not True or not isinstance(row, dict):
+            raise WiringError("단위 K3 world의 근거 ID가 스냅샷 행으로 풀리지 않는다")
+        rows.append({"month": row["month"], "hs_code": row["hs_code"], "partner_code": row["partner_code"],
+                     "flow": row["flow"], "amount_usd": row["amount_usd"], "net_weight_kg": row["net_weight_kg"],
+                     "observation_status": row["observation_status"], "evidence_ids": [evidence_id]})
+    amounts = [row["amount_usd"] for row in rows]
+    if sorted(row["hs_code"] for row in rows) != list(value["hs10_codes"]) \
+            or not all(type(amount) is int for amount in amounts) or sum(amounts) != value["amount_usd"]:
+        raise WiringError("단위 K3 world의 근거 행으로 다시 만든 HS10 행이 K3의 코드 목록·금액 합과 다르다")
+    return rows
+
+
+def _pick_metric(output: object, symbol: str, unit: str) -> dict:
+    """지표 단위 출력({"metrics": [...]})에서 기호가 symbol인 metric 객체 하나. 하나가 아니면 배선 계약 위반(4)이다."""
+    metrics = output.get("metrics") if isinstance(output, dict) else None
+    found = [m for m in metrics if isinstance(m, dict) and isinstance(m.get("inputs"), dict)
+             and m["inputs"].get("metric") == symbol] if isinstance(metrics, list) else []
+    if len(found) != 1:
+        raise WiringError(f"단위 {unit}의 출력에 {symbol} 지표가 하나가 아니다")
+    return found[0]
+
+
+def detection_rows(snap) -> list[dict]:
+    """계열·비교월마다 단위 X1·X2를 불러 단위 P1의 입력 행을 만든다.
+
+    r_U·d_s는 X1·X2의 exact_value(반올림 전 정확값)다. 부모 HS6 행의 금액·중량(P1이 정책의 min_amount·min_weight에 쓴다)은
+    X1 r_U 입력의 V_0·Q_0·V_1·Q_1에서 옮긴다(네 값이 모두 정수일 때만. 값이 없으면 r_U가 null이라 P1이 읽지 않는다).
+    K3는 계열마다 parent_series, HS6마다 world_series를 한 번씩 부르고, ALL 행은 HS6·달마다 한 번만 다시 만든다.
+    """
+    from tradesentry.metrics import share, unit_value
+
+    pairs = detect_pairs(snap.months)
+    if not pairs:
+        return []
+    months = sorted({month for pair in pairs for month in pair})
+    worlds: dict[str, dict[str, list[dict]]] = {}
+    rows: list[dict] = []
+    for hs6, partner in detect_series(snap):
+        if hs6 not in worlds:
+            worlds[hs6] = {value["month"]: world_rows(snap, value) for value in snap.world_series(hs6, months)}
+        world = worlds[hs6]
+        parent = {value["month"]: parent_rows(value) for value in snap.parent_series(hs6, partner, months)}
+        for month, baseline in pairs:
+            target = {"snapshot_id": snap.snapshot_id, "hs6": hs6, "partner": partner, "period": month,
+                      "baseline_period": baseline}
+            both = parent[baseline] + parent[month]
+            r_u = _pick_metric(unit_value.run({**target, "parent": both}), "r_U", "X1")
+            d_s = _pick_metric(share.run({**target, "parent": both, "world": world[baseline] + world[month]}), "d_s", "X2")
+            row = {"hs6": hs6, "partner": partner, "month": month, "baseline_month": baseline,
+                   "r_U": unit_value.exact_value(r_u), "d_s": share.exact_value(d_s)}
+            given = r_u["inputs"]
+            if all(type(given.get(key)) is int for key in ("V_0", "Q_0", "V_1", "Q_1")):
+                row["amount_usd"] = {"month": given["V_1"], "baseline_month": given["V_0"]}
+                row["net_weight_kg"] = {"month": given["Q_1"], "baseline_month": given["Q_0"]}
+            rows.append(row)
+    return rows
+
+
+def _detect(request: args.Request) -> int:
+    """detect: 조립체 2(단위 X1·X2·X4·P1·P2)를 불러 단위 P2의 출력(사례 목록·데이터 품질 목록)을 실행 폴더에 쓴다(위 "탐지
+    명령 detect")."""
+    # 명령을 부를 때만 import한다(도움말·인자 오류는 조립체를 불러오지 않는다). 모듈 속성으로 불러 시험 대역이 걸리게 한다.
+    from tradesentry.contract import policy_load
+    from tradesentry.dal import query
+    from tradesentry.policy import case_build, trigger
+
+    run_id, stamp, run_dir = reserve_run_dir(DETECT_RUN_NAME)
+    try:
+        policy = policy_load.load_policy(request.policy_version)
+    except policy_load.PolicyError:
+        _report("오류: tradesentry detect가 --policy의 정책을 읽지 못했다(PolicyError). "
+                "정책 버전 이름과 configs/의 정책 파일을 확인한다.")
+        return EXIT_FAILED
+    try:
+        with query.open_snapshot(request.snapshot_id) as snap:
+            if snap.source_kind not in DETECT_SOURCE_KINDS:  # 값을 읽기 전에 거부한다(위 "탐지 명령 detect")
+                _report(DETECT_REFUSAL)
+                return EXIT_FAILED
+            detection = trigger.run({"policy": policy, "rows": detection_rows(snap)})
+            result = case_build.run({"snapshot_id": snap.snapshot_id, "source_kind": snap.source_kind,
+                                     "detection": detection})
+    except query.SnapshotError:
+        _report("오류: tradesentry detect가 스냅샷을 열지 못했거나 스냅샷 자료가 행 규칙에 맞지 않는다(SnapshotError). "
+                "--snapshot의 정본 빌드(data/snapshots/ 아래 snapshot_build.sqlite)를 확인한다.")
+        return EXIT_FAILED
+    if not isinstance(result, dict) or set(result) != CASE_BUILD_KEYS:
+        raise WiringError("단위 P2(case_build)의 출력이 snapshot_id·dataset·policy_version·cases·data_quality 객체가 아니다")
+    _emit(write_output(run_dir, run_id, DETECT_DOMAIN, stamp, "json", result))
+    return EXIT_OK
+
+
 def _not_wired(request: args.Request) -> int:
     """아직 조립체와 잇지 않은 명령의 자리표시 처리 함수. main은 이 함수를 부르지 않고 종료 코드 3으로 끝낸다."""
     raise NotImplementedError(f"tradesentry {request.command}는 아직 조립체와 잇지 않았다")
@@ -330,7 +521,7 @@ def _evaluate(request: args.Request) -> int:
 HANDLERS: dict[str, Callable[[args.Request], int]] = {
     "snapshot-build": _snapshot_build,
     "snapshot-verify": _snapshot_verify,
-    "detect": _not_wired,
+    "detect": _detect,
     "run-case": _not_wired,
     "evaluate": _evaluate,
 }
