@@ -24,6 +24,15 @@
      ]
     },
     {
+     "basis": "comparison_incomplete",
+     "status": "HOLD",
+     "required_evidence": [
+      "missingness_listed",
+      "failure_vs_not_collected_distinguished",
+      "no_zero_fill"
+     ]
+    },
+    {
      "basis": "rounding_unstable",
      "status": "HOLD",
      "required_evidence": [
@@ -70,6 +79,15 @@
    "rules": [
     {
      "basis": "data_insufficient",
+     "status": "HOLD",
+     "required_evidence": [
+      "missingness_listed",
+      "failure_vs_not_collected_distinguished",
+      "no_zero_fill"
+     ]
+    },
+    {
+     "basis": "comparison_incomplete",
      "status": "HOLD",
      "required_evidence": [
       "missingness_listed",

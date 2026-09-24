@@ -20,6 +20,12 @@
 - `rules`: 판정 근거(basis)별 신호 상태와 필수 근거 코드 목록. basis는 신호별 판정(단위 P3)이 출력한다.
 그리고 `evidence_descriptions`(쓰인 근거 코드 → 한국어 설명)를 붙인다.
 
+필수 비교: 근거 코드 가운데 셋은 조사 중에 해야 하는 비교다. `comparability_ok`는 비교 조건 점검(`comparability`),
+`partner_comparison_done`은 비교국 비교(`partners`), `country_and_world_change_shown`은 해당국 금액과 전체국가 분모의
+변화 확인(`country_and_world`)이다(COMPARISON_EVIDENCE). 단위 P3은 판정 근거를 정하기 전에 그 근거의 규칙이 요구하는
+비교가 끝났는지(`done`) 근거 상태에서 확인하고, 수행했지만 자료가 모자라 끝내지 못했으면(`incomplete`)
+`comparison_incomplete`(`HOLD`)로 낸다. 어느 규칙이 어느 비교를 요구하는지는 이 파일의 규칙표 하나에서 나온다.
+
 계약 상수: 커널 K1(tradesentry.contract.types)이 아직 뼈대라, 판정 정책 단위가 쓰는 계약 값(상태값·신호 코드·관측
 상태·출처·자료 묶음 이름)을 이 파일에 한 번만 적고 P1~P4가 여기서 import한다. 글자는 자료 계약과 같다. 조립 점검
 (AS4)에서 K1 import로 바꾼다(단위 표 docs/plan/UNITS.md §6 조립 부산물 4).
@@ -54,6 +60,7 @@ REAL_DATASETS = ("real_dev", "real_sealed")
 # --- 판정 근거(basis). 이 단위가 정한 이름이고 계약 값이 아니다. 개발 플랜 §6.3 표의 행에 대응한다 ---------------
 BASIS_NOT_TRIGGERED = "not_triggered"
 BASIS_DATA_INSUFFICIENT = "data_insufficient"  # §6.3 1행: 필요한 월·단위·HS 정의·분모·구성자료가 없어 검증 불가
+BASIS_COMPARISON_INCOMPLETE = "comparison_incomplete"  # §6.3 4행·표 아래: 필수 비교를 수행했지만 자료가 모자라 못 끝냄
 BASIS_ROUNDING_UNSTABLE = "rounding_unstable"  # §6.3 6행: 작은 기준월 값이나 반올림 때문에 방향·충족 여부가 불안정
 BASIS_RESOLVED_AFTER_CORRECTION = "resolved_after_correction"  # §6.3 3행: 자료 교정 뒤 동결 정책으로 경보 해소
 BASIS_COMPOSITION_EXPLAINED = "composition_explained"  # §6.3 2행: 완전한 하위자료에서 구성효과로 설명(단가 신호만)
@@ -84,6 +91,7 @@ _CORRECTION_EVIDENCE = ("correction_snapshots_before_after", "recalculated_value
 RULES = {
     UNIT_VALUE: (
         (BASIS_DATA_INSUFFICIENT, HOLD, _HOLD_EVIDENCE),
+        (BASIS_COMPARISON_INCOMPLETE, HOLD, _HOLD_EVIDENCE),
         (BASIS_ROUNDING_UNSTABLE, HOLD, ("precision_sensitivity_shown",)),
         (BASIS_RESOLVED_AFTER_CORRECTION, MONITOR, _CORRECTION_EVIDENCE),
         (BASIS_COMPOSITION_EXPLAINED, MONITOR, ("parent_child_match_V_and_Q", "weight_share_decomposition",
@@ -93,11 +101,19 @@ RULES = {
     ),
     SHARE: (
         (BASIS_DATA_INSUFFICIENT, HOLD, _HOLD_EVIDENCE),
+        (BASIS_COMPARISON_INCOMPLETE, HOLD, _HOLD_EVIDENCE),
         (BASIS_RESOLVED_AFTER_CORRECTION, MONITOR, _CORRECTION_EVIDENCE),
         (BASIS_UNEXPLAINED, MAINTAIN, ("country_and_world_change_shown", "partner_comparison_done",
                                        "comparability_ok")),
     ),
 }
+
+# 필수 비교 → 그 비교가 채우는 근거 코드. 근거 상태의 비교 완료 표시는 COMPARISON_STATES 둘 중 하나다.
+COMPARISON_EVIDENCE = {"comparability": "comparability_ok", "partners": "partner_comparison_done",
+                       "country_and_world": "country_and_world_change_shown"}
+COMPARISON_DONE = "done"
+COMPARISON_INCOMPLETE = "incomplete"
+COMPARISON_STATES = (COMPARISON_DONE, COMPARISON_INCOMPLETE)
 
 # 자료 계약 §9.4 신호 계열 대응. HS10 하위 기호는 `<기호>@<HS10 코드>`다(§6.2).
 CLAIM_METRICS = {UNIT_VALUE: ("U", "r_U", "within_effect", "mix_effect", "residual"), SHARE: ("s", "d_s")}
@@ -118,12 +134,33 @@ def check_signals(signals: object) -> dict[str, str]:
     return {code: signals[code] for code in SIGNAL_CODES}
 
 
+def _rule(family: str, basis: str) -> tuple[str, str, tuple[str, ...]]:
+    for rule in RULES.get(family, ()):
+        if rule[0] == basis:
+            return rule
+    raise ValueError(f"계열 {family}에 판정 근거 {basis} 규칙이 없다")
+
+
 def rule_status(family: str, basis: str) -> str:
     """계열과 판정 근거로 신호 상태를 돌려준다. 규칙표에 없는 조합은 오류다."""
-    for rule_basis, status, _evidence in RULES.get(family, ()):
-        if rule_basis == basis:
-            return status
-    raise ValueError(f"계열 {family}에 판정 근거 {basis} 규칙이 없다")
+    return _rule(family, basis)[1]
+
+
+def rule_evidence(family: str, basis: str) -> tuple[str, ...]:
+    """계열과 판정 근거의 필수 근거 코드."""
+    return _rule(family, basis)[2]
+
+
+def required_comparisons(family: str, basis: str) -> tuple[str, ...]:
+    """그 판정 근거를 내기 전에 끝나 있어야 하는 필수 비교(COMPARISON_EVIDENCE 순서)."""
+    evidence = rule_evidence(family, basis)
+    return tuple(key for key, code in COMPARISON_EVIDENCE.items() if code in evidence)
+
+
+def family_comparisons(family: str) -> tuple[str, ...]:
+    """그 계열의 어느 규칙이든 요구하는 필수 비교. 근거 상태가 이 비교마다 완료 표시를 담아야 한다."""
+    codes = {code for _basis, _status, evidence in RULES[family] for code in evidence}
+    return tuple(key for key, code in COMPARISON_EVIDENCE.items() if code in codes)
 
 
 def claim_families(claim: dict, case: dict) -> frozenset[str]:

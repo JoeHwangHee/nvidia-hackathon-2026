@@ -28,10 +28,11 @@ def claim(**fields):
 class RuleTableTest(unittest.TestCase):
     def test_basis_status_follows_dev_plan_6_3(self):
         expected = {
-            p5.UNIT_VALUE: {"data_insufficient": "HOLD", "rounding_unstable": "HOLD",
+            p5.UNIT_VALUE: {"data_insufficient": "HOLD", "comparison_incomplete": "HOLD", "rounding_unstable": "HOLD",
                             "resolved_after_correction": "MONITOR", "composition_explained": "MONITOR",
                             "unexplained": "MAINTAIN"},
-            p5.SHARE: {"data_insufficient": "HOLD", "resolved_after_correction": "MONITOR", "unexplained": "MAINTAIN"},
+            p5.SHARE: {"data_insufficient": "HOLD", "comparison_incomplete": "HOLD",
+                       "resolved_after_correction": "MONITOR", "unexplained": "MAINTAIN"},
         }
         for family, table in expected.items():
             with self.subTest(family=family):
@@ -54,6 +55,26 @@ class RuleTableTest(unittest.TestCase):
             for _, status, evidence in rules:
                 self.assertIn(status, p5.REVIEW_STATUSES)
                 self.assertEqual(len(evidence), len(set(evidence)))
+
+    def test_required_comparisons_follow_rule_evidence(self):
+        # 필수 비교 → 근거 코드: comparability → comparability_ok, partners → partner_comparison_done,
+        # country_and_world → country_and_world_change_shown. 규칙표의 근거 코드에서 나온다
+        self.assertEqual(p5.family_comparisons(p5.UNIT_VALUE), ("comparability", "partners"))
+        self.assertEqual(p5.family_comparisons(p5.SHARE), ("comparability", "partners", "country_and_world"))
+        self.assertEqual(p5.required_comparisons(p5.UNIT_VALUE, "unexplained"), ("comparability", "partners"))
+        self.assertEqual(p5.required_comparisons(p5.UNIT_VALUE, "composition_explained"), ("comparability",))
+        self.assertEqual(p5.required_comparisons(p5.SHARE, "unexplained"),
+                         ("comparability", "partners", "country_and_world"))
+        for family in p5.SIGNAL_CODES:
+            for basis in ("data_insufficient", "comparison_incomplete", "resolved_after_correction"):
+                self.assertEqual(p5.required_comparisons(family, basis), ())
+        self.assertLessEqual(set(p5.COMPARISON_EVIDENCE.values()), set(p5.EVIDENCE_DESCRIPTIONS))
+        self.assertEqual(p5.COMPARISON_STATES, ("done", "incomplete"))
+
+    def test_comparison_incomplete_is_a_hold_with_hold_evidence(self):
+        for family in p5.SIGNAL_CODES:
+            self.assertEqual(p5.rule_evidence(family, "comparison_incomplete"),
+                             p5.rule_evidence(family, "data_insufficient"))
 
     def test_unit_value_rules_match_oracle_required_evidence(self):
         oracle = json.loads(ORACLE.read_text(encoding="utf-8"), parse_float=Decimal)
