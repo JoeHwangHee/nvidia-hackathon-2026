@@ -602,5 +602,55 @@ class CTypeStatusTest(unittest.TestCase):
         self.assertEqual(claims, [{"claim_type": "data_status", "evidence_id": self.C_ITEM["evidence_id"]}])
 
 
+class RequiredToolsTest(unittest.TestCase):
+    """조립 AS2 4회차: 필수 조회(Ports.required_tools). 필수 도구 없이 쓴 초안은 차례마다 한 번 돌려보낸다(모든 모드 같음)."""
+
+    def run_with(self, mode, script):
+        fake = h.FakePorts()
+        ports = fake.ports()
+        ports.required_tools = lambda case: ["decompose_hs"]
+        clock = FakeClock()
+        transport = ScriptedTransport(script, clock)
+        sink = orchestrate.trace_log.MemoryTrace(h.RUN_ID)
+        ctx = orchestrate.RunContext(run_id=h.RUN_ID, case=h.CASE_A, mode=mode, dataset="controlled_fixture_v0",
+                                     rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
+        result = orchestrate.orchestrate(ctx, ports, mc.load_model_config(), transport=transport, sink=sink,
+                                         clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)
+        return result, sink.records, fake, transport
+
+    def test_draft_without_the_required_tool_is_sent_back_once(self):
+        result, records, fake, transport = self.run_with("agent", [h.draft_answer(), h.tools_answer("decompose_hs"),
+                                                                   h.draft_answer()])
+        self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+        self.assertEqual(result["record"]["model_requests"], 3)
+        refused = [r["data"] for r in h.events(records, "state_change") if r["data"]["phase"] == "draft_refused"]
+        self.assertEqual([r["missing_tools"] for r in refused], [["decompose_hs"]])
+        sent = [m["content"] for m in transport.payloads[1]["messages"] if m["role"] == "user"]
+        self.assertTrue(any("[필수 조회]" in c for c in sent))
+        self.assertIn(("decompose_hs", {}), fake.tool_calls)
+
+    def test_second_draft_without_the_tool_is_accepted(self):
+        result, records, fake, _ = self.run_with("agent", [h.draft_answer(), h.draft_answer()])
+        self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+        self.assertEqual(len([r for r in h.events(records, "state_change") if r["data"]["phase"] == "draft_refused"]), 1)
+        self.assertNotIn("decompose_hs", [name for name, _ in fake.tool_calls])
+
+    def test_message_is_the_same_for_every_mode(self):
+        payloads = {}
+        for mode in ("agent", "full", "freeform"):
+            script = [h.draft_answer(), h.tools_answer("decompose_hs"), h.draft_answer()]
+            if mode != "agent":
+                script.append(h.critic_answer())
+            if mode == "freeform":
+                claim = dict(FREEFORM_CLAIM)
+                script[0] = h.draft_answer(claims=[claim])
+                script[2] = h.draft_answer(claims=[claim])
+            _, _, _, transport = self.run_with(mode, script)
+            payloads[mode] = [m["content"] for m in transport.payloads[1]["messages"]
+                              if m["role"] == "user" and "[필수 조회]" in m["content"]]
+        self.assertEqual(len({tuple(v) for v in payloads.values()}), 1)
+        self.assertEqual(len(payloads["agent"]), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

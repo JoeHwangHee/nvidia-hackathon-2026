@@ -66,7 +66,7 @@ DRAFT_REQUEST = (
     "[초안 요청] 이 요청에는 도구가 없다. 추가 비교·재조회는 더 할 수 없고, 도구를 부르면 거부된다. 지금까지 받은 "
     "근거만으로 초안을 쓴다.\n"
     "설명·머리말·마크다운 코드 블록 없이 JSON 객체 하나만 답한다. 답의 첫 글자는 { 이고 마지막 글자는 } 이다.\n"
-    '{"review_status": "MAINTAIN|MONITOR|HOLD", "signal_status": {"unit_value": "MAINTAIN|MONITOR|HOLD|NOT_TRIGGERED", '
+    '{"review_status": "MAINTAIN(설명 안 됨·계속 검토)|MONITOR(설명됨·지켜봄)|HOLD(자료 부족) 가운데 하나", "signal_status": {"unit_value": "MAINTAIN|MONITOR|HOLD|NOT_TRIGGERED", '
     '"share": "MAINTAIN|MONITOR|HOLD|NOT_TRIGGERED"}, "claims": [시스템 지침의 claims 쓰는 법대로], '
     '"narrative": "한국어 설명", "hypotheses": ["확인되지 않은 가설 문장"]}')
 PARTNER_RE = re.compile(r"^[A-Z]{2}$")
@@ -78,6 +78,15 @@ TOOL_DESCRIPTIONS = {
     "compare_partners": "사전에 허용된 비교국을 같은 HS6·월·기준으로 비교한다. partners를 주면 그 가운데 일부만 본다.",
     "decompose_hs": "두 시점의 HS10 하위품목으로 단가 변화를 within_effect·mix_effect·residual로 나누고 부모 대조를 본다.",
 }
+
+
+REQUIRED_TOOLS_REQUEST = ("[필수 조회] 공개 판정 규칙에 필요한 도구의 결과를 아직 받지 않아 이 초안은 받지 않는다: {names}. "
+                          "이 도구를 한 차례에 함께 부른 뒤 초안을 다시 쓴다.")
+
+
+def required_tools_message(names: list) -> dict:
+    """필수 조회 메시지(모든 모드에서 글자까지 같다). 흐름 조정(단위 I12)이 필수 도구 없이 쓴 초안을 돌려보낼 때 붙인다."""
+    return {"role": "user", "content": REQUIRED_TOOLS_REQUEST.format(names=", ".join(names))}
 
 
 def draft_request_message() -> dict:
@@ -243,7 +252,8 @@ def case_message(case: dict, evidence: list, required: list | None, remaining: d
     lines = ["[사례]", dumps_for_model({k: case.get(k) for k in ("case_id", "hs6", "partner", "month", "baseline_month",
                                                                "signals", "snapshot_id")})]
     if required:
-        lines += ["[필수 근거(공개 정책)]", dumps_for_model(compact_required(required))]
+        lines += ["[필수 근거(공개 정책): 판정별로 보고서가 보여야 할 근거의 종류. 주장이나 근거 ID(ev:)가 아니다]",
+                  dumps_for_model(compact_required(required))]
     lines += ["[이미 받은 근거(도구 봉투)]", dumps_for_model([compact_envelope(e) for e in evidence]),
               f"[남은 횟수] 추가 비교 {remaining.get('comparisons', 0)}회, 모델 요청 {remaining.get('model_requests', 0)}회",
               "필요하면 도구로 추가 비교를 하고, 아니면 초안 JSON을 답하라."]

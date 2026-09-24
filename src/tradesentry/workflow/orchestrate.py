@@ -46,6 +46,9 @@ checklist: 모델 없이 check_comparability → get_history → decompose_hs(�
   참을 남긴다. 몫(특히 최종 verify_evidence 1회)을 쓰지 않는다. 도구 봉투의 retryable_error는 도구 쪽 결과라 모델
   제공자 원인 코드(PROVIDER_*)가 되지 않는다(결정 기록 ⑯).
 - 코드는 모델의 틀린 상태를 고치지 않는다. 형식·검증기 문제는 수정 단계로 보내거나 INVALID로 끝낸다.
+- 필수 조회(Ports.required_tools, 조립 AS2가 넘긴다. 없으면 강제하지 않는다): 도구를 주는 조사자 차례에 필수 도구의 결과를
+  받지 않고 초안을 쓰면, 그 초안을 받지 않고 차례마다 한 번 필수 조회 메시지(단위 I10 REQUIRED_TOOLS_REQUEST, 모든 모드
+  같음)로 돌려보낸다. trace에는 state_change draft_refused(missing_tools)로 남는다.
 
 다른 작업 단위를 부르는 자리(Ports). unit_ports가 그 단위들의 run을 부르는 얇은 배선을 한곳에 모았다. 보고서·
 검증기(MT3 R1~R4)와 정책(MT1 P3~P5)은 각 작업 브랜치에 커밋된 입출력에 맞췄고(병합 전 대조), 도구 5개·도구 예산(MT2)은
@@ -101,7 +104,8 @@ class Ports:
     tool(이름, 인자) -> 봉투 / budget(실행한 시도 목록, 후보) -> {"allowed", "reason"} /
     build_report({"case","mode","run_id","draft","evidence"}) -> {"report": 보고서, "rejected": 버린 요청 목록} /
     check_report({"case","mode","report","evidence","revision_used"}) -> {"schema_ok", "validator_ok", "findings"} /
-    checklist_draft({"case","evidence"}) -> 초안 / required_evidence(사례) -> 필수 근거(단위 P5 출력, 없으면 None)
+    checklist_draft({"case","evidence"}) -> 초안 / required_evidence(사례) -> 필수 근거(단위 P5 출력, 없으면 None) /
+    required_tools(사례) -> 조사자가 초안 전에 받아야 하는 도구 이름 목록(없으면 None: 강제하지 않음. 조립 AS2가 넘긴다)
     """
 
     tool: Callable[[str, dict], dict]
@@ -110,6 +114,7 @@ class Ports:
     check_report: Callable[[dict], dict]
     checklist_draft: Callable[[dict], dict]
     required_evidence: Callable[[dict], object] | None = None
+    required_tools: Callable[[dict], list] | None = None
 
 
 @dataclass(frozen=True)
@@ -499,12 +504,20 @@ class _Flow:
         {"draft": 초안 또는 None, "problems": 형식 문제, "status_notes": 허용 상태 관찰, "message": 마지막 모델 메시지,
         "was_draft": 마지막 답이 초안 글이었나}를 돌려준다. tools_enabled가 거짓(비교 불가)이면 도구를 주지 않고, 모델이
         불러도 not_comparable로 막는다."""
-        tool_turns, refused_turns = 0, 0
+        tool_turns, refused_turns, nudged = 0, 0, False
         while True:
             self.check_deadline()
             allow = tools_enabled and tool_turns < max_tool_turns and self._allowance_left(allowance) > 0
             result = investigator.step(self.client, messages, stage=self.stage, mode=self.mode,
                                        signals=self.signals, allow_tools=allow)
+            missing = self.missing_required_tools() if result["kind"] == "draft" and allow and not nudged else []
+            if missing:
+                # 공개 판정 규칙에 필요한 도구를 받지 않고 쓴 초안: 받지 않고 한 번만 돌려보낸다(차례마다 1회, 모든 모드 같음)
+                nudged = True
+                self.state("draft_refused", result["draft"], missing_tools=missing)
+                messages.append(investigator.assistant_message({"content": result["message"].get("content") or ""}))
+                messages.append(investigator.required_tools_message(missing))
+                continue
             if result["kind"] == "draft":
                 return {"draft": result["draft"], "problems": result["problems"],
                         "status_notes": result["status_notes"], "message": result["message"], "was_draft": True}
@@ -526,6 +539,13 @@ class _Flow:
             if refused_turns >= 2:
                 return {"draft": None, "problems": ["도구 없이 초안을 쓰라는 요청에 두 번 도구를 불렀다"],
                         "status_notes": [], "message": result["message"], "was_draft": False}
+
+    def missing_required_tools(self) -> list:
+        """조사자가 초안 전에 받아야 하는데 아직 결과를 받지 못한 도구(Ports.required_tools, 없으면 강제하지 않는다)."""
+        if self.ports.required_tools is None:
+            return []
+        received = {e.get("tool") for e in self.evidence if isinstance(e, dict) and e.get("retryable_error") is None}
+        return [name for name in self.ports.required_tools(self.case) or [] if name not in received]
 
     # 보고서와 판정 ----------------------------------------------------------------------------------------------
     def build(self, draft: dict) -> dict:

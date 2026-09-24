@@ -278,6 +278,17 @@ class ModelModesTest(RunCaseBase):
                                       ("verify_evidence", "code")])
                     self.assertTrue(all("tools" in p for p in transport.payloads[:1]))
 
+    def test_draft_before_the_required_tools_is_sent_back(self):
+        """필수 조회(4회차): 조사자가 도구 없이 바로 초안을 쓰면 한 번 돌려보내고, 분해·비교국을 받은 뒤의 초안을 쓴다."""
+        draft = draft_answer(draft_for("A", "agent"))
+        files, record, _, transport = self.run_ok(CASES["A"], "agent",
+                                                   [draft, tools_answer("decompose_hs", "compare_partners"), draft])
+        self.assertEqual((record["execution_status"], record["review_status_final"], record["model_requests"]),
+                         (cause_codes.COMPLETED, "MONITOR", 3))
+        refused = [e["data"]["missing_tools"] for e in self.trace(files)
+                   if e["event"] == "state_change" and e["data"]["phase"] == "draft_refused"]
+        self.assertEqual(refused, [["compare_partners", "decompose_hs"]])
+
     def test_model_mode_keeps_c_type_expansion(self):
         _, _, report, _ = self.run_ok(CASES["C"], "agent", script_for("C", "agent"))
         self.assertEqual([c["metric"] for c in report["claims"] if c["claim_type"] == "data_status"],

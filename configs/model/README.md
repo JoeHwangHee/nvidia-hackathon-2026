@@ -5,6 +5,7 @@
   - `structured_output`: NIM 구조화 출력. `json_object`(기본, `model-0.2`부터)·`off` 가운데 하나다. `json_object`면 도구 없는 조사자 초안 요청에만 `response_format` `{"type": "json_object"}`를 싣고(모든 모드 같음), 도구를 싣는 요청과 Critic 요청에는 싣지 않는다. 2026-09-25 실측에서 `json_object`는 HTTP 200·초안 파싱 성공이었고, `nvext.guided_json`은 이 모델·엔드포인트가 HTTP 400으로 받지 않아 설정 값에 두지 않는다. 값을 바꾸면 요청 본문이 바뀌므로 `config_version`을 올린다(결정 기록 ⑯).
 - `config_version` `model-0.3`: 조사자·Critic 지침에 신호별 판정 규칙(판정 정책 P3과 같은 조건), 도구 인자와 재조회 인자 모양, 단가 신호의 분해·비교국 조회를 한 차례에 부르라는 지시를 더했다(AS2 2회차 실측 원인, 결정 기록 `docs/tracking/decisions/20260925-0605-model-decision-as2-run-case.md` ⑬). 요청 설정은 바꾸지 않았다.
 - `config_version` `model-0.4`: 판정 규칙을 분해 봉투의 모델용 보기에 더한 판정 보조 값(`rule_view`: U0 대비 %로 바꾼 within_effect·residual·합과 하위품목 |r_U@| 최대)으로 적고 수치 예를 더했다. 필수 근거 보기를 계열별 `판정/판정 근거 → 코드`로 줄였다(AS2 3회차, 같은 결정 기록 ⑭).
+- `config_version` `model-0.5`: 조사자·Critic 지침에 세 상태의 뜻 표(MONITOR = 설명됨, MAINTAIN = 설명 안 됨·계속 검토, HOLD = 자료 부족)와 narrative·상태 일치 규칙, Critic의 첫 점검(상태 뒤바뀜), 초안 형식·초안 요청 메시지의 상태 값 뜻, 필수 근거 보기의 설명(근거 ID가 아님), `freeform` 주장 8개 이하를 더했다(AS2 4회차, 같은 결정 기록 ⑮).
 - `investigator.txt`: 조사자 공통 지침(판정 뜻과 신호별 판정 규칙, 금지 문구, 도구 사용과 인자, 초안 JSON 형식). 금지 낱말 목록은 검증기(단위 R3)의 금지 문구 목록(한국어 62개, 영문 앞부분 9개)과 같아야 한다(시험 `tests/test_model_config.py`).
 - `claims_template.txt` / `claims_freeform.txt`: 주장(claims) 쓰는 법. `freeform`만 값을 직접 쓰고, 나머지 모드는 metric_id·근거 ID로 가리킨다(코드가 검증된 지표로 채운다).
 - `critic.txt`: Critic(별도 문맥의 검수자) 지침. 도구 없음, 구조화된 지적과 재조회 요청.

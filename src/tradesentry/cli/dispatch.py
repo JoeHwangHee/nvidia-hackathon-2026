@@ -797,6 +797,17 @@ def evidence_state(case: dict, envelopes: list, policy: dict) -> dict:
     return state
 
 
+def required_tools(case: dict) -> list[str]:
+    """조사자가 초안 전에 받아야 하는 도구(공개 판정 규칙이 쓰는 비교, 모든 모드 같음). 신호가 하나라도 발동했으면
+    비교국 비교(compare_partners: 단가 MAINTAIN과 점유율 판정의 필수 비교), 단가 신호가 발동했으면 HS10 분해(decompose_hs:
+    단가 판정 근거)다. 흐름 조정이 이 목록 없이 쓴 초안을 차례마다 한 번 돌려보낸다(AS2 결정 기록 ⑮)."""
+    signals = case.get("signals") or {}
+    names = ["compare_partners"] if "TRIGGERED" in signals.values() else []
+    if signals.get("unit_value") == "TRIGGERED":
+        names.append("decompose_hs")
+    return names
+
+
 def run_case_transport(config):
     """모델 모드의 NIM 전송 자리(단위 I7 UrllibTransport). 키는 보내는 순간 환경변수에서 읽는다. 시험은 이 함수를 바꿔 끼운다."""
     from tradesentry.workflow import model_client
@@ -834,6 +845,7 @@ def investigate_case(snap, policy: dict, case: dict, request: args.Request, run_
                                    evidence_state=lambda case_obj, envelopes: evidence_state(case_obj, envelopes,
                                                                                              policy))
     ports.tool = port.call
+    ports.required_tools = required_tools
     ctx = orchestrate.RunContext(run_id=run_id, case=case, mode=request.mode, dataset=dataset,
                                  rulebook_version=types.RULEBOOK_VERSION, grouping_version=grouping_version,
                                  code_version=code_version())
