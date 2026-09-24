@@ -1,0 +1,118 @@
+{
+ "query_id": "verify_evidence-05535ff6d93d8a10",
+ "tool": "verify_evidence",
+ "scope": {
+  "hs6": "850431",
+  "partner": "MX",
+  "month": "202401",
+  "baseline_month": "202301",
+  "months": [
+   "202301",
+   "202401"
+  ],
+  "partners": [
+   "ALL",
+   "CN",
+   "ID",
+   "MX",
+   "MY",
+   "PH",
+   "US"
+  ],
+  "hs10": []
+ },
+ "snapshot_id": "unit_fixture_tools",
+ "source_kind": "controlled",
+ "evidence_ids": [],
+ "metrics": [],
+ "comparability": {
+  "ok": false,
+  "metrics": [
+   {
+    "metric_id": "r_U-fe96e0fe3ff9cffb",
+    "ok": true,
+    "problems": [],
+    "fields": []
+   },
+   {
+    "metric_id": "d_s-64ab568f0faced20",
+    "ok": true,
+    "problems": [],
+    "fields": []
+   },
+   {
+    "metric_id": "s-215e7d79c634a65d",
+    "ok": false,
+    "problems": [
+     "recompute_mismatch"
+    ],
+    "fields": [
+     "value"
+    ]
+   },
+   {
+    "metric_id": "r_U-0000000000000000",
+    "ok": false,
+    "problems": [
+     "metric_not_returned"
+    ],
+    "fields": []
+   }
+  ],
+  "evidence": [
+   {
+    "evidence_id": "ev:unit_fixture_tools:observation:31",
+    "ok": true,
+    "problems": [],
+    "failed_rule": null
+   },
+   {
+    "evidence_id": "ev:unit_fixture_tools:observation:303",
+    "ok": false,
+    "problems": [
+     "evidence_not_returned"
+    ],
+    "failed_rule": null
+   },
+   {
+    "evidence_id": "ev:unit_fixture_tools:observation:32",
+    "ok": false,
+    "problems": [
+     "evidence_out_of_scope",
+     "evidence_not_returned"
+    ],
+    "failed_rule": null
+   },
+   {
+    "evidence_id": "ev:unit_fixture_tools:observation:1",
+    "ok": false,
+    "problems": [
+     "evidence_total_row",
+     "evidence_not_returned"
+    ],
+    "failed_rule": null
+   },
+   {
+    "evidence_id": "ev:unit_fixture_tools:observation:999999",
+    "ok": false,
+    "problems": [
+     "evidence_unresolved",
+     "evidence_not_returned"
+    ],
+    "failed_rule": 4
+   },
+   {
+    "evidence_id": "ev:kcs_202201_202412_v2:observation:31",
+    "ok": false,
+    "problems": [
+     "evidence_unresolved",
+     "evidence_not_returned"
+    ],
+    "failed_rule": 2
+   }
+  ]
+ },
+ "missingness": [],
+ "retryable_error": null,
+ "elapsed_ms": 0
+}

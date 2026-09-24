@@ -81,17 +81,17 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| X1 | 단가·변화율 | `metrics_unit_value` | `src/tradesentry/metrics/unit_value.py` | 앱 | D | V·Q(t, t−12) → `U`, `r_U` | 유지 | 2·3 | — | — |
-| X2 | 점유율·변화 | `metrics_share` | `src/tradesentry/metrics/share.py` | 앱 | D | 상대국 V·`ALL` V(중복 제거) → `s`, `d_s`(pp) | 유지 | 2·3 | — | — |
+| X1 | 단가·변화율 | `metrics_unit_value` | `src/tradesentry/metrics/unit_value.py` | 앱 | D | V·Q(t, t−12) → `U`, `r_U` | 유지(AS1 점검: `detect`에서 불림, 결정 기록 `20260925-0139-model-decision-as1-detect.md`) | 2·3 | — | — |
+| X2 | 점유율·변화 | `metrics_share` | `src/tradesentry/metrics/share.py` | 앱 | D | 상대국 V·`ALL` V(중복 제거) → `s`, `d_s`(pp) | 유지(AS1 점검: `detect`에서 불림, 결정 기록 `20260925-0139-model-decision-as1-detect.md`) | 2·3 | — | — |
 | X3 | 구성효과 분해 | `metrics_decompose` | `src/tradesentry/metrics/decompose.py` | 앱 | D | HS10 두 시점 → `within_effect`·`mix_effect`·`residual`, 부모 대조 | 유지 | 3 | — | 도구 `decompose_hs`(단위 I4)가 부른다 |
-| X4 | 자릿수·반올림 | `metrics_rounding` | `src/tradesentry/metrics/rounding.py` | 앱 | D | 값 → 표시 값(`ROUND_HALF_UP`)·중량 허용오차 판정 | 유지 | 2·3 | — | 공통 유틸이다. 소비자는 지표 단위 X1~X3과 보고서·검증기 단위 R2·R3(표시 자릿수와 반올림)이라 소비자가 둘 이상이다 |
+| X4 | 자릿수·반올림 | `metrics_rounding` | `src/tradesentry/metrics/rounding.py` | 앱 | D | 값 → 표시 값(`ROUND_HALF_UP`)·중량 허용오차 판정 | 유지(AS1 점검: `detect`에서 X1·X2를 거쳐 불림, 결정 기록 `20260925-0139-model-decision-as1-detect.md`) | 2·3 | — | 공통 유틸이다. 소비자는 지표 단위 X1~X3과 보고서·검증기 단위 R2·R3(표시 자릿수와 반올림)이라 소비자가 둘 이상이다 |
 
 ### 3.4 P — 판정 정책(5개)
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| P1 | 신호 발동 | `policy_trigger` | `src/tradesentry/policy/trigger.py` | 앱 | M | 지표 + 정책 → 계열·월별 신호 발동 | 유지 | 2 | 예 | — |
-| P2 | 사례 만들기 | `policy_case_build` | `src/tradesentry/policy/case_build.py` | 앱 | M | 발동·분할 기록과 묶음 선택(실자료 스냅샷일 때, `real_dev`/`real_sealed`) → 사례(`case_id`·scope). 지정한 묶음의 시계열로 제한(수단은 S0 자문 Q18, 고르는 방법은 병렬 개발 규칙 §7.2의 5) | 합침 후보(→ P1) | 2 | 예 | `detect` 한 흐름 |
+| P1 | 신호 발동 | `policy_trigger` | `src/tradesentry/policy/trigger.py` | 앱 | M | 지표 + 정책 → 계열·월별 신호 발동 | 유지(AS1 점검: `detect`에서 불림, 결정 기록 `20260925-0139-model-decision-as1-detect.md`) | 2 | 예 | — |
+| P2 | 사례 만들기 | `policy_case_build` | `src/tradesentry/policy/case_build.py` | 앱 | M | 발동·분할 기록과 묶음 선택(실자료 스냅샷일 때, `real_dev`/`real_sealed`) → 사례(`case_id`·scope). 지정한 묶음의 시계열로 제한(수단은 S0 자문 Q18, 고르는 방법은 병렬 개발 규칙 §7.2의 5) | 합침 후보(→ P1). AS1 점검: `detect`에서 불리나 입력이 P1과 달라(P1 출력 + 출처 종류·묶음 배정) 합침 기준을 채우지 못해 유지 권고, 확정은 AS4(동결 경로), 결정 기록 `20260925-0139-model-decision-as1-detect.md` | 2 | 예 | `detect` 한 흐름 |
 | P3 | 신호별 판정 | `policy_signal_decide` | `src/tradesentry/policy/signal_decide.py` | 앱 | M | 근거 상태 → 신호별 `HOLD`·`MONITOR`·`MAINTAIN`·`NOT_TRIGGERED` | 유지 | 3 | 예 | — |
 | P4 | 사례 집계 | `policy_case_aggregate` | `src/tradesentry/policy/case_aggregate.py` | 앱 | M | 신호별 상태 → 최종(`MAINTAIN > HOLD > MONITOR`)·`unresolved_evidence` | 합침 후보(→ P3) | 3 | 예 | — |
 | P5 | 필수 근거 규칙 | `policy_required_evidence` | `src/tradesentry/policy/required_evidence.py` | 앱 | M | 신호 계열 → 필수 주장·근거 목록 | 유지 | 3 | 예 | 도구·검증기가 함께 쓰는 규칙 |

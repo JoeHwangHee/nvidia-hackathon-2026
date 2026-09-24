@@ -1,0 +1,144 @@
+[1790284979.448] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284979.448] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284979.448] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284979.488] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284979.488] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284979.534] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=d846d8da-b342-4ced-9aca-92250ee44dcb, target=unix:/run/openshell/ssh.sock)]
+[1790284979.534] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284979.536] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284979.536] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284979.539] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=d846d8da-b342-4ced-9aca-92250ee44dcb, target=unix:/run/openshell/ssh.sock)]
+[1790284979.573] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=eb20969b-7226-4630-b198-88b6f0ccbf71, target=unix:/run/openshell/ssh.sock)]
+[1790284979.574] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284979.579] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284979.579] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284979.582] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=eb20969b-7226-4630-b198-88b6f0ccbf71, target=unix:/run/openshell/ssh.sock)]
+[1790284979.530] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284979.530] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284979.570] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284979.571] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284979.585] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284979.585] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284979.585] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284979.615] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=db67fe7d-b968-40ea-b6f7-0d6729417675, target=unix:/run/openshell/ssh.sock)]
+[1790284979.615] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284979.620] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284979.620] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284979.624] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=db67fe7d-b968-40ea-b6f7-0d6729417675, target=unix:/run/openshell/ssh.sock)]
+[1790284979.656] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=d66b6d34-23ed-4799-8174-df8be5895cde, target=unix:/run/openshell/ssh.sock)]
+[1790284979.656] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284979.661] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284979.661] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284979.664] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=d66b6d34-23ed-4799-8174-df8be5895cde, target=unix:/run/openshell/ssh.sock)]
+[1790284979.670] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=995e4965-04e0-4ab7-b18a-9486e7f02899, target=unix:/run/openshell/ssh.sock)]
+[1790284979.670] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284979.673] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284979.673] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284979.699] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=995e4965-04e0-4ab7-b18a-9486e7f02899, target=unix:/run/openshell/ssh.sock)]
+[1790284980.642] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284980.642] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284980.642] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284980.727] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=231ef4fd-1a22-43ac-83b3-fafade53da3e, target=unix:/run/openshell/ssh.sock)]
+[1790284980.727] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284980.730] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284980.731] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284980.735] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=231ef4fd-1a22-43ac-83b3-fafade53da3e, target=unix:/run/openshell/ssh.sock)]
+[1790284981.679] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284981.679] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284981.679] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284981.764] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=b9849e77-902e-42b6-a831-1cf53e8a4f55, target=unix:/run/openshell/ssh.sock)]
+[1790284981.765] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284981.768] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284981.768] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284981.792] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=b9849e77-902e-42b6-a831-1cf53e8a4f55, target=unix:/run/openshell/ssh.sock)]
+[1790284982.734] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284982.734] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284982.734] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284982.819] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=103b34d5-75cc-4791-b4c3-4ec50f063f93, target=unix:/run/openshell/ssh.sock)]
+[1790284982.819] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284982.824] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284982.824] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284982.863] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /opt/tradesentry/python/cpython-3.12.13-linux-aarch64-gnu/bin/python3.12(202) -> api.github.com:443 [policy:- engine:opa] [reason:endpoint api.github.com:443 is not allowed by any policy]
+[1790284982.869] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=103b34d5-75cc-4791-b4c3-4ec50f063f93, target=unix:/run/openshell/ssh.sock)]
+[1790284983.837] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284983.837] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284983.837] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284983.922] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=76b29536-0972-4c24-a8d6-05c24d34c569, target=unix:/run/openshell/ssh.sock)]
+[1790284983.922] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284983.928] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284983.928] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284983.975] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=76b29536-0972-4c24-a8d6-05c24d34c569, target=unix:/run/openshell/ssh.sock)]
+[1790284984.918] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284984.918] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284984.918] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284985.003] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=78f842aa-f37a-4a96-83ef-cf350ca73f34, target=unix:/run/openshell/ssh.sock)]
+[1790284985.003] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284985.007] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284985.007] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284985.026] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=78f842aa-f37a-4a96-83ef-cf350ca73f34, target=unix:/run/openshell/ssh.sock)]
+[1790284985.966] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284985.966] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284985.966] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284986.051] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=07ddc993-8905-47d4-9cda-b8d1bd9782a3, target=unix:/run/openshell/ssh.sock)]
+[1790284986.051] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284986.055] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284986.055] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284986.192] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=07ddc993-8905-47d4-9cda-b8d1bd9782a3, target=unix:/run/openshell/ssh.sock)]
+[1790284987.090] [gateway] [INFO ] [openshell_server::grpc::policy] SubmitPolicyAnalysis: persisted draft chunks
+[1790284987.131] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284987.131] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284987.131] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284987.169] [sandbox] [INFO ] [openshell_sandbox] Flushed activity summary to gateway denied_action_count=1 network_activity_count=1 sandbox_name=ts-scored
+[1790284987.169] [sandbox] [INFO ] [openshell_sandbox] Flushed denial analysis to gateway proposals=1 sandbox_name=ts-scored summaries=1
+[1790284987.216] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=d4c6f3d3-e178-4b47-8959-3d34685fde6a, target=unix:/run/openshell/ssh.sock)]
+[1790284987.217] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284987.220] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284987.220] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284987.241] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=d4c6f3d3-e178-4b47-8959-3d34685fde6a, target=unix:/run/openshell/ssh.sock)]
+[1790284988.182] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284988.182] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284988.182] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284988.267] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=9551ae8e-ee34-40c6-9bae-3ba8c9336fdf, target=unix:/run/openshell/ssh.sock)]
+[1790284988.267] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284988.271] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284988.271] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284988.281] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(233) -> integrate.api.nvidia.com:443 [policy:- engine:opa] [reason:binary '/usr/bin/curl' not allowed in policy 'tradesentry_nim_chat' (ancestors: [/opt/openshell/bin/openshell-sandbox], cmdline: [/dev/null, /sandbox]). SYMLINK HINT: the binary path is the kernel-resolved target from /proc/<pid>/exe, not the symlink. If y...]
+[1790284988.282] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=9551ae8e-ee34-40c6-9bae-3ba8c9336fdf, target=unix:/run/openshell/ssh.sock)]
+[1790284989.219] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284989.220] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284989.220] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284989.304] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=5c28a864-5251-49ce-8a85-6f423a6832c9, target=unix:/run/openshell/ssh.sock)]
+[1790284989.305] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284989.309] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284989.309] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284989.360] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/python3.12(239) -> integrate.api.nvidia.com:443 [policy:- engine:opa] [reason:binary '/usr/bin/python3.12' not allowed in policy 'tradesentry_nim_chat' (ancestors: [/opt/openshell/bin/openshell-sandbox], cmdline: [/usr/bin/python3, /sandbox/openshell_probes/net_probe.py, /sandbox]). SYMLINK HINT: the binary path is the kernel-resolv...]
+[1790284989.365] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=5c28a864-5251-49ce-8a85-6f423a6832c9, target=unix:/run/openshell/ssh.sock)]
+[1790284990.306] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284990.306] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284990.306] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284990.391] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=3d23d8b1-4950-4880-8264-077c1b1b04fa, target=unix:/run/openshell/ssh.sock)]
+[1790284990.392] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284990.395] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284990.395] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284990.445] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /opt/tradesentry/python/cpython-3.12.13-linux-aarch64-gnu/bin/python3.12(245) -> integrate.api.nvidia.com:443 [policy:tradesentry_nim_chat engine:opa]
+[1790284990.517] [sandbox] [OCSF ] [ocsf] HTTP:GET [MED] DENIED GET http://integrate.api.nvidia.com:443/v1/models [policy:tradesentry_nim_chat engine:l7] [reason:L7_REQUEST deny GET integrate.api.nvidia.com:443/v1/models reason=GET /v1/models not permitted by policy]
+[1790284990.524] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=3d23d8b1-4950-4880-8264-077c1b1b04fa, target=unix:/run/openshell/ssh.sock)]
+[1790284991.459] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284991.459] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284991.459] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284991.545] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=c168ae13-55b0-479f-989a-cdde75625ee5, target=unix:/run/openshell/ssh.sock)]
+[1790284991.545] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284991.548] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284991.548] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284991.576] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED inference.local:443
+[1790284991.581] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=c168ae13-55b0-479f-989a-cdde75625ee5, target=unix:/run/openshell/ssh.sock)]
+[1790284992.520] [gateway] [INFO ] [openshell_server::supervisor_session] supervisor session: relay opened successfully
+[1790284992.521] [gateway] [INFO ] [openshell_server::supervisor_session] relay stream: claimed pending relay, bridging
+[1790284992.521] [gateway] [INFO ] [openshell_server::grpc::sandbox] ExecSandbox (relay): command started
+[1790284992.606] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] [msg:ssh relay open (channel_id=c237a397-16fb-4859-9378-13ae4c4f4d3d, target=unix:/run/openshell/ssh.sock)]
+[1790284992.606] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790284992.610] [sandbox] [OCSF ] [ocsf] CONFIG:APPLYING [INFO] Applying Landlock filesystem sandbox [abi:V2 compat:BestEffort ro:8 rw:3]
+[1790284992.610] [sandbox] [OCSF ] [ocsf] CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:0]
+[1790284992.660] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /opt/tradesentry/python/cpython-3.12.13-linux-aarch64-gnu/bin/python3.12(257) -> integrate.api.nvidia.com:443 [policy:tradesentry_nim_chat engine:opa]
+[1790284992.735] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://integrate.api.nvidia.com:443/v1/chat/completions [policy:tradesentry_nim_chat engine:l7]
+[1790284993.020] [sandbox] [OCSF ] [ocsf] NET:CLOSE [INFO] [msg:ssh relay closed (channel_id=c237a397-16fb-4859-9378-13ae4c4f4d3d, target=unix:/run/openshell/ssh.sock)]

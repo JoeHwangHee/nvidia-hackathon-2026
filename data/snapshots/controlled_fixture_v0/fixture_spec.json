@@ -1,0 +1,129 @@
+{
+ "_status": "합성 시험자료 controlled_fixture_v0의 생성 규칙(단위 S4 src/tradesentry/snapshot/fixture.py의 입력). 모든 금액·중량과 상대국은 합성이다. 실제 통계나 실제 사건이 아니다. 상대국 XA~XJ는 어느 나라에도 배정되지 않은 두 글자 코드다(관세청 2자리 형식, ISO 3166-1의 사용자 지정 범위). 사례 A/B/C의 부모 HS6 행·HS10 행 금액·중량과 전체국가 금액은 oracle 사례 A/B/C의 입력과 같다(시험이 대조한다). 판정 결과는 이 파일에 적지 않는다. 결정 기록 docs/tracking/decisions/20260925-0140-data-decision-dt3-fixture.md",
+ "schema_version": 1,
+ "snapshot_id": "controlled_fixture_v0",
+ "source_kind": "controlled",
+ "generated_at": "2026-09-25T01:30:00+09:00",
+ "collection_plan": {
+  "_status": "합성 시험자료의 수집 설정(합성). 형식은 configs/collection_plan.json과 같다(수집기 build_manifest 입력). 실제로 수집하지 않았다",
+  "snapshot_id": "controlled_fixture_v0",
+  "period": {"start": "202201", "end": "202412"},
+  "chunk_months": 12,
+  "hs6": ["850450", "850431", "850432"],
+  "partners": ["XA", "XB", "XC", "XD", "XE", "XF", "XG", "XH", "XI", "XJ"],
+  "collect_total_denominator": true,
+  "hs10": [],
+  "hs4_scan": ["8504"]
+ },
+ "partners": {
+  "XA": {"unit_value_permille": 1000},
+  "XB": {"unit_value_permille": 1000},
+  "XC": {"unit_value_permille": 1000},
+  "XD": {"unit_value_permille": 1150},
+  "XE": {"unit_value_permille": 900},
+  "XF": {"unit_value_permille": 1200},
+  "XG": {"unit_value_permille": 850},
+  "XH": {"unit_value_permille": 1100},
+  "XI": {"unit_value_permille": 950},
+  "XJ": {"unit_value_permille": 1050}
+ },
+ "hs6": [
+  {
+   "code": "850450",
+   "hs10": ["8504501000", "8504502000"],
+   "unit_value_milli": [10000, 2000],
+   "monthly_usd": {"XB": 1020, "XC": 840, "XD": 720, "XE": 540, "XF": 420, "XG": 300, "XH": 240, "XI": 180, "XJ": 120},
+   "rest_of_world": {"monthly_usd": 900, "first_hs10_permille": 700}
+  },
+  {
+   "code": "850431",
+   "hs10": ["8504311000", "8504312000"],
+   "unit_value_milli": [9000, 2500],
+   "monthly_usd": {"XD": 1020, "XE": 840, "XA": 720, "XF": 540, "XC": 420, "XG": 300, "XH": 240, "XJ": 180, "XI": 120},
+   "rest_of_world": {"monthly_usd": 900, "first_hs10_permille": 700}
+  },
+  {
+   "code": "850432",
+   "hs10": ["8504321000", "8504322000"],
+   "unit_value_milli": [12000, 1800],
+   "monthly_usd": {"XE": 1020, "XF": 840, "XD": 720, "XA": 540, "XB": 420, "XH": 300, "XG": 240, "XI": 180, "XJ": 120},
+   "rest_of_world": {"monthly_usd": 900, "first_hs10_permille": 700}
+  }
+ ],
+ "seasonal_permille": {
+  "weight": [1000, 970, 1015, 1030, 990, 1005, 1040, 1010, 960, 995, 1020, 985],
+  "unit_value": [1000, 1005, 995, 1010, 990, 1000, 1015, 995, 985, 1005, 1000, 1010]
+ },
+ "yearly_permille": {
+  "weight": [1000, 1010, 1020],
+  "unit_value": [1000, 1010, 1020],
+  "rest_of_world": [1000, 1020, 1040]
+ },
+ "out_of_scope_hs6": {
+  "code": "850440",
+  "hs10": "8504401000",
+  "unit_value_milli": 3000,
+  "monthly_kg": {"XA": 10, "XB": 11, "XC": 12, "XD": 13, "XE": 14, "XF": 15, "XG": 16, "XH": 17, "XI": 18, "XJ": 19},
+  "rest_of_world_monthly_kg": 30
+ },
+ "cases": [
+  {
+   "label": "A",
+   "hs6": "850450",
+   "partner": "XA",
+   "baseline_month": "202312",
+   "month": "202412",
+   "world_usd": {"baseline": 6000, "comparison": 6000},
+   "baseline": {
+    "parent": {"V": 600, "Q": 100},
+    "hs10": [{"code": "8504501000", "V": 500, "Q": 50}, {"code": "8504502000", "V": 100, "Q": 50}]
+   },
+   "comparison": {
+    "parent": {"V": 360, "Q": 100},
+    "hs10": [{"code": "8504501000", "V": 200, "Q": 20}, {"code": "8504502000", "V": 160, "Q": 80}]
+   }
+  },
+  {
+   "label": "B",
+   "hs6": "850431",
+   "partner": "XB",
+   "baseline_month": "202312",
+   "month": "202412",
+   "world_usd": {"baseline": 6000, "comparison": 6000},
+   "baseline": {
+    "parent": {"V": 600, "Q": 100},
+    "hs10": [{"code": "8504311000", "V": 500, "Q": 50}, {"code": "8504312000", "V": 100, "Q": 50}]
+   },
+   "comparison": {
+    "parent": {"V": 360, "Q": 100},
+    "hs10": [{"code": "8504311000", "V": 300, "Q": 50}, {"code": "8504312000", "V": 60, "Q": 50}]
+   }
+  },
+  {
+   "label": "C",
+   "hs6": "850432",
+   "partner": "XC",
+   "baseline_month": "202312",
+   "month": "202412",
+   "world_usd": {"baseline": 6000, "comparison": 6000},
+   "baseline": {
+    "parent": {"V": 600, "Q": 100},
+    "hs10": [{"code": "8504321000", "V": 500, "Q": 50}, {"code": "8504322000", "V": 100, "Q": 50}]
+   },
+   "comparison": {
+    "parent": {"V": 360, "Q": 100},
+    "hs10": "REQUEST_FAILED",
+    "hs10_unobserved": [{"code": "8504321000", "V": 300, "Q": 50}, {"code": "8504322000", "V": 60, "Q": 50}]
+   }
+  }
+ ],
+ "gaps": [
+  {"kind": "request_failed", "endpoint": "nitemtrade", "hsSgn": "850432", "cntyCd": "XC", "strtYymm": "202401", "endYymm": "202412"},
+  {"kind": "request_not_collected", "endpoint": "nitemtrade", "hsSgn": "850432", "cntyCd": "XC", "strtYymm": "202201", "endYymm": "202212"},
+  {"kind": "no_trade_hs6_month", "hs6": "850450", "partner": "XJ", "month": "202205"},
+  {"kind": "empty_hs4_month", "partner": "XI", "month": "202208"},
+  {"kind": "import_zero_export_only", "hs6": "850431", "partner": "XH", "month": "202210", "hs10": "8504311000", "export_usd": 120, "export_kg": 12}
+ ],
+ "promotion": {"rule": "ingest_verify_candidates"},
+ "peer_group": {"grouping_version": "g0", "method": "import_value_topk", "k": 5, "source_year": 2023}
+}
