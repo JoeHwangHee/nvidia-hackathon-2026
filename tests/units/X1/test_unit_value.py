@@ -9,7 +9,8 @@ from fractions import Fraction
 
 from tradesentry.metrics import unit_value as x1
 
-SNAP = "ev:golden_metrics:observation:"
+SNAPSHOT = "golden_metrics"
+SNAP = f"ev:{SNAPSHOT}:observation:"
 
 
 def row(month, status="OBSERVED", v=None, q=None, ev=None, **extra):
@@ -20,8 +21,8 @@ def row(month, status="OBSERVED", v=None, q=None, ev=None, **extra):
 
 
 def run(parent, partner="CN"):
-    out = x1.run({"hs6": "850450", "partner": partner, "period": "202401", "baseline_period": "202301",
-                  "parent": parent})
+    out = x1.run({"snapshot_id": SNAPSHOT, "hs6": "850450", "partner": partner, "period": "202401",
+                  "baseline_period": "202301", "parent": parent})
     return {(m["inputs"]["metric"], m["inputs"]["period"]): m for m in out["metrics"]}
 
 
@@ -150,10 +151,20 @@ class RejectTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             run(good, partner="ALL")
         with self.assertRaises(ValueError):
-            x1.run({"hs6": "850450", "partner": "CN", "period": "202401", "baseline_period": "202301",
-                    "parent": good, "world": []})
+            x1.run({"snapshot_id": SNAPSHOT, "hs6": "850450", "partner": "CN", "period": "202401",
+                    "baseline_period": "202301", "parent": good, "world": []})
         with self.assertRaises(TypeError):
-            x1.run({"hs6": "850450", "partner": "CN", "period": "202401", "baseline_period": "202301"})
+            x1.run({"snapshot_id": SNAPSHOT, "hs6": "850450", "partner": "CN", "period": "202401",
+                    "baseline_period": "202301"})
+
+    def test_snapshot_id_is_required_and_matches_evidence(self):
+        good = [row("202301", v=600, q=100), row("202401", v=360, q=100)]
+        with self.assertRaises(ValueError):
+            x1.run({"hs6": "850450", "partner": "CN", "period": "202401", "baseline_period": "202301",
+                    "parent": good})
+        with self.assertRaises(ValueError):  # 근거 ID가 다른 스냅샷의 것
+            x1.run({"snapshot_id": "kcs_202201_202412_v2", "hs6": "850450", "partner": "CN",
+                    "period": "202401", "baseline_period": "202301", "parent": good})
 
 
 if __name__ == "__main__":

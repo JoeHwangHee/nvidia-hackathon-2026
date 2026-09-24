@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ORACLE = ROOT / "eval" / "dev" / "oracle_ABC.json"
 HS6, PARTNER, PERIOD, BASELINE = "850450", "CN", "202401", "202301"
 CODES = {"X1": "8504501000", "X2": "8504502000"}
+SNAPSHOT = "oracle_abc"  # 합성 사례를 담았다고 보는 시험용 스냅샷 ID(근거 ID 접두어와 같다)
 POLICY_FIELDS = {"triggered", "threshold_pp"}  # 판정 정책(MT1) 시험에서 대조한다(병렬 개발 규칙 §3.2)
 WEIGHT_ROUNDING_KG = Decimal("0.5")  # 시험 입력값(계약 §11.1의 출발값). 실행에서는 정책 수치 읽기가 준다
 
@@ -35,7 +36,7 @@ def load_oracle() -> dict:
 
 
 def evidence(name: str) -> list[str]:
-    return [f"ev:oracle_abc:observation:{name}"]
+    return [f"ev:{SNAPSHOT}:observation:{name}"]
 
 
 def parent_rows(case: dict) -> list[dict]:
@@ -78,7 +79,7 @@ def reproduce(case: dict, fallback_baseline: list) -> dict[str, dict[str, object
     target = {"hs6": HS6, "partner": PARTNER, "period": PERIOD, "baseline_period": BASELINE}
     parent = parent_rows(case)
     found: dict[tuple[str, str, str], object] = {}
-    outputs = [unit_value.run({**target, "parent": parent}),
+    outputs = [unit_value.run({**target, "snapshot_id": SNAPSHOT, "parent": parent}),
                share.run({**target, "parent": parent, "world": world_rows(case)}),
                decompose.run({**target, "parent": parent, "children": child_rows(case, fallback_baseline),
                               "weight_rounding_kg": WEIGHT_ROUNDING_KG})]

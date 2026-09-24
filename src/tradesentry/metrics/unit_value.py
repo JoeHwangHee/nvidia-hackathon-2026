@@ -3,13 +3,14 @@
 단위 ID: X1
 도메인명: metrics_unit_value
 소유: D
-입력: 부모 HS6 행의 V·Q(t, t−12)
-출력: `U`(t−12, t), `r_U`
+입력: V·Q(t, t−12)
+출력: `U`, `r_U`
 허용 import: 표준 라이브러리, tradesentry.contract, tradesentry.dal, tradesentry.metrics
 
 공식은 자료 계약 docs/rules/DATA_CONTRACT_V1.md §11.2다. U_t = V_t / Q_t(USD/kg), r_U = U_t / U_(t−12) − 1을
 백분율(%)로 적는다. 원천 규칙대로 V·Q는 부모 HS6 행(HS4 스캔 요청이 준 상대국별 HS6 행)의 값이다. 정확한 분수로
-계산하고 §11.3 자릿수로 한 번 반올림한다(단위 X4).
+계산하고 §11.3 자릿수로 한 번 반올림한다(단위 X4). 머리 주석의 입력·출력 줄은 단위 표 docs/plan/UNITS.md §3.3의
+문구이고, 구체적인 모양은 아래와 결정 기록 docs/tracking/decisions/의 DT2 기록(data-decision-dt2-metrics)에 있다.
 
 null 규칙(§11.1, §3.4, 룰북 B3-1)
 - 중량이 0이면 U를 계산하지 않는다(zero_weight). 수입 0이 명시된 달(OBSERVED, 0)도 같다.
@@ -18,6 +19,7 @@ null 규칙(§11.1, §3.4, 룰북 B3-1)
 - 기준월 U가 0이거나 null이면 r_U는 null이다(0이면 zero_baseline, null이면 기준월 U의 사유를 옮긴다).
 
 run 입력(JSON 객체)
+- snapshot_id: 행이 나온 스냅샷. 근거 ID는 모두 `ev:<snapshot_id>:`로 시작해야 하고, metric_id 해시에 들어간다.
 - hs6, partner(관세청 2자리 국가코드), period(비교월 t, YYYYMM), baseline_period(t−12)
 - parent: 부모 역할의 관측 행 목록. 달(t−12, t)마다 부모 HS6 행 하나(OBSERVED나 CONFIRMED_NO_TRADE), 또는 부모
   행이 없을 때 그 달을 맡은 요청들의 누락 상태 행. 행은 month·amount_usd·net_weight_kg·observation_status·
@@ -120,11 +122,12 @@ def values_of(rows: list[dict]) -> tuple[int | None, int | None]:
 def run(inp: object) -> object:
     """진입 함수. 부모 HS6 행 두 달로 U(t−12)·U(t)·r_U metric 객체를 낸다."""
     target = x4.parse_target(inp)
-    if set(inp) - {"hs6", "partner", "period", "baseline_period", "parent"}:
-        raise ValueError("X1 입력 키는 hs6·partner·period·baseline_period·parent다")
+    if set(inp) - {"snapshot_id", "hs6", "partner", "period", "baseline_period", "parent"}:
+        raise ValueError("X1 입력 키는 snapshot_id·hs6·partner·period·baseline_period·parent다")
+    snapshot_id = x4.parse_snapshot_id(inp)
     parent = parse_parent(inp.get("parent"), target)
     base, period = target["baseline_period"], target["period"]
-    common = {"hs6": target["hs6"], "partner": target["partner"]}
+    common = {"hs6": target["hs6"], "partner": target["partner"], "snapshot_id": snapshot_id}
     v0, q0 = values_of(parent[base])
     v1, q1 = values_of(parent[period])
     u0, u1 = unit_value_of(parent[base]), unit_value_of(parent[period])
