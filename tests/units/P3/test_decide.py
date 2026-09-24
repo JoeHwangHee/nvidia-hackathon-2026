@@ -5,10 +5,13 @@
 docs/plan/DEV_PLAN.md §6.3을 옮긴 표이고 구현을 다시 부르지 않는다(P5 규칙표와의 일치는 ConsistencyTest만 본다).
 """
 import copy
+import json
 import unittest
 from decimal import Decimal
 from fractions import Fraction
+from pathlib import Path
 
+from tradesentry.policy import case_aggregate as p4
 from tradesentry.policy import required_evidence as p5
 from tradesentry.policy import signal_decide as p3
 
@@ -108,7 +111,8 @@ class UnitValueRuleTest(unittest.TestCase):
         }
         for name, block in cases.items():
             with self.subTest(name=name):
-                self.assertEqual(self.status(unit_value=block), ("HOLD", "data_insufficient"))
+                # 관측은 빠지지 않았으므로 성립하지 않음 보류다(D17). 빠진 관측 보류는 test_missing_child_observation_is_hold
+                self.assertEqual(self.status(unit_value=block), ("HOLD", "data_inconsistent"))
         out = decide(unit_value=NULL_DECOMPOSITION)
         self.assertEqual(out["gaps"]["unit_value"], [{"reason": "decomposition_unavailable"}])
 
@@ -118,12 +122,13 @@ class UnitValueRuleTest(unittest.TestCase):
                 with self.subTest(status=status, hs_code=hs_code):
                     out = decide(missingness=[miss("CN", hs_code, "202301", status)])
                     self.assertEqual(out["signal_status"]["unit_value"], "HOLD")
+                    self.assertEqual(out["basis"]["unit_value"], "data_insufficient")
                     self.assertEqual(out["gaps"]["unit_value"][0]["observation_status"], status)
                     self.assertEqual(out["gaps"]["unit_value"][0]["partner_code"], "CN")
 
     def test_comparability_issue_is_hold(self):
         self.assertEqual(self.status(unit_value=uv(comparability_issues=["hs_version_changed"])),
-                         ("HOLD", "data_insufficient"))
+                         ("HOLD", "data_inconsistent"))
 
     def test_rounding_unstable_is_hold_even_if_explained(self):
         self.assertEqual(self.status(unit_value=uv(rounding_unstable=True)), ("HOLD", "rounding_unstable"))
@@ -241,22 +246,30 @@ class NotPerformedTest(unittest.TestCase):
     """수행하지 않은 비교(not_performed)의 불변식(평가 방법론 검토 2회차). 비교 불가로 일찍 끝낸 정상 흐름은 1번의
     HOLD가 되고, 1번 사유 없이 필요한 비교를 건너뛴 흐름은 입력 오류로 드러난다."""
 
-    def test_ga_stage1_reason_with_skipped_comparisons_is_data_insufficient(self):
-        # (가) 1번 사유(비교 가능성 문제·빠진 관측·분해 불가)가 있으면 건너뛴 비교가 not_performed여도 HOLD(data_insufficient)
+    def test_ga_stage1_reason_with_skipped_comparisons_is_hold(self):
+        # (가) 1번 사유(비교 가능성 문제·빠진 관측·분해 불가)가 있으면 건너뛴 비교가 not_performed여도 HOLD다. 빠진 관측이면
+        # data_insufficient, 관측은 있는데 성립하지 않으면 data_inconsistent다(D17). 입력 오류가 아니다
         cases = {
-            "comparability issue": (replaced(SKIPPED_UNIT_VALUE, comparability_issues=["unit_changed"]), []),
+            "comparability issue": (replaced(SKIPPED_UNIT_VALUE, comparability_issues=["unit_changed"]), [],
+                                    "data_inconsistent"),
             "missing child observation": (uv(comparisons={"comparability": "not_performed",
                                                           "partners": "not_performed"}),
-                                          [miss("CN", "8504501010", "202401", "REQUEST_FAILED")]),
-            "decomposition not obtained": (SKIPPED_UNIT_VALUE, []),
+                                          [miss("CN", "8504501010", "202401", "REQUEST_FAILED")], "data_insufficient"),
+            "decomposition not obtained": (SKIPPED_UNIT_VALUE, [], "data_inconsistent"),
+            "parent mismatch, all skipped": (replaced(UNIT_VALUE_OK, comparisons={"comparability": "not_performed",
+                                                                                  "partners": "not_performed"},
+                                                      decomposition=dict(UNIT_VALUE_OK["decomposition"],
+                                                                         parent_child_match=False)),
+                                             [], "data_inconsistent"),
         }
-        for name, (block, missing) in cases.items():
+        for name, (block, missing, basis) in cases.items():
             with self.subTest(name=name):
                 out = decide(unit_value=block, missingness=missing)
-                self.assertEqual((out["signal_status"]["unit_value"], out["basis"]["unit_value"]),
-                                 ("HOLD", "data_insufficient"))
+                self.assertEqual((out["signal_status"]["unit_value"], out["basis"]["unit_value"]), ("HOLD", basis))
         out = decide(share=ALL_SKIPPED_SHARE, missingness=[miss("ALL", "8504501010", "202301", "UNRESOLVED_ZERO")])
         self.assertEqual((out["signal_status"]["share"], out["basis"]["share"]), ("HOLD", "data_insufficient"))
+        out = decide(share=replaced(ALL_SKIPPED_SHARE, comparability_issues=["denominator_below_partner:202401"]))
+        self.assertEqual((out["signal_status"]["share"], out["basis"]["share"]), ("HOLD", "data_inconsistent"))
 
     def test_stages_2_and_3_do_not_look_at_comparisons(self):
         skipped = {"comparability": "not_performed", "partners": "not_performed"}
@@ -297,6 +310,104 @@ class NotPerformedTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             decide(unit_value=SKIPPED_UNIT_VALUE, share=ALL_SKIPPED_SHARE,
                    missingness=[miss("CN", "8504501010", "202401", "REQUEST_FAILED")])
+
+
+class HoldSplitTest(unittest.TestCase):
+    """자료 보류의 사유별 판정 근거(D17, 사용자 결정 14). 빠진 관측이면 data_insufficient, 관측은 모두 있는데 비교 조건·부모
+    대조·구성 분해·분모가 성립하지 않으면 data_inconsistent다. 둘 다 있으면 빠진 관측 쪽이다."""
+
+    def test_overlap_prefers_missing_observation_and_keeps_all_gaps(self):
+        block = uv(decomposition={"parent_child_match": False}, comparability_issues=["hs_version_changed"])
+        out = decide(unit_value=block, missingness=[miss("CN", "8504501010", "202401", "REQUEST_FAILED")])
+        self.assertEqual((out["signal_status"]["unit_value"], out["basis"]["unit_value"]), ("HOLD", "data_insufficient"))
+        self.assertEqual([g["reason"] for g in out["gaps"]["unit_value"]],
+                         ["missing_observation", "comparability_issue", "parent_child_mismatch"])
+        out = decide(share=sh(comparability_issues=["denominator_below_partner:202401"]),
+                     missingness=[miss("ALL", "8504501010", "202301", "NOT_COLLECTED")])
+        self.assertEqual(out["basis"]["share"], "data_insufficient")
+        self.assertEqual([g["reason"] for g in out["gaps"]["share"]], ["missing_observation", "comparability_issue"])
+
+    def test_missing_observation_of_other_family_does_not_decide_basis(self):
+        # 빠진 관측은 계열에 배정된 것만 본다. ALL 분모가 빠져도 단가의 불일치 보류는 data_inconsistent다
+        out = decide(unit_value=uv(decomposition={"parent_child_match": False}),
+                     missingness=[miss("ALL", "8504501010", "202401", "REQUEST_FAILED")])
+        self.assertEqual(out["basis"], {"unit_value": "data_inconsistent", "share": "data_insufficient"})
+        self.assertEqual(out["signal_status"], {"unit_value": "HOLD", "share": "HOLD"})
+        out = decide(share=sh(comparability_issues=["denominator_below_partner:202301"]),
+                     missingness=[miss("CN", "8504501010", "202401", "UNRESOLVED_ZERO")])
+        self.assertEqual(out["basis"], {"unit_value": "data_insufficient", "share": "data_inconsistent"})
+
+    def test_signals_are_split_independently(self):
+        out = decide(share=sh(comparability_issues=["denominator_below_partner:202401"]))
+        self.assertEqual(out["signal_status"], {"unit_value": "MONITOR", "share": "HOLD"})
+        self.assertEqual(out["basis"]["share"], "data_inconsistent")
+        out = decide(unit_value=uv(children=[{"hs10": "8504501010", "r_U": None}]))
+        self.assertEqual(out["signal_status"], {"unit_value": "HOLD", "share": "MAINTAIN"})
+        self.assertEqual(out["basis"]["unit_value"], "data_inconsistent")
+
+    def test_inconsistent_basis_follows_p5_rule(self):
+        for family in ("unit_value", "share"):
+            with self.subTest(family=family):
+                self.assertEqual(p5.rule_status(family, "data_inconsistent"), "HOLD")
+                self.assertEqual(p5.required_comparisons(family, "data_inconsistent"), ())
+
+
+# dev20 정답표(eval/dev/dev20/answers/answers.json, 공개 개발 자료)의 불일치 보류(규칙 키 hold_inconsistent) 5건.
+# 사례 식별자와 필수 근거만 옮겼다. 근거 상태는 각 사례의 자료 구성(시나리오 명세 분류 5·6·7)을 조립 AS2가 만들 모양으로
+# 적은 것이고 정답표에서 읽지 않는다. 금액·중량 같은 원 자료는 이 시험에 필요 없다(P3은 근거 상태만 본다).
+DEV20_INCONSISTENT = {
+    # 분류 5: 비교월 부모 HS6 금액과 HS10 하위 합이 다름 → 부모·하위 대조 불일치
+    "850431-XN-202408": ("unit_value", lambda: uv(decomposition={"parent_child_match": False}),
+                         ["parent_child_match_V_and_Q", "comparability_ok", "no_zero_fill"]),
+    # 분류 6(중량 0): 하위품목 하나가 금액 > 0, 중량 0 → 그 품목 단가·분해 계산 불가(부모 대조는 맞다)
+    "850431-XO-202410": ("unit_value", lambda: uv(decomposition={"within_effect": None, "mix_effect": None,
+                                                                 "residual": None},
+                                                  children=[{"hs10": "8504311000", "r_U": D("-40.0")},
+                                                            {"hs10": "8504312000", "r_U": None}]),
+                         ["parent_child_match_V_and_Q", "comparability_ok", "no_zero_fill"]),
+    # 분류 5: 두 달의 HS10 코드 집합이 다름 → 같은 집합에서만 쓰는 분해가 성립하지 않음
+    "850432-XQ-202410": ("unit_value", lambda: replaced(UNIT_VALUE_OK, decomposition=None,
+                                                        children=[{"hs10": "8504321000", "r_U": D("-40.0")},
+                                                                  {"hs10": "8504322000", "r_U": None},
+                                                                  {"hs10": "8504323000", "r_U": None}]),
+                         ["parent_child_match_V_and_Q", "comparability_ok", "no_zero_fill"]),
+    # 분류 7: 비교월 전체국가 분모가 대상국 금액보다 작음
+    "850432-XL-202406": ("share", lambda: sh(comparability_issues=["denominator_below_partner:202406"]),
+                         ["country_and_world_change_shown", "comparability_ok", "no_zero_fill"]),
+    # 분류 7: 기준월 전체국가 분모가 대상국 금액보다 작음
+    "850490-XN-202305": ("share", lambda: sh(comparability_issues=["denominator_below_partner:202205"]),
+                         ["country_and_world_change_shown", "comparability_ok", "no_zero_fill"]),
+}
+ANSWERS = Path(__file__).resolve().parents[3] / "eval" / "dev" / "dev20" / "answers" / "answers.json"
+
+
+class Dev20InconsistentHoldTest(unittest.TestCase):
+    def test_dev20_inconsistent_holds_get_split_basis_and_answer_evidence(self):
+        for case_id, (family, block, required) in DEV20_INCONSISTENT.items():
+            with self.subTest(case_id=case_id):
+                hs6, partner, month = case_id.split("-")
+                other = "share" if family == "unit_value" else "unit_value"
+                signals = {family: "TRIGGERED", other: "NOT_TRIGGERED"}
+                case = {"case_id": case_id, "hs6": hs6, "partner": partner, "month": month,
+                        "baseline_month": str(int(month) - 100), "signals": signals}
+                out = p3.run({"policy": POLICY, "case": case, "evidence": {"missingness": [], family: block()}})
+                self.assertEqual(out["signal_status"], {family: "HOLD", other: "NOT_TRIGGERED"})
+                self.assertEqual(out["basis"][family], "data_inconsistent")
+                self.assertEqual(list(p5.rule_evidence(family, out["basis"][family])), required)
+                final = p4.run({"signals": signals, "signal_status": out["signal_status"]})
+                self.assertEqual(final, {"review_status": "HOLD", "unresolved_evidence": False})
+
+    def test_copied_values_match_dev20_answers(self):
+        # 옮긴 값이 정답표와 같은지 본다(정답표는 읽기만 한다)
+        answers = json.loads(ANSWERS.read_text(encoding="utf-8"), parse_float=Decimal)["cases"]
+        inconsistent = {c["case_id"]: c for c in answers if "hold_inconsistent" in c["rule"].values()}
+        self.assertEqual(set(inconsistent), set(DEV20_INCONSISTENT))
+        for case_id, (family, _block, required) in DEV20_INCONSISTENT.items():
+            with self.subTest(case_id=case_id):
+                answer = inconsistent[case_id]
+                self.assertEqual(answer["rule"][family], "hold_inconsistent")
+                self.assertEqual(answer["expected"]["signal_status"][family], "HOLD")
+                self.assertEqual(answer["expected"]["required_evidence"], required)
 
 
 class ExactValueTest(unittest.TestCase):
