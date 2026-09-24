@@ -23,15 +23,15 @@
  "evidence_ids": [
   "ev:unit_fixture_tools:observation:3",
   "ev:unit_fixture_tools:observation:31",
-  "ev:unit_fixture_tools:observation:209",
-  "ev:unit_fixture_tools:observation:211",
-  "ev:unit_fixture_tools:observation:239",
-  "ev:unit_fixture_tools:observation:241"
+  "ev:unit_fixture_tools:observation:273",
+  "ev:unit_fixture_tools:observation:275",
+  "ev:unit_fixture_tools:observation:303",
+  "ev:unit_fixture_tools:observation:305"
  ],
  "metrics": [
   {
-   "metric_id": "fake-within_effect-0fc175a0a8a1",
-   "formula_version": "fake-1",
+   "metric_id": "within_effect-a1f0c555562e7947",
+   "formula_version": "1",
    "inputs": {
     "metric": "within_effect",
     "hs6": "850431",
@@ -42,27 +42,37 @@
     "Q_0": 1000,
     "V_1": 3600,
     "Q_1": 1000,
-    "hs10": [
-     "8504311000",
-     "8504312000"
-    ]
+    "hs10_values": {
+     "8504311000": {
+      "V_0": 1000,
+      "Q_0": 500,
+      "V_1": 1600,
+      "Q_1": 800
+     },
+     "8504312000": {
+      "V_0": 5000,
+      "Q_0": 500,
+      "V_1": 2000,
+      "Q_1": 200
+     }
+    }
    },
    "evidence_ids": [
     "ev:unit_fixture_tools:observation:3",
     "ev:unit_fixture_tools:observation:31",
-    "ev:unit_fixture_tools:observation:209",
-    "ev:unit_fixture_tools:observation:211",
-    "ev:unit_fixture_tools:observation:239",
-    "ev:unit_fixture_tools:observation:241"
+    "ev:unit_fixture_tools:observation:273",
+    "ev:unit_fixture_tools:observation:275",
+    "ev:unit_fixture_tools:observation:303",
+    "ev:unit_fixture_tools:observation:305"
    ],
    "value": 0.00,
    "unit": "USD/kg",
    "comparability_flags": [],
-   "tolerance": null
+   "tolerance": 1.5
   },
   {
-   "metric_id": "fake-mix_effect-8f0488fe3a4a",
-   "formula_version": "fake-1",
+   "metric_id": "mix_effect-b0003da8ca908a9e",
+   "formula_version": "1",
    "inputs": {
     "metric": "mix_effect",
     "hs6": "850431",
@@ -73,27 +83,37 @@
     "Q_0": 1000,
     "V_1": 3600,
     "Q_1": 1000,
-    "hs10": [
-     "8504311000",
-     "8504312000"
-    ]
+    "hs10_values": {
+     "8504311000": {
+      "V_0": 1000,
+      "Q_0": 500,
+      "V_1": 1600,
+      "Q_1": 800
+     },
+     "8504312000": {
+      "V_0": 5000,
+      "Q_0": 500,
+      "V_1": 2000,
+      "Q_1": 200
+     }
+    }
    },
    "evidence_ids": [
     "ev:unit_fixture_tools:observation:3",
     "ev:unit_fixture_tools:observation:31",
-    "ev:unit_fixture_tools:observation:209",
-    "ev:unit_fixture_tools:observation:211",
-    "ev:unit_fixture_tools:observation:239",
-    "ev:unit_fixture_tools:observation:241"
+    "ev:unit_fixture_tools:observation:273",
+    "ev:unit_fixture_tools:observation:275",
+    "ev:unit_fixture_tools:observation:303",
+    "ev:unit_fixture_tools:observation:305"
    ],
    "value": -2.40,
    "unit": "USD/kg",
    "comparability_flags": [],
-   "tolerance": null
+   "tolerance": 1.5
   },
   {
-   "metric_id": "fake-residual-30204d01a4d9",
-   "formula_version": "fake-1",
+   "metric_id": "residual-c39061baf5ccda01",
+   "formula_version": "1",
    "inputs": {
     "metric": "residual",
     "hs6": "850431",
@@ -104,27 +124,37 @@
     "Q_0": 1000,
     "V_1": 3600,
     "Q_1": 1000,
-    "hs10": [
-     "8504311000",
-     "8504312000"
-    ]
+    "hs10_values": {
+     "8504311000": {
+      "V_0": 1000,
+      "Q_0": 500,
+      "V_1": 1600,
+      "Q_1": 800
+     },
+     "8504312000": {
+      "V_0": 5000,
+      "Q_0": 500,
+      "V_1": 2000,
+      "Q_1": 200
+     }
+    }
    },
    "evidence_ids": [
     "ev:unit_fixture_tools:observation:3",
     "ev:unit_fixture_tools:observation:31",
-    "ev:unit_fixture_tools:observation:209",
-    "ev:unit_fixture_tools:observation:211",
-    "ev:unit_fixture_tools:observation:239",
-    "ev:unit_fixture_tools:observation:241"
+    "ev:unit_fixture_tools:observation:273",
+    "ev:unit_fixture_tools:observation:275",
+    "ev:unit_fixture_tools:observation:303",
+    "ev:unit_fixture_tools:observation:305"
    ],
    "value": 0.00,
    "unit": "USD/kg",
    "comparability_flags": [],
-   "tolerance": null
+   "tolerance": 1.5
   },
   {
-   "metric_id": "fake-U@8504311000-ec14d605b0d7",
-   "formula_version": "fake-1",
+   "metric_id": "U@8504311000-3d6dfb8028c3a218",
+   "formula_version": "1",
    "inputs": {
     "metric": "U@8504311000",
     "hs6": "850431",
@@ -135,7 +165,7 @@
     "Q": 500
    },
    "evidence_ids": [
-    "ev:unit_fixture_tools:observation:209"
+    "ev:unit_fixture_tools:observation:273"
    ],
    "value": 2.00,
    "unit": "USD/kg",
@@ -143,8 +173,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-U@8504311000-616ff675c311",
-   "formula_version": "fake-1",
+   "metric_id": "U@8504311000-6cea20f56565cb6c",
+   "formula_version": "1",
    "inputs": {
     "metric": "U@8504311000",
     "hs6": "850431",
@@ -155,7 +185,7 @@
     "Q": 800
    },
    "evidence_ids": [
-    "ev:unit_fixture_tools:observation:239"
+    "ev:unit_fixture_tools:observation:303"
    ],
    "value": 2.00,
    "unit": "USD/kg",
@@ -163,8 +193,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-r_U@8504311000-082aa4dd07f8",
-   "formula_version": "fake-1",
+   "metric_id": "r_U@8504311000-17c477cc9ec5fe89",
+   "formula_version": "1",
    "inputs": {
     "metric": "r_U@8504311000",
     "hs6": "850431",
@@ -177,8 +207,8 @@
     "Q_1": 800
    },
    "evidence_ids": [
-    "ev:unit_fixture_tools:observation:209",
-    "ev:unit_fixture_tools:observation:239"
+    "ev:unit_fixture_tools:observation:273",
+    "ev:unit_fixture_tools:observation:303"
    ],
    "value": 0.0,
    "unit": "%",
@@ -186,8 +216,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-w@8504311000-b2e1090e9e2f",
-   "formula_version": "fake-1",
+   "metric_id": "w@8504311000-12c5eff053958b7e",
+   "formula_version": "1",
    "inputs": {
     "metric": "w@8504311000",
     "hs6": "850431",
@@ -198,8 +228,8 @@
     "Q_total": 1000
    },
    "evidence_ids": [
-    "ev:unit_fixture_tools:observation:209",
-    "ev:unit_fixture_tools:observation:211"
+    "ev:unit_fixture_tools:observation:273",
+    "ev:unit_fixture_tools:observation:275"
    ],
    "value": 50.0,
    "unit": "%",
@@ -207,8 +237,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-w@8504311000-0c6c7adcc020",
-   "formula_version": "fake-1",
+   "metric_id": "w@8504311000-5e1516aaa1bcc649",
+   "formula_version": "1",
    "inputs": {
     "metric": "w@8504311000",
     "hs6": "850431",
@@ -219,8 +249,8 @@
     "Q_total": 1000
    },
    "evidence_ids": [
-    "ev:unit_fixture_tools:observation:239",
-    "ev:unit_fixture_tools:observation:241"
+    "ev:unit_fixture_tools:observation:303",
+    "ev:unit_fixture_tools:observation:305"
    ],
    "value": 80.0,
    "unit": "%",
@@ -228,8 +258,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-U@8504312000-3e64e3eafabf",
-   "formula_version": "fake-1",
+   "metric_id": "U@8504312000-35326976276d45e5",
+   "formula_version": "1",
    "inputs": {
     "metric": "U@8504312000",
     "hs6": "850431",
@@ -240,7 +270,7 @@
     "Q": 500
    },
    "evidence_ids": [
-    "ev:unit_fixture_tools:observation:211"
+    "ev:unit_fixture_tools:observation:275"
    ],
    "value": 10.00,
    "unit": "USD/kg",
@@ -248,8 +278,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-U@8504312000-4ab945da5088",
-   "formula_version": "fake-1",
+   "metric_id": "U@8504312000-ef73e82639b36bc3",
+   "formula_version": "1",
    "inputs": {
     "metric": "U@8504312000",
     "hs6": "850431",
@@ -260,7 +290,7 @@
     "Q": 200
    },
    "evidence_ids": [
-    "ev:unit_fixture_tools:observation:241"
+    "ev:unit_fixture_tools:observation:305"
    ],
    "value": 10.00,
    "unit": "USD/kg",
@@ -268,8 +298,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-r_U@8504312000-7b47f61f8758",
-   "formula_version": "fake-1",
+   "metric_id": "r_U@8504312000-8d93f789e7d23cad",
+   "formula_version": "1",
    "inputs": {
     "metric": "r_U@8504312000",
     "hs6": "850431",
@@ -282,8 +312,8 @@
     "Q_1": 200
    },
    "evidence_ids": [
-    "ev:unit_fixture_tools:observation:211",
-    "ev:unit_fixture_tools:observation:241"
+    "ev:unit_fixture_tools:observation:275",
+    "ev:unit_fixture_tools:observation:305"
    ],
    "value": 0.0,
    "unit": "%",
@@ -291,8 +321,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-w@8504312000-0518817586ba",
-   "formula_version": "fake-1",
+   "metric_id": "w@8504312000-77cc256c539b1556",
+   "formula_version": "1",
    "inputs": {
     "metric": "w@8504312000",
     "hs6": "850431",
@@ -303,8 +333,8 @@
     "Q_total": 1000
    },
    "evidence_ids": [
-    "ev:unit_fixture_tools:observation:209",
-    "ev:unit_fixture_tools:observation:211"
+    "ev:unit_fixture_tools:observation:275",
+    "ev:unit_fixture_tools:observation:273"
    ],
    "value": 50.0,
    "unit": "%",
@@ -312,8 +342,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-w@8504312000-0f4d7b154cd1",
-   "formula_version": "fake-1",
+   "metric_id": "w@8504312000-2b9ea4861efc3312",
+   "formula_version": "1",
    "inputs": {
     "metric": "w@8504312000",
     "hs6": "850431",
@@ -324,8 +354,8 @@
     "Q_total": 1000
    },
    "evidence_ids": [
-    "ev:unit_fixture_tools:observation:239",
-    "ev:unit_fixture_tools:observation:241"
+    "ev:unit_fixture_tools:observation:305",
+    "ev:unit_fixture_tools:observation:303"
    ],
    "value": 20.0,
    "unit": "%",

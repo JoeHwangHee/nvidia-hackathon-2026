@@ -1,5 +1,5 @@
 {
- "query_id": "verify_evidence-66fe90de061aaf9c",
+ "query_id": "verify_evidence-05535ff6d93d8a10",
  "tool": "verify_evidence",
  "scope": {
   "hs6": "850431",
@@ -29,19 +29,19 @@
   "ok": false,
   "metrics": [
    {
-    "metric_id": "fake-r_U-f9b8975734de",
+    "metric_id": "r_U-fe96e0fe3ff9cffb",
     "ok": true,
     "problems": [],
     "fields": []
    },
    {
-    "metric_id": "fake-d_s-d4a2f269b6b1",
+    "metric_id": "d_s-64ab568f0faced20",
     "ok": true,
     "problems": [],
     "fields": []
    },
    {
-    "metric_id": "fake-s-b7af9e2b30c4",
+    "metric_id": "s-215e7d79c634a65d",
     "ok": false,
     "problems": [
      "recompute_mismatch"
@@ -51,7 +51,7 @@
     ]
    },
    {
-    "metric_id": "fake-r_U-000000000000",
+    "metric_id": "r_U-0000000000000000",
     "ok": false,
     "problems": [
      "metric_not_returned"
@@ -67,7 +67,7 @@
     "failed_rule": null
    },
    {
-    "evidence_id": "ev:unit_fixture_tools:observation:239",
+    "evidence_id": "ev:unit_fixture_tools:observation:303",
     "ok": false,
     "problems": [
      "evidence_not_returned"

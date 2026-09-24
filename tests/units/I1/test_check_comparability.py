@@ -5,23 +5,29 @@
 - ALL 분모: 중복 제거 뒤에도 빈 달만 빠진 자료로 싣는다(MT1 판정 정책과의 약속)
 - 인자 허용 목록(경로·SQL·URL·셸 문자열이 도구에 닿지 않음), 요청 검사, 개발 빌드(열린 스냅샷) 경로
 - 반올림 민감도 경계, query_id
+- C형(부모 HS6 행은 있고 HS10 하위자료만 빠진 달)의 빠진 HS10 코드 목록과 출처(사례의 다른 달, 스냅샷의 다른 달,
+  참고 품목표, 없음), attempt 필수, 파일·SQLite 오류가 경로 없는 ToolError가 되는지
 """
+import tempfile
 import unittest
+from pathlib import Path
+from unittest import mock
 from decimal import Decimal
 from fractions import Fraction
 
 from tradesentry.contract import envelope as k5
+from tradesentry.contract import policy_load
 from tradesentry.dal import query
 from tradesentry.tools import check_comparability as cc
 
-from . import fake_metrics, tools_fixture as fx
+from . import metrics_spy, tools_fixture as fx
 
 
 class Base(unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.build_file = fx.use_fixture(self)
-        fake_metrics.fix_clock(self)
+        metrics_spy.fix_clock(self)
 
     def run_tool(self, partner="MX", month="202401", args=None, **extra):
         extra.setdefault("policy_version", "dev-0.1")
@@ -38,7 +44,8 @@ class StateTest(Base):
         self.assertEqual([(m["hs_code"], m["month"], m["observation_status"]) for m in out["missingness"]],
                          [("850431", "202401", "REQUEST_FAILED")])
         self.assertEqual(comp["children"]["months"][1], {"month": "202401", "observation_status": "REQUEST_FAILED",
-                                                         "hs10_rows": 0})
+                                                         "hs10_rows": 0, "codes": []})
+        self.assertEqual(comp["children"]["months"][0]["codes"], [fx.C1, fx.C2])
         self.assertIsNone(comp["children"]["same_hs10_set"])
         self.assertIn(out["missingness"][0]["evidence_id"], out["evidence_ids"])
 
@@ -135,6 +142,74 @@ class ArgsTest(Base):
         self.assertEqual(first, self.run_tool("MX", attempt=1)["query_id"])
         self.assertNotEqual(first, self.run_tool("MX", attempt=2)["query_id"])
         self.assertTrue(first.startswith("check_comparability-"))
+
+
+REFERENCE_850431 = ["8504311000", "8504312000", "8504319010", "8504319020", "8504319040"]
+
+
+class CTypeTest(Base):
+    def c_type_entries(self, out):
+        return [(m["month"], m["observation_status"], m.get("hs10_codes"), m.get("hs10_codes_source"))
+                for m in out["missingness"] if "hs10_codes" in m]
+
+    def test_one_month_failure_takes_codes_from_the_other_case_month(self):
+        out = self.run_tool("CN")
+        self.assertEqual(self.c_type_entries(out),
+                         [("202401", "REQUEST_FAILED", [fx.C1, fx.C2], cc.CODES_FROM_OTHER_CASE_MONTH)])
+        self.assertEqual(out["missingness"][0]["hs_code"], fx.HS6)  # 상태 행 자체는 HS6 요청 코드 그대로
+
+    def test_both_case_months_missing_take_codes_from_other_snapshot_months(self):
+        out = self.run_tool("IN")
+        self.assertEqual(self.c_type_entries(out),
+                         [("202301", "UNRESOLVED_ZERO", [fx.C1, fx.C2], cc.CODES_FROM_OTHER_MONTHS),
+                          ("202401", "REQUEST_FAILED", [fx.C1, fx.C2], cc.CODES_FROM_OTHER_MONTHS)])
+
+    def test_no_hs10_rows_anywhere_takes_codes_from_the_reference_table(self):
+        out = self.run_tool("KH")
+        self.assertEqual({(m[1], tuple(m[2]), m[3]) for m in self.c_type_entries(out)},
+                         {("REQUEST_FAILED", tuple(REFERENCE_850431), cc.CODES_FROM_REFERENCE)})
+        self.assertEqual(len(self.c_type_entries(out)), 2)
+
+    def test_no_reference_table_gives_an_explicit_empty_list(self):
+        cc._reference_hs10.cache_clear()
+        self.addCleanup(cc._reference_hs10.cache_clear)
+        with mock.patch.object(cc, "REFERENCE_HS10", Path(tempfile.gettempdir()) / "no-such-reference.json"):
+            out = self.run_tool("KH")
+        self.assertEqual({(tuple(m[2]), m[3]) for m in self.c_type_entries(out)}, {((), cc.CODES_FROM_NONE)})
+
+    def test_months_without_a_parent_row_are_not_c_type(self):
+        self.assertEqual(self.c_type_entries(self.run_tool("ID")), [])  # 202401 부모 행도 없다
+        self.assertEqual(self.c_type_entries(self.run_tool("MX", month="202402")), [])  # 202302 부모 행도 없다
+
+
+class ErrorTest(Base):
+    def test_attempt_is_required(self):
+        inp = fx.request(policy_version="dev-0.1")
+        del inp["attempt"]
+        for bad in (inp, dict(inp, attempt=None), dict(inp, attempt=True), dict(inp, attempt="1")):
+            with self.subTest(attempt=bad.get("attempt")), self.assertRaises(cc.ToolError):
+                cc.run(bad)
+
+    def test_policy_file_os_error_is_named_without_a_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / policy_load.POLICY_DEV_FILE).mkdir()  # 정책 자리가 폴더다(IsADirectoryError)
+            with mock.patch.object(policy_load, "CONFIGS_DIR", Path(tmp)), \
+                    self.assertRaises(cc.ToolError) as caught:
+                cc.run(fx.request(policy_version="dev-0.1"))
+        message = str(caught.exception)
+        self.assertIn("IsADirectoryError", message)
+        self.assertNotIn(tmp, message)
+        self.assertNotIn("/", message)
+
+    def test_broken_snapshot_file_is_named_without_a_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "broken_snapshot"
+            folder.mkdir()
+            (folder / "snapshot_build.sqlite").write_bytes(b"not a database" * 100)
+            with mock.patch.object(query, "SNAPSHOTS_ROOT", Path(tmp)), self.assertRaises(cc.ToolError) as caught:
+                cc.run(dict(fx.request(policy_version="dev-0.1"), snapshot_id="broken_snapshot"))
+        self.assertIn("DatabaseError", str(caught.exception))
+        self.assertNotIn(tmp, str(caught.exception))
 
 
 class RoundingTest(unittest.TestCase):

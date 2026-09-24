@@ -1,6 +1,6 @@
 """단위 I4(tools_decompose_hs) 보조 시험: X3에 넘기는 역할별 행과 정책 수치, 하위자료 실패·무거래 확정, 싣는 지표(U@·r_U@·w@).
 
-자료는 I1 폴더의 합성 스냅샷(tools_fixture.py)이고 지표 단위 X3은 대역(fake_metrics.py)이다. 값은 합성이다.
+자료는 I1 폴더의 합성 스냅샷(tools_fixture.py)이고 지표는 진짜 지표 단위 X3이 계산한다(metrics_spy.py가 호출만 기록). 값은 합성이다.
 """
 import unittest
 from decimal import Decimal
@@ -9,15 +9,15 @@ from tradesentry.contract import envelope as k5
 from tradesentry.tools import check_comparability as common
 from tradesentry.tools import decompose_hs
 
-from ..I1 import fake_metrics, tools_fixture as fx
+from ..I1 import metrics_spy, tools_fixture as fx
 
 
 class DecomposeTest(unittest.TestCase):
     def setUp(self):
         super().setUp()
         fx.use_fixture(self)
-        self.fake = fake_metrics.patch_metrics(self)
-        fake_metrics.fix_clock(self)
+        self.spy = metrics_spy.spy_metrics(self)
+        metrics_spy.fix_clock(self)
 
     def run_tool(self, partner="MX", month="202401", args=None):
         out = decompose_hs.run(fx.request(args, partner=partner, month=month, policy_version="dev-0.1"))
@@ -40,7 +40,7 @@ class DecomposeTest(unittest.TestCase):
 
     def test_x3_input_roles_and_policy_rounding(self):
         self.run_tool()
-        name, inp = self.fake.calls[0]
+        name, inp = self.spy.calls[0]
         self.assertEqual(name, "X3")
         self.assertEqual(inp["weight_rounding_kg"], Decimal("0.5"))  # configs/policy_dev.json tolerance
         self.assertEqual([(r["month"], r["hs_code"], r["amount_usd"], r["net_weight_kg"]) for r in inp["children"]],
@@ -58,13 +58,13 @@ class DecomposeTest(unittest.TestCase):
         self.assertIsNone(out["comparability"]["same_hs10_set"])
         self.assertEqual([(m["hs_code"], m["month"], m["observation_status"]) for m in out["missingness"]],
                          [("850431", "202401", "REQUEST_FAILED")])
-        children = self.fake.calls[0][1]["children"]
+        children = self.spy.calls[0][1]["children"]
         self.assertEqual([(r["month"], r["hs_code"], r["observation_status"]) for r in children if r["month"] == "202401"],
                          [("202401", "850431", "REQUEST_FAILED")])
 
     def test_confirmed_no_trade_children_row(self):
         out = self.run_tool("MY", month="202402")
-        children = self.fake.calls[0][1]["children"]
+        children = self.spy.calls[0][1]["children"]
         self.assertEqual([(r["month"], r["observation_status"]) for r in children if r["month"] == "202402"],
                          [("202402", "CONFIRMED_NO_TRADE")])
         self.assertEqual(out["comparability"]["hs10"][1]["observation_status"], "CONFIRMED_NO_TRADE")
@@ -75,7 +75,7 @@ class DecomposeTest(unittest.TestCase):
             decompose_hs.run(fx.request())
         out = self.run_tool(args={"hs10": [fx.C1]})
         self.assertEqual(out["retryable_error"]["code"], common.INVALID_ARGS)
-        self.assertEqual(self.fake.calls, [])
+        self.assertEqual(self.spy.calls, [])
 
 
 if __name__ == "__main__":

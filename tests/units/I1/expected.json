@@ -24,14 +24,14 @@
  "evidence_ids": [
   "ev:unit_fixture_tools:observation:3",
   "ev:unit_fixture_tools:observation:31",
-  "ev:unit_fixture_tools:observation:375",
-  "ev:unit_fixture_tools:observation:377",
-  "ev:unit_fixture_tools:observation:405",
-  "ev:unit_fixture_tools:observation:407",
-  "ev:unit_fixture_tools:observation:209",
-  "ev:unit_fixture_tools:observation:211",
-  "ev:unit_fixture_tools:observation:239",
-  "ev:unit_fixture_tools:observation:241"
+  "ev:unit_fixture_tools:observation:499",
+  "ev:unit_fixture_tools:observation:501",
+  "ev:unit_fixture_tools:observation:529",
+  "ev:unit_fixture_tools:observation:531",
+  "ev:unit_fixture_tools:observation:273",
+  "ev:unit_fixture_tools:observation:275",
+  "ev:unit_fixture_tools:observation:303",
+  "ev:unit_fixture_tools:observation:305"
  ],
  "metrics": [],
  "comparability": {
@@ -79,12 +79,20 @@
     {
      "month": "202301",
      "observation_status": "OBSERVED",
-     "hs10_rows": 2
+     "hs10_rows": 2,
+     "codes": [
+      "8504311000",
+      "8504312000"
+     ]
     },
     {
      "month": "202401",
      "observation_status": "OBSERVED",
-     "hs10_rows": 2
+     "hs10_rows": 2,
+     "codes": [
+      "8504311000",
+      "8504312000"
+     ]
     }
    ],
    "same_hs10_set": true

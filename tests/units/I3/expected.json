@@ -32,24 +32,24 @@
   "ev:unit_fixture_tools:observation:39",
   "ev:unit_fixture_tools:observation:65",
   "ev:unit_fixture_tools:observation:71",
-  "ev:unit_fixture_tools:observation:305",
+  "ev:unit_fixture_tools:observation:369",
   "ev:unit_fixture_tools:observation:103",
   "ev:unit_fixture_tools:observation:129",
   "ev:unit_fixture_tools:observation:135",
   "ev:unit_fixture_tools:observation:161",
-  "ev:unit_fixture_tools:observation:411",
-  "ev:unit_fixture_tools:observation:439",
-  "ev:unit_fixture_tools:observation:435",
-  "ev:unit_fixture_tools:observation:463",
-  "ev:unit_fixture_tools:observation:375",
-  "ev:unit_fixture_tools:observation:377",
-  "ev:unit_fixture_tools:observation:405",
-  "ev:unit_fixture_tools:observation:407"
+  "ev:unit_fixture_tools:observation:535",
+  "ev:unit_fixture_tools:observation:563",
+  "ev:unit_fixture_tools:observation:559",
+  "ev:unit_fixture_tools:observation:587",
+  "ev:unit_fixture_tools:observation:499",
+  "ev:unit_fixture_tools:observation:501",
+  "ev:unit_fixture_tools:observation:529",
+  "ev:unit_fixture_tools:observation:531"
  ],
  "metrics": [
   {
-   "metric_id": "fake-r_U-8c7d525dbdc5",
-   "formula_version": "fake-1",
+   "metric_id": "r_U-5c92e6ddedf95c03",
+   "formula_version": "1",
    "inputs": {
     "metric": "r_U",
     "hs6": "850431",
@@ -71,8 +71,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-d_s-d4a2f269b6b1",
-   "formula_version": "fake-1",
+   "metric_id": "d_s-64ab568f0faced20",
+   "formula_version": "1",
    "inputs": {
     "metric": "d_s",
     "hs6": "850431",
@@ -86,11 +86,11 @@
    },
    "evidence_ids": [
     "ev:unit_fixture_tools:observation:39",
-    "ev:unit_fixture_tools:observation:375",
-    "ev:unit_fixture_tools:observation:377",
+    "ev:unit_fixture_tools:observation:499",
+    "ev:unit_fixture_tools:observation:501",
     "ev:unit_fixture_tools:observation:65",
-    "ev:unit_fixture_tools:observation:405",
-    "ev:unit_fixture_tools:observation:407"
+    "ev:unit_fixture_tools:observation:529",
+    "ev:unit_fixture_tools:observation:531"
    ],
    "value": -3.3,
    "unit": "pp",
@@ -98,8 +98,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-r_U-dfd3f10136cd",
-   "formula_version": "fake-1",
+   "metric_id": "r_U-27e6ce67d1825b60",
+   "formula_version": "1",
    "inputs": {
     "metric": "r_U",
     "hs6": "850431",
@@ -113,7 +113,7 @@
    },
    "evidence_ids": [
     "ev:unit_fixture_tools:observation:71",
-    "ev:unit_fixture_tools:observation:305"
+    "ev:unit_fixture_tools:observation:369"
    ],
    "value": null,
    "unit": "%",
@@ -123,8 +123,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-d_s-16f80549d97d",
-   "formula_version": "fake-1",
+   "metric_id": "d_s-806ab326ec922eb8",
+   "formula_version": "1",
    "inputs": {
     "metric": "d_s",
     "hs6": "850431",
@@ -138,11 +138,11 @@
    },
    "evidence_ids": [
     "ev:unit_fixture_tools:observation:71",
-    "ev:unit_fixture_tools:observation:375",
-    "ev:unit_fixture_tools:observation:377",
-    "ev:unit_fixture_tools:observation:305",
-    "ev:unit_fixture_tools:observation:405",
-    "ev:unit_fixture_tools:observation:407"
+    "ev:unit_fixture_tools:observation:499",
+    "ev:unit_fixture_tools:observation:501",
+    "ev:unit_fixture_tools:observation:369",
+    "ev:unit_fixture_tools:observation:529",
+    "ev:unit_fixture_tools:observation:531"
    ],
    "value": null,
    "unit": "pp",
@@ -152,8 +152,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-r_U-66c1d1cb6bd4",
-   "formula_version": "fake-1",
+   "metric_id": "r_U-4ff63176eb95e15f",
+   "formula_version": "1",
    "inputs": {
     "metric": "r_U",
     "hs6": "850431",
@@ -175,8 +175,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-d_s-aaa192e0aa0d",
-   "formula_version": "fake-1",
+   "metric_id": "d_s-7630e2d59c422538",
+   "formula_version": "1",
    "inputs": {
     "metric": "d_s",
     "hs6": "850431",
@@ -190,11 +190,11 @@
    },
    "evidence_ids": [
     "ev:unit_fixture_tools:observation:103",
-    "ev:unit_fixture_tools:observation:375",
-    "ev:unit_fixture_tools:observation:377",
+    "ev:unit_fixture_tools:observation:499",
+    "ev:unit_fixture_tools:observation:501",
     "ev:unit_fixture_tools:observation:129",
-    "ev:unit_fixture_tools:observation:405",
-    "ev:unit_fixture_tools:observation:407"
+    "ev:unit_fixture_tools:observation:529",
+    "ev:unit_fixture_tools:observation:531"
    ],
    "value": 3.3,
    "unit": "pp",
@@ -202,8 +202,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-r_U-a8e837a036dc",
-   "formula_version": "fake-1",
+   "metric_id": "r_U-34d37014e38d250c",
+   "formula_version": "1",
    "inputs": {
     "metric": "r_U",
     "hs6": "850431",
@@ -227,8 +227,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-d_s-58966929b446",
-   "formula_version": "fake-1",
+   "metric_id": "d_s-39125f58f6e746ea",
+   "formula_version": "1",
    "inputs": {
     "metric": "d_s",
     "hs6": "850431",
@@ -242,11 +242,11 @@
    },
    "evidence_ids": [
     "ev:unit_fixture_tools:observation:135",
-    "ev:unit_fixture_tools:observation:375",
-    "ev:unit_fixture_tools:observation:377",
+    "ev:unit_fixture_tools:observation:499",
+    "ev:unit_fixture_tools:observation:501",
     "ev:unit_fixture_tools:observation:161",
-    "ev:unit_fixture_tools:observation:405",
-    "ev:unit_fixture_tools:observation:407"
+    "ev:unit_fixture_tools:observation:529",
+    "ev:unit_fixture_tools:observation:531"
    ],
    "value": -0.5,
    "unit": "pp",
@@ -254,8 +254,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-r_U-c0f15537d764",
-   "formula_version": "fake-1",
+   "metric_id": "r_U-90a4afbe41e02af7",
+   "formula_version": "1",
    "inputs": {
     "metric": "r_U",
     "hs6": "850431",
@@ -268,10 +268,10 @@
     "Q_1": null
    },
    "evidence_ids": [
-    "ev:unit_fixture_tools:observation:411",
-    "ev:unit_fixture_tools:observation:439",
-    "ev:unit_fixture_tools:observation:435",
-    "ev:unit_fixture_tools:observation:463"
+    "ev:unit_fixture_tools:observation:535",
+    "ev:unit_fixture_tools:observation:563",
+    "ev:unit_fixture_tools:observation:559",
+    "ev:unit_fixture_tools:observation:587"
    ],
    "value": null,
    "unit": "%",
@@ -281,8 +281,8 @@
    "tolerance": null
   },
   {
-   "metric_id": "fake-d_s-f087a0ae4771",
-   "formula_version": "fake-1",
+   "metric_id": "d_s-58c00a7500367bcb",
+   "formula_version": "1",
    "inputs": {
     "metric": "d_s",
     "hs6": "850431",
@@ -295,14 +295,14 @@
     "V_world_1": 60000
    },
    "evidence_ids": [
-    "ev:unit_fixture_tools:observation:411",
-    "ev:unit_fixture_tools:observation:439",
-    "ev:unit_fixture_tools:observation:375",
-    "ev:unit_fixture_tools:observation:377",
-    "ev:unit_fixture_tools:observation:435",
-    "ev:unit_fixture_tools:observation:463",
-    "ev:unit_fixture_tools:observation:405",
-    "ev:unit_fixture_tools:observation:407"
+    "ev:unit_fixture_tools:observation:535",
+    "ev:unit_fixture_tools:observation:563",
+    "ev:unit_fixture_tools:observation:499",
+    "ev:unit_fixture_tools:observation:501",
+    "ev:unit_fixture_tools:observation:559",
+    "ev:unit_fixture_tools:observation:587",
+    "ev:unit_fixture_tools:observation:529",
+    "ev:unit_fixture_tools:observation:531"
    ],
    "value": null,
    "unit": "pp",
@@ -419,7 +419,7 @@
  },
  "missingness": [
   {
-   "evidence_id": "ev:unit_fixture_tools:observation:305",
+   "evidence_id": "ev:unit_fixture_tools:observation:369",
    "request_id": "994633a3526a9c5f",
    "partner_code": "ID",
    "hs_code": "850431",
@@ -428,7 +428,7 @@
    "observation_status": "NOT_COLLECTED"
   },
   {
-   "evidence_id": "ev:unit_fixture_tools:observation:411",
+   "evidence_id": "ev:unit_fixture_tools:observation:535",
    "request_id": "058ff98a5552949d",
    "partner_code": "US",
    "hs_code": "8504",
@@ -437,7 +437,7 @@
    "observation_status": "NOT_COLLECTED"
   },
   {
-   "evidence_id": "ev:unit_fixture_tools:observation:439",
+   "evidence_id": "ev:unit_fixture_tools:observation:563",
    "request_id": "ddfe9a1d5ed6b284",
    "partner_code": "US",
    "hs_code": "850431",
@@ -446,7 +446,7 @@
    "observation_status": "NOT_COLLECTED"
   },
   {
-   "evidence_id": "ev:unit_fixture_tools:observation:435",
+   "evidence_id": "ev:unit_fixture_tools:observation:559",
    "request_id": "f39754b2b07c34a9",
    "partner_code": "US",
    "hs_code": "8504",
@@ -455,7 +455,7 @@
    "observation_status": "NOT_COLLECTED"
   },
   {
-   "evidence_id": "ev:unit_fixture_tools:observation:463",
+   "evidence_id": "ev:unit_fixture_tools:observation:587",
    "request_id": "7d611dcd5e407e38",
    "partner_code": "US",
    "hs_code": "850431",

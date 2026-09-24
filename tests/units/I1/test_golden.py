@@ -6,7 +6,7 @@ setUp이 합성 스냅샷(tools_fixture.py, 14개월)을 임시 폴더의 정본
 import unittest
 
 from ..golden import GoldenMixin
-from . import fake_metrics, tools_fixture
+from . import metrics_spy, tools_fixture
 
 
 class GoldenTest(GoldenMixin, unittest.TestCase):
@@ -15,7 +15,7 @@ class GoldenTest(GoldenMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
         tools_fixture.use_fixture(self)
-        fake_metrics.fix_clock(self)
+        metrics_spy.fix_clock(self)
 
 
 if __name__ == "__main__":

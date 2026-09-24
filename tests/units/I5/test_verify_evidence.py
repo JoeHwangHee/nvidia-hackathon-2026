@@ -1,6 +1,6 @@
 """단위 I5(tools_verify_evidence) 보조 시험: 원본 대조, 다른 도구를 부르지 않음, 근거 세탁 없음, 인자·요청 검사.
 
-앞서 받은 봉투는 합성 스냅샷(I1 폴더의 tools_fixture.py)에서 도구 I2·I3·I4를 실제로 돌려 만든다(지표 단위는 대역).
+앞서 받은 봉투는 합성 스냅샷(I1 폴더의 tools_fixture.py)에서 도구 I2·I3·I4를 진짜 지표 단위로 돌려 만든다.
 """
 import copy
 import unittest
@@ -11,7 +11,7 @@ from tradesentry.contract import envelope as k5
 from tradesentry.tools import check_comparability as common
 from tradesentry.tools import compare_partners, decompose_hs, get_history, verify_evidence
 
-from ..I1 import fake_metrics, tools_fixture as fx
+from ..I1 import metrics_spy, tools_fixture as fx
 
 EV = "ev:unit_fixture_tools:"
 
@@ -20,8 +20,8 @@ class VerifyTest(unittest.TestCase):
     def setUp(self):
         super().setUp()
         fx.use_fixture(self)
-        self.fake = fake_metrics.patch_metrics(self)
-        fake_metrics.fix_clock(self)
+        self.spy = metrics_spy.spy_metrics(self)
+        metrics_spy.fix_clock(self)
         self.history = get_history.run(fx.request(attempt=1))
         self.peers = compare_partners.run(fx.request(grouping_version="g0", attempt=2))
         self.decomposition = decompose_hs.run(fx.request(policy_version="dev-0.1", attempt=3))
@@ -96,15 +96,17 @@ class VerifyTest(unittest.TestCase):
         within = self.metric(self.decomposition, "within_effect")
         out = self.verify([within["metric_id"]])
         self.assertTrue(out["comparability"]["ok"])
-        self.assertIn("X3", [name for name, _ in self.fake.calls[-1:]])
+        self.assertIn("X3", [name for name, _ in self.spy.calls[-1:]])
 
     def test_evidence_checks(self):
-        out = self.verify(evidence_ids=[EV + "observation:31", EV + "observation:239", EV + "observation:32",
+        child = self.metric(self.decomposition, f"U@{fx.C1}")  # 기준월 U@: 근거는 대상국 HS10 하위 행 하나
+        child_row = child["evidence_ids"][0]
+        out = self.verify(evidence_ids=[EV + "observation:31", child_row, EV + "observation:32",
                                         EV + "observation:1", EV + "observation:999999", "ev:other:observation:31",
                                         "not an id", EV + "collection_receipt:1", EV + "peer_group:6"])
         rows = {r["evidence_id"]: (r["problems"], r["failed_rule"]) for r in out["comparability"]["evidence"]}
         self.assertEqual(rows[EV + "observation:31"], ([], None))
-        self.assertEqual(rows[EV + "observation:239"], ([], None))  # decompose_hs가 돌려준 하위 행
+        self.assertEqual(rows[child_row], ([], None))  # decompose_hs가 돌려준 하위 행
         self.assertEqual(rows[EV + "observation:32"], (["evidence_out_of_scope", "evidence_not_returned"], None))
         self.assertEqual(rows[EV + "observation:1"], (["evidence_total_row", "evidence_not_returned"], None))
         self.assertEqual(rows[EV + "observation:999999"][1], 4)

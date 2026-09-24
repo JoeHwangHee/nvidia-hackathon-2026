@@ -12,9 +12,9 @@
 docs/plan/DEV_PLAN.md §6.5). 정본: 자료 계약 docs/rules/DATA_CONTRACT_V1.md §5(봉투), §2.3.2 행 규칙, §3.4, §11.1.
 
 도구 공통 틀(도구 5개가 이 모듈을 import한다. tools 패키지에는 단위 파일 밖의 모듈을 둘 수 없다)
-- 요청(도구 입력, 코드가 만든다): {"case_id", "snapshot_id", "scope", "args"?, "policy_version"?, "grouping_version"?,
-  "attempt"?, "envelopes"?}. 흐름 조정(단위 I12)의 지금 호출 모양 {"case_id", "snapshot_id", "scope", "args"}에 선택
-  키만 더했다. 경로 같은 값은 요청에 두지 않는다.
+- 요청(도구 입력, 코드가 만든다): {"case_id", "snapshot_id", "scope", "attempt", "args"?, "policy_version"?,
+  "grouping_version"?, "envelopes"?}. 흐름 조정(단위 I12)의 지금 호출 모양 {"case_id", "snapshot_id", "scope", "args"}에
+  attempt(필수)와 선택 키를 더했다. 경로 같은 값은 요청에 두지 않는다.
   - scope: 사례가 정하는 부분 {"hs6", "partner", "month", "baseline_month"}만(판정 정책 단위 P2가 만든다). 비교국과 HS10
     범위는 도구가 스냅샷에서 정한다(비교국은 비교 대상 표 `peer_group`, HS10은 대상국의 하위 행).
   - args: 모델이나 흐름이 준 인자. 도구마다 허용한 키만 받고 값 모양을 검사한다(자료 계약 §5.1: 모델 인자로 DB 경로·
@@ -22,9 +22,11 @@ docs/plan/DEV_PLAN.md §6.5). 정본: 자료 계약 docs/rules/DATA_CONTRACT_V1.
     (모델이 고쳐 다시 부를 수 있다. 룰북 시나리오 9 "복구할 수 있는 잘못된 조회 범위").
   - policy_version: 정책 수치(K4)를 읽을 버전. 반올림 민감도·중량 허용오차를 쓰는 도구(I1·I4·I5)는 꼭 받는다.
   - grouping_version: 비교 대상 집합(`g0`·`g1`, 합성 자료는 자료 안의 값). 비교국을 쓰는 도구(I3·I5)가 받는다.
-  - attempt: 사례 안 도구 시도 순번(1부터). query_id에 넣어 호출마다 고유하게 한다.
+  - attempt: 사례 안 도구 시도 순번(1부터, 필수). query_id에 넣어 호출마다 고유하게 한다(자료 계약 §4.5 "도구 호출
+    1회마다 고유"). 같은 인자로 두 번 부르는 verify_evidence(기본·최종)도 ID가 겹치지 않는다.
   - envelopes: 이 사례에서 앞서 받은 봉투 목록. verify_evidence(I5)만 받는다.
 - 코드 오류(요청 모양, 스냅샷을 열 수 없음, 범위 밖 사례, 행 규칙 위반)는 ToolError로 멈춘다. 재시도할 수 없는 오류다.
+  파일·SQLite 오류(OSError·sqlite3.Error)는 예외 이름만 담은 ToolError로 바꾼다(경로가 문장에 들지 않게, 자료 계약 N13).
 - 스냅샷은 run이 정본 빌드(`data/snapshots/{snapshot_id}/snapshot_build.sqlite`)를 읽기 전용으로 연다. 승인 전 개발 빌드는
   부르는 코드가 자료 접근층 open_snapshot(snapshot_id, path=…)으로 열어 각 도구의 query(snap, 요청)에 넘긴다.
 - 봉투는 단위 K5 make_envelope로 만든다(키 11개, float 금지, 근거 ID 형식·스냅샷 검사). query_id는
@@ -33,8 +35,18 @@ docs/plan/DEV_PLAN.md §6.5). 정본: 자료 계약 docs/rules/DATA_CONTRACT_V1.
 - 봉투 scope(실제로 조회한 범위): 사례 scope 네 키 + "months"(읽은 달), "partners"(읽은 상대국. 분모는 `ALL`),
   "hs10"(읽은 대상국 HS10 코드). compare_partners는 "grouping_version"을 더한다.
 - missingness: 자료 접근층(K3)의 빠진 자료 항목 {"evidence_id", "request_id", "partner_code", "hs_code", "month", "flow",
-  "observation_status"}을 그대로 싣는다. 무거래 확정(`CONFIRMED_NO_TRADE`)은 빠진 자료가 아니라 싣지 않는다(근거 ID에는
+  "observation_status"}을 싣는다. 무거래 확정(`CONFIRMED_NO_TRADE`)은 빠진 자료가 아니라 싣지 않는다(근거 ID에는
   싣는다). `ALL` 분모는 행 규칙 5·6의 중복 제거 뒤에도 값 행이 없는 달만 빠진 자료로 싣는다(자료 접근층이 그렇게 준다).
+  - C형(그 달 대상국 부모 HS6 행은 있는데 HS10 하위 자료만 상태 행인 달, 자료 계약 §2.3.2 행 규칙 4, oracle C)의 하위자료
+    상태 항목에는 두 키를 더한다: "hs10_codes"(빠진 HS10 코드 목록)와 "hs10_codes_source"(코드를 어디서 얻었나).
+    C형 자료 상태 주장은 코드마다 `observation_status@<HS10>`이라 코드가 필요하다(결정 기록
+    20260925-0048-model-decision-mt3-validator.md ⑨). 상태 행 하나(근거 ID 하나)에 코드가 여럿이라 목록 필드로 둔다.
+    근거 ID로 중복을 빼도 코드가 남는다. 코드마다 펼치는 일은 받는 쪽(흐름 조정·조립)이 한다.
+  - 코드 출처(앞에서 얻으면 멈춘다): "other_case_month"(사례의 다른 달, 기준월↔비교월에 관측된 이 상대국·HS6의 HS10
+    코드) → "other_months"(스냅샷의 나머지 달에 관측된 이 상대국·HS6의 HS10 코드 합집합) → "reference_table"(참고
+    품목표 data/reference/hs10_ch85_itemcode_vs_2026.json의 hs10_ch85 가운데 그 HS6로 시작하는 코드) → "none"(빈 목록).
+    두 달 모두 하위자료가 빠지면 사례의 다른 달에서 얻을 수 없어 뒤의 출처로 넘어간다.
+  - 부모 HS6 행도 없는 달의 상태 행은 C형이 아니다(그 달 자체가 빠졌다). 코드 키를 더하지 않는다.
 - 지표는 지표 단위(X1 unit_value, X2 share, X3 decompose)의 run으로만 계산한다(모듈 속성으로 불러 시험에서 대역으로
   바꿀 수 있다). 자료 접근층의 행을 지표 단위의 역할별 입력(snapshot_id·대상 네 키와 parent·world·children 관측 행)으로
   옮기는 일은 이 틀이 한다.
@@ -45,7 +57,8 @@ check_comparability 봉투
   - comparable: 두 신호 가운데 하나라도 계산할 수 있으면 참(흐름 조정은 거짓이면 이력·하위 조회를 건너뛴다).
   - period {month, baseline_month, yoy}, units(스냅샷 메타 그대로), units_ok(USD·kg인가), hs_version(스냅샷 메타).
   - parent: 달마다 {month, observation_status, weight_zero}. denominator: {partner: "ALL", months: [{month,
-    observation_status, hs10_rows}]}. children: {months: [{month, observation_status, hs10_rows}], same_hs10_set}.
+    observation_status, hs10_rows}]}. children: {months: [{month, observation_status, hs10_rows, codes}],
+    same_hs10_set}. codes는 그 달에 관측된 대상국 HS10 코드다(C형 달의 빠진 코드는 missingness 항목의 hs10_codes).
   - signals: {unit_value: {evaluable, issues}, share: {evaluable, issues}}. issues는 빠진 자료(missingness가 따로 알린다)
     밖의 문제다: units_mismatch, no_trade:{달}(무거래 확정이라 단가가 없다), zero_weight:{달}, zero_baseline:{달}(기준월
     단가 0), zero_denominator:{달}(분모 0).
@@ -58,15 +71,19 @@ check_comparability 봉투
 import hashlib
 import json
 import re
+import sqlite3
 import time
 from decimal import Decimal
 from fractions import Fraction
+from functools import lru_cache
+from pathlib import Path
 
 from tradesentry.contract import types
 from tradesentry.contract.envelope import make_envelope
 from tradesentry.contract.evidence_id import parse_evidence_id
 from tradesentry.contract.policy_load import PolicyError, load_policy
 from tradesentry.dal import query as dal
+from tradesentry.metrics import rounding as metrics_rounding
 
 TOOL = "check_comparability"
 SCOPE_KEYS = ("hs6", "partner", "month", "baseline_month")
@@ -78,6 +95,11 @@ GROUPING_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,31}")
 EXPECTED_UNITS = {"amount": "USD", "weight": "kg"}
 INVALID_ARGS = "invalid_args"  # retryable_error.code: 인자가 허용 밖이다
 MISSING_STATUSES = (types.NOT_COLLECTED, types.REQUEST_FAILED, types.UNRESOLVED_ZERO)
+REFERENCE_HS10 = Path(__file__).resolve().parents[3] / "data" / "reference" / "hs10_ch85_itemcode_vs_2026.json"
+CODES_FROM_OTHER_CASE_MONTH = "other_case_month"  # hs10_codes_source 값(이 단위가 정했다)
+CODES_FROM_OTHER_MONTHS = "other_months"
+CODES_FROM_REFERENCE = "reference_table"
+CODES_FROM_NONE = "none"
 
 
 class ToolError(ValueError):
@@ -139,8 +161,8 @@ def parse_request(inp: object, tool: str, *, needs_policy: bool = False, needs_g
                "baseline_month": baseline, "args": args, "attempt": inp.get("attempt"), "policy": None,
                "grouping_version": inp.get("grouping_version"), "envelopes": inp.get("envelopes")}
     attempt = request["attempt"]
-    if attempt is not None and (isinstance(attempt, bool) or not isinstance(attempt, int) or attempt < 1):
-        raise ToolError("attempt는 1 이상의 정수여야 한다")
+    if isinstance(attempt, bool) or not isinstance(attempt, int) or attempt < 1:
+        raise ToolError("attempt(사례 안 도구 시도 순번, 1 이상의 정수)가 있어야 한다")
     if needs_policy or inp.get("policy_version") is not None:
         version = inp.get("policy_version")
         if not isinstance(version, str):
@@ -149,6 +171,8 @@ def parse_request(inp: object, tool: str, *, needs_policy: bool = False, needs_g
             request["policy"] = load_policy(version)
         except PolicyError as exc:
             raise ToolError(f"정책을 읽을 수 없다: {exc}") from exc
+        except OSError as exc:  # 권한·폴더 등: 문장에 경로가 들어 있어 예외 이름만 싣는다(N13)
+            raise ToolError(f"정책 파일을 읽을 수 없다: {type(exc).__name__}") from None
     grouping = request["grouping_version"]
     if needs_grouping and grouping is None:
         raise ToolError("이 도구는 grouping_version(비교 대상 집합)을 받아야 한다")
@@ -229,6 +253,8 @@ def execute(snap: dal.Snapshot, inp: object, tool: str, body, **needs: bool) -> 
         return body(snap, request, started)
     except (dal.ScopeError, dal.SnapshotError) as exc:
         raise ToolError(f"{type(exc).__name__}: {exc}") from exc
+    except (sqlite3.Error, OSError) as exc:  # 경로가 문장에 들 수 있어 예외 이름만 싣는다(N13)
+        raise ToolError(f"스냅샷을 읽을 수 없다: {type(exc).__name__}") from None
 
 
 def run_tool(inp: object, tool: str, body, **needs: bool) -> dict:
@@ -239,6 +265,8 @@ def run_tool(inp: object, tool: str, body, **needs: bool) -> dict:
         snap = dal.open_snapshot(inp["snapshot_id"])
     except dal.SnapshotError as exc:
         raise ToolError(f"스냅샷을 열 수 없다: {exc}") from exc
+    except (sqlite3.Error, OSError) as exc:  # 경로가 문장에 들 수 있어 예외 이름만 싣는다(N13)
+        raise ToolError(f"스냅샷을 열 수 없다: {type(exc).__name__}") from None
     with snap:
         return execute(snap, inp, tool, body, **needs)
 
@@ -312,9 +340,44 @@ def world_rows(snap: dal.Snapshot, hs6: str, months: list[str]) -> tuple[Rows, l
     return out, values
 
 
+@lru_cache(maxsize=1)
+def _reference_hs10() -> tuple[str, ...]:
+    """참고 품목표의 HS10 코드(85류). 읽을 수 없으면 빈 튜플이다(출처 "none")."""
+    try:
+        document = json.loads(REFERENCE_HS10.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ()
+    codes = document.get("hs10_ch85") if isinstance(document, dict) else None
+    if not isinstance(codes, list):
+        return ()
+    return tuple(c for c in codes if isinstance(c, str) and types.HS10_RE.fullmatch(c))
+
+
+def missing_hs10_codes(snap: dal.Snapshot, hs6: str, partner: str, month: str,
+                       observed: dict[str, list[str]]) -> tuple[list[str], str]:
+    """C형 달의 빠진 HS10 코드와 출처(머리 설명의 순서). observed는 사례 달마다 관측된 HS10 코드다."""
+    codes = sorted({code for other, found in observed.items() if other != month for code in found})
+    if codes:
+        return codes, CODES_FROM_OTHER_CASE_MONTH
+    found: set[str] = set()
+    for other in snap.months:
+        if other not in observed:
+            found.update(row["hs10"] for row in snap.children(hs6, partner, other)["rows"])
+    if found:
+        return sorted(found), CODES_FROM_OTHER_MONTHS
+    codes = sorted(code for code in _reference_hs10() if code.startswith(hs6))
+    return (codes, CODES_FROM_REFERENCE) if codes else ([], CODES_FROM_NONE)
+
+
 def children_rows(snap: dal.Snapshot, hs6: str, partner: str, months: list[str]) -> tuple[Rows, list[dict]]:
-    """상대국 HS10 하위 행(단위 X3의 children 역할). 값 행이 있는 달의 상태 행은 빠진 자료로만 싣는다."""
+    """상대국 HS10 하위 행(단위 X3의 children 역할). 값 행이 있는 달의 상태 행은 빠진 자료로만 싣는다.
+
+    C형 달(부모 HS6 행이 있는 달)의 하위자료 상태 항목에는 hs10_codes·hs10_codes_source를 더한다(머리 설명).
+    무거래 확정 달의 하위 행에는 부모의 무거래 확정 근거(같은 상태 행)를 붙인다(자료 접근층 children은 근거를 주지 않는다).
+    """
     out, values = Rows(), [snap.children(hs6, partner, month) for month in months]
+    parents = {value["month"]: value for value in snap.parent_series(hs6, partner, months)}
+    observed = {value["month"]: [row["hs10"] for row in value["rows"]] for value in values}
     for value in values:
         month = value["month"]
         if value["rows"]:
@@ -325,9 +388,18 @@ def children_rows(snap: dal.Snapshot, hs6: str, partner: str, months: list[str])
             out.missing += _missing_entries(value)
             out.evidence += [e["evidence_id"] for e in value["missingness"]]
         elif value["observation_status"] == types.CONFIRMED_NO_TRADE:
-            out.rows.append(_value_row(month, hs6, partner, None, None, types.CONFIRMED_NO_TRADE, []))
+            parent = parents[month]
+            evidence = parent["evidence_ids"] if parent["observation_status"] == types.CONFIRMED_NO_TRADE else []
+            out.rows.append(_value_row(month, hs6, partner, None, None, types.CONFIRMED_NO_TRADE, evidence))
+            out.evidence += evidence
         else:
-            out.add_status(value, partner)
+            entries = _missing_entries(value)
+            if parents[month]["observation_status"] == types.OBSERVED:  # C형: 부모는 있고 하위자료만 빠짐
+                codes, source = missing_hs10_codes(snap, hs6, partner, month, observed)
+                entries = [dict(entry, hs10_codes=codes, hs10_codes_source=source) for entry in entries]
+            out.rows += _status_rows(entries, partner)
+            out.missing += entries
+            out.evidence += [e["evidence_id"] for e in value["missingness"]]
     return out, values
 
 
@@ -346,13 +418,8 @@ def metrics_of(output: object, unit: str) -> list[dict]:
 
 # ---------------------------------------------------------------------------------------------------- 반올림 민감도
 def round_half_up(value: Fraction, places: int) -> Decimal:
-    """분수를 소수 places자리로 사사오입한다(한 번만, 정확히. float·Decimal 나눗셈을 거치지 않는다)."""
-    scaled = value * 10 ** places
-    whole, rest = divmod(abs(scaled.numerator), scaled.denominator)
-    if 2 * rest >= scaled.denominator:
-        whole += 1
-    digits = -whole if scaled < 0 else whole
-    return Decimal(f"{digits}E-{places}")
+    """분수를 소수 places자리로 사사오입한다. 지표 단위 X4(metrics.rounding)의 함수를 그대로 쓴다."""
+    return metrics_rounding.round_half_up(value, places)
 
 
 def rounding_sensitivity(v0: int, q0: int, v1: int, q1: int, delta: Decimal | int, threshold: Decimal | int) -> dict:
@@ -430,7 +497,7 @@ def _body(snap: dal.Snapshot, request: dict, started: int) -> dict:
     for value in children_values:
         codes = [row["hs10"] for row in value["rows"]]
         children_block.append({"month": value["month"], "observation_status": value["observation_status"],
-                               "hs10_rows": len(codes)})
+                               "hs10_rows": len(codes), "codes": codes})
         code_sets.append(set(codes) if value["rows"] else None)
     same_set = None if None in code_sets else code_sets[0] == code_sets[1]
 

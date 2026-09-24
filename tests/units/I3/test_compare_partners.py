@@ -1,6 +1,6 @@
 """단위 I3(tools_compare_partners) 보조 시험: 허용 비교국, 모델 인자 partners, 비교국별 관측 상태, 비교 대상 집합.
 
-자료는 I1 폴더의 합성 스냅샷(tools_fixture.py)이고 지표 단위는 대역(fake_metrics.py)이다. 값은 합성이다.
+자료는 I1 폴더의 합성 스냅샷(tools_fixture.py)이고 지표는 진짜 지표 단위(X1~X3)가 계산한다(metrics_spy.py가 호출만 기록). 값은 합성이다.
 """
 import unittest
 
@@ -8,15 +8,15 @@ from tradesentry.contract import envelope as k5
 from tradesentry.tools import check_comparability as common
 from tradesentry.tools import compare_partners
 
-from ..I1 import fake_metrics, tools_fixture as fx
+from ..I1 import metrics_spy, tools_fixture as fx
 
 
 class ComparePartnersTest(unittest.TestCase):
     def setUp(self):
         super().setUp()
         fx.use_fixture(self)
-        self.fake = fake_metrics.patch_metrics(self)
-        fake_metrics.fix_clock(self)
+        self.spy = metrics_spy.spy_metrics(self)
+        metrics_spy.fix_clock(self)
 
     def run_tool(self, args=None, partner="MX", month="202401", grouping="g0"):
         out = compare_partners.run(fx.request(args, partner=partner, month=month, grouping_version=grouping))
@@ -47,7 +47,7 @@ class ComparePartnersTest(unittest.TestCase):
 
     def test_same_denominator_for_every_peer(self):
         self.run_tool()
-        worlds = [call[1]["world"] for call in self.fake.calls if call[0] == "X2"]
+        worlds = [call[1]["world"] for call in self.spy.calls if call[0] == "X2"]
         self.assertEqual(len(worlds), 5)
         self.assertTrue(all(w == worlds[0] for w in worlds))
         self.assertEqual({r["partner_code"] for r in worlds[0]}, {"ALL"})
@@ -64,7 +64,7 @@ class ComparePartnersTest(unittest.TestCase):
         self.assertEqual(out["retryable_error"]["allowed"], ["CN", "ID", "MY", "PH", "US"])
         self.assertIn("JP", out["retryable_error"]["detail"])
         self.assertEqual((out["metrics"], out["evidence_ids"]), ([], []))
-        self.assertEqual(self.fake.calls, [])
+        self.assertEqual(self.spy.calls, [])
 
     def test_malformed_partners_are_refused(self):
         for args in ({"partners": "CN"}, {"partners": []}, {"partners": ["cn"]}, {"partners": ["CN", "CN"]},
@@ -73,7 +73,7 @@ class ComparePartnersTest(unittest.TestCase):
             with self.subTest(args=args):
                 out = self.run_tool(args)
                 self.assertEqual(out["retryable_error"]["code"], common.INVALID_ARGS)
-        self.assertEqual(self.fake.calls, [])
+        self.assertEqual(self.spy.calls, [])
 
     def test_confirmed_no_trade_peer_is_a_state_not_missingness(self):
         out = self.run_tool({"partners": ["MY"]}, month="202402")

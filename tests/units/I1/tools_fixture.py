@@ -5,7 +5,7 @@
 - 만드는 법은 단위 S2 시험 도우미(tests/units/S2/fixture_snapshot.py)와 같다: 수집기(src/tradesentry/ingest.py)의
   build_manifest·open_snapshot·store_result로 원천(manifest·raw·수집기 SQLite)을 만들고, 단위 S2로 빌드해 정본 자리
   (root/unit_fixture_tools/snapshot_build.sqlite)로 옮긴다. 네트워크는 쓰지 않는다.
-- 기간 202301~202402(수집 구간은 2023년과 2024년 1~2월 두 덩어리), HS6 850431, 상대국 MX·CN·ID·MY·PH, 분모 ALL.
+- 기간 202301~202402(수집 구간은 2023년과 2024년 1~2월 두 덩어리), HS6 850431, 상대국 MX·CN·ID·MY·PH·IN·KH, 분모 ALL.
   사례의 비교월은 202401(기준월 202301)이 기본이고, 202402(기준월 202302)는 빠진 자료 사례다.
   - MX: 구성효과 사례. 하위품목 단가는 그대로(2.0·10.0 USD/kg)이고 중량 비중만 바뀐다. 부모 6000/1000 → 3600/1000.
     202306·202402에도 값이 있다(이력). 202302는 빈 달이다(UNRESOLVED_ZERO).
@@ -14,6 +14,10 @@
   - MY: 작은 기준월 값(50 USD / 1 kg). 202306·202402는 HS4 스캔에 다른 HS6만 있어 승격 규칙으로 CONFIRMED_NO_TRADE가
     된다.
   - PH: 202401 중량 0(500 USD / 0 kg).
+  - IN: C형이 두 사례 달에 모두 있다. 부모 HS6 행은 202301·202306·202401에 있는데, HS10 조회는 2023년 구간에서 202306만
+    행을 주고(202301은 UNRESOLVED_ZERO) 2024년 구간은 실패했다(REQUEST_FAILED). 사례의 다른 달에 HS10 코드가 없어
+    빠진 코드는 스냅샷의 다른 달(202306)에서 얻는다.
+  - KH: C형, HS10 조회가 두 구간 모두 실패했다. 스냅샷 어느 달에도 HS10 행이 없어 빠진 코드는 참고 품목표에서 얻는다.
   - ALL: 품목별 HS4(8504)·HS6(850431) 조회가 같은 HS10 월 행을 두 번 담는다(행 규칙 6 중복 제거 대상, 값 같음).
     202301·202401 분모는 60000 USD이고, 202302·202402는 두 요청 모두 빈 달이라 중복 제거 뒤에도 분모가 없다.
   - 비교 대상 표: MX의 g0 비교국 CN·ID·MY·PH·US(US는 수집 계획 밖 → 빌드가 NOT_COLLECTED 행을 만든다), MX의 g1
@@ -39,7 +43,7 @@ CONFIG = {
     "period": {"start": "202301", "end": "202402"},
     "chunk_months": 12,
     "hs6": [HS6],
-    "partners": ["MX", "CN", "ID", "MY", "PH"],
+    "partners": ["MX", "CN", "ID", "MY", "PH", "IN", "KH"],
     "collect_total_denominator": True,
     "hs10": [],
     "hs4_scan": ["8504"],
@@ -89,6 +93,10 @@ RESPONSES = {
     ("nitemtrade", "8504", "MY", "202401"): [("202401", HS6, 2000, 30), ("202402", "850432", 100, 10)],
     ("nitemtrade", "8504", "PH", "202301"): [("202301", HS6, 800, 100)],
     ("nitemtrade", "8504", "PH", "202401"): [("202401", HS6, 500, 0)],
+    ("nitemtrade", "8504", "IN", "202301"): [("202301", HS6, 1000, 100), ("202306", HS6, 1200, 120)],
+    ("nitemtrade", "8504", "IN", "202401"): [("202401", HS6, 1500, 100)],
+    ("nitemtrade", "8504", "KH", "202301"): [("202301", HS6, 2000, 200)],
+    ("nitemtrade", "8504", "KH", "202401"): [("202401", HS6, 2600, 200)],
     ("itemtrade", "8504", "ALL", "202301"): ALL_2023 + [("202301", OTHER, 9000, 900)],
     ("itemtrade", "8504", "ALL", "202401"): ALL_2024 + [("202401", OTHER, 8000, 800)],
     ("nitemtrade", HS6, "MX", "202301"): [("202301", C1, 1000, 500), ("202301", C2, 5000, 500),
@@ -103,6 +111,10 @@ RESPONSES = {
     ("nitemtrade", HS6, "MY", "202401"): [("202401", C1, 2000, 30)],
     ("nitemtrade", HS6, "PH", "202301"): [("202301", C1, 800, 100)],
     ("nitemtrade", HS6, "PH", "202401"): [("202401", C1, 500, 0)],
+    ("nitemtrade", HS6, "IN", "202301"): [("202306", C1, 700, 70), ("202306", C2, 500, 50)],
+    ("nitemtrade", HS6, "IN", "202401"): "FAILED",
+    ("nitemtrade", HS6, "KH", "202301"): "FAILED",
+    ("nitemtrade", HS6, "KH", "202401"): "FAILED",
     ("itemtrade", HS6, "ALL", "202301"): ALL_2023,
     ("itemtrade", HS6, "ALL", "202401"): ALL_2024,
 }
@@ -184,10 +196,10 @@ def use_fixture(test) -> Path:
 
 
 def request(tool_args: dict | None = None, *, partner: str = "MX", month: str = "202401", **extra) -> dict:
-    """도구 요청 하나(사례 scope는 P2 모양)."""
+    """도구 요청 하나(사례 scope는 P2 모양). attempt는 기본 1이고 extra로 바꾼다."""
     base = f"{int(month[:4]) - 1:04d}{month[4:]}"
     out = {"case_id": f"{HS6}-{partner}-{month}", "snapshot_id": SNAPSHOT_ID,
            "scope": {"hs6": HS6, "partner": partner, "month": month, "baseline_month": base},
-           "args": {} if tool_args is None else tool_args}
+           "args": {} if tool_args is None else tool_args, "attempt": 1}
     out.update(extra)
     return out
