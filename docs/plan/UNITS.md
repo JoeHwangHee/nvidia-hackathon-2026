@@ -154,8 +154,8 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| E1 | 묶음 실행 | `evaluation_batch_run` | `src/tradesentry/evaluation/batch_run.py` | 앱 | M | 사례 목록 × 모드 → 교차 배치 실행, 실행 결과 기록의 실행 쪽 키(`evaluation_batch_run-{시각}.jsonl`) | 유지 | 4 | — | 사례 실행마다 새 실행명을 쓰고, 직전 실행과 같은 초이면 다음 초까지 기다린다(자료 계약 §10.3 N8). dev20·`real_dev` 실행으로 이름 충돌이 없는지 확인한다 |
-| E2 | 샌드박스 밖 실행기 | `evaluation_sealed_runner` | `src/tradesentry/evaluation/sealed_runner.py` | 앱 | M | 봉인 해시 대조 → 사례 식별자 한 건씩 `run-case` | 유지 | 4 | — | — |
+| E1 | 묶음 실행 | `evaluation_batch_run` | `src/tradesentry/evaluation/batch_run.py` | 앱 | M | 사례 목록 × 모드 → 교차 배치 실행, 실행 결과 기록의 실행 쪽 키(`evaluation_batch_run-{시각}.jsonl`) | 유지 | 4 | — | 사례 실행마다 새 실행명을 쓰고, 실행을 시작하기 전에 호스트의 실행 폴더를 이미 있으면 실패하는 방식으로 만들어 실행명을 확보하고, 만들기에 실패하면 다음 초의 이름으로 다시 한다(자료 계약 §10.3 N8). dev20·`real_dev` 실행과 MT7 확인 리허설(단위 E2로 돌리는 경우, 두 실행기가 동시에 도는 경우 포함)로 이름 충돌이 없는지 확인한다 |
+| E2 | 샌드박스 밖 실행기 | `evaluation_sealed_runner` | `src/tradesentry/evaluation/sealed_runner.py` | 앱 | M | 봉인 해시 대조 → 사례 식별자 한 건씩 `run-case` | 유지 | 4 | — | 단위 E2의 묶음 기록 도메인명과 봉인 묶음 실행 폴더의 실행 이름은 MT7에서 F1 전에 정한다 `[미확인]`. 실행명 확보는 자료 계약 §10.3 N8을 따른다 |
 | E3 | 추출 명령 | `evaluation_extract` | `src/tradesentry/evaluation/extract.py` | 앱 | M | 실행 기록 → `execution_status`·원인 분류 코드·버전 키 | 유지 | 4 | — | — |
 | E4 | NAT 사후 평가 | `evaluation_nat_eval` | `src/tradesentry/evaluation/nat_eval.py` | 앱 | M | 실행 기록 → 정답 없는 지표 | 유지 | 4 | — | **고정 규칙과 충돌**: 채점기와 겹치는 항목만 정리한다. NAT의 네 역할(실행·추적·프로파일러·사후 평가)은 자문 명세서(`docs/plan/SCAFFOLD_BRIEF.md`) §5.1 고정 사항 5라, 역할을 없애려면 사용자 승인이 필요하다 |
 
@@ -247,7 +247,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 |---|---|---|---|---|
 | AS1 | 탐지 조립 | M(배선), D(부품 확인) | 조립체 2와 CLI 층의 `detect` | 지표 단위(D)와 판정 정책 단위(M)를 이어 `detect`를 만든다. D는 자기 부품이 골든 시험대로 도는지 확인한다 |
 | AS2 | 사례 조사 조립 | M | 조립체 3과 CLI 층의 `run-case` | 도구·흐름·보고서·검증기·실행 기록 단위를 이어 `run-case`를 만든다 |
-| AS3 | 평가 실행·채점 연결 | M·D | 조립체 4·5와 CLI 층의 `evaluate` | 하네스 출력(`evaluation_batch_run-{시각}.jsonl`)과 채점기 입력·출력(`scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`)의 형식을 맞춘다. 사례 실행마다 새 실행명을 쓰는 규칙(같은 초면 다음 초까지 대기)이 dev20·`real_dev` 실행에서 이름 충돌 없이 도는지 확인한다(자료 계약 §10.3 N8) |
+| AS3 | 평가 실행·채점 연결 | M·D | 조립체 4·5와 CLI 층의 `evaluate` | 하네스 출력(`evaluation_batch_run-{시각}.jsonl`)과 채점기 입력·출력(`scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`)의 형식을 맞춘다. 사례 실행마다 새 실행명을 쓰고 실행 전에 실행 폴더를 원자적으로 만들어 확보하는 규칙(만들기에 실패하면 다음 초의 이름으로 다시 한다)이 dev20·`real_dev` 실행에서 이름 충돌 없이 도는지 확인한다(자료 계약 §10.3 N8) |
 | AS4 | 조립 점검 | 공동(오케스트레이터 주관) | 모든 조립체 | §5 여섯 단계로 버릴 것·합칠 것을 확정하고 정리한다. 동결 경로(판정 정책·검증기) 단위의 합치기는 AS4에서만 하고, MVP 시험 뒤에는 건드리지 않는다 |
 
 **완료 기준**(네 작업 모두)
