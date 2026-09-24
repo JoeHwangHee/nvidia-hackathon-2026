@@ -209,21 +209,58 @@ class SafetyTest(BuildTestBase):
                 with self.assertRaises(build.BuildError):
                     self.build(stamp=f"2609250001{index:02d}", source=folder)
 
+    def test_all_duplicate_value_conflict_stops_build(self):
+        """행 규칙 6: 품목별 HS4·HS6 조회의 같은 ALL HS10·월 행 값이 다르면 조용히 고르지 않고 빌드를 멈춘다."""
+        responses = copy.deepcopy(fx.RESPONSES)
+        item = next(i for i in responses[("itemtrade", "850450", "ALL")]
+                    if i["hsCode"] == "8504501000" and i["year"] == "2023.01")
+        item["impDlr"] = "1501"
+        source = fx.make_source(self.root / "conflict", responses=responses)
+        with self.assertRaises(build.BuildError) as cm:
+            self.build(stamp="260925000300", source=source)
+        self.assertIn("ALL 중복 행의 값이 다르다", str(cm.exception))
+        self.assertEqual(build.all_duplicate_problems([]), [])
+
     def test_peer_group_csv_rules(self):
+        lines = fx.PEER_GROUP_CSV.splitlines(keepends=True)
         bad = {
             "열": fx.PEER_GROUP_CSV.replace("similarity", "sim", 1),
-            "scope": fx.PEER_GROUP_CSV.replace(",hs6,850450,1,", ",hs6,8504,1,", 1),
-            "대상국": fx.PEER_GROUP_CSV.replace("exporter_country,CN,", "exporter_country,TH,", 1),
-            "순위": fx.PEER_GROUP_CSV.replace(",850450,1,JP,", ",850450,0,JP,", 1),
-            "유사도": fx.PEER_GROUP_CSV.replace("0.8300", "high", 1),
+            "칸 수": fx.PEER_GROUP_CSV.replace(",import_value_topk,g0,", ",import_value_topk,g0,x,", 1),
+            "scope 자릿수": fx.PEER_GROUP_CSV.replace(",hs6,850450,1,", ",hs6,8504,1,", 1),
+            "scope 대문자": fx.PEER_GROUP_CSV.replace(",hs6,850450,1,", ",HS6,850450,1,", 1),
+            "scope 계획 밖": fx.PEER_GROUP_CSV.replace(",hs4,8504,1,", ",hs4,8544,1,", 1),
+            "대상국 계획 밖": fx.PEER_GROUP_CSV.replace("exporter_country,CN,", "exporter_country,TH,", 1),
+            "코드 체계": fx.PEER_GROUP_CSV.replace("exporter_country,CN,KCS_cntyCd", "exporter_country,CN,ISO2", 1),
+            "entity_type": fx.PEER_GROUP_CSV.replace("exporter_country,CN,", "importer_country,CN,", 1),
+            "순위 0": fx.PEER_GROUP_CSV.replace(",850450,1,JP,", ",850450,0,JP,", 1),
+            "순위 빈틈": fx.PEER_GROUP_CSV.replace(",850450,3,US,", ",850450,4,US,", 1),
+            "자기 비교": fx.PEER_GROUP_CSV.replace(",850450,1,JP,", ",850450,1,CN,", 1),
+            "ALL 비교국": fx.PEER_GROUP_CSV.replace(",850450,3,US,", ",850450,3,ALL,", 1),
+            "비교국 겹침": fx.PEER_GROUP_CSV.replace(",850450,3,US,", ",850450,3,JP,", 1),
+            "유사도 글자": fx.PEER_GROUP_CSV.replace("0.8300", "high", 1),
+            "params_hash": fx.PEER_GROUP_CSV.replace("a" * 64, "sha", 1),
+            "generated_at": fx.PEER_GROUP_CSV.replace(fx.FIXED_TIME, "2026-09-25 00:00", 1),
+            "BACI 코드": fx.PEER_GROUP_CSV.replace("exporter_country,CN,KCS_cntyCd,156,", "exporter_country,CN,KCS_cntyCd,CHN,", 1),
         }
+        self.assertEqual(len(lines), 5)
         for index, (name, text) in enumerate(bad.items()):
             with self.subTest(name):
+                self.assertNotEqual(text, fx.PEER_GROUP_CSV)  # 변조가 실제로 들어갔다
                 path = self.root / f"bad{index}.csv"
                 path.write_text(text, encoding="utf-8")
                 with self.assertRaises(build.BuildError):
                     build.build_snapshot(fx.SNAPSHOT_ID, out_dir=self.out, stamp=f"2609250002{index:02d}",
                                          source_dir=self.source, peer_group_files=[path])
+                self.assertFalse((self.out / f"snapshot_build-2609250002{index:02d}.sqlite").exists())
+
+    def test_peer_group_problem_function_accepts_fixture_and_null_text(self):
+        rows = [dict(zip(types.PEER_GROUP_KEYS, row)) for row in build.load_peer_groups([self.csv])]
+        self.assertEqual(build.peer_group_problems(rows, fx.CONFIG), [])
+        null_text = fx.PEER_GROUP_CSV.replace("exporter_country,CN,KCS_cntyCd,156,", "exporter_country,CN,KCS_cntyCd,null,")
+        path = self.root / "null.csv"
+        path.write_text(null_text, encoding="utf-8")
+        loaded = build.load_peer_groups([path])
+        self.assertIsNone(loaded[0][types.PEER_GROUP_KEYS.index("baci_country_code")])  # null 글자는 NULL
 
 
 class InstallTest(BuildTestBase):
