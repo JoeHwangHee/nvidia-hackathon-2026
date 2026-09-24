@@ -670,7 +670,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 - 코드가 모델의 틀린 상태를 조용히 정답으로 고치지 않는다.
 - 실행 실패 때문에 화면에 보류로 보이는 것과 평가의 정답 보류를 같게 보지 않는다(구 개발계획 §5.3).
 - 실행 결과 기록 키(run 1건): `run_id, case_id, dataset, mode, policy_version, rulebook_version, snapshot_id, grouping_version, code_version, review_status_final, signal_status, unresolved_evidence, execution_status, required_evidence_ok, numeric_ok, provenance_ok, tool_attempts, model_requests, tokens_in, tokens_out, wall_ms, critic_used, revision_used, errors`
-- 실행 기록(trace JSONL, NAT 프로파일 결과)은 그 실행 폴더 `outputs/{실행명}/`에 두고 커밋하지 않는다. 봉인 묶음 실행은 `outputs/sealed/{실행명}/`이다. 실행 쪽 키는 평가 하네스(단위 `evaluation_batch_run`)가 `evaluation_batch_run-{시각}.jsonl`에 쓰고, 채점기가 세 키를 더한 평가 결과를 채점 실행 폴더에 새로 쓴다. 평가 결과는 채점 실행 폴더의 채점기 출력(`scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`)만 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(증거 복사). trace와 NAT 프로파일 결과는 복사하지 않고, 봉인 묶음은 정답 대조 채점이 끝난 뒤에만 복사한다(자료 계약 §8.2·§10.3).
+- 실행 기록(trace JSONL, NAT 프로파일 결과)은 그 실행 폴더 `outputs/{실행명}/`에 두고 커밋하지 않는다. 봉인 묶음 실행은 `outputs/sealed/{실행명}/`이다. 실행 쪽 키는 평가 하네스(단위 `evaluation_batch_run`)가 `evaluation_batch_run-{시각}.jsonl`에 쓰고, 채점기가 세 키를 더한 평가 결과를 채점 실행 폴더에 새로 쓴다. 평가 결과는 채점 실행 폴더의 채점기 출력(`scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`)만 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(증거 복사). trace와 NAT 프로파일 결과는 복사하지 않고, 봉인 묶음은 금지 해제 조건이 채워진 뒤에만 복사한다(자료 계약 §8.2·§10.3).
 - 키 값은 로그·trace·결과 파일에 남지 않아야 한다.
 
 ### 7.6 승인(모의, 코드 검증만)
@@ -795,7 +795,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
   - `UNBACKED_PROSE`는 보고서당 건수로도 따로 보고한다.
   - 유효한 최종 보고서가 없는 실행은 보고서 단위 실패로 분모에 남긴다.
 - 주장 채점 기록 키(claim 1건): `run_id, report_id, claim_id, source, outcome, expected_value, reported_value, unit_expected, unit_reported, tolerance, referent_resolved, evidence_ok, note`. `source`는 `claim | prose`(산문 패턴으로 잡힌 표현)이고, `outcome`은 위 채점 결과 값이다.
-- 독립 채점기: `eval/scorer/`(D 소유). 런타임 모듈을 import하지 않는 **독립 구현**이며 런타임 `metrics/` 패키지를 재사용하지 않는다. import 금지에는 간접 import(런타임 패키지를 부르는 모듈을 거쳐 부르는 경우)도 들고, 평가 자료 도구 `eval/datagen/`도 import하지 않는다(자료 계약 §10.3). `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증하고, 샌드박스 밖에서 돈다. 실행: `python -m eval.scorer --run <run_dir>`. `<run_dir>`는 채점할 실행 폴더 `outputs/{실행명}/`(봉인 묶음은 `outputs/sealed/{실행명}/`)이고, 채점기는 자기 출력을 `outputs/score-{시각}/`에 쓴다. 봉인 묶음을 채점한 채점기 출력은 정답 대조 채점이 끝나기 전에는 에이전트가 열지 않고 커밋하지 않는다(자료 계약 §10.3 N10).
+- 독립 채점기: `eval/scorer/`(D 소유). 런타임 모듈을 import하지 않는 **독립 구현**이며 런타임 `metrics/` 패키지를 재사용하지 않는다. import 금지에는 간접 import(런타임 패키지를 부르는 모듈을 거쳐 부르는 경우)도 들고, 평가 자료 도구 `eval/datagen/`도 import하지 않는다(자료 계약 §10.3). `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증하고, 샌드박스 밖에서 돈다. 실행: `python -m eval.scorer --run <run_dir>`. `<run_dir>`는 채점할 실행 폴더 `outputs/{실행명}/`(봉인 묶음은 `outputs/sealed/{실행명}/`)이고, 채점기는 자기 출력을 `outputs/score-{시각}/`에 쓴다. 봉인 묶음을 채점할 때 채점기는 시작 직후 자기가 확보한 실행 폴더 이름을 표준 출력 첫 줄로 알리고, 봉인 묶음을 채점한 채점기 출력은 금지 해제 조건(자료 계약 §10.3 N10) 전에는 에이전트가 열지 않고 커밋하지 않는다.
 - MVP 기준(로드맵 체크리스트 6번): `real_dev`로 대표 지표 첫 값(`freeform` vs `full`)을 낸다. 이 값은 "개발 묶음 값, 대표 숫자 아님"으로 표기한다.
 
 ### 9.4 A등급 주장 조건
