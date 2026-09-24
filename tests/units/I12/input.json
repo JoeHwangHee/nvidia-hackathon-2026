@@ -1,0 +1,433 @@
+{
+ "run_id": "run_case-260925143015",
+ "case": {
+  "case_id": "A-composition",
+  "hs6": "850450",
+  "partner": "CN",
+  "month": "202401",
+  "baseline_month": "202301",
+  "signals": {
+   "unit_value": "TRIGGERED",
+   "share": "NOT_TRIGGERED"
+  },
+  "snapshot_id": "controlled_fixture_v0",
+  "policy_version": "dev-0.1"
+ },
+ "mode": "full",
+ "dataset": "controlled_fixture_v0",
+ "rulebook_version": "RB-1",
+ "grouping_version": "g0",
+ "code_version": "abc1234",
+ "replay": [
+  {
+   "seq": 1,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "run_start",
+   "stage": null,
+   "data": {
+    "case_id": "A-composition",
+    "mode": "full",
+    "dataset": "controlled_fixture_v0",
+    "snapshot_id": "controlled_fixture_v0",
+    "policy_version": "dev-0.1",
+    "grouping_version": "g0",
+    "model_config": "model-0.2",
+    "api_key_env": "NVIDIA_API_KEY",
+    "limits": {
+     "model_requests": 10,
+     "tokens": 32000,
+     "wall_ms": 300000,
+     "tool_attempts": 8,
+     "basic_tool_attempts": 5,
+     "investigator_comparisons": 2,
+     "revision_stages": 1,
+     "revision_requeries": 2,
+     "final_verify": 1
+    }
+   }
+  },
+  {
+   "seq": 2,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "stage_start",
+   "stage": "basic",
+   "data": {
+    "stage": "basic"
+   }
+  },
+  {
+   "seq": 3,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "tool_call",
+   "stage": "basic",
+   "data": {
+    "tool": "check_comparability",
+    "args": {},
+    "source": "code",
+    "tool_attempts": 1
+   }
+  },
+  {
+   "seq": 4,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "tool_result",
+   "stage": "basic",
+   "data": {
+    "tool": "check_comparability",
+    "ok": true,
+    "elapsed_ms": 5,
+    "envelope": {
+     "query_id": "q-cc",
+     "tool": "check_comparability",
+     "scope": {
+      "hs6": "850450",
+      "partner": "CN"
+     },
+     "snapshot_id": "controlled_fixture_v0",
+     "source_kind": "controlled",
+     "evidence_ids": [],
+     "metrics": [],
+     "comparability": {
+      "comparable": true
+     },
+     "missingness": [],
+     "retryable_error": null,
+     "elapsed_ms": 5
+    }
+   }
+  },
+  {
+   "seq": 5,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "tool_call",
+   "stage": "basic",
+   "data": {
+    "tool": "get_history",
+    "args": {},
+    "source": "code",
+    "tool_attempts": 2
+   }
+  },
+  {
+   "seq": 6,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "tool_result",
+   "stage": "basic",
+   "data": {
+    "tool": "get_history",
+    "ok": true,
+    "elapsed_ms": 5,
+    "envelope": {
+     "query_id": "q-gh",
+     "tool": "get_history",
+     "scope": {
+      "hs6": "850450",
+      "partner": "CN"
+     },
+     "snapshot_id": "controlled_fixture_v0",
+     "source_kind": "controlled",
+     "evidence_ids": [
+      "ev:controlled_fixture_v0:observation:1024",
+      "ev:controlled_fixture_v0:observation:1025"
+     ],
+     "metrics": [
+      {
+       "metric_id": "m-rU",
+       "formula_version": "f1",
+       "inputs": {
+        "metric": "r_U",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202401",
+        "baseline_period": "202301"
+       },
+       "evidence_ids": [
+        "ev:controlled_fixture_v0:observation:1024",
+        "ev:controlled_fixture_v0:observation:1025"
+       ],
+       "value": -40.0,
+       "unit": "%",
+       "comparability_flags": [],
+       "tolerance": null
+      }
+     ],
+     "comparability": {},
+     "missingness": [],
+     "retryable_error": null,
+     "elapsed_ms": 5
+    }
+   }
+  },
+  {
+   "seq": 7,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "model_request",
+   "stage": "basic",
+   "data": {
+    "request_no": 1,
+    "attempt": 1,
+    "model_requests": 1,
+    "request_sha256": "97b1a64906074cfdd0a1f074b4e0ae33b43cc770504ee207c692ddf8709d041d",
+    "timeout_ms": 60000,
+    "messages": 2,
+    "tools": 4
+   }
+  },
+  {
+   "seq": 8,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "model_response",
+   "stage": "basic",
+   "data": {
+    "request_no": 1,
+    "attempt": 1,
+    "http_status": 200,
+    "elapsed_ms": 700,
+    "usage": {
+     "prompt_tokens": 1500,
+     "completion_tokens": 150,
+     "total_tokens": 1650
+    },
+    "tokens_total": 1650,
+    "response": {
+     "message": {
+      "role": "assistant",
+      "content": "{\"review_status\": \"MONITOR\", \"signal_status\": {\"unit_value\": \"MONITOR\", \"share\": \"NOT_TRIGGERED\"}, \"claims\": [{\"claim_type\": \"change\", \"metric_id\": \"m-rU\"}], \"narrative\": \"단가 신호는 하위품목 구성 변화로 설명될 가능성이 있다.\", \"hypotheses\": [\"구성 변화 가설\"]}",
+      "tool_calls": null
+     },
+     "finish_reason": "stop"
+    }
+   }
+  },
+  {
+   "seq": 9,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "state_change",
+   "stage": "basic",
+   "data": {
+    "phase": "draft",
+    "review_status": "MONITOR",
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "NOT_TRIGGERED"
+    },
+    "problems": 0
+   }
+  },
+  {
+   "seq": 10,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "validator_result",
+   "stage": "basic",
+   "data": {
+    "phase": "draft",
+    "scope": "schema",
+    "schema_ok": true,
+    "validator_ok": true,
+    "record_only": false,
+    "decision": "pass",
+    "findings": []
+   }
+  },
+  {
+   "seq": 11,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "stage_end",
+   "stage": "basic",
+   "data": {
+    "stage": "basic"
+   }
+  },
+  {
+   "seq": 12,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "stage_start",
+   "stage": "critic",
+   "data": {
+    "stage": "critic"
+   }
+  },
+  {
+   "seq": 13,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "model_request",
+   "stage": "critic",
+   "data": {
+    "request_no": 2,
+    "attempt": 1,
+    "model_requests": 2,
+    "request_sha256": "726258f1f1abe572c7009bb692404e5d22e4c5333274eadb46279864cd394f3b",
+    "timeout_ms": 60000,
+    "messages": 2,
+    "tools": 0
+   }
+  },
+  {
+   "seq": 14,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "model_response",
+   "stage": "critic",
+   "data": {
+    "request_no": 2,
+    "attempt": 1,
+    "http_status": 200,
+    "elapsed_ms": 700,
+    "usage": {
+     "prompt_tokens": 1200,
+     "completion_tokens": 90,
+     "total_tokens": 1290
+    },
+    "tokens_total": 2940,
+    "response": {
+     "message": {
+      "role": "assistant",
+      "content": "{\"findings\": [], \"requery\": [], \"needs_revision\": false}",
+      "tool_calls": null
+     },
+     "finish_reason": "stop"
+    }
+   }
+  },
+  {
+   "seq": 15,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "state_change",
+   "stage": "critic",
+   "data": {
+    "phase": "after_critic",
+    "review_status": "MONITOR",
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "NOT_TRIGGERED"
+    },
+    "needs_revision": false,
+    "findings": 0,
+    "requery": 0
+   }
+  },
+  {
+   "seq": 16,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "stage_end",
+   "stage": "critic",
+   "data": {
+    "stage": "critic"
+   }
+  },
+  {
+   "seq": 17,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "tool_call",
+   "stage": "basic",
+   "data": {
+    "tool": "verify_evidence",
+    "args": {
+     "metric_ids": [
+      "m-rU"
+     ],
+     "evidence_ids": []
+    },
+    "source": "code",
+    "tool_attempts": 3
+   }
+  },
+  {
+   "seq": 18,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "tool_result",
+   "stage": "basic",
+   "data": {
+    "tool": "verify_evidence",
+    "ok": true,
+    "elapsed_ms": 5,
+    "envelope": {
+     "query_id": "q-ve",
+     "tool": "verify_evidence",
+     "scope": {
+      "hs6": "850450",
+      "partner": "CN"
+     },
+     "snapshot_id": "controlled_fixture_v0",
+     "source_kind": "controlled",
+     "evidence_ids": [
+      "ev:controlled_fixture_v0:observation:1024",
+      "ev:controlled_fixture_v0:observation:1025"
+     ],
+     "metrics": [],
+     "comparability": {},
+     "missingness": [],
+     "retryable_error": null,
+     "elapsed_ms": 5
+    }
+   }
+  },
+  {
+   "seq": 19,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "validator_result",
+   "stage": "basic",
+   "data": {
+    "phase": "verify",
+    "scope": "all",
+    "schema_ok": true,
+    "validator_ok": true,
+    "record_only": false,
+    "decision": "pass",
+    "findings": []
+   }
+  },
+  {
+   "seq": 20,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "state_change",
+   "stage": "final",
+   "data": {
+    "phase": "final",
+    "review_status": "MONITOR",
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "NOT_TRIGGERED"
+    }
+   }
+  },
+  {
+   "seq": 21,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "run_case-260925143015",
+   "event": "run_end",
+   "stage": null,
+   "data": {
+    "execution_status": "COMPLETED",
+    "cause_code": null,
+    "review_status_final": "MONITOR",
+    "tool_attempts": 3,
+    "model_requests": 2,
+    "tokens_in": 2700,
+    "tokens_out": 240,
+    "wall_ms": 1400,
+    "critic_used": true,
+    "revision_used": false
+   }
+  }
+ ]
+}

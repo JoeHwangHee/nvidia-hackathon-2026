@@ -1,0 +1,18 @@
+{
+ "response": {
+  "message": {"role": "assistant", "content": "{\"review_status\": \"MONITOR\"}", "tool_calls": null},
+  "finish_reason": "stop",
+  "usage": {"prompt_tokens": 812, "completion_tokens": 96, "total_tokens": 908},
+  "attempts": 3
+ },
+ "stop": null,
+ "budget": {"model_requests": 3, "tokens_in": 812, "tokens_out": 96},
+ "events": [
+  ["model_request", {"attempt": 1, "timeout_ms": 60000}],
+  ["model_error", {"attempt": 1, "http_status": 503, "error": null, "retrying": true, "backoff_ms": 1000}],
+  ["model_request", {"attempt": 2, "timeout_ms": 60000}],
+  ["model_error", {"attempt": 2, "http_status": 503, "error": null, "retrying": true, "backoff_ms": 2000}],
+  ["model_request", {"attempt": 3, "timeout_ms": 60000}],
+  ["model_response", {"attempt": 3, "http_status": 200}]
+ ]
+}
