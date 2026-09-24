@@ -236,7 +236,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 - `src/tradesentry/ingest.py`는 표준 라이브러리만 쓰는 상태를 유지한다.
 - 이 저장소의 시스템 `python3`는 3.9.6이고 pandas·openpyxl이 없다 `[사실: 실측 메모 §6]`. 기존 시험 17개는 네트워크 없이 돈다: `python3 -m unittest discover -s tests -v`.
 - OpenShell 게이트웨이는 Linux 전용(glibc 2.28 이상)이라 macOS에서는 Docker 안에서 돌린다 `[사실: R3 문서 §7]`. NemoClaw는 알파 단계다.
-- 키는 `.env`의 `NVIDIA_API_KEY`, `DATA_GO_KR_SERVICE_KEY`만 쓴다. 로그·trace·문서·PR에 쓰지 않는다. 샌드박스 안에는 키를 두지 않는다(§4.6).
+- 키는 `.env`의 `NVIDIA_API_KEY`, `DATA_GO_KR_SERVICE_KEY`만 쓴다. 로그·trace·문서·PR에 쓰지 않는다. 에이전트와 그 자식 프로세스(샌드박스 사용자 권한)가 읽을 수 있는 곳에는 키를 두지 않는다(요건 (c), 해석 A, §4.6).
 - NIM 무료 키에서 HTTP 500이 간헐적으로 난다 `[사실: 실측 메모 §5]`. provider(모델 호출 클라이언트)의 자동 재시도는 끄고, 5xx는 코드가 명시적으로 재전송한다(요청당 최대 3회, 지수 대기, 조정값). 평가 동시성은 1로 시작한다.
 - 기존 NIM 도구 호출 확인 스크립트: `python3 scripts/g4_nim_toolcall_probe.py`.
 
@@ -262,7 +262,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
   - 예외는 하나다: 공식 채점 대상 실행 전용 샌드박스에는 봉인 폴더 전체가 아니라 봉인 입력만 읽기 전용으로 넣는다(§9.8 절차 4). 정답표는 어떤 샌드박스에도 넣지 않는다.
 - **(b)** 외부 전송은 NVIDIA 추론 엔드포인트만 허용한다. L7(HTTP 요청 수준) method·path를 명시하고, `rules` 생략이나 범용 바이너리 + `/**` 조합은 금지한다.
   - 두 샌드박스 모두 이 요건을 지킨다. 채점 대상 실행 샌드박스는 목적지 하나·추론 요청 한 경로로 지킨다(§4.6). 시연 샌드박스가 이 요건을 채우지 못하면 예외를 두지 않고 즉시 사용자 결정을 받는다. 대안의 예는 §5.4 대체 경로(NemoClaw 없이 OpenShell만)다(§4.8).
-- **(c)** API 키를 샌드박스 안에 두지 않는다. 방식은 credential placeholder rewrite(샌드박스에는 자리표시 문자열만 두고 게이트웨이가 실제 키로 바꾸는 방식)와 `inference.local` 중 설치 확인 단계(X1, §5.3)에서 고르고 이유를 기록한다.
+- **(c)** API 키를 샌드박스 안에 두지 않는다. "샌드박스 안"은 에이전트와 그 자식 프로세스(샌드박스 사용자 권한)가 읽을 수 있는 곳이다(해석 A, 결정 기록 `20260924-2010-user-decision-key-rule-interpretation.md`). 샌드박스 컨테이너 안에서 root로 도는 감독 프로세스는 게이트웨이에서 자격 증명을 받아 요청에 넣으므로 실제 키를 가진다 `[사실: OpenShell v0.0.116 docs/about/how-it-works.mdx 116행]`. 방식은 credential placeholder rewrite(샌드박스 프로그램에는 자리표시 문자열만 두고 감독 프로세스의 정책 프록시가 요청 시점에 실제 키로 바꾸는 방식)와 `inference.local` 중 설치 확인 단계(X1, §5.3)에서 고르고 이유를 기록한다. X1은 credential placeholder rewrite를 채택했다(결정 기록 `20260924-1556-x1-key-injection.md`).
 - **(d)** 허용·차단 감사 로그를 `openshell logs`로 수집한다.
   - 근거: 대회 조사 문서 §8-2는 허용·차단이 모두 감사 로그로 기록된다고 적는다. 계층별(네트워크·파일시스템 등)로 실제로 남는지는 X1 실측 전까지 `[미확인]`이다.
   - 이벤트 이름까지 확인한 것은 거부(`HTTP:* DENIED`)와 정책(`CONFIG:*`) 이벤트다 `[사실: R3 문서 §3]`. 허용 이벤트 행의 실제 형식은 X1 실측 전까지 `[미확인]`이다.
@@ -347,7 +347,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 
 | 방식 | 동작 | 근거 | 남은 확인 |
 |---|---|---|---|
-| credential placeholder rewrite | 샌드박스 안 프로세스는 자리표시 문자열(placeholder)만 갖고, 게이트웨이가 요청을 내보낼 때 실제 키로 바꾼다. 그래서 샌드박스는 실제 키 값을 보지 못한다. rewrite가 꺼진 목적지로 placeholder를 보내면 upstream(실제 목적지 서버)에 닿기 전에 거부된다 | `[사실: 03 문서 §2.1, R3 문서 §1]` | 근거 문서가 확인한 옵션(`request_body_credential_rewrite`)은 요청 **본문**의 placeholder 치환이다. NIM API는 키를 `Authorization: Bearer` 헤더로 받는다 `[사실: 대회 조사 문서 §7-2]`. **헤더 치환은 X1에서 확인했다**: provider(게이트웨이에 등록한 자격 증명 묶음)를 샌드박스에 붙이고 샌드박스 환경변수의 자리표시 값을 `Authorization: Bearer` 헤더에 실어 보내자, 샌드박스 안 감독 프로세스(supervisor, 샌드박스 컨테이너 안에서 root로 도는 OpenShell 프로세스 `openshell-sandbox`)의 정책 프록시가, 게이트웨이에서 받은 자격 증명으로 요청 시점에 자리표시 값을 실제 키로 바꿔 NIM이 HTTP 200을 냈다 `[사실: artifacts/openshell/violation_tests.md §2 V0, OpenShell v0.0.116 docs/about/how-it-works.mdx 14·116행, docs/sandboxes/manage-providers.mdx 327~330행, artifacts/openshell/logs/20260924-x1-demo-openshell-logs.txt 7·13행]`. 프로필의 `auth_style: bearer`·`header_name: authorization`은 0.0.116에서 저장·검증되는 메타데이터이고 치환을 일으킨 원인이 아니다 `[사실: 같은 판 docs/sandboxes/providers-v2.mdx 216행]`. 키 조회는 샌드박스 사용자(UID 998) 권한으로 닿는 환경변수·파일·읽을 수 있는 `/proc/<pid>/environ` 범위에서 실제 키 0건이었다(PID 1(root 감독 프로세스)은 조회하지 못함). 실제 키는 샌드박스 컨테이너 안 root 감독 프로세스가 가진다 `[사실: artifacts/openshell/violation_tests.md 머리말 "키 조회 범위", §2 V5, §6.3 DA4·DH2, OpenShell v0.0.116 docs/about/how-it-works.mdx 116행]`. 채택은 결정 기록 `20260924-1556-x1-key-injection.md`다 |
+| credential placeholder rewrite | 샌드박스 안 프로그램(샌드박스 사용자 권한)은 자리표시 문자열(placeholder)만 갖고, 샌드박스 안 감독 프로세스의 정책 프록시가 게이트웨이에서 받은 자격 증명으로 요청을 내보낼 때 실제 키로 바꾼다. 그래서 샌드박스 프로그램은 실제 키 값을 보지 못한다. rewrite가 꺼진 목적지로 placeholder를 보내면 upstream(실제 목적지 서버)에 닿기 전에 거부된다 | `[사실: 03 문서 §2.1, R3 문서 §1]` | 근거 문서가 확인한 옵션(`request_body_credential_rewrite`)은 요청 **본문**의 placeholder 치환이다. NIM API는 키를 `Authorization: Bearer` 헤더로 받는다 `[사실: 대회 조사 문서 §7-2]`. **헤더 치환은 X1에서 확인했다**: provider(게이트웨이에 등록한 자격 증명 묶음)를 샌드박스에 붙이고 샌드박스 환경변수의 자리표시 값을 `Authorization: Bearer` 헤더에 실어 보내자, 샌드박스 안 감독 프로세스(supervisor, 샌드박스 컨테이너 안에서 root로 도는 OpenShell 프로세스 `openshell-sandbox`)의 정책 프록시가, 게이트웨이에서 받은 자격 증명으로 요청 시점에 자리표시 값을 실제 키로 바꿔 NIM이 HTTP 200을 냈다 `[사실: artifacts/openshell/violation_tests.md §2 V0, OpenShell v0.0.116 docs/about/how-it-works.mdx 14·116행, docs/sandboxes/manage-providers.mdx 327~330행, artifacts/openshell/logs/20260924-x1-demo-openshell-logs.txt 7·13행]`. 프로필의 `auth_style: bearer`·`header_name: authorization`은 0.0.116에서 저장·검증되는 메타데이터이고 치환을 일으킨 원인이 아니다 `[사실: 같은 판 docs/sandboxes/providers-v2.mdx 216행]`. 키 조회는 샌드박스 사용자(UID 998) 권한으로 닿는 환경변수·파일·읽을 수 있는 `/proc/<pid>/environ` 범위에서 실제 키 0건이었다(PID 1(root 감독 프로세스)은 조회하지 못함). 실제 키는 샌드박스 컨테이너 안 root 감독 프로세스가 가진다 `[사실: artifacts/openshell/violation_tests.md 머리말 "키 조회 범위", §2 V5, §6.3 DA4·DH2, OpenShell v0.0.116 docs/about/how-it-works.mdx 116행]`. 채택은 결정 기록 `20260924-1556-x1-key-injection.md`다 |
 | `inference.local` | 샌드박스는 `inference.local`만 보고, 게이트웨이가 설정된 provider(추론 백엔드)로 요청을 전달한다. 샌드박스에 키가 없다는 것은 추론이며, 요건 (c)의 키 조회 시험으로 실측한다 | 전달 방식 `[사실: 대회 조사 문서 §8-2, 03 문서 §2.1-1]`, 키 부재 `[추론]` | X1에서 전달은 됐다(OpenShell 0.0.116, NIM HTTP 200). 그러나 감독 프로세스(샌드박스 컨테이너 안에서 root로 도는 OpenShell 프로세스)의 추론 라우터가 샌드박스 네트워크 정책 밖에서 처리해, 정책 블록이 없어도 `curl`·시스템 파이썬 등 모든 실행 파일이 썼다. 라우터가 받는 형식 목록에는 채팅·완성·응답·임베딩·모델 조회 다섯 종류가 있었다(실제로 보낸 요청은 `POST /v1/chat/completions`와 `GET /v1/models` 두 종류다). 정책 블록으로 좁히자 요청이 응답 없이 멈췄다 `[사실: artifacts/openshell/violation_tests.md §2 V7·V8]`. 공식 문서도 `inference.local`만 네트워크 감독을 거치지 않고, 추론이 설정되면 어느 샌드박스의 코드든 그 주소를 부를 수 있다고 적는다 `[사실: OpenShell v0.0.116 docs/sandboxes/policies.mdx 72행, docs/sandboxes/inference-routing.mdx 244행]`. 추론 경로는 게이트웨이의 작업 공간(workspace, 게이트웨이 안의 자원 범위) 단위라, 경로의 provider를 붙이지 않은 샌드박스도 그 경로를 썼다 `[사실: 같은 문서 §2 V7 아래 설명]` |
 
 - **채택 규칙**: X1 세로형 최소 통합 시험(§5.3)에서 **실제로 성공한 방식만** 채택하고, 고른 이유를 결정 기록(`docs/tracking/decisions/`)에 남긴다. 두 방식이 모두 실패하면 키를 샌드박스에 넣는 우회를 하지 않고 바로 사용자 결정을 받는다(§5.3·§5.4).
@@ -1190,9 +1190,10 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | seccomp | 리눅스 커널의 시스템 호출 필터 |
 | L7 규칙 | HTTP method·path·query 수준의 허용 규칙 |
 | prefix | 경로의 앞부분. OpenShell 파일시스템 정책은 가장 긴 일치 prefix로 판정한다 |
-| credential placeholder rewrite | 샌드박스 안에는 자리표시 문자열만 두고, 게이트웨이가 요청을 내보낼 때 실제 키로 바꾸는 방식 |
+| credential placeholder rewrite | 샌드박스 프로그램에는 자리표시 문자열만 두고, 샌드박스 안 감독 프로세스의 정책 프록시가 요청을 내보낼 때 실제 키로 바꾸는 방식 |
 | `inference.local` | 샌드박스가 보는 추론 주소. 게이트웨이가 설정된 provider 1개·모델 1개로 전달한다 |
-| 게이트웨이 | 샌드박스의 요청을 받아 정책을 적용하고 전달하는 OpenShell 구성요소 |
+| 게이트웨이 | 샌드박스의 정책과 provider 설정을 보관하고 샌드박스에 내려보내는 OpenShell 제어면. 요청에 정책을 적용하고 전달하는 일은 감독 프로세스의 정책 프록시가 한다 |
+| 감독 프로세스(supervisor) | 샌드박스 컨테이너 안에서 root로 돌며 정책을 집행하는 OpenShell 프로세스. 나가는 요청의 정책 프록시가 자리표시 값을 실제 키로 바꾼다 |
 | `openshell logs` | 샌드박스의 허용·차단·정책 이벤트를 보는 명령. 감사 증거의 원천. 대회 조사 문서 §8-2는 허용·차단이 모두 기록된다고 적고, 거부·정책 이벤트 이름은 R3 문서 §3에서 확인했다. 계층별로 실제 남는지와 허용 이벤트 행의 형식은 `[미확인]` |
 | 채점 대상 실행 샌드박스 | NemoClaw 없이 TradeSentry CLI만 도는 샌드박스. 봉인 입력은 새로 만든 공식 채점 대상 실행 전용 샌드박스에만 넣는다 |
 | 시연 샌드박스 | NemoClaw의 OpenClaw 하네스·스킬·CLI가 함께 도는 샌드박스. 03 문서 §1 정책과 같은 기본 블록이 딸려 올 수 있으며, 요건 (b)는 예외 없이 지킨다 |
@@ -1224,6 +1225,6 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | Streamlit | 파이썬으로 웹 화면을 만드는 라이브러리 |
 | PR | 작업 브랜치의 변경을 main에 합치기 위한 병합 요청 |
 | squash 병합 | PR의 여러 커밋을 하나로 합쳐 main에 넣는 병합 방식 |
-| upstream | 게이트웨이가 요청을 넘겨주는 실제 목적지 서버 |
+| upstream | 정책 프록시가 요청을 넘겨주는 실제 목적지 서버 |
 | 구 개발계획 G0~G4 | 구 개발계획 §2의 관문(대회 조건, 신규 수집 접근, 24개월 품질, HS10 구성분해, NIM+NAT). 규범 G1~G6과 다르다 |
 | 규범 G1·G2 | 규범의 하드 게이트. G1은 정량 증명 가능성, G2는 교육 미션 정합성 `[DESIGN]` |

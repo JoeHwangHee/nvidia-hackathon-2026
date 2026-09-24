@@ -895,7 +895,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | 항목 | 값 |
 |---|---|
 | 모델 | `nvidia/nemotron-3-super-120b-a12b`. 조사자와 Critic이 같은 모델을 별도 문맥으로 쓴다 |
-| 엔드포인트 | `https://integrate.api.nvidia.com/v1/chat/completions`. upstream(게이트웨이가 요청을 넘기는 실제 목적지) 기준이다. `inference.local`을 채택하면 샌드박스는 `inference.local`만 보고, provider를 NVIDIA NIM으로 설정한 게이트웨이가 이 엔드포인트로 넘긴다 `[추론]`(§4.4.5. 모델 이름·경로를 맞추는 방법은 Q6의 2) |
+| 엔드포인트 | `https://integrate.api.nvidia.com/v1/chat/completions`. upstream(정책 프록시가 요청을 넘기는 실제 목적지) 기준이다. X1은 credential placeholder rewrite를 채택해 샌드박스 프로그램이 이 엔드포인트를 직접 부른다(결정 기록 `20260924-1556-x1-key-injection.md`). `inference.local`은 채택하지 않았다(§4.4.5. 모델 이름·경로를 맞추는 방법은 Q6의 2) |
 | 인증 | `Authorization: Bearer` 헤더에 `NVIDIA_API_KEY`를 싣는다 `[사실: 대회 조사 문서 §7-2]`. 샌드박스 안에는 키를 두지 않는다(§4.4.6) |
 | 도구 호출 | native tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능) 왕복을 구 개발계획 G4 관문 시험에서 확인했다 `[사실: 실측 메모 §5]`. 확인 스크립트 `python3 scripts/g4_nim_toolcall_probe.py` |
 | 재시도 | provider 자동 재시도는 끈다. 5xx는 코드가 명시적으로 재전송한다: 요청당 최대 3회, 지수 대기(조정값). 재전송도 모델 요청 횟수에 센다 |
@@ -1293,7 +1293,7 @@ CLI(명령줄 실행 도구)는 `tradesentry <명령>` 하나로 모은다.
 | 3 | 자료 계약 v1의 값: 객체·필드, 상태값, 모드·이름, ID 형식, 봉투 키, typed claim 필드, 실행·보고서·주장 채점 기록 키, 표시 자릿수(§3.4) | `docs/rules/DATA_CONTRACT_V1.md` | 계약 버전 올림과 사용자 승인 |
 | 4 | 계획 경로·명령 표(§2.3)의 경로와 명령. 이름은 조정값이지만, 바꾸면 표와 참조 문서를 같은 PR에서 함께 고친다. 기존 파일 3개의 위치는 바꾸지 않는다 | 명세 §4.12 | 사용자 승인 |
 | 5 | 실행 사슬(§4 머리)과 두 경로: 조사 흐름을 NAT로 감싸 실행·추적·프로파일러·사후 평가를 맡긴다. 채점 대상 실행은 OpenShell 샌드박스 안에서 CLI로 직접 돌리고 NemoClaw를 거치지 않는다. 정답 대조 채점은 샌드박스 밖에서 한다 | `[DESIGN]` | 사용자 승인 |
-| 6 | 모델 `nvidia/nemotron-3-super-120b-a12b`, 엔드포인트 `https://integrate.api.nvidia.com/v1/chat/completions`. 엔드포인트는 upstream(게이트웨이가 요청을 넘기는 실제 목적지) 기준이다. `inference.local`을 채택하면 샌드박스가 보는 주소는 `inference.local`이다. 조사자와 Critic은 같은 모델을 별도 문맥으로 쓴다 | `[DESIGN]` | 사용자 승인 |
+| 6 | 모델 `nvidia/nemotron-3-super-120b-a12b`, 엔드포인트 `https://integrate.api.nvidia.com/v1/chat/completions`. 엔드포인트는 upstream(정책 프록시가 요청을 넘기는 실제 목적지) 기준이다. `inference.local`을 채택하면 샌드박스가 보는 주소는 `inference.local`이다. 조사자와 Critic은 같은 모델을 별도 문맥으로 쓴다 | `[DESIGN]` | 사용자 승인 |
 | 7 | 예산과 한도(도구 8회, 재조사 1회와 그 안의 조회 2회, 모델 요청 10회, 300초, 32,000토큰)는 코드가 강제하고 모든 모드에 같다. 수치는 조정값이다 | `[DESIGN]` | 공용 약속(도구 한도) 변경. 사용자 승인 |
 | 8 | 보안: 샌드박스 안에 키가 없다. 외부 전송은 NVIDIA 추론 엔드포인트만이고 L7 method·path를 명시한다. 정답표는 어떤 샌드박스에도 없다. 키 주입은 X1에서 실제로 성공한 방식만 쓰고, 둘 다 실패하면 우회 없이 사용자 결정을 받는다 | `[DESIGN]` | 하드 조건. 자문으로 바꾸지 않는다 |
 | 9 | 봉인: 저장소 밖 봉인 폴더(`TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`)에 두고 해시 목록만 커밋한다. `RB-1` 동결 뒤 한 번만 채점한다 | `[DESIGN]` | 사용자 승인 |
@@ -1804,8 +1804,8 @@ Q2. OpenShell 안 파이썬 실행 환경 구성
 | 허용 목록 방식·prefix | 나열한 경로(와 작업 폴더)만 허용하고 나머지를 거부하는 파일시스템 정책 방식과, 판정에 쓰는 경로 앞부분 |
 | Landlock·seccomp | 리눅스 커널의 파일시스템 접근 제한 기능과 시스템 호출 필터 |
 | egress·L7 규칙 | 샌드박스에서 밖으로 나가는 통신과, HTTP 요청의 method·path·query 수준에서 허용·거부를 정하는 규칙 |
-| 게이트웨이·upstream | 샌드박스의 요청을 받아 정책을 적용하고 전달하는 OpenShell 구성요소와, 게이트웨이가 요청을 넘겨주는 실제 목적지 서버 |
-| credential placeholder rewrite | 샌드박스 안에는 자리표시 문자열만 두고, 게이트웨이가 요청을 내보낼 때 실제 키로 바꾸는 방식 |
+| 게이트웨이·upstream | 샌드박스의 정책과 provider 설정을 보관하고 내려보내는 OpenShell 제어면과, 샌드박스 안 감독 프로세스(root로 돌며 정책을 집행하는 OpenShell 프로세스)의 정책 프록시가 요청을 넘겨주는 실제 목적지 서버 |
+| credential placeholder rewrite | 샌드박스 프로그램에는 자리표시 문자열만 두고, 샌드박스 안 감독 프로세스의 정책 프록시가 요청을 내보낼 때 실제 키로 바꾸는 방식 |
 | `inference.local` | 샌드박스가 보는 추론 주소. 게이트웨이가 설정된 provider 1개·모델 1개로 요청을 전달한다 |
 | `openshell logs`·감사 로그 | 샌드박스의 허용·차단·정책 이벤트를 보는 명령과 그 기록. 감사 증거는 이것과 앱 실행 기록이다 |
 | 의도적 위반 시험·미끼 파일 | 일부러 정책 위반을 시도해 막히는지 보는 시험과, 차단을 시험하려고 허용 목록 밖에 둔 가짜 정답 파일(실제 정답은 넣지 않는다) |

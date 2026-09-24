@@ -528,7 +528,7 @@ D가 `real_dev` 개발 묶음만으로 제안하고(DT4), 승인되면 `configs/
 | NAT | NVIDIA NeMo Agent Toolkit. 조사 흐름을 감싸 실행·추적·프로파일·사후 평가를 맡는다 |
 | Agent Skills / 런타임 스킬 / 평가 스킬 | SKILL.md 형식의 에이전트 작업 지침 묶음 / NemoClaw가 CLI를 부르는 `skills/tradesentry/SKILL.md` / 자기채점·성능 평가 절차를 담은 평가 스킬 ①·② |
 | 거버넌스 카드 | 공식 스킬 `skill-card-generator`로 만드는, 스킬의 능력 범위를 밝히는 카드 |
-| credential placeholder rewrite | 샌드박스 안에는 자리표시 문자열만 두고 게이트웨이가 나가는 요청에 실제 키를 넣는 방식 |
+| credential placeholder rewrite | 샌드박스 프로그램에는 자리표시 문자열만 두고 샌드박스 안 감독 프로세스의 정책 프록시가 나가는 요청에 실제 키를 넣는 방식 |
 | `inference.local` | OpenShell 게이트웨이가 샌드박스에 주는 추론 주소. 게이트웨이당 provider 1개·모델 1개만 연결한다 |
 | 게이트웨이 | 샌드박스의 요청을 받아 정책을 적용하고 전달하는 OpenShell 구성요소 |
 | Landlock | 리눅스 커널의 파일시스템 접근 제한 기능 |

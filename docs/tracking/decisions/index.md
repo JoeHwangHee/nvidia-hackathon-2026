@@ -12,3 +12,4 @@
 | `20260924-1720-user-decision-domain-restructure.md` | 2026-09-24(목) 17:20 | 도메인 재편 A안(패키지 재배치)과 이름·출력 규칙(`outputs/`, `{도메인명}-{yymmddhhmmss}.{확장자}`) | 사용자 | 유효 |
 | `20260924-1720-user-decision-x1-option-ga.md` | 2026-09-24(목) 17:20 | X1 (가)안: NemoClaw(OpenShell 위에서 에이전트를 돌리는 NVIDIA 참조 스택) 제3자 소프트웨어 고지 수락과 재시도 | 사용자 | 유효 |
 | `20260924-1741-orchestrator-decision-x1-retry.md` | 2026-09-24(목) 17:41 | X1 NemoClaw 재시도의 마감(19:30)과 시험 방식 | 오케스트레이터 | 유효 |
+| `20260924-2010-user-decision-key-rule-interpretation.md` | 2026-09-24(목) 20:10 | 절대 규칙 1·요건 (c)의 "샌드박스 안" 해석 A와 새 규칙 문구, NVIDIA 키 재발급 시점(마무리 때), NemoClaw 설치기 고지 전문 | 사용자 | 유효 |

@@ -96,7 +96,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 - 누가·언제: M 트랙. X1(2026-09-24(목))에서 샌드박스 안 NIM 호출이 되지 않을 때.
 - 용도: 키 주입 방식 두 후보를 시험할 때 추론 경로를 점검한다.
-  - credential placeholder rewrite: 샌드박스는 자리표시자만 갖고, 게이트웨이가 요청을 내보낼 때 실제 자격증명으로 바꿔 넣는 방식 `[사실: HSGATE_R3_NVIDIA_STACK_CHECK.md §1]`.
+  - credential placeholder rewrite: 샌드박스 프로그램은 자리표시자만 갖고, 샌드박스 안 감독 프로세스의 정책 프록시가 게이트웨이에서 받은 자격 증명으로 요청 시점에 바꿔 넣는 방식 `[사실: OpenShell v0.0.116 docs/about/how-it-works.mdx 116행, docs/sandboxes/manage-providers.mdx 327~330행]`.
   - `inference.local`: 샌드박스는 `inference.local`만 보고 게이트웨이가 백엔드로 전달하는 방식. 게이트웨이당 provider(추론 제공자) 1개·모델 1개만 연결하는 단일 백엔드다 `[사실: 03-openshell-policy-yaml-구조.md §2.1-1]`. 조사자(도구를 골라 근거가 붙은 보고서 초안을 쓰는 모델 호출)와 Critic(조사자가 받은 근거와 초안을 별도 문맥에서 검토하는 검수자)이 같은 모델이라 라우팅이 필요 없다.
   - 둘 중 X1에서 실제로 성공한 방식만 채택하고 이유를 결정 기록(`docs/tracking/decisions/`)에 남긴다. 이 스킬이 두 방식을 모두 다루는지는 `[미확인]`이다.
 - 범위 밖: NIM 무료 키에서 간헐적으로 나는 HTTP 500은 경로 문제가 아니라 상류 오류일 수 있다 `[추론]`. 5xx 명시 재전송 규칙은 `docs/plan/DEV_PLAN.md`를 따른다.
@@ -361,7 +361,7 @@ npx skills add NVIDIA/skills --skill nemo-relay-plugin-observability
 - **허용 목록 방식**: 나열한 경로(와 작업 폴더)만 허용하고 나머지를 거부하는 OpenShell 파일시스템 정책 방식.
 - **정적 계층·동적 계층**: OpenShell 정책에서 샌드박스를 만들 때 고정되는 부분(`filesystem_policy`·`landlock`·`process`)과 실행 중 다시 불러올 수 있는 부분(`network_policies`·`network_middlewares`).
 - **L7 규칙**: HTTP 요청의 method·path·query만 보고(REST 규칙 기준) 허용·거부를 정하는 네트워크 정책 규칙. GraphQL·MCP·JSON-RPC 규칙은 별도 필드(operation·도구 이름 등)를 쓴다. 어느 쪽이든 근거·토큰 같은 본문 값의 뜻을 조건으로 거는 필드는 없다.
-- **credential placeholder rewrite**: 샌드박스 안에는 자리표시자만 두고, 게이트웨이가 요청을 내보낼 때 실제 자격증명으로 바꿔 넣는 OpenShell 방식. 샌드박스에 키를 두지 않기 위한 후보다.
+- **credential placeholder rewrite**: 샌드박스 프로그램에는 자리표시자만 두고, 샌드박스 안 감독 프로세스의 정책 프록시가 요청 시점에 실제 자격 증명으로 바꿔 넣는 OpenShell 방식. X1이 채택했다.
 - **`inference.local`**: 샌드박스가 보는 OpenShell 추론 주소. 게이트웨이가 연결된 단일 백엔드(provider 1개·모델 1개)로 요청을 전달한다.
 - **감사 로그**: 허용·차단 사건의 기록. OpenShell 쪽 기록은 `openshell logs`로 모은다.
 - **NemoClaw**: OpenShell 샌드박스 안에서 OpenClaw 에이전트를 돌리는 NVIDIA 참조 스택. 모델·에이전트 하네스·보안 런타임을 한 번에 묶은 배포 묶음이며, 그 보안 런타임이 OpenShell이다. 알파 단계다.
