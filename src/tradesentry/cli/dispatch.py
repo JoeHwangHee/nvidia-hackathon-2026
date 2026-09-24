@@ -55,6 +55,24 @@
 
 평가 하네스는 모듈 단위로만 허용한다. 호스트 전용 샌드박스 밖 실행기(단위 E2, tradesentry.evaluation.sealed_runner)는
 CLI가 부르지 않는다.
+
+evaluate 배선(로드맵 MT7 첫 PR. 최종 연결은 조립 작업 AS3)
+- 사례 실행(run-case) 처리 함수가 아직 자리표시(_not_wired)이거나, 묶음이 부를 사례 실행 함수(EVALUATE_CASE_RUNNER)와
+  묶음 버전 키 함수(EVALUATE_VERSIONS)가 아직 없으면, 실행 폴더를 만들기 전에 분명한 오류 문장과 종료 코드 1로 끝난다.
+  두 자리는 run-case를 잇는 조립(AS2)과 같은 조립이 채운다(AS3). 사례 실행 함수의 모양은 단위 E1의 CaseCall → 실행 쪽 키
+  21개의 객체다. 버전 키 함수는 (요청, 자료 묶음) → policy_version·rulebook_version·snapshot_id·grouping_version·
+  code_version 다섯 키의 객체다.
+- 자료 묶음은 --snapshot으로 정한다 `[해석]`: dev20 → dev20, controlled_fixture_v0 → controlled_fixture_v0,
+  kcs_202201_202412_v2 → real_dev(봉인 묶음은 evaluate가 돌리지 않는다. 샌드박스 밖 실행기 E2의 일). 사례 목록은
+  dev20만 정본 자리 eval/dev/dev20/input/cases.json(DT5)에서 읽는다. controlled_fixture_v0·real_dev의 사례 목록 자리는
+  아직 없어 분명한 오류로 끝난다(AS3이 정한다. real_dev는 DT7의 경보 목록).
+- 모드 목록은 지금 명령 표 그대로 --mode 한 값이다(MT5 결정 ②의 잠정). 채점기는 dev20·real_dev 묶음의 계획 모드가
+  룰북 B2의 모드 전부가 아니면 채점하지 않으므로, 모드 목록을 받는 방식은 AS3이 룰북 B5·B7과 함께 새 결정으로 정한다.
+- 순서: 단위 E1 execute_batch(순서 seed DEV_ORDER_SEED, 동시성 1) → 단위 E4 summarize_batch(NAT 사후 평가) → 실행 조건
+  입력 파일 run_conditions-{시각}.json을 묶음 실행 폴더에 배타 생성(E1 write_run_conditions). 표준 출력에는 묶음 기록과
+  실행 조건 입력 파일의 outputs부터의 상대경로만 적는다. 사례 실행이 실패해도 묶음 기록을 끝까지 썼으면 0이다(실패는
+  줄로 분모에 남는다). evaluate를 샌드박스 안에서 돌릴 때는 실행 조건 입력 파일을 샌드박스가 쓰면 안 된다(자료 계약 §8.2:
+  내려받기를 끝낸 호스트 쪽 프로그램이 쓴다). 그 경로의 분기는 AS3·MT5가 정한다.
 """
 import json
 import os
@@ -90,6 +108,15 @@ ASSEMBLIES = {
     "run-case": "조립체 3(사례 조사). 조립 작업 AS2가 잇는다",
     "evaluate": "조립체 4(평가 실행). 조립 작업 AS3이 잇는다",
 }
+
+# evaluate 배선(위 "evaluate 배선"). 스냅샷 ID → 자료 묶음 `[해석]`, dev20 사례 목록 자리(DT5), 개발 묶음 순서 seed.
+EVALUATE_DATASETS = {"dev20": "dev20", "controlled_fixture_v0": "controlled_fixture_v0",
+                     "kcs_202201_202412_v2": "real_dev"}
+EVALUATE_CASE_LISTS = {"dev20": Path("eval") / "dev" / "dev20" / "input" / "cases.json"}
+DEV_ORDER_SEED = "dev-order-v1"
+# AS2·AS3이 채우는 자리: 사례 실행 함수(단위 E1 CaseCall → 실행 쪽 키 21개)와 버전 키 함수((요청, 자료 묶음) → 버전 키 5개).
+EVALUATE_CASE_RUNNER: Callable[[object], dict] | None = None
+EVALUATE_VERSIONS: Callable[[object, str], dict] | None = None
 
 
 class WiringError(Exception):
@@ -240,13 +267,72 @@ def _not_wired(request: args.Request) -> int:
     raise NotImplementedError(f"tradesentry {request.command}는 아직 조립체와 잇지 않았다")
 
 
+def evaluate_cases(dataset: str, snapshot_id: str) -> list[dict]:
+    """자료 묶음의 사례 목록(case_id·hs6·partner·month). 자리가 없으면 LookupError, 형식이 틀리면 ValueError."""
+    path = EVALUATE_CASE_LISTS.get(dataset)
+    if path is None or not path.is_file():
+        raise LookupError(dataset)
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(doc, dict) or doc.get("dataset") != dataset or doc.get("snapshot_id") != snapshot_id \
+            or not isinstance(doc.get("cases"), list):
+        raise ValueError("사례 목록 파일의 dataset·snapshot_id·cases가 요청과 맞지 않다")
+    return doc["cases"]
+
+
+def _evaluate(request: args.Request) -> int:
+    """evaluate: 단위 E1 묶음 실행 → 단위 E4 NAT 사후 평가 → 실행 조건 입력 파일(위 "evaluate 배선")."""
+    if HANDLERS["run-case"] is _not_wired or EVALUATE_CASE_RUNNER is None or EVALUATE_VERSIONS is None:
+        _report("오류: tradesentry evaluate는 사례 실행(run-case)이 아직 조립되지 않아 돌 수 없다. "
+                f"{ASSEMBLIES['run-case']}. evaluate의 최종 연결은 조립 작업 AS3이 한다.")
+        return EXIT_FAILED
+    # 명령을 부를 때만 import한다. 모듈 속성으로 불러 시험 대역이 걸리게 한다.
+    from tradesentry.contract import policy_load
+    from tradesentry.evaluation import batch_run, nat_eval
+    from tradesentry.workflow import model_client, orchestrate
+
+    dataset = EVALUATE_DATASETS.get(request.snapshot_id)
+    if dataset is None:
+        _report("오류: tradesentry evaluate가 --snapshot의 자료 묶음을 모른다(dev20·controlled_fixture_v0·"
+                "kcs_202201_202412_v2만 받는다. 봉인 묶음은 샌드박스 밖 실행기가 돌린다).")
+        return EXIT_FAILED
+    try:
+        cases = evaluate_cases(dataset, request.snapshot_id)
+    except LookupError:
+        _report(f"오류: tradesentry evaluate가 자료 묶음 {dataset}의 사례 목록 자리를 모르거나 파일이 없다"
+                "(dev20은 eval/dev/dev20/input/cases.json. 다른 묶음의 자리는 조립 작업 AS3이 정한다).")
+        return EXIT_FAILED
+    except ValueError as exc:
+        _report(f"오류: tradesentry evaluate가 사례 목록을 읽지 못했다({type(exc).__name__}).")
+        return EXIT_FAILED
+    try:
+        thresholds = orchestrate.policy_thresholds(policy_load.load_policy(request.policy_version))
+        limits = batch_run.limits_from_run_limits(model_client.load_model_config().limits)
+        versions = EVALUATE_VERSIONS(request, dataset)
+        spec = batch_run.BatchSpec(dataset=dataset, cases=tuple(cases), modes=(request.mode,),
+                                   order_seed=DEV_ORDER_SEED, versions=versions)
+        batch_run.check_spec(spec)
+    except ValueError as exc:  # PolicyError·ConfigError·BatchError는 ValueError다. 예외 이름만 적는다(N13)
+        _report(f"오류: tradesentry evaluate의 묶음 입력이 규칙에 맞지 않는다({type(exc).__name__}).")
+        return EXIT_FAILED
+    result = batch_run.execute_batch(spec, EVALUATE_CASE_RUNNER, parent=OUTPUT_PARENT,
+                                     other_parent=OUTPUT_PARENT / SEALED_NAME)
+    _emit(f"{OUTPUT_LABEL}/{result.run_id}/{result.batch_file.name}")
+    summary = nat_eval.summarize_batch(result.run_dir)
+    doc = batch_run.build_run_conditions(dataset=dataset, cases=cases, modes=list(spec.modes), thresholds=thresholds,
+                                         order_seed=DEV_ORDER_SEED, limits=limits,
+                                         run_period=(result.started, result.ended), nat_profile_summary=summary)
+    path = batch_run.write_run_conditions(result.run_dir, doc)
+    _emit(f"{OUTPUT_LABEL}/{result.run_id}/{path.name}")
+    return EXIT_OK
+
+
 # 명령 → 처리 함수(검증된 요청을 받아 종료 코드를 돌려준다). 조립 작업이 명령마다 이 표의 자기 항목만 바꾼다.
 HANDLERS: dict[str, Callable[[args.Request], int]] = {
     "snapshot-build": _snapshot_build,
     "snapshot-verify": _snapshot_verify,
     "detect": _not_wired,
     "run-case": _not_wired,
-    "evaluate": _not_wired,
+    "evaluate": _evaluate,
 }
 
 
