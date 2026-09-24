@@ -62,13 +62,13 @@ DT8(독립 채점기, 데이터 트랙) 구현(단위 C1~C4와 채점기 명령,
 
 | 코드 | 채운 것으로 보는 조건 |
 |---|---|
-| `parent_child_match_V_and_Q` | 보고서 근거(보고서와 claim의 `evidence_ids`)가 두 시점의 부모 HS6 행과, 두 시점 모두에 있는 HS10 하위 코드마다의 행을 모두 인용한다 |
+| `parent_child_match_V_and_Q` | 두 시점 모두 HS10 하위 행이 있고, 보고서 근거(보고서와 claim의 `evidence_ids`)가 두 시점마다 부모 HS6 행과 그 시점의 HS10 하위 코드마다의 행을 모두 인용한다(한 시점에만 있는 코드도 그 시점에서 인용한다) |
 | `weight_share_decomposition` | `within_effect`·`mix_effect`·`residual`(t, b) 분해 claim이 모두 유효하다(MT1 뜻대로 residual 포함) |
 | `per_child_unit_value_stable` | 두 시점의 HS10 하위 코드마다 `r_U@코드` claim(또는 두 시점 `U@코드` claim)이 유효하다 |
 | `comparability_ok` | 신호 계열의 전년동월 변화 claim(단가 `r_U`, 점유율 `d_s`) 또는 두 시점 수준 claim(`U`, `s`)이 유효하다 |
 | `partner_comparison_done` | 비교집합(⑧) 안 비교국의 계열 지표 comparison claim(단가 `r_U` 또는 두 시점 `U`, 점유율 `d_s` 또는 두 시점 `s`)이 유효하다 |
 | `missingness_listed` | 계열 대상 범위(단가: P의 부모 HS6 키와 C형 HS10 하위, 점유율: P의 부모 HS6 키와 `ALL` 분모, 두 시점)의 빠진 키마다 그 키를 `OBSERVED`가 아닌 상태로 적은 유효한 `data_status` claim이 있다(C형은 그 HS6 아래 HS10 코드 하나로 적으면 된다). 빠진 키가 없으면(모두 `OBSERVED`인 HOLD, 비교국 누락 HOLD) 비교국의 빠진 키를 적은 유효한 `data_status` claim이나, 계산할 수 없는 계열 지표를 null로 적은 `CORRECT` claim이 하나 이상 있다 |
-| `failure_vs_not_collected_distinguished` | 빠진 키마다 그 상태를 맞게 적은(`CORRECT`) `data_status` claim이 있고, 사례 품목·두 시점의 `data_status` claim에 `WRONG_VALUE`가 없다 |
+| `failure_vs_not_collected_distinguished` | 빠진 키마다 그 상태를 맞게 적은(`CORRECT`. 인용할 행이 없는 키(⑦)는 대상이 풀리고 값이 기대 상태와 같으면 된다) `data_status` claim이 있고, 사례 품목·두 시점의 `data_status` claim에 `WRONG_VALUE`가 없다 |
 | `no_zero_fill` | 대상이 풀렸고 기대값이 null인 수 claim에 수(0 포함)를 적은 것이 없다. 첫 결과가 단위·방향 오류여도 센다(무역통계 권고 5) |
 | `precision_sensitivity_shown` | 대상국의 두 시점 부모 `V`·`Q` value claim 네 개가 유효하다(정밀도·민감도의 바탕. typed claim으로 적을 민감도 지표가 없어 입력값으로 대신한다) |
 | `country_and_world_change_shown` | 대상국 `V`와 `ALL` `V`의 두 시점 value claim 네 개가 유효하다 |

@@ -266,6 +266,16 @@ class SealedBatchTest(ScorerCommandBase):
         with self.assertRaises(c1.ScorerInputError):
             cli.sealed_dir({})
 
+    def test_path_through_sealed_to_dev_folder_is_rejected_quietly(self):
+        (self.root / "outputs" / "evaluate-260925140002").mkdir()
+        code, out, err = self.run_scorer(self.root / "outputs" / "sealed" / ".." / "evaluate-260925140002")
+        self.assertEqual((code, out, err), (cli.EXIT_USAGE, "끝 상태: 실패(인자 오류)\n", ""))
+
+    def test_sealed_folder_name_in_repo_root_does_not_hint_sealed(self):
+        root = Path(self._tmp.name) / "sealed" / "repo"
+        self.assertFalse(cli.sealed_hint(str(root / "outputs" / "evaluate-260925140002"), root))
+        self.assertTrue(cli.sealed_hint(str(root / "outputs" / "sealed" / "evaluate-260925140002"), root))
+
     def test_bad_sealed_run_dir_prints_only_end_status(self):
         code, out, err = self.run_scorer(self.root / "outputs" / "sealed" / "evaluate-260925139999")
         self.assertEqual((code, out, err), (cli.EXIT_USAGE, "끝 상태: 실패(인자 오류)\n", ""))
@@ -393,6 +403,22 @@ class SealedExceptionPathTest(SealedBatchTest):
         with mock.patch.object(cli.os, "mkdir", side_effect=PermissionError(13, "Permission denied", "x")):
             code, out, err = self.run_scorer()
         self.assertEqual((code, out, err), (cli.EXIT_OUTPUT, "끝 상태: 실패(출력 규칙)\n", ""))
+
+    def test_unhashable_claim_fields_do_not_stop_sealed_batch(self):
+        answers = fx.load_oracle()  # A는 빠진 키가 없는 사례: missingness_listed의 대체 조건 가지까지 돈다
+        answers["cases"][0]["expected"]["required_evidence"] = sorted(cli.c3.FAMILY_TAGS["unit_value"])
+        (self.sealed_dir / "answers.json").write_text(dump(answers), encoding="utf-8")
+        digest = hashlib.sha256((self.sealed_dir / "answers.json").read_bytes()).hexdigest()
+        (self.root / "eval" / "sealed_manifest.json").write_text(json.dumps({"schema_version": 1, "files": [
+            {"dataset": "holdout40", "file_name": "answers.json", "sha256": digest,
+             "created_at": "2026-09-25T09:00:00+09:00", "created_by": "시험"}]}), encoding="utf-8")
+        a = copy.deepcopy(self.reports["A-composition"])
+        a["claims"] += [dict({field: empty() for field in c1.CLAIM_FIELDS}, claim_type=kind)
+                        for empty in (list, dict) for kind in c1.CLAIM_TYPES]
+        next((self.root / "outputs" / "sealed" / a["run_id"]).iterdir()).write_text(dump(a), encoding="utf-8")
+        self.write_inputs()
+        code, out, err = self.run_scorer()
+        self.assertEqual((code, out.splitlines(), err), (0, ["score-260925150000", "끝 상태: 완료"], ""))
 
     def test_huge_exponent_in_sealed_batch_finishes(self):
         a = copy.deepcopy(self.reports["A-composition"])

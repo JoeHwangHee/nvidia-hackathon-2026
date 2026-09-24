@@ -310,6 +310,66 @@ class TagRuleTest(unittest.TestCase):
         tags = {"unit_value": ["comparability_ok"], "share": ["comparability_ok"]}
         self.assertEqual(self.missing(tags, [d_s]), ["unit_value:comparability_ok"])
 
+    def test_parent_child_match_cites_children_of_each_month(self):
+        # 하위 코드가 한 시점에만 있어도(새 코드) 두 시점의 부모 행과 그 시점의 하위 행을 모두 인용하면 채운다
+        rows = fx.Rows("controlled_fixture_v0", fx.ORACLE_PLAN)
+        parents = [rows.obs("CN", "850450", m, 100, 10, request=f"hs4_CN_{m[:4]}") for m in ("202401", "202301")]
+        both = [rows.obs("CN", "8504501010", m, 60, 6, request=f"hs6_CN_{m[:4]}") for m in ("202401", "202301")]
+        new = rows.obs("CN", "8504501020", "202401", 40, 4, request="hs6_CN_2024")
+        snap = c1.Snapshot.from_json(rows.doc())
+        tags = {"unit_value": ["parent_child_match_V_and_Q"]}
+
+        def cite(*ids: int) -> list[dict]:
+            return [fx.claim("v", "value", "V", 100, "USD", "NA", [rows.ev(i) for i in ids])]
+
+        self.assertEqual(self.missing(tags, cite(*parents, *both, new), rows=rows, snap=snap), [])
+        self.assertEqual(self.missing(tags, cite(*parents, *both), rows=rows, snap=snap),
+                         ["unit_value:parent_child_match_V_and_Q"])
+        only_now = fx.Rows("controlled_fixture_v0", fx.ORACLE_PLAN)  # 기준월에 하위 행이 없으면 채울 수 없다
+        ids = [only_now.obs("CN", "850450", m, 100, 10, request=f"hs4_CN_{m[:4]}") for m in ("202401", "202301")]
+        ids.append(only_now.obs("CN", "8504501010", "202401", 60, 6, request="hs6_CN_2024"))
+        self.assertEqual(self.missing(tags, [fx.claim("v", "value", "V", 100, "USD", "NA",
+                                                      [only_now.ev(i) for i in ids])],
+                                      rows=only_now, snap=c1.Snapshot.from_json(only_now.doc())),
+                         ["unit_value:parent_child_match_V_and_Q"])
+
+    def test_uncitable_gaps_are_distinguished_by_value(self):
+        # JP·850490: 두 시점 모두 성공한 HS4 스캔에 그 HS6 행이 없다 → UNRESOLVED_ZERO(인용할 행 없음, C1은 UNSUPPORTED)
+        jp = {"hs6": "850490", "partner": "JP", "month": "202401", "grouping_version": "g0"}
+        claims = [fx.claim(f"s{m}", "data_status", "observation_status", "UNRESOLVED_ZERO", None, "NA",
+                           self.ev(f"jp_{m[2:]}"), partner="JP", hs6="850490", period=m) for m in ("202401", "202301")]
+        tags = {"unit_value": ["missingness_listed", "failure_vs_not_collected_distinguished"]}
+        self.assertEqual(self.missing(tags, claims, jp), [])
+        self.assertEqual(self.missing(tags, claims[:1], jp),
+                         ["unit_value:missingness_listed", "unit_value:failure_vs_not_collected_distinguished"])
+        wrong = [dict(claim, value="NOT_COLLECTED") for claim in claims]
+        self.assertEqual(self.missing(tags, wrong, jp), ["unit_value:failure_vs_not_collected_distinguished"])
+
+
+class UnhashableClaimFieldTest(unittest.TestCase):
+    """claim 필드가 모두 목록·객체인 보고서도 C1·C2·필수 근거 판정을 멈추지 않는다(빠진 키가 있는 사례와 없는 사례)."""
+
+    def test_every_field_as_list_or_object(self):
+        rows, ids = fx.rulebook_snapshot()
+        snap = c1.Snapshot.from_json(rows.doc())
+        good = fx.claim("ok", "value", "U", Decimal("20.34"), "USD/kg", "NA", [rows.ev(ids["cn_2401"])])
+        claims = [good] + [dict({field: empty() for field in c1.CLAIM_FIELDS}, **({"claim_type": kind} if kind else {}))
+                           for empty in (list, dict) for kind in (None,) + c1.CLAIM_TYPES]
+        tags = {signal: sorted(c3.FAMILY_TAGS[signal]) for signal in c3.SIGNALS}
+        for partner in ("CN", "FR"):  # CN: 빠진 키 없음(대체 조건 가지), FR: 202401 UNRESOLVED_ZERO(빠진 키 있음)
+            with self.subTest(partner=partner):
+                context = {"hs6": "850450", "partner": partner, "month": "202401", "grouping_version": "g0"}
+                report = fx.report("run_case-260925100000", claims, narrative="단가가 증가했다. 6.0%에서 3.6%로.",
+                                   review_status=[])
+                report["evidence_ids"] = [[], {}]
+                records = c1.score_report_claims(report, snap, report["run_id"], rows.snapshot_id, context)
+                records += c2.score_report_prose(report, report["run_id"], snap.hs_codes, [])
+                self.assertEqual({r["outcome"] for r in records[1:len(claims)]}, {c1.WRONG_REFERENT})
+                ok, missing = c3.required_evidence_ok(tags, report, records, context, snap, rows.snapshot_id)
+                self.assertFalse(ok)
+                self.assertIn("share:country_and_world_change_shown", missing)
+                c2.korean_quality(report)
+
 
 if __name__ == "__main__":
     unittest.main()

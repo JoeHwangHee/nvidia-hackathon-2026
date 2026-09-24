@@ -111,11 +111,17 @@ def _fail(message: str) -> None:
 
 def sealed_hint(arg: str, repo_root: Path) -> bool:
     """<run_dir> 인자가 봉인 묶음 자리(outputs/sealed/ 아래)를 가리키는가. 마지막 조각은 따라가지 않고(심볼릭 링크여도)
-    부모 폴더만 풀어 본다. 알 수 없으면 봉인으로 본다(조용한 출력이 안전한 쪽이다)."""
+    부모 폴더만 풀어 본다. 저장소 안 경로 조각에 sealed가 있어도 봉인으로 본다(outputs/sealed/../{실행명}처럼 봉인
+    자리를 지나 개발 자리로 풀리는 경로를 받지 않으려고). 저장소 뿌리까지의 조각은 보지 않는다(뿌리 경로에 sealed라는
+    폴더 이름이 있어도 개발 묶음을 막지 않게). 알 수 없으면 봉인으로 본다(조용한 출력이 안전한 쪽이다)."""
     try:
         candidate = Path(arg) if Path(arg).is_absolute() else Path.cwd() / arg
-        return candidate.parent.resolve() == (repo_root / "outputs" / "sealed").resolve() \
-            or "sealed" in Path(arg).parts
+        parts = candidate.parts
+        for root in (repo_root.parts, repo_root.resolve().parts):
+            if parts[:len(root)] == root:
+                parts = parts[len(root):]
+                break
+        return candidate.parent.resolve() == (repo_root / "outputs" / "sealed").resolve() or "sealed" in parts
     except (OSError, RuntimeError, ValueError):
         return True
 
@@ -132,7 +138,7 @@ def locate_run_dir(arg: str, repo_root: Path) -> tuple[Path, bool]:
     resolved = candidate.resolve()
     outputs = (repo_root / "outputs").resolve()
     if resolved.parent == outputs and not hinted:
-        sealed = False
+        sealed = False  # 봉인 자리를 지나 풀면 개발 자리가 되는 경로(예: outputs/sealed/../{실행명})는 받지 않는다
     elif resolved.parent == outputs / "sealed":
         sealed = True
     else:

@@ -61,7 +61,8 @@ RUN_ID_RE = re.compile(r"[a-z][a-z0-9_]*-[0-9]{12}")  # fullmatch로 쓴다(끝 
 # claim이다(값의 참·거짓은 numeric_ok가 본다). "빠진 키"는 신호 계열의 대상 범위(단가: P의 부모 HS6 키와 C형 HS10 하위,
 # 점유율: P의 부모 HS6 키와 ALL 분모, 두 시점)에서 관측 상태가 OBSERVED·CONFIRMED_NO_TRADE가 아닌 키다.
 TAG_RULES = {
-    "parent_child_match_V_and_Q": "보고서 근거가 두 시점의 부모 HS6 행과 HS10 하위 행(코드마다)을 모두 인용한다",
+    "parent_child_match_V_and_Q": "두 시점 모두 HS10 하위 행이 있고, 보고서 근거가 두 시점마다 부모 HS6 행과 그 시점의 "
+                                  "HS10 하위 행(코드마다)을 모두 인용한다",
     "weight_share_decomposition": "within_effect·mix_effect·residual 분해 claim이 모두 유효하게 있다",
     "per_child_unit_value_stable": "두 시점의 HS10 하위 품목마다 r_U@ claim(또는 두 시점 U@ claim)이 유효하게 있다",
     "comparability_ok": "신호 계열의 전년동월 변화 claim(단가 r_U, 점유율 d_s) 또는 두 시점 수준 claim(U, s)이 유효하게 "
@@ -71,8 +72,9 @@ TAG_RULES = {
     "missingness_listed": "빠진 키마다 그 키를 OBSERVED가 아닌 상태로 적은 유효한 data_status claim이 있다. 빠진 키가 "
                           "없으면 비교국의 빠진 키를 적은 유효한 data_status claim이나, 계산할 수 없는 계열 지표를 "
                           "null로 적은 CORRECT claim이 하나 이상 있다",
-    "failure_vs_not_collected_distinguished": "빠진 키마다 그 상태를 맞게 적은(CORRECT) data_status claim이 있고, 사례 "
-                                              "품목·두 시점의 data_status claim에 WRONG_VALUE가 없다",
+    "failure_vs_not_collected_distinguished": "빠진 키마다 그 상태를 맞게 적은(CORRECT, 인용할 행이 없는 키는 값만 맞은) "
+                                              "data_status claim이 있고, 사례 품목·두 시점의 data_status claim에 "
+                                              "WRONG_VALUE가 없다",
     "no_zero_fill": "대상이 풀렸고 기대값이 null인 수 claim에 수(0 포함)를 적은 claim이 없다",
     "precision_sensitivity_shown": "대상국의 두 시점 부모 V·Q value claim(4개)이 유효하게 있다(정밀도·민감도의 바탕, "
                                    "U4 확인 전 잠정)",
@@ -349,11 +351,10 @@ def _tag_ok(tag: str, family: str, report: _Report) -> bool:
     if tag == "weight_share_decomposition":
         return all(report.present("decomposition", base, p, t, b) for base in c1.DECOMPOSITION_BASES)
     if tag == "parent_child_match_V_and_Q":
-        kids = report.children()
+        months = [report.snap.children.get((p, report.hs6, m), {}) for m in (t, b)]
         groups = [frozenset(report.snap.parent.get((p, report.hs6, m), [])) for m in (t, b)]
-        groups += [group for code in kids for group in kids[code]]
-        both_times = bool(kids) and all(len(groups_of_code) == 2 for groups_of_code in kids.values())
-        return both_times and all(group and group & report.cited() for group in groups)
+        groups += [frozenset(rows) for kids in months for rows in kids.values()]
+        return all(months) and all(group and group & report.cited() for group in groups)
     if tag == "per_child_unit_value_stable":
         kids = report.children()
         return bool(kids) and all(report.change_or_levels("change", f"r_U@{code}", "value", f"U@{code}", p)
@@ -366,9 +367,10 @@ def _tag_ok(tag: str, family: str, report: _Report) -> bool:
         gaps = report.gaps(family)
         if gaps:
             return all(_listed(report, gap) for gap in gaps)
-        peer_gap = any(claim.get("claim_type") == "data_status" and claim.get("partner") in report.peers
-                       and claim.get("hs6") == report.hs6 and claim.get("period") in (t, b)
-                       and claim.get("value") != c1.OBSERVED and _valid(record) for claim, record in report.pairs)
+        peer_gap = any(claim.get("claim_type") == "data_status" and isinstance(claim.get("partner"), str)
+                       and claim["partner"] in report.peers and claim.get("hs6") == report.hs6
+                       and claim.get("period") in (t, b) and claim.get("value") != c1.OBSERVED and _valid(record)
+                       for claim, record in report.pairs)
         partners = (p, c1.ALL) if family == "share" else (p,)
         null_metric = any(record["outcome"] == c1.CORRECT and claim.get("value") is None
                           and claim.get("claim_type") != "data_status" and claim.get("partner") in partners
@@ -377,8 +379,11 @@ def _tag_ok(tag: str, family: str, report: _Report) -> bool:
                           for claim, record in report.pairs)
         return peer_gap or null_metric
     if tag == "failure_vs_not_collected_distinguished":
-        for partner, level, month, _ in report.gaps(family):
-            if not any(record["outcome"] == c1.CORRECT for _, record in report.status_claims(partner, level, month)):
+        for partner, level, month, statuses in report.gaps(family):
+            citable = any(statuses.values())
+            if not any(record["outcome"] == c1.CORRECT or (not citable and record["referent_resolved"]
+                                                           and claim.get("value") == record["expected_value"])
+                       for claim, record in report.status_claims(partner, level, month)):
                 return False
         return not any(claim.get("claim_type") == "data_status" and claim.get("hs6") == report.hs6
                        and claim.get("period") in (t, b) and record["outcome"] == c1.WRONG_VALUE
