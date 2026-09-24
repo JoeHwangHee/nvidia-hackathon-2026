@@ -13,4 +13,4 @@
 | `20260924-1741-orchestrator-decision-x1-retry.md` | 2026-09-24(목) 17:41 | X1 NemoClaw 재시도의 마감(19:30)과 시험 방식 | 오케스트레이터 | 유효 |
 | `20260924-2003-orchestrator-decision-sealed-output-scope.md` | 2026-09-24(목) 20:03 | 봉인 묶음 실행 사슬의 샌드박스 밖 출력도 `outputs/sealed/`에 두고 금지 해제 조건을 하나로 정함(1720 기록 "경계와 순서" ① 보완) | 오케스트레이터 | 유효. 2026-09-24(목)에 사용자가 확인했다(PR #18 확인 항목 4) |
 | `20260924-2035-user-decision-s0-no-advisory.md` | 2026-09-24(목) 20:35 | S0(앱 뼈대) 외부 자문: 더 반영할 것 없음 | 사용자 | 유효 |
-| `20260924-2055-user-decision-pr18-confirmation.md` | 2026-09-24(목) 20:55 | 자료 계약 PR #18 확인 항목 여덟 가지 승인과 실행 결과 기록 파일 이름 `scorer_results-{시각}.jsonl` | 사용자 | 유효 |
+| `20260924-2055-user-decision-pr18-confirmation.md` | 2026-09-24(목) 20:55 | 자료 계약 PR #18 확인 항목 여덟 가지 승인, 실행 결과 기록 파일 이름 `scorer_results-{시각}.jsonl`과 단위 C3 분리 | 사용자 | 유효 |
