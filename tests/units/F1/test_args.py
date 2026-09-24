@@ -256,6 +256,9 @@ class ErrorMessageTest(unittest.TestCase):
                 f"unrecognized arguments: {omitted} {omitted} {omitted}",  # 32자 넘는 이름, 대문자, 줄바꿈 붙은 이름
             "invalid choice: 'a\\b' (choose from x)": f"invalid choice: {omitted} (choose from x)",
             "invalid choice: \"it's\" (choose from x)": f"invalid choice: {omitted} (choose from x)",
+            "invalid choice: 'S unrecognized arguments: x' (choose from x)": f"invalid choice: {omitted} (choose from x)",
+            "unrecognized arguments: invalid choice: 'x'":  # 모르는 인자가 문구를 흉내 내도 조각마다 생략된다
+                "unrecognized arguments: " + " ".join([omitted] * 4),
             "argument -h/--help: ignored explicit argument 'x'":
                 f"argument -h/--help: ignored explicit argument {omitted}",  # 옵션 별칭은 경로로 보지 않는다
             "argument --mode: expected one argument /srv/probe/x": f"argument --mode: expected one argument {hidden}",
@@ -278,6 +281,10 @@ class ErrorMessageTest(unittest.TestCase):
             "받지 않는 명시 값": argv_for("detect") + [f"--help={fake}"],
             "공백 든 경로": argv_for("detect") + ["/srv/probe dir/secret name.txt"],
             "구분자 없는 홈 모양": argv_for("detect") + ["~probe_user"],
+            # 값 안의 문구가 모르는 인자 문장인 척해도 값이 새지 않는다(문장 앞에서만 판정하고 따옴표 값을 먼저 지운다)
+            "모드 값 안의 문구": argv_for("run-case", mode=f"{fake} unrecognized arguments: x"),
+            "명령 이름 안의 문구": [f"{fake} unrecognized arguments: x"],
+            "명시 값 안의 문구": argv_for("detect") + [f"--help={fake} unrecognized arguments: x"],
         }
         for name, argv in calls.items():
             with self.subTest(name):

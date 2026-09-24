@@ -126,15 +126,16 @@ def _escape_control(ch: str) -> str:
 def redact(message: str) -> str:
     """argparse 오류 문장이 받은 값을 되풀이하지 않게 고친다(자료 계약 §10.3 N13, 결정 기록 20260924-2356 ⑧).
 
-    1) 모르는 인자: 옵션 이름 모양 조각만 남기고 나머지는 <값 생략>(--이름=값은 --이름=<값 생략>)
-    2) 선택지 밖 값·받지 않는 명시 값: 따옴표 안 값을 <값 생략>
+    1) 선택지 밖 값·받지 않는 명시 값: 따옴표 안 값을 <값 생략>. 값을 먼저 지우므로 값 안의 글자가 아래 판정을 속이지 못한다
+    2) 모르는 인자(문장이 그 문구로 시작할 때만): 옵션 이름 모양 조각만 남기고 나머지는 <값 생략>(--이름=값은
+       --이름=<값 생략>)
     3) 그래도 남은 경로 구분자 든 조각: <경로 생략>(argparse가 적는 옵션 별칭 -h/--help는 둔다)
     4) 제어 문자: \\x..·\\u.... 표기
     """
-    head, found, rest = message.partition(UNRECOGNIZED)
-    if found:
-        message = head + found + " ".join(_omit_unrecognized(token) for token in rest.split(" "))
     message = ECHOED_VALUE_RE.sub(lambda match: match.group(1) + VALUE_OMITTED, message)
+    if message.startswith(UNRECOGNIZED):  # argparse는 이 문장을 늘 이 문구로 시작한다
+        rest = message[len(UNRECOGNIZED):]
+        message = UNRECOGNIZED + " ".join(_omit_unrecognized(token) for token in rest.split(" "))
     message = PATHISH_TOKEN_RE.sub(_hide_path, message)
     return "".join(_escape_control(ch) for ch in message)
 
