@@ -21,7 +21,10 @@ run의 출력(자료 계약 §10.3 N5~N8, 이름은 단위 표 F7 행에 적을 
 캡처한 출력 어디에든 NVIDIA API 키 모양 문자열이 있으면 파일을 하나도 쓰지 않고 종료 코드 3으로 끝낸다.
 호스트 로컬 경로는 정책 해시 규칙과 같은 치환 규칙(scripts/openshell_common.py substitute_host_paths)으로 바꾼 뒤 쓴다.
 종료 코드: 0 모든 판정 행 일치, 1 불일치 행이 있다(시험표는 씀), 2 인자·위치 오류, 3 키 모양 발견(확보한 실행 폴더는
-빈 채로 남고 기록은 쓰지 않는다).
+빈 채로 남고 기록은 쓰지 않는다). 종료 코드 0은 불일치가 없다는 뜻일 뿐 MVP 체크리스트 4번 충족이 아니다. 충족은 표준 출력의
+`mvp4=충족`(시험표 3절)으로 본다. 공식 채점용 종류(--scored-kind official)는 NIM 허용·L7 행이 없어 4번 판정이 "해당 없음"이다.
+키 모양 검사는 NVIDIA API 키 접두어만 찾는다. DATA_GO_KR_SERVICE_KEY는 고정 모양이 없어 값으로 찾을 수 없다. 대신 탐침은 그
+값을 내지 않는다(key_check는 변수 이름과 있음/없음·길이만 낸다).
 샌드박스 이름은 파일 이름에 들어가므로 영문 소문자·숫자로 시작하고 영문 소문자·숫자·하이픈만 쓴 63자 이하만 받는다.
 """
 from __future__ import annotations
@@ -41,6 +44,7 @@ from pathlib import Path
 from typing import Callable
 
 from scripts import openshell_common as oc
+from scripts.stage_sandbox_image import code_version
 from tradesentry.cli import dispatch
 
 RUN_NAME = "openshell_violation_tests"
@@ -144,6 +148,7 @@ class Row:
     matched: bool | None = None
     note: str = ""
     log_refs: list[int] = field(default_factory=list)
+    log_texts: list[str] = field(default_factory=list)
     t0: float = 0.0
     t1: float = 0.0
     out: str = ""
@@ -176,6 +181,7 @@ class Context:
     inference_configured: bool | None = None
     version_text: str = ""
     harness_report: dict | None = None
+    code: dict = field(default_factory=lambda: {"git_commit": None, "dirty": None})
     sandboxes: dict[str, SandboxState] = field(default_factory=dict)
 
 
@@ -230,7 +236,12 @@ def check_allow_nim(row: Row, ctx: Context) -> tuple[bool, str]:
 
 def check_not_success(row: Row, ctx: Context) -> tuple[bool, str]:
     ok = _failed(row) and not row.http.startswith("2")
-    return ok, "" if ok else "inference.local에 닿았다: 작업 공간 추론 경로가 정책 밖에서 열려 요건 (b) 증거가 서지 않는다"
+    if not ok:
+        return False, "inference.local에 닿았다: 작업 공간 추론 경로가 정책 밖에서 열려 요건 (b) 증거가 서지 않는다"
+    if any("ALLOWED" in line for line in row.log_texts):
+        return True, ("정책은 inference.local 연결을 허용했다(감사 로그 ALLOWED). 막은 것은 정책이 아니라 게이트웨이 추론 경로 "
+                      "부재다(결정 기록 ⑮)")
+    return True, "추론 경로 부재 또는 거부(감사 로그 행 없음)"
 
 
 def check_deny_read(row: Row, ctx: Context) -> tuple[bool, str]:
@@ -246,6 +257,8 @@ def check_deny_write(row: Row, ctx: Context) -> tuple[bool, str]:
               "EROFS": "읽기 전용 마운트"}.get(code, "")
     if row.data.get("written") is True:
         return False, "탐침 파일을 만들었다(쓰기 허용)"
+    if code == "EACCES" and row.command and row.command[-1].startswith(WRITE_PROBE_DIR + "/"):
+        device = "정책 read_only(탐침 폴더 권한은 0777이라 파일 권한은 거부하지 않는다)"
     return row.rc == 1 and code in ("EACCES", "EPERM", "EROFS"), f"{code} {device}".strip()
 
 
@@ -275,12 +288,16 @@ def check_key(row: Row, ctx: Context) -> tuple[bool, str]:
 
 def check_snapshot_verify(row: Row, ctx: Context) -> tuple[bool, str]:
     """샌드박스 안 스냅샷 검증(raw 대조 제외, 결정 기록 ⑫). raw 없이 도는 검사가 모두 통과하고 다시 계산한
-    normalized_sha256이 빌드 기록값과 같아야 한다."""
+    normalized_sha256이 빌드 기록값, 그리고 이미지 기록(image_manifest.json의 snapshots, 이미지 기록 대조 행이 스테이징 출력과
+    이어 준 값)과 같아야 한다."""
     data = row.data
     failed = data.get("failed") or []
-    same = bool(data.get("normalized_sha256")) and data.get("normalized_sha256") == data.get("recorded")
+    value = data.get("normalized_sha256")
+    same = bool(value) and value == data.get("recorded") and value == data.get("manifest")
     ok = row.rc == 0 and data.get("ok") is True and same and not failed
-    note = f"normalized_sha256 {data.get('normalized_sha256', '?')}" + ("(기록값과 같다)" if same else "(기록값과 다르거나 없다)")
+    note = f"normalized_sha256 {value or '?'}" + (
+        "(빌드 기록값·이미지 기록값과 같다)" if same else
+        f"(빌드 기록 {data.get('recorded') or '없음'}, 이미지 기록 {data.get('manifest') or '없음'})")
     if failed:
         note += ", 실패 검사: " + ", ".join(map(str, failed))
     return ok, note
@@ -381,7 +398,14 @@ def check_logs(row: Row, ctx: Context) -> tuple[bool, str]:
     if state.log_warning:
         note += f"; 수집 한계 경고: {state.log_warning}"
     loaded = sum("CONFIG:LOADED" in line for line in state.log_lines)
-    return state.log_rc == 0, note + f"; 시험 기간 CONFIG:LOADED {loaded}행"
+    # landlock compatibility best_effort는 커널이 지원하지 않으면 파일시스템 통제를 알리지 않고 뺀다. 그래서 시험 기간의
+    # Landlock 적용 행(rules_applied·skipped)이 있고 skipped가 모두 0이어야 한다(MT5b 보안 검토 권고 6).
+    skipped = [int(m.group(1)) for line in state.log_lines if "rules_applied" in line
+               for m in [re.search(r"skipped:(\d+)", line)] if m]
+    landlock_ok = bool(skipped) and not any(skipped)
+    note += f"; 시험 기간 CONFIG:LOADED {loaded}행; Landlock 적용 행 {len(skipped)}개" + (
+        ", 모두 skipped:0" if landlock_ok else (", skipped가 0이 아닌 행이 있다" if skipped else ", 없음"))
+    return state.log_rc == 0 and landlock_ok, note
 
 
 def check_harness_key(row: Row, ctx: Context) -> tuple[bool | None, str]:
@@ -414,9 +438,11 @@ def _node_child(*command: str) -> list[str]:
 VERIFY_CODE = ("import json,sys\n"
                "from tradesentry.snapshot import verify\n"
                "r=verify.verify_snapshot(sys.argv[1],check_raw=False)\n"
+               "m=json.load(open('/opt/tradesentry/image_manifest.json'))\n"
+               "mv=[x.get('normalized_sha256') for x in m.get('snapshots',[]) if x.get('snapshot_id')==sys.argv[1]]\n"
                "bad=[c.get('name') for c in r.get('checks',[]) if c.get('ok') is False]\n"
                "print(json.dumps({'snapshot_id':sys.argv[1],'ok':r.get('ok'),'normalized_sha256':r.get('normalized_sha256'),"
-               "'recorded':r.get('recorded_normalized_sha256'),'failed':bad}))\n"
+               "'recorded':r.get('recorded_normalized_sha256'),'manifest':mv[0] if mv else None,'failed':bad}))\n"
                "sys.exit(0 if r.get('ok') and not bad else 1)\n")
 
 
@@ -509,6 +535,11 @@ def demo_rows(name: str, args: argparse.Namespace) -> list[Row]:
             "deny(L7 불일치, HTTP 403)",
             _node_child(CURL, "--fail", "-sS", "-o", "/dev/null", "-w", "%{http_code}", MODELS_URL), check_deny_l7, "l7",
             oc.NVIDIA_INFERENCE_HOST, "l7"),
+        Row("DP4", name, kind, "(b)", "게이트웨이 작업 공간 추론 경로(openshell inference get)", "없음",
+            check=check_inference_route),
+        Row("DB5", name, kind, "(b) 차단 조건", "node가 띄운 시스템 파이썬 → inference.local GET /v1/models(작업 공간 추론 경로)",
+            "2xx 아님(경로 없음 503 또는 거부)", _node_child(SYSTEM_PY, f"{PROBE_DIR}/net_probe.py", "GET", INFERENCE_LOCAL_URL),
+            check_not_success, "inference_local", "inference.local"),
         Row("DC1", name, kind, "(c) 키 조회", "exec 세션에서 키 조회(값 출력 없음)", "실제 키 0건(종료 코드 0)",
             _probe(SYSTEM_PY, "key_check.py", "/"), check_key),
         Row("DC2", name, kind, "(c) 키 조회", "하네스(OpenClaw)가 띄운 프로세스에서 키 조회(오케스트레이터 명령 결과)",
@@ -549,7 +580,9 @@ def log_matches(kind: str, host: str, line: str, exe: str = "") -> bool:
     if kind == "l7":
         return "HTTP:GET" in line and "DENIED" in line and "/v1/models" in line
     if kind == "nim":
-        return "ALLOWED" in line and (f"-> {host}:443" in line or oc.CHAT_PATH in line)
+        # L7 채팅 경로 허용 행만 받는다. L4 `NET:OPEN ALLOWED -> host:443` 행은 바로 앞 L7 위반 행(GET /v1/models)도 남기므로
+        # 시간 창이 겹치면 다른 행의 로그가 허용 증거로 붙는다(MT5b 평가 검토 1).
+        return "HTTP:POST" in line and "ALLOWED" in line and f"{host}:443{oc.CHAT_PATH}" in line
     if kind == "inference_local":
         return "inference.local" in line
     return False
@@ -564,9 +597,11 @@ def attach_log_refs(rows: list[Row], lines: list[str], *, before: float = 2.0, a
     for row in rows:
         if not row.log_kind or row.command is None:
             continue
-        row.log_refs = [number for number, ts, line in stamped
-                        if row.t0 - before <= ts <= row.t1 + after and log_matches(row.log_kind, row.log_host, line,
-                                                                             binary_of(row.command))]
+        hits = [(number, line) for number, ts, line in stamped
+                if row.t0 - before <= ts <= row.t1 + after and log_matches(row.log_kind, row.log_host, line,
+                                                                     binary_of(row.command))]
+        row.log_refs = [number for number, _ in hits]
+        row.log_texts = [line for _, line in hits]
 
 
 # ---------------------------------------------------------------- 실행
@@ -678,15 +713,22 @@ def evaluate(ctx: Context, rows: list[Row]) -> dict:
             row.matched, row.note = row.check(row, ctx)
             if row.info:
                 row.matched = None
-    nim = [row for row in rows if row.log_kind == "nim" and row.matched]
-    blocked = {kind: [row.rid for row in rows if row.denial_type == kind and row.matched and row.log_refs]
+    judged = [row for row in rows if row.kind != KIND_OFFICIAL]
+    official = [row for row in rows if row.kind == KIND_OFFICIAL]
+    nim = [row for row in judged if row.log_kind == "nim" and row.matched]
+    blocked = {kind: [row.rid for row in judged if row.denial_type == kind and row.matched and row.log_refs]
                for kind in ("host", "binary", "l7")}
     nim_ids = [f"{row.sandbox}:{row.rid}" for row in nim]
     nim_source = ("openshell logs 허용 행" if any(row.log_refs for row in nim)
                   else "앱 기록(openshell logs 행 없음)" if nim else "없음")
     return {"nim": nim_ids, "nim_source": nim_source, "blocked": blocked,
-            "mvp4": bool(nim) and all(blocked.values()),
+            "mvp4": (bool(nim) and all(blocked.values())) if judged else None,
+            "official": ([f"{row.sandbox}:{row.rid}" for row in official if row.matched is False] if official else None),
             "mismatch": [f"{row.sandbox}:{row.rid}" for row in rows if row.matched is False]}
+
+
+def mvp4_word(verdict: dict) -> str:
+    return {True: "충족", False: "미충족", None: "해당 없음"}[verdict["mvp4"]]
 
 
 def _cell(text: str) -> str:
@@ -700,6 +742,7 @@ def render(ctx: Context, rows: list[Row], verdict: dict, run_id: str, started: d
         f"- 실행명 `{run_id}`, 시작 {started.strftime('%Y-%m-%d %H:%M:%S')} KST. 만든 프로그램: "
         "`python -m scripts.openshell_violation_tests run`(단위 F7)",
         f"- OpenShell: `{_cell(ctx.version_text.splitlines()[0] if ctx.version_text else '조회 실패')}`",
+        f"- 이 도구의 코드 판: git 커밋 `{ctx.code['git_commit']}`, 추적 파일 변경 {ctx.code['dirty']}",
         f"- 커밋 정책 파일 sha256: `{SCORED_POLICY.as_posix()}` `{oc.sha256_file(REPO_ROOT / SCORED_POLICY)}`, "
         f"`{DEMO_NETWORK.as_posix()}` `{oc.sha256_file(REPO_ROOT / DEMO_NETWORK)}`",
         f"- 이 실행 폴더의 파일: 시험표 `{run_id}.md`(이 파일), `{n7}/live_policy-{{샌드박스}}.yaml`(라이브 정책 조회 본문. "
@@ -747,12 +790,15 @@ def render(ctx: Context, rows: list[Row], verdict: dict, run_id: str, started: d
                      f"| {_cell(refs)} | {mark} | {_cell(row.note)} |")
     blocked = verdict["blocked"]
     lines += ["", "## 3. 판정", "",
-              f"- MVP 체크리스트 4번(NIM 허용 1건 + 네트워크 차단 3종, 종료 코드 + 감사 로그 행): "
-              f"{'충족' if verdict['mvp4'] else '미충족'}",
+              f"- MVP 체크리스트 4번(NIM 허용 1건 + 네트워크 차단 3종, 종료 코드 + 감사 로그 행): {mvp4_word(verdict)}"
+              + (" (공식 채점용 샌드박스만 시험했다. 공식 최소 행에는 NIM 허용·L7 행이 없다)" if verdict["mvp4"] is None else ""),
               f"  - NIM 허용: {', '.join(verdict['nim']) or '없음'}. 허용 증거 출처: {verdict['nim_source']}",
               f"  - 비허용 호스트: {', '.join(blocked['host']) or '없음'} / 비허용 바이너리: "
               f"{', '.join(blocked['binary']) or '없음'} / L7 위반: {', '.join(blocked['l7']) or '없음'}",
               f"- 불일치 행: {', '.join(verdict['mismatch']) or '없음'}",
+              *([f"- 공식 채점용 최소 행(비허용 호스트·부재 확인·키 조회·봉인 입력 쓰기 거부와 정책·기록 점검): "
+                 f"{'모두 일치' if not verdict['official'] else '불일치 ' + ', '.join(verdict['official'])}"]
+                if verdict["official"] is not None else []),
               "- 정답 경로 읽기(A1)와 키 조회(C1·DC1·DC2)는 차단 3종에 세지 않지만 실행·기록한다. 파일시스템 거부는 감사 로그에 "
               "남지 않을 수 있어(X1) 허용 목록 점검(P3·DP2)과 함께 본다",
               f"- 이 시험표의 정책 본문 sha256은 조회한 때의 정책을 가리킬 뿐 실행 기간 내내 같은 정책이었다는 증거가 아니다. "
@@ -795,7 +841,8 @@ def run(args: argparse.Namespace, runner: Runner) -> int:
     run_id, stamp, run_dir = dispatch.reserve_run_dir(RUN_NAME)
     started = datetime.strptime(stamp, dispatch.STAMP_FORMAT)
     committed = oc.parse_yaml((REPO_ROOT / SCORED_POLICY).read_text(encoding="utf-8"))
-    ctx = Context(args=args, stamp=stamp, scored_committed=committed, harness_report=harness)
+    ctx = Context(args=args, stamp=stamp, scored_committed=committed, harness_report=harness,
+                  code=code_version(REPO_ROOT))
     version = runner.run(["--version"], args.exec_timeout)
     ctx.version_text = oc.strip_ansi(version.out).strip() if version.rc == 0 else ""
     got = runner.run(["inference", "get"], args.exec_timeout)
@@ -846,7 +893,7 @@ def run(args: argparse.Namespace, runner: Runner) -> int:
         text += f"\n- 호스트 로컬 경로 모양 {masked}곳을 `{oc.LOCAL_PATH_MASK}`로 가렸다(경로 치환 규칙)\n"
     _write(run_dir / f"{RUN_NAME}-{stamp}.md", text)
     print(f"outputs/{run_id}/{RUN_NAME}-{stamp}.md")
-    print(f"mvp4={'충족' if verdict['mvp4'] else '미충족'} mismatch={len(verdict['mismatch'])}")
+    print(f"mvp4={mvp4_word(verdict)} mismatch={len(verdict['mismatch'])}")
     return 0 if not verdict["mismatch"] else 1
 
 

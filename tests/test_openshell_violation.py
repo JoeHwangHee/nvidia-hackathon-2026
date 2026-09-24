@@ -46,7 +46,10 @@ def denied_l4(exe: str, host: str, reason: str) -> str:
 class FakeOpenShell(ovt.Runner):
     """openshell 대역. 시계는 명령마다 1초씩 간다. 샌드박스 명령에는 X1 형식의 감사 로그 행을 남긴다."""
 
-    def __init__(self, *, overrides=None, log_warning=False, inference_provider=False, extra_text=""):
+    def __init__(self, *, overrides=None, log_warning=False, inference_provider=False, extra_text="",
+                 deny_logs=True, landlock_skipped=0, b4_l4_allowed=False, nim_logs=True):
+        self.deny_logs, self.landlock_skipped = deny_logs, landlock_skipped
+        self.b4_l4_allowed, self.nim_logs = b4_l4_allowed, nim_logs
         self.program = "openshell"
         self.env = {}
         self.t = 1_790_300_000.0
@@ -66,6 +69,10 @@ class FakeOpenShell(ovt.Runner):
         self.t += seconds
 
     def log(self, sandbox: str, text: str) -> None:
+        if "DENIED" in text and not self.deny_logs:
+            return
+        if "ALLOWED" in text and "chat/completions" in text and not self.nim_logs:
+            return
         self.logs[sandbox].append(f"[{self.t + 0.2:.3f}] [sandbox] [OCSF ] [ocsf] {text}")
 
     def run(self, args, timeout):
@@ -100,6 +107,7 @@ class FakeOpenShell(ovt.Runner):
 
     def exec(self, sandbox, command):
         joined = " ".join(command)
+        self.log(sandbox, f"CONFIG:BUILT [INFO] Landlock ruleset built [rules_applied:11 skipped:{self.landlock_skipped}]")
         for key, value in self.overrides.items():
             if key in joined:
                 return value
@@ -109,7 +117,7 @@ class FakeOpenShell(ovt.Runner):
             return 1, "", f"cat: {command[1]}: Permission denied\n"
         if "verify_snapshot" in joined:
             return 0, json.dumps({"snapshot_id": command[-1], "ok": True, "normalized_sha256": "c" * 64,
-                                  "recorded": "c" * 64, "failed": []}) + "\n", ""
+                                  "recorded": "c" * 64, "manifest": "c" * 64, "failed": []}) + "\n", ""
         if "key_check.py" in joined:
             return 0, json.dumps({"checker": "tradesentry_key_check", "verdict": "NO_REAL_KEY",
                                   "env_NVIDIA_API_KEY": "placeholder", "proc_environ_readable": 3,
@@ -130,12 +138,15 @@ class FakeOpenShell(ovt.Runner):
                 return 56, "000", "curl: (56) CONNECT tunnel failed, response 403\n"
             return 4, json.dumps({"http_status": None, "error": "URLError: Tunnel connection failed: 403 Forbidden"}), ""
         if ovt.MODELS_URL in joined:
+            if self.b4_l4_allowed:  # 실측처럼 L7 거부 앞에 L4 허용 행이 남는다
+                self.log(sandbox, f"NET:OPEN [INFO] ALLOWED {PY_IMAGE}(8) -> {oc.NVIDIA_INFERENCE_HOST}:443 [policy:x]")
             self.log(sandbox, f"HTTP:GET [MED] DENIED GET http://{oc.NVIDIA_INFERENCE_HOST}:443/v1/models "
                               "[policy:x engine:l7] [reason:L7_REQUEST deny GET]")
             if ovt.CURL in joined:
                 return 22, "403", "curl: (22) The requested URL returned error: 403\n"
             return 3, json.dumps({"http_status": 403, "body_head": "policy_denied"}), ""
         if ovt.INFERENCE_LOCAL_URL in joined:
+            self.log(sandbox, "NET:OPEN [INFO] ALLOWED inference.local:443")
             return 3, json.dumps({"http_status": 503}), ""
         if " NIM " in f" {joined} ":
             self.log(sandbox, f"NET:OPEN [INFO] ALLOWED {PY_IMAGE}(9) -> {oc.NVIDIA_INFERENCE_HOST}:443 [policy:x]")
@@ -307,6 +318,66 @@ class RunTest(RunHarness):
         self.assertIn("실패 검사: normalized_sha256", table)
         verify = [call for call in runner.calls if call[:2] == ["sandbox", "exec"] and "verify_snapshot" in " ".join(call)]
         self.assertEqual([call[-1] for call in verify], ["controlled_fixture_v0", "dev20"])
+
+    def test_nim_evidence_is_not_borrowed_from_neighbour_row(self):
+        """B4의 L4 허용 행이 N1 허용 증거로 붙지 않는다(MT5b 평가 검토 1, --row-gap 0에서 재현하던 경우)."""
+        code, out, _ = self.run_tool(FakeOpenShell(b4_l4_allowed=True, nim_logs=False), demo=None)
+        table = next(self.run_dir().glob("*.md")).read_text(encoding="utf-8")
+        row = next(line for line in table.splitlines() if line.startswith("| N1 |"))
+        self.assertIn("로그 행 없음", row)
+        self.assertIn("허용 증거 출처: 앱 기록(openshell logs 행 없음)", table)
+        self.assertEqual(code, 0)
+
+    def test_denials_without_audit_rows_do_not_satisfy_mvp4(self):
+        """거부 행이 일치(O)여도 감사 로그 행이 없으면 MVP 4번 미충족이다(종료 코드 0, 불일치 없음)."""
+        code, out, _ = self.run_tool(FakeOpenShell(deny_logs=False), demo=None)
+        self.assertEqual(code, 0)
+        self.assertIn("mvp4=미충족 mismatch=0", out)
+        table = next(self.run_dir().glob("*.md")).read_text(encoding="utf-8")
+        for rid in ("B1", "B2", "B3", "B4"):
+            row = next(line for line in table.splitlines() if line.startswith(f"| {rid} |"))
+            self.assertIn("로그 행 없음", row)
+            self.assertIn("| O |", row)
+        self.assertIn("비허용 호스트: 없음 / 비허용 바이너리: 없음 / L7 위반: 없음", table)
+
+    def test_no_logs_at_all_uses_app_record(self):
+        code, out, _ = self.run_tool(FakeOpenShell(deny_logs=False, nim_logs=False), demo=None)
+        self.assertIn("mvp4=미충족", out)
+        table = next(self.run_dir().glob("*.md")).read_text(encoding="utf-8")
+        self.assertIn("허용 증거 출처: 앱 기록(openshell logs 행 없음)", table)
+
+    def test_official_mvp4_is_not_applicable(self):
+        code, out, _ = self.run_tool(FakeOpenShell(), "--scored-kind", "official", demo=None)
+        self.assertEqual(code, 0)
+        self.assertIn("mvp4=해당 없음", out)
+        table = next(self.run_dir().glob("*.md")).read_text(encoding="utf-8")
+        self.assertIn("공식 채점용 최소 행", table)
+        self.assertIn("모두 일치", table)
+
+    def test_landlock_skipped_fails_log_row(self):
+        code, _, _ = self.run_tool(FakeOpenShell(landlock_skipped=2), demo=None)
+        self.assertEqual(code, 1)
+        table = next(self.run_dir().glob("*.md")).read_text(encoding="utf-8")
+        row = next(line for line in table.splitlines() if line.startswith("| D1 |"))
+        self.assertIn("skipped가 0이 아닌 행이 있다", row)
+
+    def test_notes_name_the_blocking_device(self):
+        code, _, _ = self.run_tool(FakeOpenShell())
+        self.assertEqual(code, 0)
+        table = next(self.run_dir().glob("*.md")).read_text(encoding="utf-8")
+        rows = {line.split("|")[1].strip(): line for line in table.split("## 2. 시험표", 1)[1].splitlines()
+                if line.startswith("| ")}
+        self.assertIn("게이트웨이 추론 경로 부재", rows["B5"])
+        self.assertIn("게이트웨이 추론 경로 부재", rows["DB5"])
+        self.assertIn("정책 read_only", rows["A3"])
+        self.assertIn("작업 공간 추론 경로 없음", rows["DP4"])
+        self.assertIn("코드 판: git 커밋", table)
+
+    def test_snapshot_row_needs_image_manifest_value(self):
+        runner = FakeOpenShell(overrides={"verify_snapshot": (0, json.dumps({
+            "ok": True, "normalized_sha256": "c" * 64, "recorded": "c" * 64, "manifest": None, "failed": []}), "")})
+        code, _, _ = self.run_tool(runner, demo=None)
+        self.assertEqual(code, 1)
 
     def test_argument_errors(self):
         for argv in (["run"], ["run", "--scored", "Bad_Name"], ["run", "--scored", "../x"],
