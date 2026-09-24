@@ -120,6 +120,17 @@ class CumulativeTokenTest(unittest.TestCase):
         self.assertEqual(record["execution_status"], "COMPLETED")
         self.assertLess(total, LIMIT)
 
+    def test_directed_single_turn_comparison_path_has_room(self):
+        """AS2 2회차(model-0.3): 지침이 비교국·분해를 한 차례에 함께 부르게 한다. 그 경로(full, Critic, 수정 없음)는 두
+        차례로 나눠 부르는 경로보다 조사자 요청이 하나 적어 한도 아래 여유가 크다(나눠 부르는 경로는 한도에 거의 닿는다)."""
+        record, one_turn = run_path("full", [(None, calls("compare_partners", "decompose_hs"), 60), (DRAFT, None, 1200),
+                                             (CRITIC_OK, None, 400)], [h.PASS, h.PASS])
+        self.assertEqual(record["execution_status"], "COMPLETED")
+        self.assertLess(one_turn, LIMIT * 85 // 100)
+        _, two_turns = run_path("full", [(None, calls("compare_partners"), 60), (None, calls("decompose_hs"), 60),
+                                         (DRAFT, None, 1200), (CRITIC_OK, None, 400)], [h.PASS, h.PASS])
+        self.assertLess(one_turn, two_turns)
+
     def test_decomposition_path_with_critic_fits_but_a_revision_after_it_does_not(self):
         # full: 추가 비교 2(비교국·분해), Critic, 수정 없음 → 한도 안
         record, total = run_path("full", [(None, calls("compare_partners"), 60), (None, calls("decompose_hs"), 60),

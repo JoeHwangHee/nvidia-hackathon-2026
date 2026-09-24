@@ -70,7 +70,8 @@ class ModelConfigTest(unittest.TestCase):
         self.assertIsInstance(cfg["request"]["temperature"], Decimal)
         self.assertIs(cfg["request"]["enable_thinking"], False)
         # model-0.2: 도구 없는 조사자 초안 요청에 response_format json_object(실측 뒤 켬, 결정 기록 ⑯)
-        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-0.2", "json_object"))
+        # model-0.3: 조사자·Critic 프롬프트에 신호별 판정 규칙·도구 인자·재조회 인자 모양(AS2 2회차, AS2 결정 기록 ⑬)
+        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-0.3", "json_object"))
         for value in walk(cfg):
             if isinstance(value, str):
                 self.assertNotRegex(value, r"(?i)bearer|secret")
