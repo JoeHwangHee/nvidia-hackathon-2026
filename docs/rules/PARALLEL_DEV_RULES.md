@@ -54,13 +54,12 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 | `src/tradesentry/units/`(단위 등록부와 공통 실행기, 개발 전용) | 공동 | 물리 단위(USD·kg)와 관계없다. CLI·런타임 스킬에서 부르지 않는다 |
 | `src/tradesentry/app.py`(화면), `configs/model/`(프롬프트·모델 설정) | M | 계획 경로·명령 표(자료 계약 §10)에 있다 |
 | CLI `tradesentry <명령>` | M | `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate` |
-| `data/` 전체(스냅샷·참조 자료) | D | 예외: `data/reference/peer_group_g1.csv`는 M이 계산하고 D가 검수한다(§3.4) |
+| `data/` 전체(스냅샷·참조 자료) | D | 예외: `data/reference/peer_group_g0.csv`·`data/reference/peer_group_g1.csv`는 M이 계산하고 D가 검수한다(§3.4) |
 | `data/snapshots/controlled_fixture_v0/` | D | 합성 시험자료(§2) |
 | `configs/collection_plan.json`(기존) | D | |
 | `configs/policy_v1.json`(정책 수치 파일) | D 제안·사용자 승인 | 정책 수치를 코드에 하드코딩하지 않는다 |
 | `configs/nat/workflow.yml` | M | |
 | `configs/openshell/policy.yaml` | M(보안 검토) | |
-| 모델 설정, 프롬프트 | M | 위치는 계획 경로·명령 표에 아직 없다 |
 | `skills/tradesentry/SKILL.md`(런타임 스킬) | M | |
 | `skills/tradesentry-scorecard/SKILL.md`, `skills/tradesentry-eval/SKILL.md` | 공동 | 평가 스킬 ①(룰북 Part A 자기채점)과 ②(성능 평가를 사전 점검 → 실행 → 채점 순으로 수행) |
 | `eval/scenarios/SCENARIO_SPEC.md`(시나리오 명세, 공개) | D | |
@@ -204,6 +203,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
   - 16개국 안에서 대상국을 뺀 상위 5개국 선택
   - 대만(`TW`)이 BACI(프랑스 CEPII가 만드는 국가 간 연간 교역 자료) 490 "Asia n.e.s."에 대응한다는 주석
 - BACI 값(천USD/톤, 연간)이 관세청 월별 USD/kg 지표와 한 지표 안에서 섞이지 않았는지 본다.
+- `g0` 결과 `data/reference/peer_group_g0.csv`도 M이 계산하고(로드맵 MT6) D가 검수한다. D는 자료 계약 §2.3.6(정본)의 `g0` 필드 값을 확인한다: `scope_type`=`hs6`, `method`=`import_value_topk`(대상국을 뺀 나머지 15개국에서, v2 부모 HS6 행의 2023년 1~12월 수입금액 합(`OBSERVED` 행)이 큰 순서로 5개국. 합이 같으면 국가 코드 사전순), `grouping_version`=`g0`, `source_version`=`kcs_202201_202412_v2`, `source_year`=2023, `input_sha256`=v2의 `raw_sha256`, `similarity`·`community_id`=`null`.
 
 ## 4. 공용 약속과 변경 승인
 
