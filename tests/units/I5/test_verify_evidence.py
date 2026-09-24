@@ -129,6 +129,13 @@ class VerifyTest(unittest.TestCase):
             with self.subTest(inp=sorted(inp)), self.assertRaises(common.ToolError):
                 verify_evidence.run(inp)
 
+    def test_nothing_to_verify_is_refused_not_ok(self):
+        for args in ({}, {"metric_ids": []}, {"metric_ids": [], "evidence_ids": []}):
+            with self.subTest(args=args):
+                out = verify_evidence.run(fx.request(args, policy_version="dev-0.1", envelopes=self.envelopes))
+                self.assertEqual(out["retryable_error"]["code"], common.INVALID_ARGS)
+                self.assertIsNone(out["comparability"])  # 대조 결과(ok)를 내지 않는다
+
     def test_envelopes_are_only_for_verify_evidence(self):
         with self.assertRaises(common.ToolError):
             get_history.run(fx.request(envelopes=[]))

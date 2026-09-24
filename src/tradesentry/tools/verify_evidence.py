@@ -12,9 +12,10 @@ docs/plan/DEV_PLAN.md §6.5, 자료 계약 docs/rules/DATA_CONTRACT_V1.md §4.4�
 만들지 않으며, 평가 정답 파일을 보지 않는다. 요청 모양은 도구 공통 틀(check_comparability.py 머리 설명)이고, 요청에
 envelopes(앞서 받은 봉투 목록, 코드가 넘긴다)와 policy_version(분해 지표를 다시 계산할 때의 중량 허용오차)이 꼭 있어야 한다.
 
-인자(흐름 조정이 초안에서 뽑아 넘긴다): {"metric_ids": [문자열…], "evidence_ids": [문자열…]}. 둘 다 없어도 된다. 목록마다
-200개, 문자열마다 256자까지다. 목록이 아니거나 문자열이 아니면 retryable_error(invalid_args)다. 지어낸 ID도 대조 대상이라
-글자 모양으로 거부하지 않는다(대조 결과로 알린다).
+인자(흐름 조정이 초안에서 뽑아 넘긴다): {"metric_ids": [문자열…], "evidence_ids": [문자열…]}. 목록마다 200개, 문자열마다
+256자까지다. 목록이 아니거나 문자열이 아니면 retryable_error(invalid_args)다. 둘이 모두 비었거나 없으면 대조할 것이 없어
+역시 invalid_args로 거부한다(빈 대조가 "모두 통과"로 읽히지 않게). 지어낸 ID도 대조 대상이라 글자 모양으로 거부하지
+않는다(대조 결과로 알린다).
 
 대조(문제 코드는 이 단위가 정했다)
 - 지표 metric_id마다
@@ -201,11 +202,13 @@ class _Checker:
 
 
 def _body(snap: dal.Snapshot, request: dict, started: int) -> dict:
+    envelopes = request["envelopes"]
+    _check_envelopes(envelopes, snap.snapshot_id)  # 코드가 넘긴 봉투라 모양이 틀리면 ToolError(인자 검사보다 먼저)
     problem = common.args_problem(request["args"], {"metric_ids": _refs_problem, "evidence_ids": _refs_problem})
     if problem:
         return common.refuse(request, TOOL, snap, started, problem)
-    envelopes = request["envelopes"]
-    _check_envelopes(envelopes, snap.snapshot_id)
+    if not request["args"].get("metric_ids") and not request["args"].get("evidence_ids"):
+        return common.refuse(request, TOOL, snap, started, "대조할 metric_ids·evidence_ids가 없다")
     metrics, returned, partners = _returned(envelopes)
     checker = _Checker(snap, request, partners)
     metric_results = [checker.metric_result(metric_id, metrics.get(metric_id, []))

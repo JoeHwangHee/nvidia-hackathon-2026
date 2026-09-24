@@ -726,6 +726,8 @@
    ],
    "comparability": {
     "grouping_version": "g0",
+    "comparable": true,
+    "issues": [],
     "denominator": {
      "partner": "ALL",
      "months": [
