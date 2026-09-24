@@ -100,7 +100,7 @@ baseUrl= https://integrate.api.nvidia.com/v1 apiKey=placeholder(openshell:resolv
 ✓ Active gateway set to 'nemoclaw'
 GatewayClientRequestError: FailoverError: LLM request failed: network connection error.
      stdout 0바이트. 로그 528~530행: NET:OPEN [MED] DENIED /usr/local/bin/node(5073) -> integrate.api.nvidia.com:443 [reason:binary '/usr/local/bin/node' not allowed in policy 'nvidia' (ancestors: [/usr/bin/bash], cmdline: [/usr/local/bin/nemoclaw-start]) …]
-     로그 81~88·331·332행: 정책 바이너리 /usr/local/bin/openclaw는 심볼릭 링크를 따라 …/openclaw/openclaw.mjs(첫 줄 #!/usr/bin/env node)로 풀린다. 게이트웨이 프로세스의 실행 파일은 /usr/local/bin/node다
+     로그 81~88·331·332행: 정책 바이너리 /usr/local/bin/openclaw는 심볼릭 링크를 따라 …/openclaw/openclaw.mjs(첫 줄 #!/usr/bin/env node)로 풀린다. OpenClaw 게이트웨이 프로세스의 실행 파일은 /usr/local/bin/node다
      -> 지시된 구성(추론 블록 바이너리 openclaw만, POST /v1/chat/completions만)으로는 OpenClaw가 모델을 부르지 못한다. 여기서 멈춤(BLOCKED, 시연 샌드박스 요건 (b))
 
 # ---- 2단계 후반: 오케스트레이터 판단 정정(17:4x) 뒤 ----
@@ -138,7 +138,7 @@ GatewayClientRequestError: FailoverError: LLM request failed: network connection
 
      exit: DT1=22 DT2=4 DT3=22 DT4=22. demo 로그 624(DT1)·633(DT2)·642·643(DT3: L4 허용 뒤 L7 거부)·652(DT4)행
 
-[B1] 17:47:58~17:48:01 운영자 요청 없이 OpenClaw 턴 1건이 더 돌아 모델 호출 2회(demo 로그 613~616행, 게이트웨이 로그 08:47:58 'via gateway sender'). 원인 [미확인]
+[B1] 17:47:58~17:48:01 운영자 요청 없이 OpenClaw 턴 1건이 더 돌아 모델 호출 2회(demo 로그 613~616행, OpenClaw 게이트웨이 로그 08:47:58 'via gateway sender'). 원인 [미확인]
 
 # ---- 2단계 마무리: 4판(openclaw_gateway_dialback 제거) ----
 # 3판에 남아 있던 openclaw_gateway_dialback(자기 주소, access: full, rules 없음)이 하네스에 필요한지 확인했다.
@@ -150,7 +150,7 @@ GatewayClientRequestError: FailoverError: LLM request failed: network connection
 [K4] 17:55:30 key_check.py / -> exit=0 (4판 적용 뒤, 요청 전)
       {'verdict': 'NO_REAL_KEY', 'real_key_total': 0, 'env_real_key_vars': 0, 'env_var_names_with_KEY_or_TOKEN': ['NVIDIA_INFERENCE_API_KEY', 'OPENCLAW_GATEWAY_TOKEN'], 'proc_environ_readable': 1, 'proc_environ_unreadable': 13, 'proc_environ_real_key_hits': 0}
 
-[A3] 17:55:31 nemoclaw x1-demo agent (같은 요청) -> exit=1, 'FailoverError: The AI service is temporarily overloaded.' demo 로그 694·695행: OpenClaw 모델 호출은 L4·L7 허용, 게이트웨이 로그 [model-fetch] status=200(SSE 안의 과부하 오류). NIM 쪽 일시 오류
+[A3] 17:55:31 nemoclaw x1-demo agent (같은 요청) -> exit=1, 'FailoverError: The AI service is temporarily overloaded.' demo 로그 694·695행: OpenClaw 모델 호출은 L4·L7 허용, OpenClaw 게이트웨이 로그 [model-fetch] status=200(SSE 안의 과부하 오류). NIM 쪽 일시 오류
 [A4-1] 17:55:56 같은 요청 재시도 -> exit=1, 같은 과부하 오류(demo 로그 712·713행 허용)
 [A4-2] 17:56:19 같은 요청 재시도 -> exit=1 (17:56:46, 래퍼: replayInvalid=true)
      OpenClaw 결과: status=ok summary=completed stopReason=stop toolSummary={"calls": 2, "tools": ["exec"], "failures": 0} replayInvalid=True

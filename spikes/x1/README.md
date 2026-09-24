@@ -197,7 +197,7 @@ openshell sandbox download x1-demo /sandbox/x1-runs artifacts/runs/
 
 주의
 
-- 게이트웨이 재시작 뒤 `openshell sandbox exec`가 `--timeout`을 넘겨 돌아오지 않은 일이 있었다. exec는 한 번에 하나씩, 호스트 쪽 감시 시간을 두고 돌린다.
+- OpenClaw 게이트웨이(샌드박스 안에서 OpenClaw를 띄우는 프로세스) 재시작(`nemoclaw x1-demo gateway restart`) 뒤 `openshell sandbox exec`가 `--timeout`을 넘겨 돌아오지 않은 일이 있었다. exec는 한 번에 하나씩, 호스트 쪽 감시 시간을 두고 돌린다.
 - `nemoclaw … agent`는 OpenClaw 결과에 `replayInvalid: true`가 있으면 종료 코드 1을 낸다. 결과 JSON의 `status`와 `payloads`를 함께 본다.
 
 되돌리기(시연 샌드박스)
@@ -240,6 +240,20 @@ nemoclaw x1-demo start
 #    다시 띄운다. start는 기록된 provider·모델로 https://inference.local에 추론 요청 1건을 보내 확인한다(같은 문서 1602행).
 #    X1 구성은 추론 경로를 지웠으므로 이 확인은 실패해 0이 아닌 종료 코드를 낼 것으로 본다 [추론]
 ```
+
+## MT4·MT5로 넘기는 것
+
+X1 코드와 시험에서 드러난 한계다. 앱 코드는 MT4(조사 흐름·NIM 호출·NAT 감싸기)와 MT5(CLI·OpenShell 정책·NemoClaw 경로)에서 만든다.
+
+- NAT(MT4)
+  - LLM 구간 기록(LLM span, 모델 호출 하나를 시작·끝 이벤트로 남기는 기록)이 없다. X1 CLI는 NAT 함수 안에서 NIM을 `urllib`로 직접 불러, 실행 추적에는 `WORKFLOW_START`·`FUNCTION_START`·`FUNCTION_END`·`WORKFLOW_END` 네 이벤트만 남았다 `[사실: artifacts/openshell/logs/20260924-x1-demo-nim-run-excerpt.txt 4~7·35~38·46~49행]`. 그래서 NAT 프로파일러는 토큰 수와 모델 지연을 보지 못한다 `[추론]`. MT4는 NIM 호출이 LLM 구간 기록을 남기게 감싼다.
+  - `WORKFLOW_END`가 파일에 남았는지는 이벤트 수로 확인하거나, 내보내기(exporter)의 `wait_for_tasks()`로 남은 쓰기를 기다려 확인한다. NAT 1.9.0의 `stop()`은 백그라운드 내보내기 작업을 기다리지 않는다 `[사실: NVIDIA/NeMo-Agent-Toolkit v1.9.0 packages/nvidia_nat_core/src/nat/observability/exporter/base_exporter.py 113~117·360~378행]`. X1 CLI는 이벤트 루프에 남은 작업 전체를 5초까지 기다리는 방법을 썼다(`x1_probe.py`의 `run_once`).
+- 키 조회 시험 `key_check.py`의 조회 범위 한계(MT5)
+  - `os.walk`에 `onerror`를 주지 않아, 목록을 읽지 못한 폴더가 조용히 빠진다. 목록을 읽지 못한 폴더를 따로 센다. 예: demo transcript [K1]에서 `/run/nemoclaw`는 파일 0개로 나왔는데, 폴더 목록을 읽지 못한 것으로 본다 `[추론]`.
+  - 정책에 적힌 파일 경로(예: `read_only`의 `/run/nemoclaw/managed-startup-runtime.env`)는 폴더를 훑지 말고 직접 연다. 지금은 `.env` 찾기에서 `/run`을 빼고, 하네스 경로 후보는 폴더 목록으로만 훑는다.
+  - 다른 프로세스의 environ에서도 `DATA_GO_KR_SERVICE_KEY=` 이름이 있는지 센다. 지금은 이 프로세스의 환경변수에서만 이름을 본다.
+- 감사 로그(MT5): `openshell logs`는 크기가 정해진 버퍼라 행이 빠질 수 있다. 샌드박스 안 `/var/log/openshell.*.log`나 OCSF JSON 내보내기를 대조 출처로 검토한다(`artifacts/openshell/violation_tests.md` §3 "수집 한계").
+- 한 줄 경로(MT5): 4판 턴은 SKILL.md를 다시 읽지 않았다. 새 세션으로 4판에서 스킬 읽기부터 다시 돌린다(`artifacts/openshell/violation_tests.md` §0).
 
 ## 개발 기계 되돌리기
 
