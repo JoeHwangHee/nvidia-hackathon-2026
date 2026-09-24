@@ -15,7 +15,7 @@
 |---|---|
 | 시험 실행(S0 전·후) | `docs/plan/ROADMAP.md` §2.1, `docs/rules/AGENT_OPS.md` §5.2 |
 | 계획된 CLI 명령·공통 옵션·산출물 경로 | `docs/rules/DATA_CONTRACT_V1.md` §10 |
-| 개발 환경(macOS, Docker 안 OpenShell(에이전트를 격리해 돌리는 NVIDIA 샌드박스 런타임) 게이트웨이(샌드박스 밖에서 정책을 적용하고 요청을 중계하는 구성요소), 시스템 `python3` 3.9.6, Python 3.12·uv) | `docs/plan/DEV_PLAN.md` §3.5 |
+| 개발 환경(macOS, Docker 안 OpenShell(에이전트를 격리해 돌리는 NVIDIA 샌드박스 런타임) 게이트웨이(샌드박스의 정책과 provider(등록한 자격 증명 묶음) 설정을 보관하고 샌드박스에 내려보내는 OpenShell 제어면), 시스템 `python3` 3.9.6, Python 3.12·uv) | `docs/plan/DEV_PLAN.md` §3.5 |
 | 환경변수(`NVIDIA_API_KEY`, `DATA_GO_KR_SERVICE_KEY`는 `.env`, 봉인 폴더 위치는 `TRADESENTRY_SEALED_DIR`) | `docs/rules/PARALLEL_DEV_RULES.md` §10.2, `docs/rules/DATA_CONTRACT_V1.md` §10 |
 | 스냅샷 검사(`ingest.py verify`)를 기록을 덮지 않고 돌리는 법 | `docs/rules/PARALLEL_DEV_RULES.md` §10.1 |
 | NIM(NVIDIA 클라우드 추론 API) tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능) 왕복 확인 스크립트 | `docs/plan/DEV_PLAN.md` §3.5 |

@@ -595,7 +595,8 @@ env -u NVIDIA_API_KEY -u DATA_GO_KR_SERVICE_KEY python -m eval.scorer --run <run
 - **라이브 정책 조회**: 실제 적용 중인 정책을 읽는 일(`openshell policy get <agent> --full`).
 - **예측 / 실측**: 정책 규칙으로 미리 계산한 허용·차단 결과 / 실제로 돌려 본 결과.
 - **L7 규칙**: HTTP 요청 수준(method·path·query)의 네트워크 규칙.
-- **게이트웨이**: 샌드박스의 바깥 요청과 추론 연결을 중계하는 OpenShell 구성요소.
+- **게이트웨이**: 샌드박스의 정책과 provider(등록한 자격 증명 묶음) 설정을 보관하고 샌드박스에 내려보내는 OpenShell 제어면. 요청에 정책을 적용하고 전달하는 일은 감독 프로세스의 정책 프록시가 한다.
+- **감독 프로세스(supervisor)**: 샌드박스 컨테이너 안에서 root로 돌며 정책을 집행하는 OpenShell 프로세스. 나가는 요청의 정책 프록시가 게이트웨이에서 받은 자격 증명으로 자리표시 값을 실제 키로 바꾼다.
 - **credential placeholder rewrite / `inference.local`**: 샌드박스 프로그램에는 자리표시 문자열만 두고 샌드박스 안 감독 프로세스의 정책 프록시가 실제 키로 바꾸는 방식 / 게이트웨이가 샌드박스에 주는 관리형 추론 경로(정책 밖에서 작업 공간 전체에 걸린다). X1은 앞의 방식을 채택했다.
 - **lethal trifecta**: 민감 자료 읽기, 외부 입력 수용, 외부 전송 경로가 한 경로에 겹치는 위험.
 - **NemoClaw / 하네스**: 모델·에이전트 하네스·보안 런타임을 묶은 NVIDIA 참조 스택 / 에이전트를 돌리는 실행 틀.
