@@ -188,3 +188,64 @@ def write_sqlite(path: Path, doc: dict) -> None:
         con.commit()
     finally:
         con.close()
+
+
+def batch_line(run_id: str, case_id: str, mode: str = "full", dataset: str = "controlled_fixture_v0",
+               status: str = "COMPLETED", review: str | None = "MONITOR", signal: dict | None = None,
+               snapshot_id: str = "controlled_fixture_v0", **extra) -> dict:
+    """하네스 묶음 기록 한 줄(자료 계약 §8의 실행 쪽 키 21개)."""
+    completed = status == "COMPLETED"
+    line = {"run_id": run_id, "case_id": case_id, "dataset": dataset, "mode": mode, "policy_version": "dev-0.1",
+            "rulebook_version": "RB-1", "snapshot_id": snapshot_id, "grouping_version": "g0",
+            "code_version": "0123456789abcdef0123456789abcdef01234567",
+            "review_status_final": review if completed else None,
+            "signal_status": (signal or {"unit_value": review, "share": "NOT_TRIGGERED"}) if completed else None,
+            "unresolved_evidence": False if completed else None, "execution_status": status,
+            "tool_attempts": 5, "model_requests": 0 if mode == "checklist" else 4,
+            "tokens_in": 0 if mode == "checklist" else 3000, "tokens_out": 0 if mode == "checklist" else 500,
+            "wall_ms": 12_000, "critic_used": mode == "full", "revision_used": False,
+            "errors": [] if completed else [{"code": "provider_http_5xx"}]}
+    line.update(extra)
+    return line
+
+
+def oracle_reports(rows: Rows, ids: dict, mode: str = "full", stamp: str = "260925100001") -> dict[str, dict]:
+    """oracle A/B/C마다 필수 근거를 채우는 정상 보고서(합성). run_id는 run_case-{stamp를 사례마다 1씩 늘린 것}."""
+    ev = rows.ev
+    reports = {}
+    specs = {"A-composition": ("CN", "MONITOR"), "B-residual": ("JP", "MAINTAIN"), "C-missing-hs10": ("DE", "HOLD")}
+    for offset, (case_id, (partner, status)) in enumerate(specs.items()):
+        mine = ids[case_id]
+        parents = [ev(mine["parent_comparison"]), ev(mine["parent_baseline"])]
+        kids = [ev(r) for r in mine.get("kids_comparison", []) + mine.get("kids_baseline", [])]
+        base = {"partner": partner, "baseline": "202301"}
+        claims = [claim("c1", "change", "r_U", Decimal("-40.0"), "%", "DOWN", parents,
+                        text="단가가 전년 같은 달보다 40.0% 낮다.", **base)]
+        if case_id == "A-composition":
+            claims += [claim("c2", "decomposition", "within_effect", Decimal("0.00"), "USD/kg", "FLAT", parents + kids,
+                             **base),
+                       claim("c3", "decomposition", "mix_effect", Decimal("-2.40"), "USD/kg", "DOWN", parents + kids,
+                             text="구성 변화 효과는 kg당 −2.40달러다.", **base)]
+            for i, code in enumerate(("8504501010", "8504501020")):
+                rows_of_code = [ev(r) for r in mine["kids_comparison"] + mine["kids_baseline"]
+                                if rows.observation[r - 1]["hs_code"] == code]
+                claims.append(claim(f"c{4 + i}", "change", f"r_U@{code}", Decimal("0.0"), "%", "FLAT", rows_of_code,
+                                    **base))
+        elif case_id == "B-residual":
+            claims += [claim("c2", "decomposition", "within_effect", Decimal("-2.40"), "USD/kg", "DOWN",
+                             parents + kids, **base),
+                       claim("c3", "decomposition", "mix_effect", Decimal("0.00"), "USD/kg", "FLAT", parents + kids,
+                             **base),
+                       claim("c4", "comparison", "r_U", Decimal("-40.0"), "%", "DOWN",
+                             [ev(ids["A-composition"]["parent_comparison"]), ev(ids["A-composition"]["parent_baseline"])],
+                             partner="CN", baseline="202301", text="비교국 CN도 40.0% 낮다.")]
+        else:
+            claims.append(claim("c2", "data_status", "observation_status@8504501010", "REQUEST_FAILED", None, "NA",
+                                [ev(mine["hs10_status_comparison"])], partner=partner,
+                                text="HS10 하위 자료 요청이 실패했다(REQUEST_FAILED)."))
+        label = {"MONITOR": "모니터링", "MAINTAIN": "검토 유지", "HOLD": "자료 보류"}[status]
+        run_id = f"run_case-{int(stamp) + offset:012d}"
+        reports[case_id] = report(run_id, claims, case_id=case_id, mode=mode, snapshot_id=rows.snapshot_id,
+                                  review_status=status, evidence_ids=parents + kids,
+                                  narrative=f"단가가 전년 같은 달보다 40.0% 낮아졌다. 판정은 {label}이다.")
+    return reports
