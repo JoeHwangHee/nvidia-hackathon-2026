@@ -68,11 +68,11 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 | `eval/dev/oracle_ABC.json`(기존) | D | 고치지 않는다. 한국어 표기와 코드의 대응은 `docs/rules/DATA_CONTRACT_V1.md` §3을 따른다 |
 | `eval/datagen/`(평가 자료 도구: dev20 생성, holdout40 결정적 검사, 실자료 분할) | D | holdout40 생성 코드는 여기 두지 않는다. 저장소에 두지 않고 봉인 폴더에 둔다(§6.6) |
 | `eval/sealed_manifest.json`(봉인 해시 목록) | D | 해시만 담는다(§6) |
-| `eval/scorer/`(독립 채점기) | D | 런타임 코드(`src/tradesentry/` 아래 모든 패키지. 등록부 `units/`와 커널 `contract/` 포함)를 import하지 않고 복사하지도 않은 독립 구현이다. `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증한다. 실행은 `python -m eval.scorer --run <run_dir>` |
+| `eval/scorer/`(독립 채점기) | D | 런타임 코드(`src/tradesentry/` 아래 모든 패키지. 등록부 `units/`와 커널 `contract/` 포함)를 import하지 않고 복사하지도 않은 독립 구현이다. 간접 import(런타임 패키지를 부르는 모듈을 거쳐 부르는 경우)도 하지 않고 `eval/datagen/`도 import하지 않는다. `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증한다. 실행은 `python -m eval.scorer --run <run_dir>` |
 | 봉인 폴더(`TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`) | D | 저장소 밖이다. 쓰기는 격리된 생성 에이전트만 한다(§6). 두 트랙 개발 에이전트와 Codex는 열거나 읽지 않는다(§6.3). §1.3 "읽기만" 규칙의 예외다 |
 | `outputs/`(도메인 출력, 커밋 안 함. 실행마다 `outputs/{실행명}/`, 봉인 묶음 실행은 `outputs/sealed/{실행명}/`) | 공동 | 이름 규칙은 자료 계약 §10.3. 봉인 묶음 실행의 출력은 정답 대조 채점이 끝나기 전에는 열지 않는다 |
-| `artifacts/eval/score-{시각}/`, `artifacts/scorecard/scorecard-{시각}/`(커밋. 실행 폴더를 승격한 것) | 공동 | 승격은 실행 폴더를 이름 그대로 `artifacts/{종류}/` 아래로 복사해 커밋하는 일이다 |
-| `artifacts/openshell/openshell_violation_tests-{시각}/`(커밋. 위반 시험 실행 폴더를 승격한 것) | M(보안 검토) | X1 임시 시험 기록은 옛 이름 위치에 있다(자료 계약 §10.3) |
+| `artifacts/eval/score-{시각}/`, `artifacts/scorecard/scorecard-{시각}/`(커밋. 실행 폴더의 커밋 증거 파일을 승격한 것) | 공동 | 승격은 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 커밋 증거 파일(평가 결과는 채점기 출력 `scorer_*`, 자기채점은 `scorecard-{시각}.md`)만 복사해 커밋하는 일이다. trace는 빼고, 봉인 묶음은 정답 대조 채점이 끝난 뒤에만 한다 |
+| `artifacts/openshell/openshell_violation_tests-{시각}/`(커밋. 위반 시험 실행 폴더의 결과 파일 `.md`·`.txt`·`.yaml`을 승격한 것) | M(보안 검토) | X1 임시 시험 기록은 옛 이름 위치에 있다(자료 계약 §10.3) |
 | `spikes/x1/`(X1: 세로형 최소 통합 시험의 임시 시험 코드) | M | 스캐폴딩 결과에 섞지 않는다 |
 | `docs/`, `tests/` | 공동 | 예외 규칙은 §1.3. 단위 골든 시험 `tests/units/{단위 ID}/`도 여기 든다 |
 
@@ -602,7 +602,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 ### 10.3 비밀값·로컬 경로 검사
 
 - PR마다, 그리고 2026-09-27(일) 공개 준비 때 비밀값·로컬 경로 검사(NVIDIA API 키 접두어, 공공데이터포털 서비스키 요청 파라미터, 로컬 절대경로를 찾는 검사. 실제 패턴 문자열은 검사 스크립트에만 두고 문서에는 적지 않는다)를 돌린다. 명령과 종료 코드를 PR에 남긴다.
-- 커밋하는 증거물, 곧 승격한 실행 폴더(평가 결과 `artifacts/eval/score-{시각}/`, 자기채점 `artifacts/scorecard/scorecard-{시각}/`, OpenShell 증거 `artifacts/openshell/openshell_violation_tests-{시각}/`. 그 안의 감사 로그 발췌와 라이브 정책 조회 본문 포함)와 trace 발췌도 커밋 전에 같은 검사를 거친다. 승격은 실행 폴더를 이름 그대로 `artifacts/{종류}/` 아래로 복사해 커밋하는 일이다(자료 계약 §10.3).
+- 커밋하는 증거물, 곧 승격한 실행 폴더(평가 결과 `artifacts/eval/score-{시각}/`, 자기채점 `artifacts/scorecard/scorecard-{시각}/`, OpenShell 증거 `artifacts/openshell/openshell_violation_tests-{시각}/`. 그 안의 감사 로그 발췌와 라이브 정책 조회 본문 포함)와 trace 발췌도 커밋 전에 같은 검사를 거친다. 승격은 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 종류마다 정한 커밋 증거 파일만 복사해 커밋하는 일이다. trace는 복사하지 않고, 봉인 묶음은 정답 대조 채점이 끝난 뒤에만 복사한다(자료 계약 §10.3).
 - 도메인 출력 `outputs/`(실행 폴더 `outputs/{실행명}/`와 봉인 묶음 실행의 `outputs/sealed/{실행명}/`)는 커밋하지 않는다 `[사실: .gitignore]`. 실행명은 `{실행 이름}-{yymmddhhmmss}`다.
 
 ## 용어 설명
@@ -634,7 +634,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 | 패키지 / 단위 | 파이썬 모듈 파일을 여럿 담는 폴더 / 혼자 실행하고 시험할 수 있게 파일 하나로 만든 가장 작은 구현 조각. 단위 목록은 `docs/plan/UNITS.md` |
 | 도메인 출력(`outputs/`) | 실행마다 폴더 하나에 쌓는 도메인별 출력물. 커밋하지 않는다 |
 | 실행 이름 / 실행명 | 시각이 붙지 않은 실행의 이름(예: `run_case`) / 거기에 시작 시각을 붙인 `{실행 이름}-{yymmddhhmmss}`. 실행 폴더 이름이자 `run_id`다 |
-| 승격 | 커밋할 증거가 된 실행 폴더를 이름 그대로 `artifacts/{종류}/` 아래로 복사해 커밋하는 일 |
+| 승격 | 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 종류마다 정한 커밋 증거 파일만 복사해 커밋하는 일. trace는 빼고, 봉인 묶음은 정답 대조 채점이 끝난 뒤에만 한다 |
 | 도구 출력 봉투 | 도구 5개가 공통으로 돌려주는 결과 틀 |
 | `compare_partners` | 비교국의 같은 품목·같은 달 값을 조회하는 도구 |
 | 임시 대역(stub) | 진짜 자료 대신 정해진 값을 돌려주는 가짜 함수 |

@@ -647,7 +647,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 ### 7.2 쓰는 곳과 오류율 [DESIGN: 명세 §3.6]
 
-- 주장 채점 기록(§9.2)의 `outcome`에 적고, 채점 실행 폴더의 `scorer_claims-{시각}.jsonl`에 한 줄에 한 건씩 남긴다. 이 폴더는 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(§10.3 N11).
+- 주장 채점 기록(§9.2)의 `outcome`에 적고, 채점 실행 폴더의 `scorer_claims-{시각}.jsonl`에 한 줄에 한 건씩 남긴다. 이 파일은 채점기의 다른 출력과 함께 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(승격, §10.3 N11).
 - 주장 단위 오류율 = `CORRECT`가 아닌 typed claim ÷ 전체 typed claim
 - 보고서 단위 오류율 = 오류 claim이나 `UNBACKED_PROSE`가 1개 이상인 보고서 ÷ 전체 보고서
   - 분자: 오류 claim(`CORRECT`가 아닌 typed claim)이나 `UNBACKED_PROSE`가 1개 이상인 보고서, 그리고 보고서 단위 실패다. 보고서 단위 실패는 `execution_status`가 `COMPLETED`가 아닌 실행(스키마 요건 미달로 `INVALID`가 된 실행 포함, §9.4)과 실행되지 않은 사례다.
@@ -708,8 +708,8 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 - 이름과 위치는 이름·출력 규칙(§10.3)을 따른다. 실행 하나가 `outputs/{실행명}/` 폴더 하나이고, 그 안의 파일 이름은 `{도메인명}-{시각}.{확장자}`다 [DESIGN: 2026-09-24(목) 사용자 결정].
 - 실행 쪽 키: 평가 묶음 실행(여러 사례 실행을 한 번에 돌리는 평가 실행, `tradesentry evaluate`)이 그 실행 폴더(`outputs/evaluate-{시각}/`. 봉인 묶음이면 `outputs/sealed/` 아래의 실행 폴더)의 `evaluation_batch_run-{시각}.jsonl`에 한 줄에 실행 1건을 적는다. 이 파일에는 채점 대상 실행이 남기는 키만 있다 [DESIGN].
-- 평가 결과: 채점기가 실행 쪽 키에 정답 대조 채점의 세 키를 더해 채점 실행 폴더 `outputs/score-{시각}/`의 `scorer_summary-{시각}.jsonl`에 한 줄에 실행 1건(위 키 전부)을 적는다. 하네스의 `evaluation_batch_run-{시각}.jsonl`은 고치지 않는다. 이 폴더를 이름 그대로 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(승격, §10.3 N11) [DESIGN: 명세 §4.12, 2026-09-24(목) 사용자 결정].
-- 실행 추적: trace(실행 중 호출과 응답을 순서대로 남긴 기록) JSONL(JSON 하나를 한 줄에 적는 기록 파일)과 NAT(NeMo Agent Toolkit: 에이전트 실행을 감싸 추적·프로파일·사후 평가를 하는 NVIDIA 도구 모음) 프로파일 결과는 도메인 출력이라 그 실행 폴더 `outputs/{실행명}/`에 둔다. 봉인 묶음 실행이면 `outputs/sealed/{실행명}/`이다. 커밋하지 않는다 [DESIGN: 2026-09-24(목) 사용자 결정] [사실: `.gitignore`가 `outputs/`를 제외한다].
+- 평가 결과: 채점기가 실행 쪽 키에 정답 대조 채점의 세 키를 더해 채점 실행 폴더 `outputs/score-{시각}/`의 `scorer_summary-{시각}.jsonl`에 한 줄에 실행 1건(위 키 전부)을 적는다. 하네스의 `evaluation_batch_run-{시각}.jsonl`은 고치지 않는다. 채점 실행 폴더의 채점기 출력(`scorer_*` 파일)만 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(승격, §10.3 N11). 봉인 묶음의 채점 결과는 그 묶음의 정답 대조 채점이 끝난 뒤에만 복사한다 [DESIGN: 명세 §4.12, 2026-09-24(목) 사용자 결정].
+- 실행 추적: trace(실행 중 호출과 응답을 순서대로 남긴 기록) JSONL(JSON 하나를 한 줄에 적는 기록 파일)과 NAT(NeMo Agent Toolkit: 에이전트 실행을 감싸 추적·프로파일·사후 평가를 하는 NVIDIA 도구 모음) 프로파일 결과는 도메인 출력이라 그 실행 폴더 `outputs/{실행명}/`에 둔다. 봉인 묶음 실행이면 `outputs/sealed/{실행명}/`이다. 커밋하지 않고 승격하지도 않는다. 봉인 묶음 실행의 출력은 정답 대조 채점이 끝나기 전에는 열지 않는다 [DESIGN: 2026-09-24(목) 사용자 결정] [사실: `.gitignore`가 `outputs/`를 제외한다].
 - 실패·미실행·timeout·invalid도 기록하고 분모에 남긴다. 결과를 본 뒤 어려운 사례를 지우지 않는다 [DESIGN: 명세 §3.6].
 - 분모는 결과 줄 수가 아니라 고정 사례 목록(`dev20`, `holdout40`, `real_dev`, `real_sealed` 봉인 표본)으로 센다. `real_dev`의 목록은 그 평가 묶음 실행 때의 정책으로 만든 경보 목록이며 채점 요약 `scorer_summary-{시각}.md`에 기록한다(MVP 대표 지표 첫 값의 분모). 실행되지 않아 결과 줄이 없는 사례도 실패로 센다. 세부는 룰북 `docs/eval/RULEBOOK.md` B5를 따른다 [DESIGN].
 - NIM 오류 등으로 다시 실행하면 같은 (`dataset`, `case_id`, `mode`)에 실행 기록이 여러 건 생긴다. 모든 시도를 지우지 않고 남긴다. 채점 대상으로 고를 실행은 룰북 B5를 따른다 [DESIGN].
@@ -844,9 +844,9 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 | 봉인 폴더 | 환경변수 `TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`(저장소 밖) | D |
 | 독립 채점기 | `eval/scorer/`(런타임 모듈을 import하지 않음), 실행 `python -m eval.scorer --run <run_dir>`, 출력 `outputs/score-{시각}/` | D |
 | 도메인 출력(커밋 안 함) | `outputs/{실행명}/{도메인명}-{시각}.{확장자}`(trace JSONL, NAT 프로파일 결과, 보고서, 실행 결과 기록 등 도메인 출력 전부). 봉인 묶음 실행은 `outputs/sealed/{실행명}/` | 공동 |
-| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더를 복사: `scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`) | 공동 |
-| 자기채점 결과(커밋) | `artifacts/scorecard/scorecard-{시각}/`(자기채점 실행 폴더를 복사: `scorecard-{시각}.md`) | 공동 |
-| OpenShell 증거(커밋) | `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더를 복사: 예측·실측 대조표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`) | M(보안 검토) |
+| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력만 복사: `scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`) | 공동 |
+| 자기채점 결과(커밋) | `artifacts/scorecard/scorecard-{시각}/`(자기채점 실행 폴더의 결과 파일만 복사: `scorecard-{시각}.md`) | 공동 |
+| OpenShell 증거(커밋) | `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일만 복사: 예측·실측 대조표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`) | M(보안 검토) |
 | X1 임시 시험 코드 | `spikes/x1/` | M |
 | 시험 | `tests/`(기존 `test_ingest.py` 유지), 단위 골든 시험 `tests/units/{단위 ID}/` | 공동 |
 
@@ -880,7 +880,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 - **N8 덮어쓰기 금지**: 쓰려는 이름이 이미 있으면 쓰지 않고 그 실행을 실패로 끝낸다. 이름 충돌 때문에 공식 실행이 실패해 `FAILED`로 분모에 남는 일은 설계로 막는다. 배치 실행기(평가 하네스 단위 `evaluation_batch_run`)는 사례 실행마다 새 실행명을 쓰고, 직전 실행과 같은 초에 시작하게 되면 다음 초까지 기다린 뒤 시작한다. dev20·`real_dev` 실행으로 이름 충돌이 없는지 확인한다.
 - **N9 커밋 안 함**: `outputs/`는 커밋하지 않는다(§10.2). `.gitignore`의 `outputs/` 줄은 이 규칙과 같은 PR로 넣으므로 `outputs/`에 처음 쓰는 코드(S0 이후)보다 먼저 `main`에 들어간다.
 - **N10 봉인**: 봉인 묶음(holdout40·`real_sealed`) 실행의 출력은 `outputs/sealed/{실행명}/`에 같은 규칙으로 두고, 정답 대조 채점이 끝나기 전에는 에이전트가 열지 않는다. `outputs/sealed/`에는 봉인 묶음을 샌드박스에서 실행한 출력만 둔다. 봉인 자료(holdout40 입력·정답표, `real_sealed` 사례 목록·표본, seed)는 계속 저장소 밖 봉인 폴더(`TRADESENTRY_SEALED_DIR`, §12)에만 두고, 봉인 자료 생성(holdout40, `real_sealed` 표본)의 출력도 봉인 폴더에만 쓴다. 그래서 봉인 폴더를 저장소 안에 두지 않는다는 규칙(`docs/rules/PARALLEL_DEV_RULES.md` §6.1)과 부딪치지 않는다. 거꾸로 실행 출력을 봉인 폴더에 두지도 않는다. 봉인 폴더에는 격리된 생성 에이전트만 쓰고(같은 문서 §6.3), 채점 전 해시 재대조는 폴더 안 파일 전부를 해시 목록과 맞춰 보며 목록에 없는 파일도 불일치로 보기 때문이다(같은 문서 §6.2, 이 문서 §12.2).
-- **N11 커밋 증거물(승격)**: 커밋하는 증거물도 같은 이름 규칙을 쓴다. 실행 폴더를 이름 그대로 `artifacts/{종류}/` 아래로 복사해 커밋하며, 이 일을 승격이라 한다. 평가 결과는 채점 실행 폴더(`artifacts/eval/score-{시각}/`), 자기채점은 `artifacts/scorecard/scorecard-{시각}/`, OpenShell 증거는 `artifacts/openshell/openshell_violation_tests-{시각}/`다. 승격하는 폴더도 커밋 전에 비밀값·로컬 경로 검사를 거친다(`docs/rules/PARALLEL_DEV_RULES.md` §10.3).
+- **N11 커밋 증거물(승격)**: 커밋하는 증거물도 같은 이름 규칙을 쓴다. 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고, 종류마다 정한 커밋 증거 파일만 복사해 커밋한다. 이 일을 승격이라 한다. 평가 결과는 채점 실행 폴더의 채점기 출력(`scorer_*` 파일)을 `artifacts/eval/score-{시각}/`로, 자기채점은 결과 파일 `scorecard-{시각}.md`를 `artifacts/scorecard/scorecard-{시각}/`로, OpenShell 증거는 결과 파일(시험표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`)을 `artifacts/openshell/openshell_violation_tests-{시각}/`로 복사한다. trace는 복사하지 않고, 실행 기록 원본(trace·NAT 프로파일 결과)은 커밋하지 않는다는 규칙(§8.2)을 그대로 둔다. 봉인 묶음은 정답 대조 채점이 끝난 뒤에만 복사한다. 승격하는 파일도 커밋 전에 비밀값·로컬 경로 검사를 거친다(`docs/rules/PARALLEL_DEV_RULES.md` §10.3).
 - **N12 정본 자료**(오케스트레이터 정리, 사용자 확인 대기): 다른 단위가 이름으로 읽는 입력은 이름이 고정이고, `outputs/`의 결과를 동결·승인 단계를 거쳐 그 자리로 옮긴다. 대상은 동결 스냅샷(`data/snapshots/{snapshot_id}/`), 정책 수치(`configs/policy_v1.json`), 비교국 표(`data/reference/peer_group_g1.csv`), dev20(`eval/dev/dev20/`)이다.
 - **N13 비밀값**: 키 값과 로컬 절대경로는 어떤 출력에도 쓰지 않는다(`docs/rules/PARALLEL_DEV_RULES.md` §10.2·§10.3).
 
@@ -891,10 +891,11 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 - `runlog`: trace, 실행 결과 기록, `errors`의 원인 분류 코드를 둔다.
 - `units`: 최소 단위의 등록부(단위 ID와 진입 함수의 대응표)와 공통 실행기(단위 하나를 혼자 돌리는 개발 전용 명령)다. 물리 단위(USD·kg)나 표시 자릿수(§11)와는 관계없다.
 - `eval/datagen`: 평가 자료 도구(dev20 생성, holdout40 결정적 검사, 실자료 분할)다. holdout40 생성 코드는 두지 않는다. 그 코드는 봉인 폴더에만 둔다(`docs/rules/PARALLEL_DEV_RULES.md` §1.2·§6.6).
-- 경계: `src/tradesentry/` 아래 모든 패키지(`units`·`contract` 포함)는 독립 채점기(`eval/scorer/`)가 import하면 안 되는 대상이다(룰북 `docs/eval/RULEBOOK.md` B3, `docs/rules/PARALLEL_DEV_RULES.md` §1.2). 채점기와 dev20 정답표는 지표 단위 구현자와 다른 실행자가 `metrics/` 아래 어느 단위도 보지 않고 만든다(`docs/plan/ROADMAP.md` DT5·DT8).
+- 경계: `src/tradesentry/` 아래 모든 패키지(`units`·`contract` 포함)는 독립 채점기(`eval/scorer/`)가 import하면 안 되는 대상이다(룰북 `docs/eval/RULEBOOK.md` B3, `docs/rules/PARALLEL_DEV_RULES.md` §1.2). 이 금지에는 간접 import(런타임 패키지를 부르는 모듈을 거쳐 부르는 경우)도 들고, 채점기는 `eval/datagen`도 import하지 않는다. 채점기, dev20 정답표, dev20 생성 도구(`eval/datagen`)는 지표 단위 구현자와 다른 실행자가 `metrics/` 아래 어느 단위도 보지 않고 만든다(`docs/plan/ROADMAP.md` DT5·DT8).
 
 **그 밖의 약속**
 
+- 샌드박스: 어떤 샌드박스도 허용 목록과 작업 폴더에 `outputs/` 전체나 `outputs/sealed/`를 넣지 않고, 자기 실행 폴더 하나만 쓰기로 연다. 파일시스템 허용 목록은 경로 앞부분 일치로 판정하고 작업 폴더 안은 목록에 없어도 허용되므로, `outputs/`를 넓게 열면 다른 실행과 봉인 실행의 출력을 읽을 수 있기 때문이다. 정답 경로를 막는 조건(`docs/rules/PARALLEL_DEV_RULES.md` §6.5 ①)과 같은 구조다(`docs/plan/DEV_PLAN.md` §4.3·§4.5).
 - X1 임시 시험 기록은 옛 이름 `artifacts/openshell/violation_tests.md`, `artifacts/openshell/logs/`를 그대로 쓰고 새 이름 폴더로 옮기지 않는다(X1 결정 기록이 이 경로를 인용하고 결정 기록은 고치지 않는다). 규범 G2(팀 채점 규범 `SCORING_GOLDEN_RULE.md`의 교육 미션 정합성 게이트, 룰북 A1)의 증거로는 이 위치도 읽지만, 평가 묶음의 실행 조건 대조(룰북 B7)는 채점 요약 `scorer_summary-{시각}.md`에 적은 새 이름 폴더만 쓴다.
 - 결정 기록의 표기 `outputs/{실행명}-{시각}/`에서 `{실행명}`은 이 절의 실행 이름이다. 이 절의 실행명은 시각까지 붙은 이름이므로 두 표기는 같은 폴더를 가리킨다. 이 문서 세트는 두 말을 이 절의 뜻으로만 쓴다.
 - 이 규칙은 계약 필드·키·값 집합을 바꾸지 않으므로 `schema_version`을 올리지 않는다(§13.2).
@@ -1066,7 +1067,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 - 버전을 올린다: 필드·키의 추가·삭제·이름 변경, 값 집합(상태값, 모드, `claim_type`, `direction`, 주장 채점 결과, §11.2의 기호와 단위) 변경, ID 형식 변경, 단위·정밀도 규칙 변경.
 - 버전을 올리지 않는다: 값을 바꾸지 않는 설명 보강과 오탈자 수정. 이런 수정도 PR과 검토를 거친다.
-- 2026-09-24(목) 사용자 결정으로 고친 경로 표(§10)와 새 이름·출력 규칙(§10.3)은 `schema_version`을 올리지 않는다. 계약 필드·키·값 집합(§2~§9, §11)이 그대로이기 때문이다. `run_id`에 형식(§10.3 N5)을 준 일도 위의 "ID 형식 변경"으로 보지 않는다. v1이 형식을 정하지 않았던 ID(§4.5)에 처음 형식을 준 것이고, 그 형식으로 저장된 자료가 아직 없다 [추론].
+- 2026-09-24(목) 사용자 결정으로 고친 경로 표(§10)와 새 이름·출력 규칙(§10.3)은 `schema_version`을 올리지 않는다. 계약 필드·키·값 집합(§2~§9, §11)이 그대로이기 때문이다. `run_id`에 형식(§10.3 N5)을 준 일도 위의 "ID 형식 변경"으로 보지 않는다. v1이 형식을 정하지 않았던 ID(§4.5)에 처음 형식을 준 것이고, 그 형식으로 저장된 자료가 아직 없다 [추론]. 증거 파일 이름을 바꾼 것은 `RB-1` 동결 전 룰북 초안을 고친 것이라 룰북 버전(`rulebook_version`)도 `RB-1` 그대로다.
 - §11.3 표시 자릿수 표는 `RB-1` 동결 대상이다. 동결 뒤 바꾸면 계약 버전 외에 룰북 새 버전과 사유도 필요하다 [DESIGN].
 - 명세 §4와 글자 그대로 같아야 하는 값을 바꾸려면 명세도 사용자 승인을 받아 함께 고친다(명세의 오류는 사용자 승인으로만 고친다).
 
@@ -1181,7 +1182,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 - **도메인명**: 단위마다 붙인 출력용 이름 `{패키지}_{단위}`. 출력 파일 이름의 앞부분이 된다(§10.3 N4).
 - **실행 이름 / 실행명(`run_id`)**: 시각이 붙지 않은 실행의 이름(예: `run_case`) / 실행 이름에 시작 시각을 붙인 `{실행 이름}-{yymmddhhmmss}`(예: `run_case-260925143015`). 실행 폴더 `outputs/{실행명}/`의 이름이다(§10.3 N5).
 - **도메인 출력(`outputs/`)**: 실행마다 폴더 하나에 쌓는 도메인별 출력물. 커밋하지 않는다(§10.3 N6·N9).
-- **승격**: 커밋할 증거물이 된 실행 폴더를 이름 그대로 `artifacts/{종류}/` 아래로 복사해 커밋하는 일(§10.3 N11).
+- **승격**: 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고, 종류마다 정한 커밋 증거 파일만 복사해 커밋하는 일. trace는 빼고, 봉인 묶음은 정답 대조 채점이 끝난 뒤에만 한다(§10.3 N11).
 - **정본 자료**: 다른 단위가 이름으로 읽는 고정 위치의 입력(동결 스냅샷, 정책 수치, 비교국 표, dev20). `outputs/`의 결과를 동결·승인 단계를 거쳐 옮긴다(§10.3 N12, 사용자 확인 대기).
 - **NemoClaw**: 에이전트 실행 틀과 보안 런타임을 묶은 NVIDIA 참조 스택.
 - **nonce**: 추측을 막으려고 섞는 한 번 쓰는 임의 값. seed 파일의 해시만 보고 seed를 역산하지 못하게 한다.

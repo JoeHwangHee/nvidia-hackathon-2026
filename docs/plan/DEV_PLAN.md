@@ -297,7 +297,8 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 - 설계 원칙 `[추론]`
   - 읽기 전용(`read_only`)으로 허용: 앱 코드, 설정, 읽기 전용 SQLite 스냅샷
   - 쓰기 허용: 그 실행의 폴더(`outputs/{실행명}/`)에 대응하는 샌드박스 안 경로 하나만 연다. `outputs/` 전체를 열지 않는다. 파일시스템 허용 목록은 경로 앞부분 일치로 판정하므로, `outputs/`를 통째로 열면 다른 실행의 출력과 `outputs/sealed/`의 봉인 실행 출력을 읽을 수 있기 때문이다. 정적 계층은 샌드박스를 만들 때 고정되므로(§4.2), 실행마다 새로 생기는 폴더를 여는 구체 방식은 이 절의 반입 방식과 함께 X1 뒤에 확정한다 `[미확인]`.
-  - 넣지 않는 것: 평가 정답(`eval/dev/oracle_ABC.json`, `eval/dev/dev20/`의 정답표), 독립 채점기 `eval/scorer/`, 봉인 폴더(예외: 공식 채점 대상 실행 전용 샌드박스의 봉인 입력, §9.8), `.env`
+  - 넣지 않는 것: 평가 정답(`eval/dev/oracle_ABC.json`, `eval/dev/dev20/`의 정답표), 독립 채점기 `eval/scorer/`, 봉인 폴더(예외: 공식 채점 대상 실행 전용 샌드박스의 봉인 입력, §9.8), `.env`, 그리고 `outputs/` 전체와 `outputs/sealed/`
+  - 어떤 샌드박스도 허용 목록과 작업 폴더에 `outputs/` 전체나 `outputs/sealed/`를 넣지 않는다. 각 샌드박스는 자기 실행 폴더 하나만 쓰기로 연다(위 쓰기 허용 항목). 판정이 경로 앞부분 일치이고 작업 폴더 안은 허용 목록에 없어도 허용되므로(이 절 첫 항목), 작업 폴더를 `outputs/`나 그 위 폴더로 잡으면 다른 실행과 봉인 실행의 출력이 읽힌다. 정답 경로를 허용 목록과 작업 폴더에 넣지 않는 조건(`docs/rules/PARALLEL_DEV_RULES.md` §6.5 ①)과 같은 구조다
   - 넓은 prefix(작업 폴더 전체, 03 문서 §1 정책의 `/app` 같은 경로)가 정답 경로를 덮지 않는지 확인한다. 저장소 전체를 작업 폴더에 복사하면 정답 파일도 읽을 수 있게 된다.
   - `eval/dev/dev20/`에는 입력과 정답표가 함께 있다(§10.1). 샌드박스에는 입력만 들이고 정답표는 들이지 않는다.
   - 저장소 파일을 샌드박스의 어느 경로에 어떻게 들이는지는 X1 뒤에 확정한다 `[미확인]`.
@@ -305,7 +306,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 
 ### 4.4 요건별 대응표
 
-요건마다 정책 위치(섹션, 계층), 위반 시험 입력, 기대 종료 코드와 감사 로그 행, 확인 검토자를 한 줄씩 적는다. 실측 결과는 위반 시험 실행 폴더를 승격(이름 그대로 복사해 커밋)한 OpenShell 증거 폴더 `artifacts/openshell/openshell_violation_tests-{시각}/`에 남긴다. 그 안에 시험표 `openshell_violation_tests-{시각}.md`(예측·실측 대조표), 감사 로그 발췌(`.txt`), 라이브 정책 조회 본문(`.yaml`)이 있다(자료 계약 §10.3). 시험을 다시 돌리면 시각이 다른 새 폴더가 생기고, 앞 폴더를 고쳐 쓰지 않는다. X1 임시 시험 기록은 옛 이름 위치에 있다(자료 계약 §10.3). 이 표는 채점 대상 실행 샌드박스 기준이다. 시험표에는 행마다 시험한 샌드박스(채점 대상 실행용·시연용)를 적는다. 채점 대상 실행용 샌드박스(개발 평가 포함) 행에는 샌드박스 이름과, 커밋한 라이브 정책 조회 본문(정책 YAML. 로컬 절대경로를 바꿔 적은 뒤의 본문)의 sha256도 적는다. 평가 묶음 채점 요약 `scorer_summary-{시각}.md`의 실행 조건에 대조한 시험표 실행 폴더 이름(`openshell_violation_tests-{시각}`)을 적고, 그 폴더 시험표의 같은 샌드박스 행과 값을 맞추기 위해서다(`docs/eval/RULEBOOK.md` B7, `skills/tradesentry-eval/SKILL.md`). 조회 출력의 정확한 형식과 바이트 안정성은 X1 실측 전까지 `[미확인]`이고, 해시할 바이트의 추출 규칙(코드 블록 경계, 줄 끝 문자, 마지막 줄바꿈)은 로드맵 MT5에서 정한다. 경로 치환은 평가 스킬 ②의 규칙을 따르고, 해시에 쓰는 치환 규칙은 로드맵 MT5에서 하나로 확정한다. 게이트웨이 추론 설정(provider·모델)은 정책 본문 밖이라 이 해시에 들지 않으므로 따로 조회해 적는다(§4.8). 이 해시는 시험 때 조회한 정책을 가리킬 뿐이다. 네트워크 계층은 실행 중에 다시 불러올 수 있으므로(§4.2) 실행 기간 내내 같은 정책이었다는 증거가 아니고, 샌드박스에 들인 파일은 덮지 않으므로 격리 증거로도 쓰지 않는다. 실행 중 재적용을 잡는 방법은 X1에서 `CONFIG:LOADED`가 재적용마다 남는지와 그 행 형식을 확인한 뒤 로드맵 MT5에서 정한다.
+요건마다 정책 위치(섹션, 계층), 위반 시험 입력, 기대 종료 코드와 감사 로그 행, 확인 검토자를 한 줄씩 적는다. 실측 결과는 위반 시험 실행 폴더의 결과 파일만 같은 이름의 OpenShell 증거 폴더 `artifacts/openshell/openshell_violation_tests-{시각}/`로 복사해 커밋한다(승격, 자료 계약 §10.3). 결과 파일은 시험표 `openshell_violation_tests-{시각}.md`(예측·실측 대조표), 감사 로그 발췌(`.txt`), 라이브 정책 조회 본문(`.yaml`)이다. 시험을 다시 돌리면 시각이 다른 새 폴더가 생기고, 앞 폴더를 고쳐 쓰지 않는다. X1 임시 시험 기록은 옛 이름 위치에 있다(자료 계약 §10.3). 이 표는 채점 대상 실행 샌드박스 기준이다. 시험표에는 행마다 시험한 샌드박스(채점 대상 실행용·시연용)를 적는다. 채점 대상 실행용 샌드박스(개발 평가 포함) 행에는 샌드박스 이름과, 커밋한 라이브 정책 조회 본문(정책 YAML. 로컬 절대경로를 바꿔 적은 뒤의 본문)의 sha256도 적는다. 평가 묶음 채점 요약 `scorer_summary-{시각}.md`의 실행 조건에 대조한 시험표 실행 폴더 이름(`openshell_violation_tests-{시각}`)을 적고, 그 폴더 시험표의 같은 샌드박스 행과 값을 맞추기 위해서다(`docs/eval/RULEBOOK.md` B7, `skills/tradesentry-eval/SKILL.md`). 조회 출력의 정확한 형식과 바이트 안정성은 X1 실측 전까지 `[미확인]`이고, 해시할 바이트의 추출 규칙(코드 블록 경계, 줄 끝 문자, 마지막 줄바꿈)은 로드맵 MT5에서 정한다. 경로 치환은 평가 스킬 ②의 규칙을 따르고, 해시에 쓰는 치환 규칙은 로드맵 MT5에서 하나로 확정한다. 게이트웨이 추론 설정(provider·모델)은 정책 본문 밖이라 이 해시에 들지 않으므로 따로 조회해 적는다(§4.8). 이 해시는 시험 때 조회한 정책을 가리킬 뿐이다. 네트워크 계층은 실행 중에 다시 불러올 수 있으므로(§4.2) 실행 기간 내내 같은 정책이었다는 증거가 아니고, 샌드박스에 들인 파일은 덮지 않으므로 격리 증거로도 쓰지 않는다. 실행 중 재적용을 잡는 방법은 X1에서 `CONFIG:LOADED`가 재적용마다 남는지와 그 행 형식을 확인한 뒤 로드맵 MT5에서 정한다.
 
 공식 채점 대상 실행 전용 샌드박스는 새 정적 정책으로 새로 만들므로 이전 시험 증거가 그대로 이어지지 않는다. 그래서 공식 실행 전에 그 샌드박스의 라이브 정책 조회 결과와 최소 시험 행을 "공식 채점용"으로 따로 남긴다. 최소 시험 행은 비허용 호스트 1건, 정답표 부재 확인, 요건 (c) 키 조회 1건, 봉인 입력 쓰기 거부다. 쓰기 거부 행에는 어느 장치가 거부했는지 적는다. 정책의 `read_only`이면 EACCES, 읽기 전용 마운트이면 EROFS가 나오며, EROFS는 03 문서 §6.4의 거부 문구 목록에 없다 `[사실: 03 문서 §2.2, §6.4, §6.6]`.
 
@@ -334,7 +335,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 
 ### 4.5 두 통제의 구분
 
-- **① 저장소 경로 차단**: 샌드박스 파일시스템 정책(정적 계층)이 저장소 안의 평가 정답 경로 읽기를 막는다. §4.3의 허용 목록 조건이 지켜질 때만 성립한다.
+- **① 저장소 경로 차단**: 샌드박스 파일시스템 정책(정적 계층)이 저장소 안의 평가 정답 경로 읽기를 막는다. §4.3의 허용 목록 조건이 지켜질 때만 성립한다. 도메인 출력 폴더도 같은 구조로 다룬다. 어떤 샌드박스도 허용 목록과 작업 폴더에 `outputs/` 전체나 봉인 실행 출력 `outputs/sealed/`를 넣지 않고, 자기 실행 폴더 하나만 쓰기로 연다(§4.3).
 - **② 저장소 밖 봉인 격리**: 봉인 자료를 저장소 밖(`TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`)에 두어 격리한다. 공식 채점 대상 실행 때에만 봉인 **입력**을 그 실행 전용 샌드박스에 읽기 전용으로 넣고, 정답표는 샌드박스에 절대 넣지 않는다. 정답표는 밖의 채점기만 읽는다.
 - **①이 ②를 보장한다고 쓰지 않는다.** ①은 샌드박스 안의 프로세스만 막는다. ②는 저장소를 보는 개발 에이전트와 봉인 자료를 떼어 놓는 장치다.
 - ②의 정직한 한계: 봉인 폴더 위치는 문서에 적혀 있어 비밀이 아니다. 개발 에이전트가 같은 OS 사용자로 돌기 때문에 열람을 기술적으로 막지는 못하고, 지시와 기록으로 관리한다. 해시(`eval/sealed_manifest.json`)는 변조를 드러낼 뿐 열람을 막지 않는다. 기술적 차단은 런타임 샌드박스(OpenShell 정책)에만 해당한다.
@@ -664,7 +665,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 - 코드가 모델의 틀린 상태를 조용히 정답으로 고치지 않는다.
 - 실행 실패 때문에 화면에 보류로 보이는 것과 평가의 정답 보류를 같게 보지 않는다(구 개발계획 §5.3).
 - 실행 결과 기록 키(run 1건): `run_id, case_id, dataset, mode, policy_version, rulebook_version, snapshot_id, grouping_version, code_version, review_status_final, signal_status, unresolved_evidence, execution_status, required_evidence_ok, numeric_ok, provenance_ok, tool_attempts, model_requests, tokens_in, tokens_out, wall_ms, critic_used, revision_used, errors`
-- 실행 기록(trace JSONL, NAT 프로파일 결과)은 그 실행 폴더 `outputs/{실행명}/`에 두고 커밋하지 않는다. 봉인 묶음 실행은 `outputs/sealed/{실행명}/`이다. 실행 쪽 키는 평가 하네스(단위 `evaluation_batch_run`)가 `evaluation_batch_run-{시각}.jsonl`에 쓰고, 채점기가 세 키를 더한 평가 결과를 채점 실행 폴더에 새로 쓴다. 평가 결과는 그 폴더를 승격한 `artifacts/eval/score-{시각}/`(`scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`)로 커밋한다(자료 계약 §8.2·§10.3).
+- 실행 기록(trace JSONL, NAT 프로파일 결과)은 그 실행 폴더 `outputs/{실행명}/`에 두고 커밋하지 않는다. 봉인 묶음 실행은 `outputs/sealed/{실행명}/`이다. 실행 쪽 키는 평가 하네스(단위 `evaluation_batch_run`)가 `evaluation_batch_run-{시각}.jsonl`에 쓰고, 채점기가 세 키를 더한 평가 결과를 채점 실행 폴더에 새로 쓴다. 평가 결과는 채점 실행 폴더의 채점기 출력(`scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`)만 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(승격). trace와 NAT 프로파일 결과는 복사하지 않고, 봉인 묶음은 정답 대조 채점이 끝난 뒤에만 복사한다(자료 계약 §8.2·§10.3).
 - 키 값은 로그·trace·결과 파일에 남지 않아야 한다.
 
 ### 7.6 승인(모의, 코드 검증만)
@@ -789,7 +790,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
   - `UNBACKED_PROSE`는 보고서당 건수로도 따로 보고한다.
   - 유효한 최종 보고서가 없는 실행은 보고서 단위 실패로 분모에 남긴다.
 - 주장 채점 기록 키(claim 1건): `run_id, report_id, claim_id, source, outcome, expected_value, reported_value, unit_expected, unit_reported, tolerance, referent_resolved, evidence_ok, note`. `source`는 `claim | prose`(산문 패턴으로 잡힌 표현)이고, `outcome`은 위 채점 결과 값이다.
-- 독립 채점기: `eval/scorer/`(D 소유). 런타임 모듈을 import하지 않는 **독립 구현**이며 런타임 `metrics/` 패키지를 재사용하지 않는다. `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증하고, 샌드박스 밖에서 돈다. 실행: `python -m eval.scorer --run <run_dir>`. `<run_dir>`는 채점할 실행 폴더 `outputs/{실행명}/`(봉인 묶음은 `outputs/sealed/{실행명}/`)이고, 채점기는 자기 출력을 `outputs/score-{시각}/`에 쓴다.
+- 독립 채점기: `eval/scorer/`(D 소유). 런타임 모듈을 import하지 않는 **독립 구현**이며 런타임 `metrics/` 패키지를 재사용하지 않는다. import 금지에는 간접 import(런타임 패키지를 부르는 모듈을 거쳐 부르는 경우)도 들고, 평가 자료 도구 `eval/datagen/`도 import하지 않는다(자료 계약 §10.3). `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증하고, 샌드박스 밖에서 돈다. 실행: `python -m eval.scorer --run <run_dir>`. `<run_dir>`는 채점할 실행 폴더 `outputs/{실행명}/`(봉인 묶음은 `outputs/sealed/{실행명}/`)이고, 채점기는 자기 출력을 `outputs/score-{시각}/`에 쓴다.
 - MVP 기준(로드맵 체크리스트 6번): `real_dev`로 대표 지표 첫 값(`freeform` vs `full`)을 낸다. 이 값은 "개발 묶음 값, 대표 숫자 아님"으로 표기한다.
 
 ### 9.4 A등급 주장 조건
@@ -820,7 +821,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
   - holdout40 근거 충족 처리정확도: C
   - dev20·`real_dev` 결과: D(개선 과정에 노출된 값)
 - 합성 자료로 만든 숫자의 등급은 holdout40이 C, dev20이 D이며 그보다 높게 적지 않는다. 대표 숫자는 `real_sealed`에서만 나온다.
-- Part A 자기채점: 규범 §2~§4의 하드 게이트·채점 지표·보정 규칙을 TradeSentry 증거 정의로 풀어 쓴 것이 룰북 Part A다. 평가 스킬 ①이 자기채점하고, 회차마다 새 실행 폴더에 쓴 결과를 `artifacts/scorecard/scorecard-{시각}/scorecard-{시각}.md`로 승격해 남긴다. 규범의 가중치·게이트·앵커는 팀 설계 규칙 `[DESIGN]`이고 대회 공식 배점이 아니다.
+- Part A 자기채점: 규범 §2~§4의 하드 게이트·채점 지표·보정 규칙을 TradeSentry 증거 정의로 풀어 쓴 것이 룰북 Part A다. 평가 스킬 ①이 자기채점하고, 회차마다 새 실행 폴더에 쓴 결과 파일 `scorecard-{시각}.md`를 같은 이름의 폴더 `artifacts/scorecard/scorecard-{시각}/`로 복사해 커밋한다(승격). 규범의 가중치·게이트·앵커는 팀 설계 규칙 `[DESIGN]`이고 대회 공식 배점이 아니다.
 - 컴포넌트 삭제 시험(NVIDIA 구성요소마다 "지우면 어떤 지표가 나빠지는가")은 룰북 Part A에서 판정한다. 답이 약한 구성요소는 약하다고 정직하게 적는다. 예: NemoClaw는 정확도 지표에 영향이 없다.
 
 ### 9.7 실행 규칙과 동결
@@ -893,14 +894,14 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | 봉인 폴더 | 환경변수 `TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`(저장소 밖) | D |
 | 독립 채점기 | `eval/scorer/`(런타임 모듈을 import하지 않음), 실행 `python -m eval.scorer --run <run_dir>`, 출력 `outputs/score-{시각}/` | D |
 | 도메인 출력(커밋 안 함) | `outputs/{실행명}/{도메인명}-{시각}.{확장자}`(trace JSONL, NAT 프로파일 결과, 보고서, 실행 결과 기록 등 도메인 출력 전부). 봉인 묶음 실행은 `outputs/sealed/{실행명}/` | 공동 |
-| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더를 복사: `scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`) | 공동 |
-| 자기채점 결과(커밋) | `artifacts/scorecard/scorecard-{시각}/`(자기채점 실행 폴더를 복사: `scorecard-{시각}.md`) | 공동 |
-| OpenShell 증거(커밋) | `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더를 복사: 예측·실측 대조표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`) | M(보안 검토) |
+| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력만 복사: `scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`) | 공동 |
+| 자기채점 결과(커밋) | `artifacts/scorecard/scorecard-{시각}/`(자기채점 실행 폴더의 결과 파일만 복사: `scorecard-{시각}.md`) | 공동 |
+| OpenShell 증거(커밋) | `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일만 복사: 예측·실측 대조표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`) | M(보안 검토) |
 | X1 임시 시험 코드 | `spikes/x1/` | M |
 | 시험 | `tests/`(기존 `test_ingest.py` 유지), 단위 골든 시험 `tests/units/{단위 ID}/` | 공동 |
 
 - 표에 없는 M 소유 대상: 화면(`app.py`), 프롬프트, 모델 설정. 위치는 S0에서 정하고, 정해지면 이 표와 참조 문서를 함께 고친다.
-- 실행 이름은 시각이 붙지 않은 실행의 이름(예: `run_case`)이고, 실행명(`run_id`)은 거기에 시작 시각을 붙인 `{실행 이름}-{yymmddhhmmss}`다. 표의 `{시각}`은 그 실행이 시작한 KST 24시간 12자리 시각이다. 승격은 커밋할 증거가 된 실행 폴더를 이름 그대로 `artifacts/{종류}/` 아래로 복사해 커밋하는 일이다(자료 계약 §10.3).
+- 실행 이름은 시각이 붙지 않은 실행의 이름(예: `run_case`)이고, 실행명(`run_id`)은 거기에 시작 시각을 붙인 `{실행 이름}-{yymmddhhmmss}`다. 표의 `{시각}`은 그 실행이 시작한 KST 24시간 12자리 시각이다. 승격은 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고, 종류마다 정한 커밋 증거 파일만 복사해 커밋하는 일이다. trace는 빼고, 봉인 묶음은 정답 대조 채점이 끝난 뒤에만 한다(자료 계약 §10.3).
 
 ### 10.2 모듈 역할
 
