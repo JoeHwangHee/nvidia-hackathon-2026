@@ -1,0 +1,23 @@
+{
+  "findings": [
+    {"check": "schema", "code": "SCHEMA_CLAIM", "path": "claims[10].value", "claim_id": "f11", "detail": "value는 수나 null이어야 한다"},
+    {"check": "schema", "code": "SCHEMA_CLAIM_ID", "path": "claims[11].claim_id", "claim_id": "f1", "detail": "claim_id가 보고서 안에서 겹친다(계약 §4.5)"},
+    {"check": "validator", "code": "STATUS_INCONSISTENT", "path": "review_status", "claim_id": null, "detail": "신호별 판정의 집계(MAINTAIN > HOLD > MONITOR)는 MONITOR다. 적힌 값: MAINTAIN"},
+    {"check": "validator", "code": "UNIT_MISMATCH", "path": "claims[3].unit", "claim_id": "f4", "detail": "d_s의 단위는 pp다(적힌 단위 %)"},
+    {"check": "validator", "code": "EVIDENCE_NOT_SUPPORTING", "path": "claims[4].evidence_ids", "claim_id": "f5", "detail": "검증된 지표의 계산 행을 모두 인용하지 않았다(빠진 근거 5개)"},
+    {"check": "validator", "code": "EVIDENCE_SNAPSHOT", "path": "claims[5].evidence_ids[0]", "claim_id": "f6", "detail": "근거 ID의 스냅샷이 이 실행의 스냅샷(controlled_fixture_v0)과 다르다(풀림 규칙 2)"},
+    {"check": "validator", "code": "EVIDENCE_NOT_SUPPORTING", "path": "claims[5].evidence_ids", "claim_id": "f6", "detail": "검증된 지표의 계산 행을 모두 인용하지 않았다(빠진 근거 1개)"},
+    {"check": "validator", "code": "EVIDENCE_UNRESOLVED", "path": "claims[6].evidence_ids[0]", "claim_id": "f7", "detail": "스냅샷에서 이 근거 ID의 테이블·행을 찾지 못했다(풀림 규칙 3·4)"},
+    {"check": "validator", "code": "DIRECTION_MISMATCH", "path": "claims[6].direction", "claim_id": "f7", "detail": "값의 부호로 본 방향은 FLAT다. 적힌 방향: DOWN"},
+    {"check": "validator", "code": "EVIDENCE_NOT_SUPPORTING", "path": "claims[6].evidence_ids", "claim_id": "f7", "detail": "검증된 지표의 계산 행을 모두 인용하지 않았다(빠진 근거 6개)"},
+    {"check": "validator", "code": "NUMERIC_UNBACKED", "path": "claims[7].value", "claim_id": "f8", "detail": "이 실행의 도구가 돌려준 검증된 지표 가운데 이 주장의 대상과 같은 지표가 없다"},
+    {"check": "validator", "code": "EVIDENCE_TOTAL_ROW", "path": "claims[8].evidence_ids[0]", "claim_id": "f9", "detail": "총계 행(RAW:총계)은 근거가 될 수 없다(계약 §4.4)"},
+    {"check": "validator", "code": "EVIDENCE_NOT_SUPPORTING", "path": "claims[8].evidence_ids", "claim_id": "f9", "detail": "검증된 지표의 계산 행을 모두 인용하지 않았다(빠진 근거 1개)"},
+    {"check": "validator", "code": "REFERENT_MISMATCH", "path": "claims[9].partner", "claim_id": "f10", "detail": "comparison 주장의 partner는 비교국이어야 한다(계약 §6.2)"},
+    {"check": "validator", "code": "FORBIDDEN_PHRASE", "path": "hypotheses[0]", "claim_id": null, "detail": "금지 문구를 썼다: '원산지 조작'. 보고서는 담당자의 다음 업무만 제시한다(계약 §6.3)"},
+    {"check": "validator", "code": "PROSE_UNBACKED", "path": "narrative", "claim_id": null, "detail": "PT-1 표현 '10%': 같은 보고서의 typed claim으로 뒷받침되지 않는다(룰북 B3-2)"},
+    {"check": "validator", "code": "PROSE_UNBACKED", "path": "narrative", "claim_id": null, "detail": "PT-8 표현 '6%에서 10%': 같은 보고서의 typed claim으로 뒷받침되지 않는다(룰북 B3-2)"},
+    {"check": "validator", "code": "PROSE_UNBACKED", "path": "narrative", "claim_id": null, "detail": "PT-6 표현 '늘었': 같은 보고서의 typed claim으로 뒷받침되지 않는다(룰북 B3-2)"},
+    {"check": "validator", "code": "PROSE_UNBACKED", "path": "narrative", "claim_id": null, "detail": "PT-6 표현 '상승': 같은 보고서의 typed claim으로 뒷받침되지 않는다(룰북 B3-2)"}
+  ]
+}
