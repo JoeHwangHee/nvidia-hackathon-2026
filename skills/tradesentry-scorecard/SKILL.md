@@ -91,7 +91,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 
 - `.env`(키 파일). 키는 변수 이름(`NVIDIA_API_KEY`, `DATA_GO_KR_SERVICE_KEY`)으로만 말한다.
 - 봉인 폴더(환경변수 `TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`). 봉인 자료에 관한 증거는 해시 목록 `eval/sealed_manifest.json`과 결과 요약으로만 본다.
-- 정답 대조 채점이 끝나기 전의 봉인 묶음(`holdout40`, `real_sealed`) 실행 trace(`outputs/sealed/{실행명}/`). 봉인 입력 내용이 담기기 때문이다(`docs/plan/DEV_PLAN.md` §9.8).
+- 금지 해제 조건(정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 전의 봉인 묶음(`holdout40`, `real_sealed`) 출력(`outputs/sealed/` 아래. trace 포함)과 봉인 묶음을 채점한 채점기 출력 폴더. 봉인 입력 내용이나 사례 식별자가 담기기 때문이다(`docs/plan/DEV_PLAN.md` §9.8).
 
 ## 절차
 
