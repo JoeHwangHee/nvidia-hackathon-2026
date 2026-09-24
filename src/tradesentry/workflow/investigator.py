@@ -25,6 +25,10 @@ dumps)를 쓴다. S0 결정의 계층(contract → dal·runlog → … → workf
   검증기(단위 R3 STATUS_INCONSISTENT, 검증기 부류)가 맡는다: full·agent에서는 막고 freeform에서는 기록만 한다.
   여기서는 status_notes로 관찰만 돌려주고(흐름 조정이 trace에 남긴다) 흐름을 바꾸지 않는다.
 - 조사자 메시지에는 모드 이름을 넣지 않는다. 모드 사이 차이는 claims 지침(시스템 지침 뒤쪽)뿐이다(룰북 B2).
+- 도구를 주지 않는 차례(allow_tools 거짓)에는 요청에 tools를 싣지 않고, 대화 끝에 초안 요청 메시지(DRAFT_REQUEST, 모든
+  모드에서 글자까지 같다)를 붙인다. 실측에서 tools를 뺀 요청에도 모델이 구조화된 도구 호출을 돌려주었고(마지막 지시가
+  "필요하면 도구로"였다), 도구 이력 뒤 tools 없는 요청에서 JSON이 아닌 글을 썼다(결정 기록 ⑯). 구조화 출력 설정(단위 I7
+  request.structured_output, 기본 꺼짐)을 켜면 그 차례에만 모드와 무관한 윗단계 스키마 DRAFT_SCHEMA를 싣는다.
 - 모델 응답의 소수는 Decimal로 읽는다(freeform 값의 끝자리 0 보존, 자료 계약 §9.1).
 """
 import json
@@ -51,6 +55,14 @@ METRIC_TARGET_KEYS = ("metric", "partner", "period", "baseline_period")  # input
 MISSING_DROP_KEYS = ("request_id", "flow")  # 빠진 자료 항목에서 빼는 것(수집 요청 ID, 늘 수입인 흐름). 나머지는 남긴다
 PRIORITY = {"MAINTAIN": 3, "HOLD": 2, "MONITOR": 1}
 TRUNCATED = "응답이 max_tokens에서 잘렸다(finish_reason length)"
+# 도구를 주지 않는 차례에 대화 끝에 붙이는 초안 요청(모든 모드에서 글자까지 같다. 모드 이름·claims 세부는 넣지 않는다).
+DRAFT_REQUEST = (
+    "[초안 요청] 이 요청에는 도구가 없다. 추가 비교·재조회는 더 할 수 없고, 도구를 부르면 거부된다. 지금까지 받은 "
+    "근거만으로 초안을 쓴다.\n"
+    "설명·머리말·마크다운 코드 블록 없이 JSON 객체 하나만 답한다. 답의 첫 글자는 { 이고 마지막 글자는 } 이다.\n"
+    '{"review_status": "MAINTAIN|MONITOR|HOLD", "signal_status": {"unit_value": "MAINTAIN|MONITOR|HOLD|NOT_TRIGGERED", '
+    '"share": "MAINTAIN|MONITOR|HOLD|NOT_TRIGGERED"}, "claims": [시스템 지침의 claims 쓰는 법대로], '
+    '"narrative": "한국어 설명", "hypotheses": ["확인되지 않은 가설 문장"]}')
 PARTNER_RE = re.compile(r"^[A-Z]{2}$")
 MONTH_RE = re.compile(r"^\d{6}$")
 
@@ -60,6 +72,25 @@ TOOL_DESCRIPTIONS = {
     "compare_partners": "사전에 허용된 비교국을 같은 HS6·월·기준으로 비교한다. partners를 주면 그 가운데 일부만 본다.",
     "decompose_hs": "두 시점의 HS10 하위품목으로 단가 변화를 within_effect·mix_effect·residual로 나누고 부모 대조를 본다.",
 }
+
+
+def draft_schema() -> dict:
+    """구조화 출력(guided_json)에 싣는 초안 윗단계 스키마. 모든 모드에서 같다(claims의 항목 모양은 모드마다 다르므로
+    객체 목록까지만 둔다, 룰북 B2). 초안 형식 검사(check_draft)는 이 스키마와 별개로 그대로 돈다."""
+    return {"type": "object",
+            "properties": {"review_status": {"type": "string", "enum": list(REVIEW_STATUSES)},
+                           "signal_status": {"type": "object",
+                                             "properties": {code: {"type": "string", "enum": list(SIGNAL_STATUSES)}
+                                                            for code in SIGNAL_CODES},
+                                             "required": list(SIGNAL_CODES), "additionalProperties": False},
+                           "claims": {"type": "array", "items": {"type": "object"}},
+                           "narrative": {"type": "string"},
+                           "hypotheses": {"type": "array", "items": {"type": "string"}}},
+            "required": list(DRAFT_KEYS), "additionalProperties": False}
+
+
+def draft_request_message() -> dict:
+    return {"role": "user", "content": DRAFT_REQUEST}
 
 
 def tool_specs(names=MODEL_TOOLS) -> list[dict]:
@@ -332,8 +363,13 @@ def step(client: model_client.ModelClient, messages: list[dict], *, stage: str, 
          allow_tools: bool) -> dict:
     """조사자 한 차례. 돌려주는 값: {"kind": "tool_calls", "message", "calls", "truncated"} 또는
     {"kind": "draft", "message", "draft"(없으면 None), "problems", "status_notes", "truncated"}. 도구를 주지 않았는데
-    부르면 도구 호출로 돌려주고, 흐름 조정이 그 시도를 막는다. 잘린 응답(finish_reason length)의 초안은 형식 문제다."""
-    answer = client.chat(messages, stage=stage, tools=tool_specs() if allow_tools else None)
+    부르면 도구 호출로 돌려주고, 흐름 조정이 그 시도를 막는다. 잘린 응답(finish_reason length)의 초안은 형식 문제다.
+    allow_tools가 거짓이면 messages 끝에 초안 요청 메시지(DRAFT_REQUEST)를 붙이고(대화에 남는다) tools 없이 보낸다."""
+    if allow_tools:
+        answer = client.chat(messages, stage=stage, tools=tool_specs())
+    else:
+        messages.append(draft_request_message())
+        answer = client.chat(messages, stage=stage, tools=None, json_schema=draft_schema())
     message = answer["message"]
     truncated = answer.get("finish_reason") == "length"
     if message.get("tool_calls"):
