@@ -17,6 +17,9 @@ X1(구현 첫날의 세로형 최소 통합 시험)에서 쓴 임시 코드와 �
 | `<NemoClaw 설정 폴더>` | NemoClaw 저장소 문서 `docs/reference/host-files-and-state.mdx`(Host Files and State)가 적는 NemoClaw 호스트 상태 폴더. `usage-notice.json`·`sandboxes.json`이 있는 곳이다. 자격 증명 파일이 생길 수 있으므로 파일을 열지 않는다 |
 | `<NemoClaw 게이트웨이 상태 폴더>` | NemoClaw가 `<OpenShell 설정 폴더>/gateway.env`의 `OPENSHELL_DB_URL`에 적는 게이트웨이 DB의 폴더. provider 자격 증명이 저장되므로 열지 않는다 |
 | `<.env 경로>`, `<저장소 .env>` | 키가 든 본 저장소의 env 파일 경로. 이 파일은 래퍼(`with_nvidia_key.py`)만 읽는다 |
+| `<1단계 게이트웨이 상태 폴더>` | 1단계 Homebrew 게이트웨이(`openshell`, 17670)가 쓰던 SQLite DB의 폴더. OpenShell 0.0.116 게이트웨이는 `OPENSHELL_DB_URL`이 없으면 `XDG_STATE_HOME` 아래 `openshell/gateway/`에 DB(`openshell.db`)를 두고, provider 자격 증명을 그 DB에 암호화해 둔다(키 암호화 키는 같은 폴더의 `credentials/` 아래) `[사실: OpenShell v0.0.116 docs/reference/gateway-config.mdx 19·392행]`. 1단계 `gateway.env`에는 `OPENSHELL_DB_URL`이 없었다(os-test transcript [G1]). 그때 Homebrew 서비스가 `XDG_STATE_HOME`을 어떻게 잡았는지는 `[미확인]`. provider 자격 증명이 있으므로 열지 않는다 |
+| `<저장소 밖 임시 폴더>` | 저장소 밖에 만든 임시 폴더. 큰 묶음 파일(`x1opt.tar.gz`)을 저장소 안에 만들면 커밋될 수 있다 |
+| `<NemoClaw CLI 폴더>` | NemoClaw 설치기가 CLI 심(shim, 실제 실행 파일로 이어 주는 작은 실행 파일)을 두는 폴더. 사용자 zsh 시작 설정 파일(`.zshrc`)의 NemoClaw PATH 블록에 적혀 있다 |
 
 ## 파일
 
@@ -87,13 +90,16 @@ openshell sandbox exec -n x1-os-test -- curl --fail -sS -o /dev/null -w "%{http_
 openshell sandbox exec -n x1-os-test -- /opt/x1/venv/bin/python /tmp/x1-tools/net_probe.py GET https://integrate.api.nvidia.com/v1/models
 openshell sandbox exec -n x1-os-test -- cat /srv/x1-decoy/oracle_decoy.json
 
-# 9. 증거 수집과 정리
-openshell logs x1-os-test --since 30m -n 3000
+# 9. 증거 수집과 정리. 1단계에서 이 정리를 실제로 했는지는 기록이 없다 [미확인](violation_tests.md §1 "정리" 행)
+openshell logs x1-os-test --since 30m -n 3000      # 커밋한 os-test 로그를 만든 명령인지는 기록이 없다 [미확인]
 openshell policy get x1-os-test --full
 openshell sandbox download x1-os-test /sandbox/x1-runs artifacts/runs/
 openshell sandbox delete x1-os-test
 openshell provider delete x1-nvidia
 openshell provider profile delete x1-nvidia-chat
+#    아래 inference.local 비교를 했으면 그 provider와 추론 경로도 지운다
+openshell provider delete x1-nvidia-route
+openshell inference delete
 ```
 
 `inference.local` 비교(채택하지 않음): 내장 유형 provider를 `--type nvidia`로 래퍼를 거쳐 만들고 `openshell inference set --provider <그 이름> --model nvidia/nemotron-3-super-120b-a12b` 뒤 `--mode inference-local`로 부른다. 끝나면 `openshell inference delete`.
@@ -116,35 +122,76 @@ python3 spikes/x1/with_nvidia_key.py --env-file <.env 경로> --export-as NVIDIA
   NEMOCLAW_WEB_SEARCH_PROVIDER=none NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 \
   nemoclaw onboard --non-interactive --fresh --name x1-demo --yes-i-accept-third-party-software   # 실제 실행은 transcript [N3]
 
-# 3. 첫 점검과 요건 (c) 키 조회(OpenClaw 요청 전)
+# 3. 첫 점검과 요건 (c) 키 조회(OpenClaw 요청 전). 17:21~17:22, transcript [C1]·[K1]
 openshell policy get x1-demo --full
 openshell provider list; openshell sandbox provider list x1-demo; openshell inference get
 openshell sandbox upload x1-demo spikes/x1/key_check.py /tmp/x1-tools/
 openshell sandbox exec -n x1-demo --timeout 240 -- /usr/bin/python3 /tmp/x1-tools/key_check.py /
 
-# 4. 요건 (b) 구성: 추론 경로 삭제 -> OpenClaw가 NIM을 직접 부르게 설정 -> 축소 정책(최종 4판: nvidia 블록 하나)
+# 4. 추론 경로 삭제와 OpenClaw 직접 호출 설정. 17:23~17:24, [D1]·[E1]
 openshell inference delete
 #    /sandbox/.openclaw/openclaw.json의 models.providers.inference: baseUrl을 https://integrate.api.nvidia.com/v1로,
-#    apiKey를 샌드박스 환경변수 NVIDIA_INFERENCE_API_KEY의 자리표시 값으로 바꾸고 .config-hash를 다시 계산한다
-#    (샌드박스 안 python으로 수정, 자리표시 형식이 아니면 쓰지 않는다. 원본은 openclaw.json.x1-backup)
-openshell policy set x1-demo --policy spikes/x1/policy/x1-demo-narrowed.policy.yaml --wait
+#    apiKey를 샌드박스 환경변수 NVIDIA_INFERENCE_API_KEY의 자리표시 값으로 바꾸고 .config-hash를 다시 계산했다
+#    (샌드박스 안 python으로 수정, 자리표시 형식이 아니면 쓰지 않음, 원본은 openclaw.json.x1-backup).
+#    수정에 쓴 명령·스크립트는 기록 없음 [미확인]. 바뀐 값의 형태만 [E1]에 있다
+#    대안(시험 안 함): nemoclaw x1-demo config set --key models.providers.inference.baseUrl --value https://integrate.api.nvidia.com/v1
+#      NemoClaw v0.0.124 docs/reference/commands.mdx "config set" 절(1358~1378행). 이 명령으로 apiKey에 자리표시 값을 넣을 수
+#      있는지와 OpenClaw 설정 해시를 다시 계산하는지는 [미확인]. 샌드박스 안에서 손으로 고친 값은 rebuild 뒤 남지 않을 수 있다
+#      [추론: 같은 문서 2420행은 openclaw.json을 이미지가 만드는 상태로 적고, 샌드박스 안에서 고친 채널 설정은 rebuild 뒤 남지 않는다고 적는다]
 
-# 5. CLI 런타임(호스트에서 만든 이미지 x1-probe:x1의 /opt/x1: Python 3.12 + nvidia-nat 1.9.0)과 스킬 넣기
-docker create --name x1tmp x1-probe:x1 && docker cp x1tmp:/opt/x1 - | gzip -1 > x1opt.tar.gz && docker rm x1tmp
-openshell sandbox upload x1-demo x1opt.tar.gz /tmp/x1-tools/
-#    샌드박스 안에서 /sandbox/x1opt로 풀고, spikes/x1의 x1_probe.py·key_check.py·nat_workflow.yml을 app/에,
-#    spikes/x1/demo/run_probe.sh를 /sandbox/x1opt/run_probe.sh에 둔다
+# 5. 2판 정책(nvidia 블록 바이너리 openclaw만 + openclaw_gateway_dialback). 17:24:38, [P1]
+#    2판 본문은 artifacts/openshell/logs/20260924-x1-demo-policy.txt 4절이다. 저장소의 x1-demo-narrowed.policy.yaml은 최종 4판이다
+openshell policy set x1-demo --policy <2판 YAML: 20260924-x1-demo-policy.txt 4절 본문> --wait
+
+# 6. CLI 런타임과 스킬 넣기, OpenClaw 게이트웨이 재시작(2판 상태에서 실행). 17:25, [U1]·[S1]·[R1]
+#    x1-probe:x1 이미지(/opt/x1: Python 3.12.13 독립 실행형 + nvidia-nat 1.9.0, [U1])를 만든 명령은 기록 없음 [미확인]
+#    아래 docker 줄도 transcript에는 없고 X1 구현 에이전트가 이 README에 적은 형태다. 묶음 파일은 저장소 밖에 만든다
+docker create --name x1tmp x1-probe:x1 && docker cp x1tmp:/opt/x1 - | gzip -1 > <저장소 밖 임시 폴더>/x1opt.tar.gz && docker rm x1tmp
+openshell sandbox upload x1-demo <저장소 밖 임시 폴더>/x1opt.tar.gz /tmp/x1-tools/
+#    [U1]은 이 묶음과 앱 파일 5개를 올리고(모두 종료 코드 0) /sandbox/x1opt로 풀어 nat 1.9.0 import를 확인했다고만 적는다.
+#    올린 파일 목록, 푼 명령, app/·run_probe.sh를 둔 명령은 기록 없음 [미확인]. 배치는 spikes/x1/demo/run_probe.sh가 기대하는 경로다:
+#    /sandbox/x1opt/python/cpython-3.12.13-linux-aarch64-gnu/bin/python3.12, /sandbox/x1opt/venv/lib/python3.12/site-packages,
+#    /sandbox/x1opt/app/x1_probe.py(와 key_check.py·nat_workflow.yml), /sandbox/x1opt/run_probe.sh
 nemoclaw x1-demo skill install spikes/x1/skill/x1-probe/
 nemoclaw x1-demo gateway restart
 
-# 6. 요청 전 키 조회를 한 번 더 한 뒤 한 줄 경로
+# 7. 2판에서 키 조회와 한 줄 경로 시도. 17:40, [K2]·[A1]. OpenClaw의 모델 호출이 binary-miss로 거부됐다(DA1)
+openshell sandbox exec -n x1-demo --timeout 240 -- /usr/bin/python3 /tmp/x1-tools/key_check.py /
+nemoclaw x1-demo agent --agent main --json --timeout 240 -m "<9와 같은 요청 문장>"
+
+# 8. 3판 정책(2판 + nvidia 블록 바이너리 /usr/local/bin/node). 17:46:08, [P2]. 본문은 20260924-x1-demo-policy.txt 6절
+#    그 전에 --api-key-env를 더한 x1_probe.py·run_probe.sh를 다시 올렸다. 올린 명령은 기록 없음 [미확인]
+openshell policy set x1-demo --policy <3판 YAML: 20260924-x1-demo-policy.txt 6절 본문> --wait
+
+# 9. 3판에서 키 조회와 한 줄 경로. 17:46, [K3]·[A2]. 통과했지만(DA2) 3판은 요건 (b)를 채우지 못한 구성이다
 openshell sandbox exec -n x1-demo --timeout 240 -- /usr/bin/python3 /tmp/x1-tools/key_check.py /
 nemoclaw x1-demo agent --agent main --json --timeout 300 \
   -m "Run the X1 probe now: use the x1-probe skill with the one-line input 'Reply with exactly: X1 OK', then return the JSON line printed by the command exactly as it is."
+
+# 10. 위반 시험 DT1~DT4. 17:48, [T1..T4]. 명령 전체 형태는 기록 없음 [미확인]. 기록에 남은 조각은 다음과 같다
+#    DT1: node의 자손이 아닌 curl -> POST https://integrate.api.nvidia.com/v1/chat/completions. demo 로그 624행의 조상
+#         (openshell-sandbox)·명령줄 조각(/dev/null)과 출력(000, curl: (22) ... 403)으로 보아 1단계 8의 curl 줄과 같은 형태로 본다 [추론]
+#    DT2: /usr/bin/python3 /tmp/x1-tools/net_probe.py로 POST https://integrate.api.nvidia.com/v1/chat/completions
+#         (스크립트 경로는 demo 로그 633행 명령줄, method·URL은 [T1..T4] 출력 JSON)
+openshell sandbox exec -n x1-demo -- /usr/bin/python3 /tmp/x1-tools/net_probe.py POST https://integrate.api.nvidia.com/v1/chat/completions
+#    DT3: node가 띄운 curl -> GET https://integrate.api.nvidia.com/v1/models, DT4: node가 띄운 curl -> api.github.com:443.
+#         node가 curl을 띄운 방법은 기록 없음 [미확인]. 로그(642·643·652행)는 curl의 허용·거부만 보인다
+
+# 11. 최종 4판(3판에서 openclaw_gateway_dialback 제거). 17:55:17, [P3]. 저장소의 x1-demo-narrowed.policy.yaml(7절 본문과 같음)
+openshell policy set x1-demo --policy spikes/x1/policy/x1-demo-narrowed.policy.yaml --wait
+openshell sandbox exec -n x1-demo --timeout 240 -- /usr/bin/python3 /tmp/x1-tools/key_check.py /
+nemoclaw x1-demo agent --agent main --json --timeout 300 -m "<9와 같은 요청 문장>"
+#    17:55:31·17:55:56 요청은 NIM 과부하 오류(DA3), 17:56:19 세 번째 요청이 통과했다(DA4, [A4-2]).
+#    이어서 10과 같은 위반 시험을 다시 돌렸다(DT1'~DT4', 17:57. 명령 형태는 10과 같이 [미확인]).
+#    4판 적용 뒤 nemoclaw x1-demo gateway restart는 시험하지 않았다. 재시작(17:25)은 openclaw_gateway_dialback이 남은 2판에서만 했다.
+#    그 블록 없이 재시작이 건강 확인을 통과하는지는 [미확인]
+
+# 12. 증거 수집
 openshell logs x1-demo --since <기간> -n 3000
 #    커밋한 demo 로그(17:20:31~17:57:27, 37분)를 만든 수집 명령은 기록이 없다 [미확인]. 앞 판의 --since 10m은
 #    그 로그를 만든 명령이 아니다. openshell logs는 크기가 정해진 버퍼에서 읽어 행이 빠질 수 있다(첫 줄 경고,
 #    OpenShell v0.0.116 docs/observability/accessing-logs.mdx 38·60행). 완전한 기록은 샌드박스 안 /var/log/openshell.*.log다
+openshell policy get x1-demo --full
 openshell sandbox download x1-demo /sandbox/x1-runs artifacts/runs/
 ```
 
@@ -153,12 +200,84 @@ openshell sandbox download x1-demo /sandbox/x1-runs artifacts/runs/
 - 게이트웨이 재시작 뒤 `openshell sandbox exec`가 `--timeout`을 넘겨 돌아오지 않은 일이 있었다. exec는 한 번에 하나씩, 호스트 쪽 감시 시간을 두고 돌린다.
 - `nemoclaw … agent`는 OpenClaw 결과에 `replayInvalid: true`가 있으면 종료 코드 1을 낸다. 결과 JSON의 `status`와 `payloads`를 함께 본다.
 
-되돌리기(시연 샌드박스를 NemoClaw 기본 상태로)
+되돌리기(시연 샌드박스)
 
 ```bash
+# 0. 증거를 먼저 받는다
+openshell sandbox download x1-demo /sandbox/x1-runs artifacts/runs/
+
+# 1. X1이 넣은 것 지우기
+nemoclaw x1-demo skill remove x1-probe
+#    OpenClaw에서는 /sandbox/.openclaw/workspace/skills/x1-probe만 지운다(NemoClaw v0.0.124 docs/reference/commands.mdx 2687~2711행)
+openshell sandbox exec -n x1-demo -- rm -rf /sandbox/x1opt /tmp/x1-tools /sandbox/x1-runs
+
+# 2. 정책을 온보딩 직후 1판으로
 openshell policy set x1-demo --policy <온보딩 직후 정책: artifacts/openshell/logs/20260924-x1-demo-policy.txt 1절의 YAML 본문> --wait
-openshell inference set --provider nvidia-prod --model nvidia/nemotron-3-super-120b-a12b
-#    샌드박스 안에서 /sandbox/.openclaw/openclaw.json.x1-backup을 openclaw.json으로 되돌리고 .config-hash를 다시 계산한 뒤
+
+# 3. 추론 경로 되살리기
+#    경고: 되살리면 같은 게이트웨이·작업 공간의 모든 샌드박스에 inference.local이 다시 열린다. 정책 블록이 없어도 어떤
+#    실행 파일이든 쓸 수 있다(violation_tests.md V7, OpenShell v0.0.116 docs/sandboxes/inference-routing.mdx 328행).
+#    NemoClaw 문서는 공유 NemoClaw 게이트웨이에서 openshell inference set을 직접 쓰지 말고 아래 명령을 쓰라고 한다. 이 명령은
+#    OpenShell 경로, OpenClaw 설정의 provider 항목과 설정 해시, NemoClaw 등록부를 함께 맞춘다(같은 판 commands.mdx 3414·3435~3441행)
+nemoclaw x1-demo inference set --provider nvidia-prod --model nvidia/nemotron-3-super-120b-a12b
+#    앞 판에 적었던 openshell inference set --provider nvidia-prod --model nvidia/nemotron-3-super-120b-a12b는
+#    NemoClaw 등록부 검사를 건너뛴다(같은 문서 3441행)
+
+# 4. openclaw.json: 3의 명령이 X1이 바꾼 baseUrl·apiKey까지 되돌리는지는 [미확인]이다. 원본으로 돌리려면 샌드박스 안에서
+#    /sandbox/.openclaw/openclaw.json.x1-backup을 openclaw.json으로 되돌리고 .config-hash를 다시 계산한 뒤 백업 파일을 지운다
+#    (X1의 수정 명령이 기록에 없어 되돌리는 명령도 [미확인])
 nemoclaw x1-demo gateway restart
-# 또는 샌드박스 삭제: nemoclaw x1-demo destroy
+# 또는 샌드박스를 지운다: nemoclaw x1-demo destroy(온보딩 때 만든 호스트 Docker 이미지도 지운다, commands.mdx 2013~2015행)
 ```
+
+시연하지 않을 때는 샌드박스와 전달 프로세스를 멈춰 둔다.
+
+```bash
+nemoclaw x1-demo stop
+#    컨테이너를 멈추고 그 샌드박스의 호스트 대시보드 전달(127.0.0.1:18789)을 멈추려 한다. 정책·자격 증명·작업 파일은 남고,
+#    공유 호스트 게이트웨이(127.0.0.1:8080)는 계속 돈다(NemoClaw v0.0.124 docs/reference/commands.mdx 1529~1556행)
+nemoclaw x1-demo start
+#    다시 띄운다. start는 기록된 provider·모델로 https://inference.local에 추론 요청 1건을 보내 확인한다(같은 문서 1602행).
+#    X1 구성은 추론 경로를 지웠으므로 이 확인은 실패해 0이 아닌 종료 코드를 낼 것으로 본다 [추론]
+```
+
+## 개발 기계 되돌리기
+
+X1이 개발 기계에 남긴 것과 되돌리는 방법이다. 명령은 태그를 지정해 읽은 공개 문서·소스(OpenShell v0.0.116, NemoClaw v0.0.124)에서 확인한 것만 적고, 확인하지 못한 것은 `[미확인]`으로 둔다. PR #19 수정 때 이 절의 명령은 실행하지 않았다. 시연 샌드박스, NemoClaw 게이트웨이, provider `nvidia-prod` 가운데 하나라도 지우면 시연 경로가 돌지 않는다.
+
+- 사용자 zsh 시작 설정 파일(`.zshrc`)의 NemoClaw PATH 블록
+  - 모양: 빈 줄 하나 뒤에 `# NemoClaw PATH setup` 줄, `export PATH="<NemoClaw CLI 폴더>:$PATH"` 줄, `# end NemoClaw PATH setup` 줄이 온다 `[사실: NemoClaw v0.0.124 scripts/install.sh 2642~2691행]`.
+  - 찾기: 두 표지 줄(`# NemoClaw PATH setup`, `# end NemoClaw PATH setup`)로 찾는다. 지우기: 두 표지 줄과 그 사이 줄을 편집기로 지운다.
+  - `nemoclaw uninstall`의 CLI 제거 단계도 이 블록을 지운다 `[사실: 같은 판 src/lib/actions/uninstall/run-plan.ts 1861~1877·1993~2010행]`.
+- NemoClaw v0.0.124(npm 전역 연결 CLI, 소스, 호스트 상태, 시연 샌드박스)
+  - `nemoclaw uninstall [--yes] [--keep-openshell] [--delete-models] [--destroy-user-data] [--all-gateway-ports] [--gateway <name>]` `[사실: NemoClaw v0.0.124 docs/reference/commands.mdx 3716행]`.
+  - 선택한 게이트웨이의 샌드박스(`x1-demo`)를 지우고, 형제 게이트웨이가 없으면 provider 등록과 NemoClaw가 관리하는 게이트웨이의 Docker 이미지도 지운다(같은 문서 3853행). 지우기 전에 등록된 샌드박스마다 호스트 쪽 스냅샷을 만든다(같은 판 docs/manage-sandboxes/uninstall-nemoclaw.mdx 20~24행). CLI는 `npm unlink -g nemoclaw`·`npm uninstall -g nemoclaw`로 지운다(run-plan.ts 1993~2002행).
+  - `--keep-openshell`: OpenShell 실행 파일, NemoClaw가 관리하는 게이트웨이 서비스 파일, 로컬 게이트웨이 상태를 남기고 호스트 게이트웨이 프로세스를 멈추지 않는다(commands.mdx 3700행).
+- OpenShell 0.0.116(Homebrew 로컬 tap `nvidia/openshell`의 `openshell`·`openshell-gateway`·`openshell-driver-vm`)
+  - 제거: `brew uninstall nvidia/openshell/openshell`. NemoClaw uninstall은 macOS에서 OpenShell 실행 파일을 남기고, Homebrew가 이 공식을 확인하면 이 명령을 따로 안내한다 `[사실: NemoClaw v0.0.124 docs/manage-sandboxes/uninstall-nemoclaw.mdx 53~63행]`.
+  - 서비스 중지: 명령 줄 `[미확인]`. OpenShell 설치 문서는 중지도 Homebrew 서비스 명령으로 한다고만 적고, 예시는 `brew services list`·`brew services restart openshell`뿐이다 `[사실: OpenShell v0.0.116 docs/about/installation.mdx 51~56행]`.
+  - tap 해제: 공개 문서에 명령이 없다 `[미확인]`. 이 로컬 tap은 설치 스크립트가 `brew tap-new --no-git`으로 만든다 `[사실: OpenShell v0.0.116 install.sh 668~673행]`.
+  - CLI의 1단계 게이트웨이 등록 `openshell`(17670): `openshell gateway remove openshell`은 게이트웨이 서비스를 멈추지 않고 사용자 층 등록만 지운다 `[사실: OpenShell v0.0.116 docs/sandboxes/manage-gateways.mdx 85·148~151행]`. 지우기 전에 `openshell gateway list`로 층(`user`·`system`)을 본다.
+- `gateway.env`와 LaunchAgent(로그인할 때 프로그램을 띄우는 macOS 설정) `homebrew.mxcl.openshell`
+  - `gateway.env`: 1단계에서 `printf`로 썼고(os-test transcript [G1], 1단계 재현 절차 1), 2단계에서 NemoClaw가 다시 썼다(demo transcript [N2]). `nemoclaw uninstall`(기본 포트 8080, `--keep-openshell` 없이)이 NemoClaw 항목을 지우고 다른 항목은 남긴다 `[사실: commands.mdx 3740~3742행, run-plan.ts 1337~1371·3453~3469행]`. 1단계에 쓴 두 줄이 지금 파일에 남았는지는 `[미확인]`(파일을 열지 않는다).
+  - LaunchAgent: Homebrew 서비스 파일이고 NemoClaw가 다시 썼다([N2]). NemoClaw uninstall은 macOS Homebrew 서비스를 남긴다(commands.mdx 3742행). 지우는 명령은 `[미확인]`.
+- Docker 이미지(openclaw-sandbox, openshell-community base, `x1-probe:x1`, `openshell/sandbox-from:1790231913`)
+  - `nemoclaw gc --dry-run`으로 등록된 샌드박스와 연결되지 않은 `openshell/sandbox-from`·`nemoclaw-sandbox-local` 이미지를 먼저 본 뒤 `nemoclaw gc`로 지운다 `[사실: commands.mdx 3657~3668행]`. 1단계 이미지 `openshell/sandbox-from:1790231913`이 여기에 드는지는 `[미확인]`.
+  - `nemoclaw x1-demo destroy`는 온보딩 때 만든 호스트 Docker 이미지를 지운다(같은 문서 2013~2015행).
+  - `x1-probe:x1`과 공동체 base 이미지(`ghcr.io/nvidia/openshell-community/sandboxes/base:latest`): 지우는 Docker 명령은 공개 문서로 확인하지 않았다 `[미확인]`.
+- 게이트웨이(127.0.0.1:8080)와 호스트 전달 프로세스(127.0.0.1:18789)
+  - 전달 프로세스: `nemoclaw x1-demo stop`이 컨테이너를 멈춘 뒤 그 샌드박스의 호스트 대시보드 전달을 멈추려 한다. 공유 호스트 게이트웨이는 계속 돈다 `[사실: commands.mdx 1529~1556행]`.
+  - 게이트웨이: Homebrew 서비스다. 중지 명령 줄은 위 OpenShell 항목대로 `[미확인]`.
+
+### 키 사본
+
+키 원본은 저장소 `.env`에 있다. 아래는 X1이 만든 사본의 위치와 지우는 방법이다. 어느 곳도 열지 않는다.
+
+- 시연 게이트웨이의 provider `nvidia-prod`(자격 증명 키 이름 `NVIDIA_INFERENCE_API_KEY`, `artifacts/openshell/logs/20260924-x1-demo-policy.txt` 2절). DB 폴더는 `<NemoClaw 게이트웨이 상태 폴더>`다.
+  - `nemoclaw credentials reset nvidia-prod`: 게이트웨이에서 provider를 지우고 그 provider를 쓰는 샌드박스에서 뗀다 `[사실: NemoClaw v0.0.124 docs/reference/commands.mdx 3605·3645~3651행]`. 또는 `openshell provider delete nvidia-prod` `[사실: OpenShell v0.0.116 docs/sandboxes/manage-providers.mdx 278행]`. NemoClaw 등록부와 맞추려면 앞의 명령을 쓴다 `[추론]`.
+  - 지우면 시연 샌드박스가 돌지 않는다.
+- 시연 샌드박스 안 root 감독 프로세스: 샌드박스가 도는 동안 게이트웨이에서 받은 자격 증명을 가진다(demo 로그 7·13행, OpenShell v0.0.116 docs/about/how-it-works.mdx 116행). 샌드박스를 멈추거나(`nemoclaw x1-demo stop`) 지우면(`nemoclaw x1-demo destroy`) 그 프로세스와 함께 사라진다 `[추론]`.
+- 1단계 게이트웨이 상태 저장소(`<1단계 게이트웨이 상태 폴더>`)의 provider `x1-nvidia`·`x1-nvidia-route`(자격 증명 키 이름 `NVIDIA_API_KEY`): 지웠는지 `[미확인]`(정리 기록 없음, `artifacts/openshell/violation_tests.md` §1 "정리" 행). 자격 증명은 그 DB 안에 암호화돼 있다(OpenShell v0.0.116 docs/reference/gateway-config.mdx 392행).
+  - `openshell provider delete x1-nvidia-route`(또는 `x1-nvidia`)를 지금 실행하면 활성 게이트웨이(`nemoclaw`)로 가므로 대상이 없다. 1단계 게이트웨이(`openshell`, 17670)는 NemoClaw가 서비스를 다시 구성한 뒤 뜨지 않는다([N2]). CLI의 `-g`로 게이트웨이를 고를 수는 있지만(manage-gateways.mdx 83행) 1단계 게이트웨이 프로세스가 없어 이 방법은 쓸 수 없다 `[추론]`.
+  - 저장소 파일을 지울지는 사용자 결정이다(`docs/tracking/findings.md`의 키 사본 항목).
+- 호스트 전달 프로세스(127.0.0.1:18789): 키 래퍼 아래에서 돈 온보딩 도중에 시작했다 `[추론: demo transcript [N2]에는 샌드박스가 없었고, [N3] 온보딩 끝에 대시보드 점검이 통과했다]`. NemoClaw는 하위 프로세스 환경을 허용 목록으로 만들고 그 목록에 `NVIDIA_INFERENCE_API_KEY`가 없으므로, 키를 물려받았을 가능성은 낮다 `[추론: NemoClaw v0.0.124 src/lib/subprocess-env.ts 6~62행]`. 그 프로세스의 환경은 열어 보지 않았다.
