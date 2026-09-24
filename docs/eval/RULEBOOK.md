@@ -490,7 +490,7 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 **독립 채점기 요건**:
 
 - 위치는 `eval/scorer/`, 실행은 `python -m eval.scorer --run <run_dir>`이다.
-- 런타임 모듈(`src/tradesentry/`의 `metrics/` 등)을 import하지 않는 독립 구현이다.
+- 런타임 모듈(`src/tradesentry/`의 `metrics/` 등)을 import하지 않는 독립 구현이다(간접 import와 `eval/datagen/` 포함, 자료 계약 §10.3).
 - 봉인 채점 전에 `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증한다.
 - 샌드박스 밖에서 돈다. 정답표를 읽는 것은 채점기뿐이다.
 - 결정적이다. 모델·네트워크를 부르지 않고, 사람·AI 판정을 섞지 않는다.

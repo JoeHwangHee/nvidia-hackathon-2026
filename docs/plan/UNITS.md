@@ -40,7 +40,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 - **진입 함수**: 앱 단위는 진입 함수 `run(입력) -> 출력`을 둔다. 입력과 출력은 §3 표의 "입력 → 출력"과 같은 계약 객체나 파일이다.
 - **머리 주석**: 파일 맨 앞 주석에 단위 ID, 소유, 입력, 출력, 허용 import(그 단위가 import해도 되는 패키지·단위 목록)를 적는다.
 - **골든 시험 한 쌍**: 단위마다 `tests/units/{단위 ID}/`에 고정 입력과 기대 출력 한 쌍을 두고, `run`의 출력이 기대 출력과 같은지 본다. 네트워크와 키 없이 돈다.
-- **경계 시험**: 단위 파일이 머리 주석의 허용 import 밖을 import하지 않는지, 독립 채점기(`eval/scorer/`)가 `tradesentry` 패키지(등록부·커널 포함)와 `eval/datagen`을 직접이든 간접이든(그것들을 부르는 모듈을 거쳐) import하지 않는지를 코드를 실행하지 않고 import 문만 읽어 확인하는 시험이다.
+- **경계 시험**: 단위 파일이 머리 주석의 허용 import 밖을 import하지 않는지, 독립 채점기(`eval/scorer/`)가 `tradesentry` 패키지(등록부·커널 포함)와 `eval/datagen`을 직접이든 간접이든(그것들을 부르는 모듈을 거쳐) import하지 않는지, dev20 생성 도구(단위 V2)가 `metrics/`·`policy/`와 그것들을 부르는 모듈을 직접이든 간접이든 import하지 않는지를 코드를 실행하지 않고 import 문만 읽어 확인하는 시험이다.
 - **등록부·공통 실행기**: `src/tradesentry/units/`에 단위 ID와 진입 함수의 대응표(등록부)와 공통 실행기를 둔다. 실행은 `python -m tradesentry.units <단위 ID> --in <입력 파일>`이고 개발 전용이다. 단위를 혼자 돌리면 실행 이름은 그 단위의 도메인명이고, 출력은 이름·출력 규칙대로 `outputs/{실행명}/`에 쓴다(N5·N6).
 - **S0가 뼈대를 만든다**: S0는 이 표로 패키지와 단위 파일의 뼈대(머리 주석과 빈 `run`), 등록부, 공통 실행기, 골든 시험 틀, 경계 시험을 만든다. 저장소 밖 봉인 폴더에서만 만드는 단위 V3·V6은 뼈대를 만들지 않고 등록부에도 넣지 않는다. 구성 단위는 진입 함수 뼈대 없이 위치만 잡는다.
 - **채점기 독립**: 독립 채점기는 등록부·커널을 포함해 `src/tradesentry/` 아래 어떤 패키지도 import하지 않는다(룰북 `docs/eval/RULEBOOK.md` B3, 자료 계약 §10.3). 간접 import(런타임 패키지를 부르는 모듈을 거쳐 부르는 경우)도 금지이고, `eval/datagen`도 import하지 않는다. 계약 상수가 필요하면 채점기 안에 따로 적는다.
@@ -120,7 +120,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | I10 | 조사자 | `workflow_investigator` | `src/tradesentry/workflow/investigator.py` | 앱 | M | 상태 → 다음 비교·초안 | 유지 | 3 | — | — |
 | I11 | Critic | `workflow_critic` | `src/tradesentry/workflow/critic.py` | 앱 | M | 초안 + 근거 → 구조화된 지적·재조회 요청 | 유지 | 3 | — | — |
 | I12 | 흐름 조정 | `workflow_orchestrate` | `src/tradesentry/workflow/orchestrate.py` | 앱 | M | 사례·모드 → 조사자 → Critic → 수정 1회 상태 기계 | 유지 | 3 | — | — |
-| I13 | NAT 감싸기 | `workflow_nat_wrap` | `src/tradesentry/workflow/nat_wrap.py` | 앱 | M | 흐름 → NAT 추적·프로파일 파일 | 유지 | 3 | — | — |
+| I13 | NAT 감싸기 | `workflow_nat_wrap` | `src/tradesentry/workflow/nat_wrap.py` | 앱 | M | 흐름 → NAT 추적·프로파일 파일 | 유지 | 3 | — | NAT가 정하는 파일 이름과 이름 규칙의 대응은 자문 명세서 Q1의 4다 `[미확인]`. 정해지면 폴더 안 파일 이름을 이 행에 고정한다(자료 계약 §10.3 N6·N7) |
 
 ### 3.7 R — 보고서·검증기(4개)
 
@@ -157,14 +157,14 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | E1 | 묶음 실행 | `evaluation_batch_run` | `src/tradesentry/evaluation/batch_run.py` | 앱 | M | 사례 목록 × 모드 → 교차 배치 실행, 실행 결과 기록의 실행 쪽 키(`evaluation_batch_run-{시각}.jsonl`) | 유지 | 4 | — | 사례 실행마다 새 실행명을 쓰고, 실행을 시작하기 전에 호스트의 실행 폴더를 이미 있으면 실패하는 방식으로 만들어 실행명을 확보하고, 만들기에 실패하면 다음 초의 이름으로 다시 한다(자료 계약 §10.3 N8). dev20·`real_dev` 실행과 MT7 확인 리허설(단위 E2로 돌리는 경우, 두 실행기가 동시에 도는 경우 포함)로 이름 충돌이 없는지 확인한다 |
 | E2 | 샌드박스 밖 실행기 | `evaluation_sealed_runner` | `src/tradesentry/evaluation/sealed_runner.py` | 앱 | M | 봉인 해시 대조 → 사례 식별자 한 건씩 `run-case` | 유지 | 4 | — | 단위 E2의 묶음 기록 도메인명과 봉인 묶음 실행 폴더의 실행 이름은 MT7에서 F1 전에 정한다 `[미확인]`. 실행명 확보는 자료 계약 §10.3 N8을 따른다 |
 | E3 | 추출 명령 | `evaluation_extract` | `src/tradesentry/evaluation/extract.py` | 앱 | M | 실행 기록 → `execution_status`·원인 분류 코드·버전 키 | 유지 | 4 | — | — |
-| E4 | NAT 사후 평가 | `evaluation_nat_eval` | `src/tradesentry/evaluation/nat_eval.py` | 앱 | M | 실행 기록 → 정답 없는 지표 | 유지 | 4 | — | **고정 규칙과 충돌**: 채점기와 겹치는 항목만 정리한다. NAT의 네 역할(실행·추적·프로파일러·사후 평가)은 자문 명세서(`docs/plan/SCAFFOLD_BRIEF.md`) §5.1 고정 사항 5라, 역할을 없애려면 사용자 승인이 필요하다 |
+| E4 | NAT 사후 평가 | `evaluation_nat_eval` | `src/tradesentry/evaluation/nat_eval.py` | 앱 | M | 실행 기록 → 정답 없는 지표 | 유지 | 4 | — | **고정 규칙과 충돌**: 채점기와 겹치는 항목만 정리한다. NAT의 네 역할(실행·추적·프로파일러·사후 평가)은 자문 명세서(`docs/plan/SCAFFOLD_BRIEF.md`) §5.1 고정 사항 5라, 역할을 없애려면 사용자 승인이 필요하다. NAT가 정하는 파일 이름과 이름 규칙의 대응은 자문 명세서 Q1의 4다 `[미확인]`. 정해지면 폴더 안 파일 이름을 이 행에 고정한다(자료 계약 §10.3 N6·N7) |
 
 ### 3.11 V — 평가 자료(7개)
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | V1 | 시나리오 명세 | 없음(구성) | `eval/scenarios/SCENARIO_SPEC.md` | 구성 | D | 분류 수준 규칙(공개 문서) | 런타임 밖 | 8 | — | — |
-| V2 | dev20 생성 | `datagen_dev20` | `eval/datagen/dev20.py` | 앱 | D | 시나리오 명세 → dev20 입력·정답표 | 런타임 밖 | 8 | — | — |
+| V2 | dev20 생성 | `datagen_dev20` | `eval/datagen/dev20.py` | 앱 | D | 시나리오 명세 → dev20 입력·정답표 | 런타임 밖 | 8 | — | 머리 주석의 허용 import에서 `metrics/`·`policy/`와 그것들을 부르는 모듈을 뺀다. 경계 시험이 직접·간접 import를 모두 본다(§2) |
 | V3 | holdout40 격리 생성 | `sealed_holdout40_gen` | 저장소 밖 봉인 폴더(출력도 봉인 폴더에만) | 앱 | D | 시나리오 명세·생성 규칙 → 봉인 holdout40 | 런타임 밖 | 8 | — | 격리된 생성 에이전트가 만든다. 저장소 밖이라 패키지가 없어 도메인명 앞에 `sealed_`를 붙였다. 봉인 자료 생성 중에 부르는 명령의 출력 규칙은 단위 V6과 같다(자료 계약 §10.3 N10) |
 | V4 | holdout40 결정적 검사 | `datagen_holdout40_check` | `eval/datagen/holdout40_check.py` | 앱 | D | 입력 → 스키마·분류별 건수·dev20과 겹침 0 검사 | 런타임 밖 | 8 | — | 평가 스킬 ②의 사전 점검도 부른다 |
 | V5 | 실자료 분할 | `datagen_split` | `eval/datagen/split.py` | 앱 | D | 64 시계열 + seed → `real_dev`·`real_sealed` 배정 기록 | 런타임 밖 | 8 | — | — |
@@ -270,7 +270,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 - **조립 판정 후보**: 유지·합침 후보·버림 후보·런타임 밖 가운데 지금 예상한 판정. 조립 점검에서 확정한다.
 - **조립 점검**: 버릴 것과 합칠 것을 확정하는 여섯 단계 절차(§5). 작업 AS4가 한다.
 - **골든 시험**: 고정 입력과 기대 출력 한 쌍으로 단위의 출력이 바뀌지 않았는지 보는 시험.
-- **경계 시험**: 단위가 허용 import 밖을 import하지 않는지, 채점기가 `tradesentry` 패키지와 `eval/datagen`을 직접이든 간접이든 import하지 않는지 import 문만 읽어 확인하는 시험.
+- **경계 시험**: 단위가 허용 import 밖을 import하지 않는지, 채점기가 `tradesentry` 패키지와 `eval/datagen`을 직접이든 간접이든 import하지 않는지, dev20 생성 도구(단위 V2)가 `metrics/`·`policy/`와 그것들을 부르는 모듈을 직접이든 간접이든 import하지 않는지 import 문만 읽어 확인하는 시험.
 - **조립 시험**: 픽스처로 CLI 명령 하나를 처음부터 끝까지 돌려 기대 출력과 비교하는 시험.
 - **등록부 / 공통 실행기**: 단위 ID와 진입 함수의 대응표 / 등록부로 단위 하나를 혼자 돌리는 개발 전용 명령 `python -m tradesentry.units <단위 ID> --in <입력 파일>`.
 - **픽스처**: 시험용으로 미리 만든 고정 자료.
