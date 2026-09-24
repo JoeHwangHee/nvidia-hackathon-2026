@@ -1,0 +1,19 @@
+{
+  "k": 5,
+  "source_year": 2023,
+  "source_version": "kcs_202201_202412_v2",
+  "input_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "generated_at": "2026-09-25T01:00:00+09:00",
+  "candidates": ["CN", "JP", "DE", "VN", "US", "PH", "TW"],
+  "hs6_codes": ["850450", "850431"],
+  "import_value_sums": [
+    {"hs6": "850450", "partner": "CN", "amount_usd": 900},
+    {"hs6": "850450", "partner": "JP", "amount_usd": 700},
+    {"hs6": "850450", "partner": "DE", "amount_usd": 700},
+    {"hs6": "850450", "partner": "VN", "amount_usd": 500},
+    {"hs6": "850450", "partner": "US", "amount_usd": 0},
+    {"hs6": "850450", "partner": "TW", "amount_usd": 300},
+    {"hs6": "850431", "partner": "TW", "amount_usd": 50},
+    {"hs6": "850431", "partner": "CN", "amount_usd": 50}
+  ]
+}

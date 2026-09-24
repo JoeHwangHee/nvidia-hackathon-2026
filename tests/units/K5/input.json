@@ -1,0 +1,37 @@
+{
+  "query_id": "q-A-composition-2",
+  "tool": "get_history",
+  "scope": {"hs6": "850450", "partner": "CN", "period": "202401", "baseline_period": "202301"},
+  "snapshot_id": "controlled_fixture_v0",
+  "source_kind": "controlled",
+  "evidence_ids": ["ev:controlled_fixture_v0:observation:1024", "ev:controlled_fixture_v0:observation:1025"],
+  "metrics": [
+    {
+      "metric_id": "m-r_U-850450-CN-202401",
+      "formula_version": "test-formula",
+      "inputs": {"metric": "r_U", "hs6": "850450", "partner": "CN", "period": "202401", "baseline_period": "202301",
+                 "V": [600, 360], "Q": [100, 100]},
+      "evidence_ids": ["ev:controlled_fixture_v0:observation:1024", "ev:controlled_fixture_v0:observation:1025"],
+      "value": -40.0,
+      "unit": "%",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "m-within_effect-850450-CN-202401",
+      "formula_version": "test-formula",
+      "inputs": {"metric": "within_effect", "hs6": "850450", "partner": "CN", "period": "202401",
+                 "baseline_period": "202301"},
+      "evidence_ids": [],
+      "value": null,
+      "unit": "USD/kg",
+      "comparability_flags": ["hs10 REQUEST_FAILED"],
+      "tolerance": 0.05
+    }
+  ],
+  "missingness": [
+    {"evidence_id": "ev:controlled_fixture_v0:observation:1030", "request_id": "0123456789abcdef", "partner_code": "CN",
+     "hs_code": "850450", "month": "202401", "flow": "import", "observation_status": "REQUEST_FAILED"}
+  ],
+  "elapsed_ms": 12
+}
