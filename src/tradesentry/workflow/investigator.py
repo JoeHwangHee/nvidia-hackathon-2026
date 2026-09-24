@@ -15,11 +15,16 @@ dumps)를 쓴다. S0 결정의 계층(contract → dal·runlog → … → workf
   도구 인자는 좁게 받는다: compare_partners의 partners(관세청 2자리 국가코드 최대 5개)만 있고 나머지는 인자가 없다.
   경로·SQL·URL·셸 명령은 받지 않는다(자료 계약 §5.1). 허용 밖 도구·인자는 호출하지 않고 오류로 돌려준다.
 - 도구를 줄지(allow_tools)와 몇 번 허용할지는 흐름 조정(단위 I12)이 코드로 정한다. 프롬프트는 한도를 알릴 뿐이다.
-- 초안 형식 검사(스키마 검사의 초안 쪽): JSON 객체 하나, review_status·signal_status·claims·narrative·hypotheses,
-  상태값 집합, 발동하지 않은 신호는 NOT_TRIGGERED이고 발동한 신호는 NOT_TRIGGERED가 아니다, 사례 판정은 발동 신호
-  판정을 MAINTAIN > HOLD > MONITOR로 묶은 값이다. claims는 freeform이면 typed claim 12필드(자료 계약 §6),
-  나머지 모드면 metric_id나 근거 ID로 가리키는 주장(값은 코드가 검증된 지표로 채운다). 검사는 틀린 초안을 고치지
-  않고 문제 목록만 돌려준다. 보고서 쪽 스키마 요건(자료 계약 §9.4)은 검증기 자리가 본다.
+- 초안 형식 검사(스키마 검사의 초안 쪽, 모든 모드에서 막는다): JSON 객체 하나, review_status·signal_status·claims·
+  narrative·hypotheses, 상태값 집합(review_status 3값, signal_status는 unit_value·share 키와 4값), 형식과 자료형.
+  claims는 freeform이면 typed claim 12필드(자료 계약 §6), 나머지 모드면 metric_id나 근거 ID로 가리키는 주장(값은
+  코드가 검증된 지표로 채운다). 응답이 max_tokens에서 잘렸으면(finish_reason length) 그것도 형식 문제다. 검사는 틀린
+  초안을 고치지 않고 문제 목록만 돌려준다. 보고서 쪽 스키마 요건(자료 계약 §9.4)은 검증기 자리가 본다.
+- 허용 상태 조합(발동하지 않은 신호는 NOT_TRIGGERED, 발동한 신호는 판정 상태, 사례 판정은 발동 신호 판정을
+  MAINTAIN > HOLD > MONITOR로 묶은 값)은 형식 문제가 아니다. 룰북 B2의 스키마 검사는 형식·자료형만 보므로, 이 조합은
+  검증기(단위 R3 STATUS_INCONSISTENT, 검증기 부류)가 맡는다: full·agent에서는 막고 freeform에서는 기록만 한다.
+  여기서는 status_notes로 관찰만 돌려주고(흐름 조정이 trace에 남긴다) 흐름을 바꾸지 않는다.
+- 조사자 메시지에는 모드 이름을 넣지 않는다. 모드 사이 차이는 claims 지침(시스템 지침 뒤쪽)뿐이다(룰북 B2).
 - 모델 응답의 소수는 Decimal로 읽는다(freeform 값의 끝자리 0 보존, 자료 계약 §9.1).
 """
 import json
@@ -44,6 +49,7 @@ ENVELOPE_KEYS = ("query_id", "tool", "scope", "snapshot_id", "source_kind", "evi
                  "comparability", "missingness", "retryable_error")
 METRIC_KEYS = ("metric_id", "inputs", "value", "unit", "comparability_flags", "evidence_ids")
 PRIORITY = {"MAINTAIN": 3, "HOLD": 2, "MONITOR": 1}
+TRUNCATED = "응답이 max_tokens에서 잘렸다(finish_reason length)"
 PARTNER_RE = re.compile(r"^[A-Z]{2}$")
 MONTH_RE = re.compile(r"^\d{6}$")
 
@@ -97,10 +103,10 @@ def dumps_for_model(value: object) -> str:
     return trace_log.dumps(value)
 
 
-def case_message(case: dict, mode: str, evidence: list, required: list | None, remaining: dict) -> str:
+def case_message(case: dict, evidence: list, required: list | None, remaining: dict) -> str:
+    """조사자의 첫 사용자 메시지. 모드를 받지 않는다(모드 사이에 같은 글이어야 한다, 룰북 B2)."""
     lines = ["[사례]", dumps_for_model({k: case.get(k) for k in ("case_id", "hs6", "partner", "month", "baseline_month",
-                                                               "signals", "snapshot_id")}),
-             f"[모드] {mode}"]
+                                                               "signals", "snapshot_id")})]
     if required:
         lines += ["[필수 근거(공개 정책)]", dumps_for_model(required)]
     lines += ["[이미 받은 근거(도구 봉투)]", dumps_for_model([compact_envelope(e) for e in evidence]),
@@ -112,7 +118,7 @@ def case_message(case: dict, mode: str, evidence: list, required: list | None, r
 def initial_messages(prompts: dict, case: dict, mode: str, evidence: list, required: list | None,
                      remaining: dict) -> list[dict]:
     return [{"role": "system", "content": system_prompt(prompts, mode)},
-            {"role": "user", "content": case_message(case, mode, evidence, required, remaining)}]
+            {"role": "user", "content": case_message(case, evidence, required, remaining)}]
 
 
 def assistant_message(message: dict) -> dict:
@@ -218,7 +224,8 @@ def _claim_problems(claims: object, mode: str) -> list[str]:
 
 
 def check_draft(draft: object, mode: str, signals: dict) -> list[str]:
-    """초안 형식 검사. 문제 목록을 돌려준다(빈 목록이면 통과). 초안을 고치지 않는다."""
+    """초안 형식 검사. 문제 목록을 돌려준다(빈 목록이면 통과). 초안을 고치지 않는다. signals는 받기만 한다(허용 상태
+    조합은 status_notes가 본다)."""
     if not isinstance(draft, dict):
         return ["초안은 JSON 객체다"]
     problems = [f"{key}가 없다" for key in DRAFT_KEYS if key not in draft]
@@ -230,21 +237,32 @@ def check_draft(draft: object, mode: str, signals: dict) -> list[str]:
     if not isinstance(status, dict) or set(status) != set(SIGNAL_CODES) \
             or any(v not in SIGNAL_STATUSES for v in status.values()):
         problems.append("signal_status는 unit_value·share를 키로 하는 신호별 판정이다")
-    else:
-        triggered = [code for code in SIGNAL_CODES if (signals or {}).get(code) == "TRIGGERED"]
-        for code in SIGNAL_CODES:
-            if (code in triggered) == (status[code] == "NOT_TRIGGERED"):
-                problems.append(f"signal_status.{code}가 발동 여부({(signals or {}).get(code)})와 맞지 않는다")
-        judged = [status[c] for c in triggered if status[c] in PRIORITY]
-        if judged and draft["review_status"] in PRIORITY \
-                and draft["review_status"] != max(judged, key=PRIORITY.__getitem__):
-            problems.append("review_status가 신호별 판정을 MAINTAIN > HOLD > MONITOR로 묶은 값과 다르다")
     problems += _claim_problems(draft["claims"], mode)
     if not isinstance(draft["narrative"], str):
         problems.append("narrative는 문자열이다")
     if not isinstance(draft["hypotheses"], list) or not all(isinstance(h, str) for h in draft["hypotheses"]):
         problems.append("hypotheses는 문자열 목록이다")
     return problems
+
+
+def status_notes(draft: object, signals: dict) -> list[str]:
+    """허용 상태 조합의 관찰(검증기 부류, 흐름을 바꾸지 않는다). 값 집합이 틀린 초안은 check_draft가 막으므로 보지 않는다."""
+    if not isinstance(draft, dict):
+        return []
+    status = draft.get("signal_status")
+    if not isinstance(status, dict) or set(status) != set(SIGNAL_CODES) \
+            or any(v not in SIGNAL_STATUSES for v in status.values()):
+        return []
+    notes = []
+    triggered = [code for code in SIGNAL_CODES if (signals or {}).get(code) == "TRIGGERED"]
+    for code in SIGNAL_CODES:
+        if (code in triggered) == (status[code] == "NOT_TRIGGERED"):
+            notes.append(f"signal_status.{code}가 발동 여부({(signals or {}).get(code)})와 맞지 않는다")
+    judged = [status[c] for c in triggered if status[c] in PRIORITY]
+    if judged and draft.get("review_status") in PRIORITY \
+            and draft["review_status"] != max(judged, key=PRIORITY.__getitem__):
+        notes.append("review_status가 신호별 판정을 MAINTAIN > HOLD > MONITOR로 묶은 값과 다르다")
+    return notes
 
 
 def parse_draft(content: str, mode: str, signals: dict) -> tuple[dict | None, list[str]]:
@@ -261,15 +279,19 @@ def parse_draft(content: str, mode: str, signals: dict) -> tuple[dict | None, li
 
 def step(client: model_client.ModelClient, messages: list[dict], *, stage: str, mode: str, signals: dict,
          allow_tools: bool) -> dict:
-    """조사자 한 차례. 돌려주는 값: {"kind": "tool_calls", "message", "calls"} 또는
-    {"kind": "draft", "message", "draft"(없으면 None), "problems"}. 도구를 주지 않았는데 부르면 도구 호출로 돌려주고,
-    흐름 조정이 그 시도를 막는다."""
+    """조사자 한 차례. 돌려주는 값: {"kind": "tool_calls", "message", "calls", "truncated"} 또는
+    {"kind": "draft", "message", "draft"(없으면 None), "problems", "status_notes", "truncated"}. 도구를 주지 않았는데
+    부르면 도구 호출로 돌려주고, 흐름 조정이 그 시도를 막는다. 잘린 응답(finish_reason length)의 초안은 형식 문제다."""
     answer = client.chat(messages, stage=stage, tools=tool_specs() if allow_tools else None)
     message = answer["message"]
+    truncated = answer.get("finish_reason") == "length"
     if message.get("tool_calls"):
-        return {"kind": "tool_calls", "message": message, "calls": parse_tool_calls(message)}
+        return {"kind": "tool_calls", "message": message, "calls": parse_tool_calls(message), "truncated": truncated}
     draft, problems = parse_draft(message.get("content") or "", mode, signals)
-    return {"kind": "draft", "message": message, "draft": draft, "problems": problems}
+    if truncated:
+        problems = [TRUNCATED] + problems
+    return {"kind": "draft", "message": message, "draft": draft, "problems": problems,
+            "status_notes": status_notes(draft, signals), "truncated": truncated}
 
 
 def run(inp: object) -> object:
@@ -278,7 +300,8 @@ def run(inp: object) -> object:
     입력: {"case": 사례, "mode": 모드, "evidence": [도구 봉투], "required_evidence": 목록(선택),
     "remaining": {"comparisons", "model_requests"}(선택), "allow_tools": 참/거짓, "stage": 단계(선택),
     "replay": [trace 레코드], "config_dir"(선택)}.
-    출력: {"kind": "tool_calls", "calls": [...]} 또는 {"kind": "draft", "draft": 초안 또는 null, "problems": [...]}.
+    출력: {"kind": "tool_calls", "calls": [...]} 또는 {"kind": "draft", "draft": 초안 또는 null, "problems": [...],
+    "status_notes": [...]}(status_notes는 허용 상태 조합의 관찰로, 막지 않는다).
     """
     if not isinstance(inp, dict) or inp.get("mode") not in MODES or not isinstance(inp.get("case"), dict):
         raise ValueError("입력은 {case, mode, evidence[], replay[], ...}다")
@@ -295,4 +318,5 @@ def run(inp: object) -> object:
                   signals=case.get("signals") or {}, allow_tools=bool(inp.get("allow_tools")))
     if result["kind"] == "tool_calls":
         return {"kind": "tool_calls", "calls": result["calls"]}
-    return {"kind": "draft", "draft": result["draft"], "problems": result["problems"]}
+    return {"kind": "draft", "draft": result["draft"], "problems": result["problems"],
+            "status_notes": result["status_notes"]}
