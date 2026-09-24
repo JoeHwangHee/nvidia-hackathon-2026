@@ -1,0 +1,81 @@
+{
+ "policy_version": "dev-0.1",
+ "triggers": [
+  {
+   "hs6": "850431",
+   "partner": "CN",
+   "month": "202312",
+   "baseline_month": "202212",
+   "signals": {
+    "unit_value": "NOT_TRIGGERED",
+    "share": "TRIGGERED"
+   }
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202402",
+   "baseline_month": "202302",
+   "signals": {
+    "unit_value": "NOT_TRIGGERED",
+    "share": "NOT_TRIGGERED"
+   }
+  },
+  {
+   "hs6": "850450",
+   "partner": "CN",
+   "month": "202401",
+   "baseline_month": "202301",
+   "signals": {
+    "unit_value": "TRIGGERED",
+    "share": "NOT_TRIGGERED"
+   }
+  },
+  {
+   "hs6": "850450",
+   "partner": "DE",
+   "month": "202401",
+   "baseline_month": "202301",
+   "signals": {
+    "unit_value": "NOT_TRIGGERED",
+    "share": "NOT_TRIGGERED"
+   }
+  },
+  {
+   "hs6": "850450",
+   "partner": "JP",
+   "month": "202401",
+   "baseline_month": "202301",
+   "signals": {
+    "unit_value": "TRIGGERED",
+    "share": "TRIGGERED"
+   }
+  }
+ ],
+ "data_quality": [
+  {
+   "hs6": "850431",
+   "partner": "CN",
+   "month": "202312",
+   "baseline_month": "202212",
+   "signal": "unit_value",
+   "reason": "metric_null"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202402",
+   "baseline_month": "202302",
+   "signal": "share",
+   "reason": "metric_null"
+  },
+  {
+   "hs6": "850432",
+   "partner": "KH",
+   "month": "202402",
+   "baseline_month": "202302",
+   "signal": "unit_value",
+   "reason": "metric_null"
+  }
+ ]
+}

@@ -1,0 +1,273 @@
+{
+ "snapshot": {
+  "schema_version": 1,
+  "snapshot_id": "unit_fixture_s2",
+  "source_kind": "real",
+  "collected_at": "2026-09-25T00:00:00+09:00",
+  "source_url": [
+   "https://www.data.go.kr/data/15100475/openapi.do",
+   "https://www.data.go.kr/data/15101609/openapi.do"
+  ],
+  "collection_plan": {
+   "chunk_months": 12,
+   "collect_total_denominator": true,
+   "hs10": [],
+   "hs4_scan": [
+    "8504"
+   ],
+   "hs6": [
+    "850450"
+   ],
+   "partners": [
+    "CN",
+    "JP",
+    "DE"
+   ],
+   "period": {
+    "end": "202302",
+    "start": "202301"
+   },
+   "snapshot_id": "unit_fixture_s2"
+  },
+  "raw_sha256": "15374eb6ae479a570cb829a489c9402e2cbcc07aaa93f4493dbf230b3ffa7e1c",
+  "normalized_sha256": "881cb7e32b3cf46823f3ccbb689e2be1dca687b8c1798ea606f4649ed5850dc5",
+  "period": {
+   "end": "202302",
+   "start": "202301"
+  },
+  "hs_version": "HSK",
+  "importer": "KR",
+  "valuation_basis": {
+   "export": "FOB 신고 미화금액",
+   "import": "CIF 과세가격 미화금액"
+  },
+  "units": {
+   "amount": "USD",
+   "weight": "kg"
+  },
+  "precision_rule": "amount exact integer USD; weight integer kg rounded per row (total-row diff observed 2kg over 6-73 rows)",
+  "coverage_status": "IN_PROGRESS"
+ },
+ "scope": {
+  "hs6": [
+   "850450"
+  ],
+  "partners": [
+   "CN",
+   "JP",
+   "DE"
+  ],
+  "months": [
+   "202301",
+   "202302"
+  ],
+  "other_partners": [
+   "US"
+  ]
+ },
+ "parent": [
+  {
+   "hs6": "850450",
+   "partner": "JP",
+   "month": "202301",
+   "amount_usd": 300,
+   "net_weight_kg": 30,
+   "observation_status": "OBSERVED",
+   "evidence_ids": [
+    "ev:unit_fixture_s2:observation:13"
+   ],
+   "missingness": []
+  },
+  {
+   "hs6": "850450",
+   "partner": "JP",
+   "month": "202302",
+   "amount_usd": null,
+   "net_weight_kg": null,
+   "observation_status": "CONFIRMED_NO_TRADE",
+   "evidence_ids": [
+    "ev:unit_fixture_s2:observation:47"
+   ],
+   "missingness": []
+  }
+ ],
+ "world": [
+  {
+   "hs6": "850450",
+   "partner": "ALL",
+   "month": "202301",
+   "amount_usd": 2000,
+   "observation_status": "OBSERVED",
+   "evidence_ids": [
+    "ev:unit_fixture_s2:observation:55",
+    "ev:unit_fixture_s2:observation:57"
+   ],
+   "missingness": [],
+   "hs10_codes": [
+    "8504501000",
+    "8504509000"
+   ]
+  },
+  {
+   "hs6": "850450",
+   "partner": "ALL",
+   "month": "202302",
+   "amount_usd": 1200,
+   "observation_status": "OBSERVED",
+   "evidence_ids": [
+    "ev:unit_fixture_s2:observation:59"
+   ],
+   "missingness": [],
+   "hs10_codes": [
+    "8504501000"
+   ]
+  }
+ ],
+ "children": [
+  {
+   "hs6": "850450",
+   "partner": "JP",
+   "month": "202301",
+   "rows": [
+    {
+     "hs10": "8504501000",
+     "amount_usd": 250,
+     "net_weight_kg": 20,
+     "evidence_id": "ev:unit_fixture_s2:observation:43"
+    },
+    {
+     "hs10": "8504509000",
+     "amount_usd": 50,
+     "net_weight_kg": 10,
+     "evidence_id": "ev:unit_fixture_s2:observation:45"
+    }
+   ],
+   "observation_status": "OBSERVED",
+   "missingness": []
+  },
+  {
+   "hs6": "850450",
+   "partner": "JP",
+   "month": "202302",
+   "rows": [],
+   "observation_status": "CONFIRMED_NO_TRADE",
+   "missingness": []
+  }
+ ],
+ "peers": [
+  {
+   "entity_type": "exporter_country",
+   "entity_id": "JP",
+   "entity_namespace": "KCS_cntyCd",
+   "baci_country_code": "392",
+   "scope_type": "hs4",
+   "scope_id": "8504",
+   "peer_rank": 1,
+   "peer_id": "CN",
+   "similarity": 0.8300,
+   "community_id": "c1",
+   "method": "cosine_topk",
+   "grouping_version": "g1",
+   "params_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+   "source_version": "BACI_HS22_V202601",
+   "source_year": 2023,
+   "input_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "generated_at": "2026-09-25T00:00:00+09:00",
+   "evidence_id": "ev:unit_fixture_s2:peer_group:4"
+  }
+ ],
+ "resolve": [
+  {
+   "evidence_id": "ev:unit_fixture_s2:observation:13",
+   "resolved": true,
+   "failed_rule": null,
+   "row": {
+    "snapshot_id": "unit_fixture_s2",
+    "request_id": "2247fd7c81215b0f",
+    "month": "202301",
+    "partner_code": "JP",
+    "partner_namespace": "KCS_cntyCd",
+    "hs_code": "850450",
+    "hs_level": 6,
+    "hs_version": "HSK",
+    "flow": "import",
+    "amount_usd": 300,
+    "net_weight_kg": 30,
+    "observation_status": "OBSERVED",
+    "raw_file_id": "2247fd7c81215b0f.xml",
+    "raw_row_locator": "item[1]",
+    "item_name": "그 밖의 유도자"
+   }
+  },
+  {
+   "evidence_id": "ev:unit_fixture_s2:observation:1",
+   "resolved": true,
+   "failed_rule": null,
+   "row": {
+    "snapshot_id": "unit_fixture_s2",
+    "request_id": "625fc806b2ba7b91",
+    "month": "RAW:총계",
+    "partner_code": "CN",
+    "partner_namespace": "KCS_cntyCd",
+    "hs_code": "8504",
+    "hs_level": 4,
+    "hs_version": "HSK",
+    "flow": "import",
+    "amount_usd": 1110,
+    "net_weight_kg": 215,
+    "observation_status": "OBSERVED",
+    "raw_file_id": "625fc806b2ba7b91.xml",
+    "raw_row_locator": "item[0]",
+    "item_name": "-"
+   }
+  },
+  {
+   "evidence_id": "ev:unit_fixture_s2:peer_group:4",
+   "resolved": true,
+   "failed_rule": null,
+   "row": {
+    "entity_type": "exporter_country",
+    "entity_id": "JP",
+    "entity_namespace": "KCS_cntyCd",
+    "baci_country_code": "392",
+    "scope_type": "hs4",
+    "scope_id": "8504",
+    "peer_rank": 1,
+    "peer_id": "CN",
+    "similarity": "0.8300",
+    "community_id": "c1",
+    "method": "cosine_topk",
+    "grouping_version": "g1",
+    "params_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "source_version": "BACI_HS22_V202601",
+    "source_year": 2023,
+    "input_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "generated_at": "2026-09-25T00:00:00+09:00"
+   }
+  },
+  {
+   "evidence_id": "ev:kcs_202201_202412_v2:observation:13",
+   "resolved": false,
+   "failed_rule": 2,
+   "row": null
+  },
+  {
+   "evidence_id": "ev:unit_fixture_s2:observation_all:13",
+   "resolved": false,
+   "failed_rule": 3,
+   "row": null
+  },
+  {
+   "evidence_id": "ev:unit_fixture_s2:observation:69",
+   "resolved": false,
+   "failed_rule": 4,
+   "row": null
+  },
+  {
+   "evidence_id": "ev:unit_fixture_s2:observation:013",
+   "resolved": false,
+   "failed_rule": 4,
+   "row": null
+  }
+ ]
+}
