@@ -1,0 +1,28 @@
+{
+  "values": [
+    {"metric": "U", "value": 20.345},
+    {"metric": "U", "value": -20.345},
+    {"metric": "U", "value": 12.27498723564345793136807029801413484535},
+    {"metric": "s", "value": 27.46695550351288056206088992974238875878},
+    {"metric": "r_U", "value": -40},
+    {"metric": "r_U", "value": -0.04},
+    {"metric": "r_U", "value": 0.04},
+    {"metric": "d_s", "value": -4},
+    {"metric": "V", "value": 4567891},
+    {"metric": "Q", "value": 372130},
+    {"metric": "V", "value": 600.5},
+    {"metric": "within_effect", "value": 0},
+    {"metric": "mix_effect", "value": -2.4},
+    {"metric": "residual", "value": 0.004999},
+    {"metric": "residual", "value": -0.005},
+    {"metric": "U@8504501000", "value": 10},
+    {"metric": "r_U@8504501000", "value": 12.25},
+    {"metric": "w@8504501000", "value": 33.35},
+    {"metric": "s", "value": null}
+  ],
+  "weight_checks": [
+    {"Q_parent": 500000, "Q_hs10": 500002, "row_count": 6, "weight_rounding_kg": 0.5},
+    {"Q_parent": 100, "Q_hs10": 101, "row_count": 1, "weight_rounding_kg": 0.5},
+    {"Q_parent": 100, "Q_hs10": 102, "row_count": 2, "weight_rounding_kg": 0.5}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "snapshot_id": "golden_metrics",
+  "hs6": "850450",
+  "partner": "CN",
+  "period": "202401",
+  "baseline_period": "202301",
+  "parent": [
+    {"month": "202301", "partner_code": "CN", "hs_code": "850450", "hs_level": 6, "flow": "import",
+     "amount_usd": 4069, "net_weight_kg": 200, "observation_status": "OBSERVED",
+     "evidence_ids": ["ev:golden_metrics:observation:101"]},
+    {"month": "202401", "partner_code": "CN", "hs_code": "850450", "hs_level": 6, "flow": "import",
+     "amount_usd": 4567891, "net_weight_kg": 372130, "observation_status": "OBSERVED",
+     "evidence_ids": ["ev:golden_metrics:observation:102"]}
+  ]
+}

@@ -78,7 +78,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 
 | 무엇 | 경로·명령 |
 |---|---|
-| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(`scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`). 채점 실행 폴더 `outputs/score-{시각}/`의 채점기 출력만 증거 복사한 커밋 사본이다 |
+| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(`scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`). 채점 실행 폴더 `outputs/score-{시각}/`의 채점기 출력을 증거 복사한 커밋 사본이다. 재채점용 보고서 원문은 `artifacts/eval/score-{시각}/{run_id}/`에 증거 복사한다(조건 다섯은 자료 계약 §10.3 N11) |
 | 실행 기록(커밋 안 함, 로컬에만 있음) | 실행 폴더 `outputs/{실행명}/`(trace JSONL, NAT 프로파일 결과 등 도메인 출력. 봉인 묶음 실행은 `outputs/sealed/{실행명}/`). trace는 실행 중 호출과 응답을 단계별로 남긴 기록이고, JSONL은 JSON 하나를 한 줄에 적는 기록 파일이며, 프로파일 결과는 단계별 시간·토큰 측정 결과다 |
 | OpenShell | `configs/openshell/policy.yaml`, OpenShell 증거 폴더 `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일을 증거 복사한 커밋 사본. 시험표 `openshell_violation_tests-{시각}.md`는 예측·실측 대조표이고, 같은 폴더에 감사 로그 발췌 `.txt`와 라이브 정책 조회 본문 `.yaml`이 있다). 시험을 돌릴 때마다 새 폴더가 생긴다. X1 임시 시험 기록은 옛 이름 위치에 있고 규범 G2 증거로 함께 읽는다(자료 계약 §10.3) |
 | NAT | `configs/nat/workflow.yml` |

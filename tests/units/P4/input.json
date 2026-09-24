@@ -1,0 +1,10 @@
+{
+ "signals": {
+  "unit_value": "TRIGGERED",
+  "share": "TRIGGERED"
+ },
+ "signal_status": {
+  "unit_value": "HOLD",
+  "share": "MAINTAIN"
+ }
+}
