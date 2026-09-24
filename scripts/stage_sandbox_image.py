@@ -6,6 +6,10 @@
 
     uv run --locked python -m scripts.stage_sandbox_image --dest <저장소 밖의 아직 없는 폴더> [--add <저장소 상대경로>]...
 
+빌드 기록(data/snapshots/<id>/snapshot_build.json)을 들이면 그 기록의 peer_group_files가 가리키는 비교국 표
+(data/reference/peer_group_*.csv)를 sha256 대조 뒤 자동으로 함께 들이고, 이미지 기록의 snapshots에 snapshot_id·
+normalized_sha256·비교국 표를 적는다(결정 기록 model-decision-mt5-sandbox ⑫).
+
 만드는 것(--dest 아래)
     Dockerfile                  configs/openshell/image/Dockerfile 사본
     image/tradesentry.sh        CLI 실행기 사본
@@ -35,6 +39,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 from pathlib import Path, PurePosixPath
@@ -49,6 +54,9 @@ BLOCKED_TOP = ("outputs", "artifacts", "spikes", "tests", "docs", "scripts", "re
 CACHE_PARTS = frozenset({"__pycache__"})
 SNAPSHOT_FILES = frozenset({"snapshot_build.sqlite", "snapshot_build.json"})
 DEV20_INPUT_PREFIX = ("eval", "dev", "dev20", "input")
+BUILD_RECORD = "snapshot_build.json"
+PEER_GROUP_NAME_RE = re.compile(r"peer_group_[a-z0-9_]+\.csv")
+SHA256_RE = re.compile(r"[0-9a-f]{64}")
 
 
 class StageError(Exception):
@@ -153,6 +161,47 @@ def collect(repo_root: Path, include: list[tuple[str, bool]], added: list[str]) 
     return sorted(files), missing_optional
 
 
+def snapshot_companions(repo_root: Path, files: list[str]) -> tuple[list[str], list[dict]]:
+    """들이는 빌드 기록(data/snapshots/<id>/snapshot_build.json)이 가리키는 비교국 표를 함께 들인다.
+
+    빌드 기록의 peer_group_files[].file_name을 data/reference/에서 찾아 sha256을 기록값과 대조한다. 이름이 정해진 모양
+    (peer_group_<소문자·숫자·밑줄>.csv)이 아니거나, 파일이 없거나, sha256이 다르면 StageError다. 샌드박스 안 스냅샷 검증
+    (단위 S3의 peer_group_sources)이 이 표를 찾기 때문이다(결정 기록 model-decision-mt5-sandbox ⑫).
+    돌려주는 것: (더 들일 파일, 이미지 기록의 snapshots 항목 목록).
+    """
+    extra: list[str] = []
+    snapshots: list[dict] = []
+    for rel in files:
+        parts = PurePosixPath(rel).parts
+        if not (len(parts) == 4 and parts[:2] == ("data", "snapshots") and parts[3] == BUILD_RECORD):
+            continue
+        try:
+            record = json.loads((repo_root / rel).read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise StageError(f"빌드 기록을 읽지 못했다({type(exc).__name__}): {rel}") from None
+        if not isinstance(record, dict) or record.get("snapshot_id") != parts[2]:
+            raise StageError(f"빌드 기록의 snapshot_id가 폴더 이름과 다르다: {rel}")
+        peers = []
+        for entry in record.get("peer_group_files") or []:
+            name = entry.get("file_name") if isinstance(entry, dict) else None
+            expected = entry.get("sha256") if isinstance(entry, dict) else None
+            if not isinstance(name, str) or not PEER_GROUP_NAME_RE.fullmatch(name):
+                raise StageError(f"빌드 기록의 비교국 표 이름이 정해진 모양이 아니다: {rel}")
+            peer = f"data/reference/{name}"
+            if not (repo_root / peer).is_file() or (repo_root / peer).is_symlink():
+                raise StageError(f"빌드 기록이 가리키는 비교국 표가 없다: {peer}")
+            if not isinstance(expected, str) or _sha256(repo_root / peer) != expected:
+                raise StageError(f"비교국 표 sha256이 빌드 기록과 다르다: {peer}")
+            extra.append(peer)
+            peers.append({"file_name": name, "sha256": expected})
+        normalized = record.get("normalized_sha256")
+        snapshots.append({"snapshot_id": parts[2],
+                          "normalized_sha256": normalized if isinstance(normalized, str) and SHA256_RE.fullmatch(normalized)
+                          else None,
+                          "build_record": rel, "peer_group_files": peers})
+    return extra, snapshots
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with open(path, "rb") as handle:
@@ -177,6 +226,8 @@ def stage(repo_root: Path, dest: Path, added: list[str]) -> dict:
     if _inside(resolved, sealed_dir()):
         raise StageError("--dest는 봉인 폴더 밖이어야 한다")
     files, missing = collect(repo_root, read_include(repo_root / INCLUDE_FILE), added)
+    extra, snapshots = snapshot_companions(repo_root, files)
+    files = sorted(set(files) | set(extra))
     os.mkdir(resolved)
     try:
         app = resolved / "app"
@@ -192,6 +243,7 @@ def stage(repo_root: Path, dest: Path, added: list[str]) -> dict:
         record = {
             "files": entries,
             "optional_missing": missing,
+            "snapshots": snapshots,
             "dockerfile_sha256": _sha256(resolved / "Dockerfile"),
             "launcher_sha256": _sha256(resolved / "image" / "tradesentry.sh"),
             "include_sha256": _sha256(repo_root / INCLUDE_FILE),
@@ -224,6 +276,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"staged files={len(record['files'])} bytes={total} optional_missing={len(record['optional_missing'])}")
     for rel in record["optional_missing"]:
         print(f"optional_missing {rel}")
+    for snap in record["snapshots"]:
+        peers = ",".join(entry["file_name"] for entry in snap["peer_group_files"]) or "-"
+        print(f"snapshot {snap['snapshot_id']} normalized_sha256={snap['normalized_sha256']} peer_group_files={peers}")
     print(f"manifest_sha256={record['manifest_sha256']}")
     print(f"dockerfile_sha256={record['dockerfile_sha256']}")
     return 0

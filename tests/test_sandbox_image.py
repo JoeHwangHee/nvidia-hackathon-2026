@@ -111,12 +111,47 @@ class StageToolTest(unittest.TestCase):
         self.write("eval/dev/oracle_ABC.json", "{}\n")
         self.write("eval/dev/dev20/input/case_01.json", "{}\n")
         self.write("data/snapshots/controlled_fixture_v0/fixture_spec.json", "{}\n")
+        self.build_record("controlled_fixture_v0")
+
+    def build_record(self, snapshot_id: str, peer_text: str = "peer\n", *, sha: str | None = None,
+                     name: str | None = None) -> None:
+        name = name or f"peer_group_{snapshot_id}.csv"
+        peer = self.write(f"data/reference/{name}", peer_text) if "/" not in name else None
+        digest = sha or (hashlib.sha256(peer.read_bytes()).hexdigest() if peer else "0" * 64)
+        self.write(f"data/snapshots/{snapshot_id}/snapshot_build.json", json.dumps({
+            "snapshot_id": snapshot_id, "normalized_sha256": "a" * 64,
+            "peer_group_files": [{"file_name": name, "sha256": digest}]}))
+        self.write(f"data/snapshots/{snapshot_id}/snapshot_build.sqlite", "db")
 
     def write(self, rel: str, text: str) -> Path:
         path = self.repo / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
         return path
+
+    def test_build_record_peer_groups_come_along(self):
+        self.build_record("dev20")
+        record = stage.stage(self.repo, self.dest, ["data/snapshots/dev20/snapshot_build.sqlite",
+                                                    "data/snapshots/dev20/snapshot_build.json"])
+        paths = [entry["path"] for entry in record["files"]]
+        self.assertIn("data/reference/peer_group_controlled_fixture_v0.csv", paths)
+        self.assertIn("data/reference/peer_group_dev20.csv", paths)
+        self.assertEqual(sorted(snap["snapshot_id"] for snap in record["snapshots"]), ["controlled_fixture_v0", "dev20"])
+        manifest = json.loads((self.dest / "app" / stage.MANIFEST_NAME).read_text(encoding="utf-8"))
+        self.assertEqual(manifest["snapshots"][0]["normalized_sha256"], "a" * 64)
+
+    def test_build_record_peer_group_problems_refuse(self):
+        cases = {"sha": dict(sha="b" * 64), "name": dict(name="../outputs/x.csv"), "other": dict(name="oracle.csv")}
+        for label, kwargs in cases.items():
+            with self.subTest(label=label):
+                self.build_record("controlled_fixture_v0", **kwargs)
+                with self.assertRaises(stage.StageError):
+                    stage.stage(self.repo, self.dest, [])
+                self.assertFalse(self.dest.exists())
+        self.build_record("controlled_fixture_v0")
+        (self.repo / "data/reference/peer_group_controlled_fixture_v0.csv").unlink()
+        with self.assertRaises(stage.StageError):
+            stage.stage(self.repo, self.dest, [])
 
     def test_stages_only_listed_files(self):
         record = stage.stage(self.repo, self.dest, ["eval/dev/dev20/input"])
