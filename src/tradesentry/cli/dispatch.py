@@ -96,8 +96,9 @@ model-decision-as2-run-case)
   reports_render_ko-{시각}.json(최종 보고서, 단위 R2). 순서대로 한 줄씩 상대경로를 적는다. 기록과 보고서는 trace와 같은
   직렬화(Decimal은 원문 표기의 JSON 숫자)로 쓴다.
 - 종료 코드: 0 실행이 COMPLETED, 1 실행이 다른 상태로 끝남(기록은 남긴다)·정책·모델 설정·스냅샷을 읽지 못함·실자료 거부·
-  자료 묶음이나 비교 대상 집합을 정하지 못함·사례가 아님, 4 조립체 출력이 기대한 모양이 아님. 오류 문장에는 받은 값과
-  스냅샷 안의 값을 넣지 않는다(N13).
+  자료 묶음이나 비교 대상 집합을 정하지 못함·사례가 아님, 4 흐름 밖 조립체 출력이 기대한 모양이 아님(사례 다시 만들기의
+  지표·P2 출력, 흐름 조정의 반환 모양, 출력 직렬화). 흐름 안(도구 봉투 → 근거 상태 변환 등)에서 난 WiringError는 흐름
+  조정이 CODE_ERROR로 기록하므로 실행 결과 기록이 남고 1이다. 오류 문장에는 받은 값과 스냅샷 안의 값을 넣지 않는다(N13).
 
 평가 하네스는 모듈 단위로만 허용한다. 호스트 전용 샌드박스 밖 실행기(단위 E2, tradesentry.evaluation.sealed_runner)는
 CLI가 부르지 않는다.
@@ -881,6 +882,8 @@ def _run_case(request: args.Request) -> int:
             if snap.source_kind not in RUN_CASE_SOURCE_KINDS:  # 관측 값을 읽기 전에 거부한다(머리 설명)
                 _report(RUN_CASE_REFUSAL)
                 return EXIT_FAILED
+            # 실자료를 잇는 자리(분할 기록 정본 위치 승인 뒤): 사례 계열이 real_dev에 배정된 경우만 받고 real_sealed는 관측
+            # 값을 읽기 전에 거부한다. dataset은 real_dev, 비교 대상 집합은 REAL_GROUPING_VERSION(결정 기록 AS2 ⑩).
             dataset = RUN_CASE_DATASETS.get(snap.snapshot_id)
             if dataset is None:
                 raise RunCaseError("오류: tradesentry run-case가 이 합성 스냅샷의 자료 묶음(dataset)을 정하지 못했다"

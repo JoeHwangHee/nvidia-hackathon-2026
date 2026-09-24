@@ -267,8 +267,10 @@ class ModelModesTest(RunCaseBase):
                     self.assertEqual((record["critic_used"], record["revision_used"]), (mode != "agent", False))
                     self.assertEqual(record["model_requests"], 2 if mode == "agent" else 3)
                     self.assertEqual(record["tool_attempts"], 5)  # I1·I2(코드) + 모델 비교 2 + verify_evidence
-                    if mode != "freeform":
-                        self.assertEqual(report["validator_findings"], [])
+                    final = [e["data"] for e in self.trace(files) if e["event"] == "validator_result"][-1]
+                    self.assertEqual((final["decision"], final["record_only"], final["schema_ok"]),
+                                     ("pass", mode == "freeform", True))
+                    self.assertEqual(report["validator_findings"], [])  # freeform도 틀 채우기가 만든 주장이라 사유 0
                     tools = [e["data"] for e in self.trace(files) if e["event"] == "tool_call"]
                     self.assertEqual([(t["tool"], t["source"]) for t in tools],
                                      [("check_comparability", "code"), ("get_history", "code"),
