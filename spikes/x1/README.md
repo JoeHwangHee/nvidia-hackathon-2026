@@ -261,7 +261,7 @@ X1 코드와 시험에서 드러난 한계다. 앱 코드는 MT4(조사 흐름·
 
 ## 개발 기계 되돌리기
 
-X1이 개발 기계에 남긴 것과 되돌리는 방법이다. 명령은 공개 문서에서 확인한 것만 적고, 확인하지 못한 것은 `[미확인]`으로 둔다. 공개 문서는 태그를 지정해 읽은 OpenShell v0.0.116·NemoClaw v0.0.124 문서·소스와, 2026-09-24(목)에 웹에서 읽은 Homebrew 공식 manpage(https://docs.brew.sh/Manpage)·Docker 공식 문서(https://docs.docker.com/reference/cli/docker/image/rm/)다. PR #19 수정 때 이 절의 명령은 Homebrew·Docker 명령 줄을 포함해 실행하지 않았다. 시연 샌드박스, NemoClaw 게이트웨이, provider `nvidia-prod` 가운데 하나라도 지우면 시연 경로가 돌지 않는다.
+X1이 개발 기계에 남긴 것과 되돌리는 방법이다. 명령은 공개 문서에서 확인한 것만 적고, 확인하지 못한 것은 `[미확인]`으로 둔다. 공개 문서는 태그를 지정해 읽은 OpenShell v0.0.116·NemoClaw v0.0.124 문서·소스와, 2026-09-24(목)에 웹에서 읽은 Homebrew 공식 manpage(명령 설명서, https://docs.brew.sh/Manpage)·Docker 공식 문서(https://docs.docker.com/reference/cli/docker/image/rm/)다. PR #19 수정 때 이 절의 명령은 Homebrew·Docker 명령 줄을 포함해 실행하지 않았다. 시연 샌드박스, NemoClaw 게이트웨이, provider `nvidia-prod` 가운데 하나라도 지우면 시연 경로가 돌지 않는다.
 
 - 사용자 zsh 시작 설정 파일(`.zshrc`)의 NemoClaw PATH 블록
   - 모양: 빈 줄 하나 뒤에 `# NemoClaw PATH setup` 줄, `export PATH="<NemoClaw CLI 폴더>:$PATH"` 줄, `# end NemoClaw PATH setup` 줄이 온다 `[사실: NemoClaw v0.0.124 scripts/install.sh 2642~2691행]`.
@@ -271,7 +271,7 @@ X1이 개발 기계에 남긴 것과 되돌리는 방법이다. 명령은 공개
   - `nemoclaw uninstall [--yes] [--keep-openshell] [--delete-models] [--destroy-user-data] [--all-gateway-ports] [--gateway <name>]` `[사실: NemoClaw v0.0.124 docs/reference/commands.mdx 3716행]`.
   - 선택한 게이트웨이의 샌드박스(`x1-demo`)를 지우고, 형제 게이트웨이가 없으면 provider 등록과 NemoClaw가 관리하는 게이트웨이의 Docker 이미지도 지운다(같은 문서 3853행). 지우기 전에 등록된 샌드박스마다 호스트 쪽 스냅샷을 만든다(같은 판 docs/manage-sandboxes/uninstall-nemoclaw.mdx 20~24행). CLI는 `npm unlink -g nemoclaw`·`npm uninstall -g nemoclaw`로 지운다(run-plan.ts 1993~2002행).
   - `--keep-openshell`: OpenShell 실행 파일, NemoClaw가 관리하는 게이트웨이 서비스 파일, 로컬 게이트웨이 상태를 남기고 호스트 게이트웨이 프로세스를 멈추지 않는다(commands.mdx 3700행).
-- OpenShell 0.0.116(Homebrew 로컬 tap `nvidia/openshell`의 `openshell`·`openshell-gateway`·`openshell-driver-vm`). 순서는 서비스 중지, 제거, tap 해제다 `[추론]`.
+- OpenShell 0.0.116(Homebrew 로컬 tap(Homebrew가 공식(formula, 설치 단위)을 읽어 오는 저장소) `nvidia/openshell`의 `openshell`·`openshell-gateway`·`openshell-driver-vm`). 순서는 서비스 중지, 제거, tap 해제다 `[추론]`.
   - 서비스 중지: `brew services stop nvidia/openshell/openshell`. Homebrew 공식 manpage는 `brew services stop`을 "Stop the service formula immediately and unregister it from launching at login (or boot), unless --keep is specified"라고 적는다 `[사실: https://docs.brew.sh/Manpage]`. 공식 이름은 1단계 재현 절차 1의 `brew services restart` 줄과 같게 적었다. OpenShell 설치 문서는 중지도 Homebrew 서비스 명령으로 한다고만 적고, 예시는 `brew services list`·`brew services restart openshell`뿐이다 `[사실: OpenShell v0.0.116 docs/about/installation.mdx 51~56행]`. 멈추면 시연 경로가 돌지 않는다.
   - 제거: `brew uninstall nvidia/openshell/openshell`. NemoClaw uninstall은 macOS에서 OpenShell 실행 파일을 남기고, Homebrew가 이 공식을 확인하면 이 명령을 따로 안내한다 `[사실: NemoClaw v0.0.124 docs/manage-sandboxes/uninstall-nemoclaw.mdx 53~63행]`.
   - tap 해제: `brew untap nvidia/openshell`. Homebrew 공식 manpage는 `brew untap`을 "Remove a tapped formula repository"라고 적는다 `[사실: https://docs.brew.sh/Manpage]`. 같은 항목의 `--force` 설명("Uninstall all formulae and casks from this tap with --force before untapping")으로 보아 위 제거 뒤에 푼다 `[추론]`. OpenShell·NemoClaw 문서에는 이 명령이 없다. 이 로컬 tap은 설치 스크립트가 `brew tap-new --no-git`으로 만든다 `[사실: OpenShell v0.0.116 install.sh 668~673행]`.
