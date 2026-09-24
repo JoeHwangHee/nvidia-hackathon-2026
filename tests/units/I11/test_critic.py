@@ -11,10 +11,10 @@ from ..I7.fakes import FakeClock, ScriptedTransport, ok_body
 CASE = {"case_id": "B-residual", "signals": {"unit_value": "TRIGGERED", "share": "NOT_TRIGGERED"}}
 
 
-def run_review(content, tool_calls=None):
+def run_review(content, tool_calls=None, finish_reason="stop"):
     config = mc.load_model_config()
     clock = FakeClock()
-    transport = ScriptedTransport([{"body": ok_body(content, tool_calls=tool_calls)}], clock)
+    transport = ScriptedTransport([{"body": ok_body(content, tool_calls=tool_calls, finish_reason=finish_reason)}], clock)
     budget = mc.Budget(config.limits, clock.now, config.settings.end_reserve_ms)
     client = mc.ModelClient(config.settings, budget, transport, trace_log.NullSink(), clock.clock_ms, clock.sleep_ms)
     return critic.review(client, config.prompts, CASE, {"review_status": "MAINTAIN"}, [], 2), transport
@@ -49,6 +49,20 @@ class CriticRuleTest(unittest.TestCase):
                                   "problems": ["Critic 답이 JSON 객체가 아니다"]})
         result, _ = run_review('{"findings": [{"kind": "missing_evidence", "text": "분해 없음"}]}')
         self.assertIs(result["needs_revision"], True)  # needs_revision이 없으면 지적이 있는지로 정한다
+
+    def test_truncated_answer_is_noted_first(self):
+        text = '{"findings": [], "requery": [], "needs_revision": false}'
+        result, _ = run_review(text, finish_reason="length")
+        self.assertEqual((result["problems"], result["needs_revision"]), ([critic.TRUNCATED], False))
+        result, _ = run_review(text[:20], finish_reason="length")
+        self.assertEqual(result["problems"], [critic.TRUNCATED, "Critic 답이 JSON 객체가 아니다"])
+
+    def test_messages_carry_no_mode(self):
+        config = mc.load_model_config()
+        case = dict(CASE, mode="full")  # 사례 객체에 모드가 섞여 와도 싣지 않는다
+        body = critic.messages(config.prompts, case, {"review_status": "MAINTAIN"}, [])[1]["content"]
+        for name in ("checklist", "agent", "full", "freeform"):
+            self.assertNotIn(name, body)
 
 
 if __name__ == "__main__":

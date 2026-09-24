@@ -17,6 +17,9 @@ Critic(별도 문맥의 검수자)은 조사자가 받은 근거와 초안만 �
   (단위 I10 규칙), 최대 개수(설정의 revision_requeries, 조정값 2).
 - 답을 읽지 못하면 지적 없음(needs_revision=false)으로 돌리고 문제를 적는다. Critic의 답은 판정을 바꾸지 않고, 수정
   단계를 열지 정하는 입력일 뿐이다. 실행 상태(자료 계약 §3.3)를 새로 만들지 않는다.
+- 답이 max_tokens에서 잘렸으면(finish_reason length) 문제 목록 맨 앞에 적는다(흐름 조정이 trace에 남긴다). 잘린 답도
+  읽을 수 있는 만큼은 위 규칙대로 읽는다.
+- Critic 메시지에는 모드 이름이 없다(사례·근거·초안만). 모드 사이 차이를 만들지 않는다(룰북 B2).
 """
 import json
 import re
@@ -30,6 +33,7 @@ from tradesentry.workflow import replay
 FINDING_KINDS = ("missing_evidence", "alternative_explanation", "comparison_condition", "unsupported_claim",
                  "status_conflict")
 REVIEW_KEYS = ("findings", "requery", "needs_revision", "problems")
+TRUNCATED = "Critic 답이 max_tokens에서 잘렸다(finish_reason length)"
 
 
 def messages(prompts: dict, case: dict, draft: dict | None, evidence: list) -> list[dict]:
@@ -94,6 +98,8 @@ def review(client: model_client.ModelClient, prompts: dict, case: dict, draft: d
     answer = client.chat(messages(prompts, case, draft, evidence), stage="critic", tools=None)
     message = answer["message"]
     result = parse_review(message.get("content") or "", max_requery)
+    if answer.get("finish_reason") == "length":
+        result["problems"].insert(0, TRUNCATED)
     if message.get("tool_calls"):
         result["problems"].append("Critic이 도구를 부르려 했다(실행하지 않음)")
     return result
