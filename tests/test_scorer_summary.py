@@ -98,7 +98,8 @@ def oracle_summary_input(dataset: str = "dev20", modes: tuple = ("checklist", "a
             batch.append(line)
             if status == "COMPLETED":
                 reports[report["run_id"]] = report
-                records += c1.score_report_claims(report, snap, report["run_id"], rows.snapshot_id)
+                records += c1.score_report_claims(report, snap, report["run_id"], rows.snapshot_id,
+                                                  fx.oracle_context(case_id))
                 records += c2.score_report_prose(report, report["run_id"], snap.hs_codes, [])
             stamp = max(stamp, stamp_used) + 1
     results = c3.run({"batch": batch, "reports": reports, "claims": records, "answers": oracle, "cases": cases,
@@ -211,6 +212,27 @@ class RepresentativeMetricsTest(unittest.TestCase):
         self.assertIn("A등급 주장 보류(참고치)", text)
         self.assertIn("금지 해제 조건 뒤 결과표(로드맵 R1)에 적음", text)
         self.assertIn("서로 다른 시계열 2개", text)
+
+
+class UntrustedSummaryValueTest(unittest.TestCase):
+    """실행 쪽 값(믿지 않는 입력)이 요약 마크다운에 가짜 제목·표 행을 만들지 못한다(보안 검토 1회차 권고 3)."""
+
+    def test_version_values_and_case_ids_are_escaped(self):
+        inp = oracle_summary_input()
+        for result in inp["results"]:
+            result["policy_version"] = "dev-0.1\n# 가짜 제목 | 가짜 칸"
+        text = c4.run(inp)
+        self.assertNotIn("\n# 가짜 제목", text)
+        self.assertIn("dev-0.1 # 가짜 제목 ／ 가짜 칸", text)
+
+    def test_unread_reports_show_reasons(self):
+        inp = oracle_summary_input()
+        run_id = inp["results"][0]["run_id"]
+        inp["reports_unread"] = [run_id]
+        inp["report_stats"][run_id] = {"unreadable": "크기 상한 초과"}
+        text = c4.run(inp)
+        self.assertIn(f"보고서를 읽지 못한 COMPLETED 실행 1건(보고서 단위 실패로 셌다): {run_id}(사유: 크기 상한 초과 1건)",
+                      text)
 
 
 if __name__ == "__main__":

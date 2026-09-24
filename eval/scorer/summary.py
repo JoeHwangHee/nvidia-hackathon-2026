@@ -341,11 +341,11 @@ def _conditions_lines(inp: dict, plan: Plan, results: list[dict]) -> list[str]:
     meta = inp.get("meta") or {}
     sealed = inp["dataset"] in c3.SEALED_DATASETS
 
-    def versions(key: str) -> str:
+    def versions(key: str) -> str:  # 실행 쪽 값(믿지 않는 입력)이라 cell()로 줄바꿈·표 문법을 바꾼다
         values = sorted({str(r[key]) for r in results})
         if not values:
             return "해당 없음(결과 줄 없음)"
-        return values[0] if len(values) == 1 else f"여러 값({', '.join(values)})"
+        return cell(values[0]) if len(values) == 1 else f"여러 값({', '.join(cell(v) for v in values)})"
 
     lines = ["## 0. 실행 조건", ""]
     freeze = _get(cond, "rulebook", "freeze_commit")
@@ -392,7 +392,7 @@ def _conditions_lines(inp: dict, plan: Plan, results: list[dict]) -> list[str]:
     lines.append("- 채점 대상 run_id 목록: " + (", ".join(sorted(r["run_id"] for r in results)) or "없음"))
     if inp["dataset"] == "real_dev":
         lines.append("- real_dev 경보 목록(분모): " + ", ".join(
-            f"{c}({plan.context[c].get('hs6')}·{plan.context[c].get('partner')}·{plan.context[c].get('month')})"
+            f"{cell(c)}({plan.context[c].get('hs6')}·{plan.context[c].get('partner')}·{plan.context[c].get('month')})"
             for c in plan.cases))
     lines.append("- 상태 변화 집계(모델 원초안 → Critic 뒤 → 검증 뒤): 집계하지 않음(trace 형식 미정, 단위 L1. F1 전 보완)")
     return lines
@@ -474,7 +474,8 @@ def _aux_analysis(stats: dict[str, dict], plan: Plan, answers: dict) -> list[str
             lines.append(f"- 보조 분석(사전 등록) {first} 대 {second}: 둘 다 성공 {a} / {first}만 성공 {b} / {second}만 성공 {c} / "
                          f"둘 다 실패 {d}, Newcombe 짝 차이 95% 구간({first} − {second}) "
                          f"{fmt_interval(newcombe_paired(a, b, c, d))}, McNemar 정확 검정 p {fmt_p(mcnemar_exact(b, c))}")
-            lines.append(f"  - {second}에서 좋아진 사례: {', '.join(better) or '없음'} / 나빠진 사례: {', '.join(worse) or '없음'}")
+            lines.append(f"  - {second}에서 좋아진 사례: {', '.join(map(cell, better)) or '없음'} / "
+                         f"나빠진 사례: {', '.join(map(cell, worse)) or '없음'}")
     lines += ["- 상태 변화(원초안 → Critic 뒤 → 검증 뒤): 집계하지 않음(trace 형식 미정, 단위 L1. F1 전 보완)", "",
               "혼동행렬(행: 정답 사례 상태, 열: 최종 사례 상태와 실행 실패)", ""]
     for mode in modes:
@@ -576,7 +577,12 @@ def render(inp: dict) -> str:
     nat = "금지 해제 조건 뒤 결과표(로드맵 R1)에 적음" if sealed else cell(_get(cond, "nat_profile_summary"))
     lines.append(f"- NAT 프로파일 요약(참고): {nat}")
     if unread:
-        lines.append(f"- 보고서를 읽지 못한 COMPLETED 실행 {len(unread)}건(보고서 단위 실패로 셌다): {', '.join(sorted(unread))}")
+        reasons: dict[str, int] = {}
+        for run_id in unread:
+            reason = stats_extra.get(run_id, {}).get("unreadable") or "보고서 파일 없음"
+            reasons[reason] = reasons.get(reason, 0) + 1
+        lines.append(f"- 보고서를 읽지 못한 COMPLETED 실행 {len(unread)}건(보고서 단위 실패로 셌다): {', '.join(sorted(unread))}"
+                     f"(사유: {', '.join(f'{cell(k)} {v}건' for k, v in sorted(reasons.items()))})")
 
     lines += ["", "## 5. 재현 명령", ""]
     lines.append(f"- 채점 대상 실행: {cell(_get(cond, 'reproduce_evaluate'))}")
@@ -604,7 +610,7 @@ def render(inp: dict) -> str:
 
 def plan_snapshot(results: list[dict]) -> str:
     values = sorted({r["snapshot_id"] for r in results})
-    return values[0] if len(values) == 1 else "<snapshot_id>"
+    return cell(values[0]) if len(values) == 1 else "<snapshot_id>"
 
 
 def run(inp: object) -> object:
