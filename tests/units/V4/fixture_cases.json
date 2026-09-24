@@ -1,0 +1,26 @@
+{
+ "schema_version": 1,
+ "dataset": "holdout40",
+ "snapshot_id": "fixture_v4",
+ "policy_version": "dev-0.1",
+ "cases": [
+  {
+   "case_id": "fx-01-0",
+   "hs6": "999901",
+   "partner": "XA",
+   "month": "202401"
+  },
+  {
+   "case_id": "fx-04-0",
+   "hs6": "999901",
+   "partner": "XA",
+   "month": "202402"
+  },
+  {
+   "case_id": "fx-10-0",
+   "hs6": "999901",
+   "partner": "XA",
+   "month": "202403"
+  }
+ ]
+}
