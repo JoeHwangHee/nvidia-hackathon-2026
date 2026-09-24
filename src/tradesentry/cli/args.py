@@ -29,18 +29,23 @@ COMMANDS = {
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """tradesentry 명령의 인자 틀. 도움말(-h, --help)은 종료 코드 0으로 끝난다."""
+    """tradesentry 명령의 인자 틀. 도움말(-h, --help)은 종료 코드 0으로 끝난다.
+
+    옵션 줄임(예: --snap)은 받지 않는다(allow_abbrev=False). 시연 경로에서는 하네스 모델이 명령을 조립하므로 적힌
+    그대로의 옵션 이름만 받는다. 같은 옵션을 되풀이해 적은 경우의 거부와 값 형식 검증은 run(MT5)이 맡는다.
+    """
     parser = argparse.ArgumentParser(
         prog="tradesentry",
         description="TradeSentry CLI(명령줄 실행 도구). 관세청 수입통계 경보를 조사해 담당자의 다음 업무를 제안한다. "
-                    "부정·위법·원산지 판정이나 통관 조치가 아니다.")
+                    "부정·위법·원산지 판정이나 통관 조치가 아니다.",
+        allow_abbrev=False)
     commands = parser.add_subparsers(dest="command", metavar="<명령>", required=True)
-    common = argparse.ArgumentParser(add_help=False)
+    common = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     common.add_argument("--snapshot", metavar="SNAPSHOT_ID", help="스냅샷 ID(예: kcs_202201_202412_v2)")
     common.add_argument("--policy", metavar="POLICY_VERSION", help="정책 버전 이름(예: policy_v1). 파일 경로가 아니다")
     common.add_argument("--mode", choices=MODES, help="실행 모드. " + ", ".join(MODES) + " 가운데 하나")
     for name, help_text in COMMANDS.items():
-        commands.add_parser(name, parents=[common], help=help_text, description=help_text)
+        commands.add_parser(name, parents=[common], help=help_text, description=help_text, allow_abbrev=False)
     return parser
 
 

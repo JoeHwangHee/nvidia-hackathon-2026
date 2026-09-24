@@ -63,6 +63,14 @@ class CliTest(unittest.TestCase):
         self.assertEqual(call([])[0], 2)
         self.assertEqual(call(["collect"])[0], 2)
 
+    def test_abbreviated_options_are_refused(self):
+        for argv in (["detect", "--snap", "x"], ["run-case", "--mo", "full"], ["evaluate", "--pol", "policy_v1"]):
+            with self.subTest(argv=argv):
+                code, _, err = call(argv)
+                self.assertEqual(code, 2)
+                self.assertIn(argv[1], err)
+        self.assertEqual(call(["detect", "--snapshot", "x"])[0], dispatch.EXIT_NOT_IMPLEMENTED)  # 온전한 이름은 받는다
+
     def test_module_and_installed_script_help(self):
         result = subprocess.run([sys.executable, "-m", "tradesentry.cli", "--help"], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
