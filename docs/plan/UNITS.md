@@ -139,7 +139,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | F2 | 명령 배선 | `cli_dispatch` | `src/tradesentry/cli/dispatch.py` | 앱 | M | 명령 → 조립체 1~4 호출 | 유지 | CLI | — | 조립 층 자체 |
 | F3 | 런타임 스킬 | 없음(구성) | `skills/tradesentry/SKILL.md` | 구성 | M | `SKILL.md`: `detect`·`run-case`만 부르고 결과를 그대로 전달 | 유지 | 6 | — | — |
 | F4 | 샌드박스 정책 | 없음(구성) | `configs/openshell/policy.yaml`(샌드박스 종류별 파일 구성은 S0 자문 Q7) | 구성 | M | 샌드박스 종류별 정책 YAML | 유지 | 6 | — | 보안 검토 |
-| F5 | 샌드박스 이미지 | 없음(구성) | 샌드박스 이미지 정의 파일(위치는 계획 경로·명령 표에 없음. 제안 필요) | 구성 | M | Python 3.12·의존성, 정답 파일 없음 | 유지 | 6 | — | X1 이미지 정의에서 옮긴다 |
+| F5 | 샌드박스 이미지 | 없음(구성) | 샌드박스 이미지 정의 파일(위치는 계획 경로·명령 표에 없음. 제안 필요) | 구성 | M | Python 3.12·의존성, 정답 파일 없음 | 유지 | 6 | — | X1 이미지 정의에서 옮긴다. 이미지 빌드나 upload로 들이는 파일은 명시한 포함 목록으로 고른다. `.env`, `outputs/`, `artifacts/eval/`, 정답표(`eval/dev/oracle_ABC.json`, dev20 정답표), `eval/scorer/`는 빼도록 명시한다. 저장소 루트나 `eval/dev/`를 통째로 올리지 않는다. upload 주의: 근거는 공식 문서이고 `[사실: 공식 문서 manage-sandboxes "Transfer Files"]`, 우리 환경에서의 확정은 로드맵 MT5에서 한다 `[미확인]`. upload는 기본으로 `.gitignore`를 따른다. 그래서 스냅샷 SQLite와 `raw/`가 조용히 빠진다 `[추론: .gitignore가 둘을 뺀다]`. `--no-git-ignore`는 `.env`가 없는 경로에만 쓴다. upload는 심볼릭 링크를 그대로 두고, 이미 있는 폴더에는 합쳐 덮어쓴다. |
 | F6 | 키 주입 설정 | 없음(구성) | `configs/openshell/` 아래 provider 프로필(새 파일. 이름은 계획 경로·명령 표에 없음) | 구성 | M | 헤더 치환 provider 프로필 | 유지 | 6 | — | X1에서 채택한 키 주입 방식의 설정 |
 | F7 | 위반 시험 | `openshell_violation_tests` | 위반 시험 스크립트(위치는 S0 자문 Q20) | 구성 | M | 의도적 위반 시험 스크립트 → 시험표·로그 발췌 | 유지 | 6 | — | 보안 검토 |
 
