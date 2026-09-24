@@ -15,6 +15,7 @@
 - 건수(summarize, 진입 함수 run): 실행 상태별 건수(상태 5개 모두, 0 포함), 원인 분류 코드별 건수(단위 L3의 코드 모두, 0
   포함, 모르는 코드는 unknown), 인프라 실패 재실행 대상 건수, 버전 키마다 서로 다른 값의 수·일치 여부·불일치 건수.
   사전 점검 값(expected_versions)을 주면 그 값과 대조하고, 주지 않으면 한 값뿐인지만 본다(불일치 건수는 null).
+  모양이 맞는 줄이 하나도 없으면 일치는 거짓이다(빈 참을 막는다). 건수는 줄 단위다(예정 목록 대조·미실행 건수는 다음 PR).
   사례 식별자·실행명·값 자체는 내지 않는다(오케스트레이터에게는 건수와 일치 여부만 준다, 로드맵 MT7).
 - 인프라 실패 재실행 대상(rerun_targets): 단위 L3 infra_rerun_eligible 하나로만 가른다(원인 코드 문자열을 여기서 따로
   적지 않는다). 목록은 실행 기록 줄의 순서(= 첫 실행의 순서, 룰북 B5)대로 {run_id, case_id, mode}다.
@@ -77,10 +78,10 @@ def summarize(lines: list, expected_versions: dict | None = None) -> dict:
         values = [line.get(key) for line in good]
         distinct = len({v if isinstance(v, str) else repr(v) for v in values})
         if expected_versions is None:
-            versions[key] = {"distinct": distinct, "match": distinct <= 1, "mismatch": None}
+            versions[key] = {"distinct": distinct, "match": bool(good) and distinct <= 1, "mismatch": None}
         else:
             mismatch = sum(1 for v in values if v != expected_versions[key])
-            versions[key] = {"distinct": distinct, "match": mismatch == 0, "mismatch": mismatch}
+            versions[key] = {"distinct": distinct, "match": bool(good) and mismatch == 0, "mismatch": mismatch}
     return {"lines": len(lines), "malformed": len(lines) - len(good), "execution_status": statuses,
             "cause_codes": codes, "infra_rerun": len(rerun_targets(lines)),
             "version_keys": versions, "versions_checked_against_precheck": expected_versions is not None}
@@ -126,26 +127,33 @@ def read_batch(path: Path) -> list:
     return lines
 
 
-def is_sealed_place(batch_dir: Path, outputs: Path) -> bool:
-    """묶음 실행 폴더가 봉인 자리(outputs/sealed/ 아래)인가. 이름만이 아니라 풀린 경로로도 보고(심볼릭 링크·다른 표기),
-    풀 수 없으면 봉인으로 본다(재실행 대상 목록이 outputs/ 아래로 새지 않게)."""
-    if batch_dir.parent.name.lower() == SEALED_NAME:
-        return True
+def sealed_place(run_dir: Path) -> bool:
+    """실행 폴더가 봉인 자리(outputs/sealed/ 아래)인가. 단위 E1 batch_run.sealed_place와 같은 규칙이다(E3는 E1을 import할
+    수 없어 옮겨 적었다): 적힌 경로와 풀린 경로 둘 다, outputs 폴더까지의 조상 이름에 sealed(대소문자 무시)가 있으면 봉인,
+    풀 수 없으면 봉인."""
     try:
-        sealed_root = (outputs / SEALED_NAME).resolve()
-        parent = batch_dir.resolve().parent
+        paths = (run_dir.absolute(), run_dir.resolve())
     except (OSError, RuntimeError):
         return True
-    return parent == sealed_root or sealed_root in parent.parents
+    for path in paths:
+        for ancestor in path.parents:
+            name = ancestor.name.lower()
+            if name == SEALED_NAME:
+                return True
+            if name == "outputs":
+                break
+    return False
 
 
 def extract(batch_dir: Path, *, outputs: Path, expected_versions: dict | None = None,
             clock: Callable[[], datetime] | None = None, sleep: Callable[[float], None] | None = None
             ) -> tuple[str, dict]:
     """추출 한 번(머리 설명). outputs는 outputs/ 폴더다. (자기 실행명, 건수)를 돌려준다(목록은 파일에만)."""
-    sealed = is_sealed_place(batch_dir, outputs)
-    home, other = (outputs / SEALED_NAME, outputs) if sealed else (outputs, outputs / SEALED_NAME)
     lines = read_batch(batch_file(batch_dir))
+    # 자리나 줄의 dataset 가운데 하나라도 봉인이면 봉인으로 본다(재실행 대상 목록의 사례 식별자가 outputs/ 아래로 새지 않게)
+    sealed = sealed_place(batch_dir) or any(isinstance(line, dict) and line.get("dataset") in types.SEALED_DATASETS
+                                            for line in lines)
+    home, other = (outputs / SEALED_NAME, outputs) if sealed else (outputs, outputs / SEALED_NAME)
     counts = summarize(lines, expected_versions)
     targets = rerun_targets(lines)
     kw: dict = {"clock": clock or trace_log.now_kst}

@@ -97,6 +97,22 @@ class ExtractTest(unittest.TestCase):
         self.assertTrue((self.outputs / "sealed" / run_id).is_dir())
         self.assertFalse((self.outputs / run_id).exists())  # 재실행 대상 목록이 outputs/ 아래로 새지 않는다
 
+    def test_sealed_dataset_lines_outside_the_sealed_place_still_go_under_sealed(self):
+        batch = self.outputs / "evaluate-260925070000"
+        batch.mkdir(parents=True)
+        line = {"run_id": "run_case-260925070001", "case_id": "c1", "mode": "full", "dataset": "holdout40",
+                "execution_status": "FAILED", "errors": [{"code": "PROVIDER_HTTP_5XX"}]}
+        (batch / "evaluation_batch_run-260925070000.jsonl").write_text(trace_log.dumps(line) + "\n")
+        run_id, counts = extract.extract(batch, outputs=self.outputs, clock=self.clock, sleep=self.clock.sleep)
+        self.assertEqual(counts["infra_rerun"], 1)
+        self.assertTrue((self.outputs / "sealed" / run_id).is_dir())  # fail-closed: 사례 식별자 목록은 봉인 자리로
+        self.assertFalse((self.outputs / run_id).exists())
+
+    def test_upper_case_sealed_name_counts_as_sealed(self):
+        self.assertTrue(extract.sealed_place(self.outputs / "Sealed" / "evaluate-260925100000"))
+        self.assertTrue(extract.sealed_place(self.outputs / "sealed" / "holdout40" / "evaluate-260925100000"))
+        self.assertFalse(extract.sealed_place(self.outputs / "evaluate-260925100000"))
+
     def test_errors_give_exception_names_only(self):
         cwd = os.getcwd()
         os.chdir(self.root)
@@ -116,6 +132,8 @@ class ExtractTest(unittest.TestCase):
         counts = extract.summarize(lines)
         self.assertEqual((counts["lines"], counts["malformed"], counts["cause_codes"]["unknown"]), (3, 2, 1))
         self.assertEqual(extract.rerun_targets(lines), [])
+        empty = extract.summarize([None, "x"])  # 모양이 맞는 줄이 없으면 버전 일치는 거짓(빈 참 방지)
+        self.assertFalse(any(v["match"] for v in empty["version_keys"].values()))
         with self.assertRaises(extract.ExtractError):
             extract.summarize(lines, {"policy_version": "x"})
 
