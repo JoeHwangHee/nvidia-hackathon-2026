@@ -9,6 +9,10 @@ requires-python = "==3.12.*"
 # NAT(nvidia-nat)는 X1(세로형 최소 통합 시험) 판을 앱 lock에 섞지 않고, 통합 방식(자문 명세서 Q1)을 정하는 작업이 더한다.
 dependencies = []
 
+# tradesentry <명령>(snapshot-build, snapshot-verify, detect, run-case, evaluate). python -m tradesentry.cli로도 부를 수 있다.
+[project.scripts]
+tradesentry = "tradesentry.cli.dispatch:main"
+
 [build-system]
 requires = ["uv_build>=0.11.28,<0.12"]
 build-backend = "uv_build"
