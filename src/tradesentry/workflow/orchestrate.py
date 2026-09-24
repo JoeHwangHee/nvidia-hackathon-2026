@@ -41,6 +41,10 @@ checklist: 모델 없이 check_comparability → get_history → decompose_hs(�
   막힌 시도까지 모든 시도를 센다(자료 계약 §8.1 "넘은 실행은 실제 값"). 거짓이면 도구에 닿은 시도만 센다(평가 검토
   권고 (가)). 흐름의 몫·도구 예산 판정은 이 값과 관계없다. 몫을 통과한 시도는 도구 예산 자리(단위 I6)에 한 번 더
   묻는다(도구 8회, 같은 인자 재호출 등은 I6 규칙). 실행한 도구는 8회를 넘지 않는다.
+- 대조할 것이 없으면 verify_evidence를 부르지 않는다: 초안에서 뽑은 metric_id와 근거 ID가 모두 0개면(단위 I5가
+  invalid_args로 거부하면서 시도 1회를 쓰는 호출) 시도로 세지 않고 건너뛰며, 다음 validator_result에 verify_skipped
+  참을 남긴다. 몫(특히 최종 verify_evidence 1회)을 쓰지 않는다. 도구 봉투의 retryable_error는 도구 쪽 결과라 모델
+  제공자 원인 코드(PROVIDER_*)가 되지 않는다(결정 기록 ⑯).
 - 코드는 모델의 틀린 상태를 고치지 않는다. 형식·검증기 문제는 수정 단계로 보내거나 INVALID로 끝낸다.
 
 다른 작업 단위를 부르는 자리(Ports). unit_ports가 그 단위들의 run을 부르는 얇은 배선을 한곳에 모았다. 보고서·
@@ -378,6 +382,7 @@ class _Flow:
         self.last_good_evidence: list[str] = []
         self.required = None  # 필수 근거(P5)는 orchestrate의 try 안에서 채운다(실패도 기록으로 남게)
         self.rejected: list = []
+        self.verify_skipped = False  # 바로 앞 verify_evidence를 대조할 것이 없어 건너뛰었나(다음 validator_result에 남긴다)
 
     # 한도와 도구 시도 ---------------------------------------------------------------------------------------------
     @property
@@ -448,6 +453,15 @@ class _Flow:
                                                    "envelope": envelope})
         return envelope
 
+    def verify(self, draft: dict | None, allowance: str) -> None:
+        """verify_evidence 예약 차례. 초안이 가리킨 metric_id·근거 ID가 모두 없으면 부르지 않는다(시도·몫을 쓰지 않는다)."""
+        refs = _draft_refs(draft)
+        self.verify_skipped = not refs["metric_ids"] and not refs["evidence_ids"]
+        if self.verify_skipped:
+            self.check_deadline()
+            return
+        self.attempt("verify_evidence", refs, source="code", allowance=allowance)
+
     # 조사자 ------------------------------------------------------------------------------------------------------
     def remaining(self, tools_enabled: bool = True) -> dict:
         """모델에게 알리는 남은 횟수. 도구를 주지 않는 차례(비교 불가)에는 비교·재조회 0회로 알린다."""
@@ -508,7 +522,9 @@ class _Flow:
                                                         "record_only": self.mode == "freeform",
                                                         "decision": "block" if blocked else "pass",
                                                         "findings": result["findings"],
-                                                        "rejected_requests": self.rejected})
+                                                        "rejected_requests": self.rejected,
+                                                        **({"verify_skipped": True} if self.verify_skipped else {})})
+        self.verify_skipped = False
         return result
 
     def state(self, phase: str, draft: dict | None, **extra) -> None:
@@ -564,7 +580,7 @@ class _Flow:
         self.stage = "final"
         self.sink.emit("stage_start", "final", {"stage": "final"})
         report = self.build(draft)
-        self.attempt("verify_evidence", _draft_refs(draft), source="code", allowance="verify")
+        self.verify(draft, "verify")
         result = self.check(report, "final")
         if not result["schema_ok"]:
             raise model_client.RunStop(cause_codes.SCHEMA_INVALID, "final", "checklist 보고서가 스키마 검사에서 막혔다")
@@ -606,7 +622,7 @@ class _Flow:
                            problems=review["problems"])
                 self.sink.emit("stage_end", "critic", {"stage": "critic"})
                 self.stage = "basic"
-            self.attempt("verify_evidence", _draft_refs(draft), source="code", allowance="verify")
+            self.verify(draft, "verify")
             check = self.check(report, "verify")
             if not check["schema_ok"]:
                 problems, findings = ["보고서 스키마 검사 실패"], check["findings"]
@@ -632,7 +648,7 @@ class _Flow:
         if draft is None or problems:
             raise self.invalid(cause_codes.SCHEMA_INVALID, "수정 1회 뒤에도 초안 형식 검사에 실패했다")
         report = self.build(draft)
-        self.attempt("verify_evidence", _draft_refs(draft), source="code", allowance="final_verify")
+        self.verify(draft, "final_verify")
         check = self.check(report, "final")
         if not check["schema_ok"]:
             raise self.invalid(cause_codes.SCHEMA_INVALID, "수정 1회 뒤에도 보고서 스키마 검사에 실패했다")

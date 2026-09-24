@@ -110,8 +110,8 @@ class FakePorts:
 
     def checklist_draft(self, inp):
         s = self.checklist_status
-        return {"review_status": s, "signal_status": {"unit_value": s, "share": "NOT_TRIGGERED"}, "claims": [],
-                "narrative": "", "hypotheses": []}
+        return {"review_status": s, "signal_status": {"unit_value": s, "share": "NOT_TRIGGERED"},
+                "claims": [{"claim_type": "change", "metric_id": "m-rU"}], "narrative": "", "hypotheses": []}
 
     def required_evidence(self, case):
         return ["parent_child_match_V_and_Q", "weight_share_decomposition"]

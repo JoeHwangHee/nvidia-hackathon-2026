@@ -6,6 +6,7 @@
 검토 1회차 뒤: 허용 상태 조합은 검증기 부류(freeform 기록만), 비교 불가 사례는 수정 단계에서도 도구 없음, 잘린 초안,
 critic_used 기준, 기록 없이 끝나던 두 경로, 배선(unit_ports)의 P4 감싸기·I6 한도·자료 상태·P3 근거 상태.
 """
+import copy
 import json
 import unittest
 from decimal import Decimal
@@ -16,7 +17,7 @@ from tradesentry.workflow import investigator
 from tradesentry.workflow import model_client as mc
 from tradesentry.workflow import orchestrate
 
-from ..I7.fakes import ok_body
+from ..I7.fakes import FakeClock, ScriptedTransport, ok_body
 from . import harness as h
 
 FREEFORM_CLAIM = {"claim_id": "c1", "claim_type": "change", "hs6": "850450", "partner": "CN", "period": "202401",
@@ -350,6 +351,66 @@ class ReviewRoundOneTest(unittest.TestCase):
         self.assertEqual(result["record"]["execution_status"], "COMPLETED")
         self.assertEqual([r["data"]["rejected_requests"] for r in h.events(records, "validator_result")],
                          [rejected, rejected])
+
+
+class CopyingTransport(ScriptedTransport):
+    """보낸 순간의 요청 본문을 떠 둔다(흐름이 같은 messages 목록에 뒤이어 덧붙이므로)."""
+
+    def send(self, payload, timeout_ms):
+        return super().send(copy.deepcopy(payload), timeout_ms)
+
+
+class RoundThreeTest(unittest.TestCase):
+    """검토 3회차(실측 뒤): 도구를 주지 않는 조사자 요청은 tools 없이 초안 요청 메시지로 끝나고, 대조할 것이 없는
+    verify_evidence는 부르지 않으며, 도구 봉투의 거부(retryable_error)는 모델 제공자 원인 코드가 되지 않는다."""
+
+    def test_withheld_tool_requests_carry_no_tools_and_end_with_the_draft_request(self):
+        # 실측 freeform과 같은 모양: 비교 2회를 다 쓴 뒤에도 모델이 두 번 더 부른다 → 형식 문제로 수정 단계
+        script = [h.tools_answer("get_history"), h.tools_answer("decompose_hs"), h.tools_answer("decompose_hs"),
+                  h.tools_answer("decompose_hs"), h.draft_answer()]
+        clock = FakeClock()
+        transport = CopyingTransport(script, clock)
+        result, records, fake, _ = h.run_case("agent", [], clock=clock, transport=transport)
+        self.assertEqual(result["record"]["execution_status"], "COMPLETED")
+        payloads = transport.payloads
+        self.assertEqual(["tools" in p for p in payloads], [True, True, False, False, True])
+        self.assertEqual(["tool_choice" in p for p in payloads], [True, True, False, False, True])
+        for index in (2, 3):
+            self.assertEqual(payloads[index]["messages"][-1], {"role": "user", "content": investigator.DRAFT_REQUEST})
+        counts = [sum(m["content"] == investigator.DRAFT_REQUEST for m in p["messages"] if m["role"] == "user")
+                  for p in payloads]
+        self.assertEqual(counts, [0, 0, 1, 2, 2])  # 막힌 차례마다 한 번, 대화에 남는다
+        self.assertEqual(blocks(records), [("basic", "comparison_limit"), ("basic", "comparison_limit")])
+
+    def test_nothing_to_verify_skips_verify_evidence_without_using_a_share(self):
+        empty = h.draft_answer(claims=[])
+        result, records, fake, _ = h.run_case("full", [empty, h.critic_answer()])
+        record = result["record"]
+        self.assertEqual((record["execution_status"], record["errors"]), ("COMPLETED", []))
+        self.assertEqual([n for n, _ in fake.tool_calls], ["check_comparability", "get_history"])
+        self.assertEqual(record["tool_attempts"], 2)
+        skipped = [r["data"].get("verify_skipped") for r in h.events(records, "validator_result")]
+        self.assertEqual(skipped, [None, True])  # 첫 검사(스키마만) 뒤 verify 차례에서 건너뛰었다
+        # 수정 단계 뒤 최종 차례도 같다(최종 verify_evidence 몫 1회를 쓰지 않는다)
+        result, records, fake, _ = h.run_case("agent", [empty, empty], h.FakePorts(checks=[h.PASS, h.BLOCK, h.PASS]))
+        self.assertEqual(result["record"]["execution_status"], "COMPLETED")
+        self.assertNotIn("verify_evidence", [n for n, _ in fake.tool_calls])
+        self.assertEqual([r["data"].get("verify_skipped") for r in h.events(records, "validator_result")],
+                         [None, True, True])
+        self.assertEqual(blocks(records), [])
+
+    def test_tool_refusal_in_an_envelope_is_not_a_provider_error(self):
+        fake = h.FakePorts()
+        refused = dict(h.ENVELOPES["verify_evidence"], evidence_ids=[],
+                       retryable_error={"code": "invalid_args", "message": "대조할 것이 없다"})
+        original = fake.tool
+        fake.tool = lambda name, args: refused if name == "verify_evidence" else original(name, args)
+        for mode, script in (("full", [h.draft_answer(), h.critic_answer()]), ("checklist", [])):
+            with self.subTest(mode=mode):
+                result, _, _, _ = h.run_case(mode, list(script), fake)
+                record = result["record"]
+                self.assertEqual((record["execution_status"], record["errors"]), ("COMPLETED", []))
+                self.assertFalse(any(str(e.get("code", "")).startswith("PROVIDER") for e in record["errors"]))
 
 
 class UnitPortsTest(unittest.TestCase):
