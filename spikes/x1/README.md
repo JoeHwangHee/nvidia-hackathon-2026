@@ -173,7 +173,7 @@ nemoclaw x1-demo agent --agent main --json --timeout 300 \
 #         (openshell-sandbox)·명령줄 조각(/dev/null)과 출력(000, curl: (22) ... 403)으로 보아 1단계 8의 curl 줄과 같은 형태로 본다 [추론]
 #    DT2: /usr/bin/python3 /tmp/x1-tools/net_probe.py로 POST https://integrate.api.nvidia.com/v1/chat/completions
 #         (스크립트 경로는 demo 로그 633행 명령줄, method·URL은 [T1..T4] 출력 JSON)
-openshell sandbox exec -n x1-demo -- /usr/bin/python3 /tmp/x1-tools/net_probe.py POST https://integrate.api.nvidia.com/v1/chat/completions
+openshell sandbox exec -n x1-demo -- /usr/bin/python3 /tmp/x1-tools/net_probe.py POST https://integrate.api.nvidia.com/v1/chat/completions   # DT2. 위 조각과 net_probe.py 사용법을 이은 형태 [추론]
 #    DT3: node가 띄운 curl -> GET https://integrate.api.nvidia.com/v1/models, DT4: node가 띄운 curl -> api.github.com:443.
 #         node가 curl을 띄운 방법은 기록 없음 [미확인]. 로그(642·643·652행)는 curl의 허용·거부만 보인다
 
