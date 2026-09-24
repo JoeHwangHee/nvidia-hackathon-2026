@@ -16,3 +16,6 @@
 | `20260924-2010-user-decision-key-rule-interpretation.md` | 2026-09-24(목) 20:10 | 절대 규칙 1·요건 (c)의 "샌드박스 안" 해석 A와 새 규칙 문구, NVIDIA 키 재발급 시점(마무리 때), NemoClaw 설치기 고지 전문 | 사용자 | 유효 |
 | `20260924-2035-user-decision-s0-no-advisory.md` | 2026-09-24(목) 20:35 | S0(앱 뼈대) 외부 자문: 더 반영할 것 없음 | 사용자 | 유효 |
 | `20260924-2055-user-decision-pr18-confirmation.md` | 2026-09-24(목) 20:55 | 자료 계약 PR #18 확인 항목 여덟 가지 승인, 실행 결과 기록 파일 이름 `scorer_results-{시각}.jsonl`과 단위 C3 분리 | 사용자 | 유효 |
+| `20260924-2212-user-decision-impl-plan-after-s0.md` | 2026-09-24(목) 22:12 | 두 트랙 구현 계획은 S0(앱 뼈대) 병합 뒤 따로 세우고 사용자가 보고 승인한 뒤 착수 | 사용자 | 유효 |
+| `20260924-2212-user-decision-snapshot-build-and-g0.md` | 2026-09-24(목) 22:12 | 최종 스냅샷 빌드 파일 `data/snapshots/{snapshot_id}/snapshot_build.sqlite`와 `g0` 해석(대상국을 뺀 15개국 중 상위 5개국) | 사용자 | 유효 |
+| `20260924-2212-orchestrator-decision-s0-scaffold.md` | 2026-09-24(목) 22:12 | S0가 정할 위치와 S0 뼈대의 약속 확정(계획 경로 표를 바꾸는 항목 제외) | 오케스트레이터 | 유효 |
