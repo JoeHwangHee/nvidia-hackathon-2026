@@ -4,6 +4,9 @@ S0 뼈대라 아직 채점하지 않고, 분명한 오류 문장과 종료 코�
 구현할 때 지킬 것(자료 계약 docs/rules/DATA_CONTRACT_V1.md §10.3): 출력은 outputs/score-{시각}/에 쓰고, 그 실행명은
 N8대로 이 채점기가 직접 확보한다. tradesentry 패키지 전부(등록부·커널 포함)와 eval.datagen을 직접이든 간접이든
 import하지 않는다(tests/test_boundaries.py가 본다).
+- 봉인 묶음 채점 때 확보한 실행 폴더 이름을 표준 출력 첫 줄로 알리고, 표준 출력·오류 출력에는 그 이름과 끝 상태만
+  낸다(자료 계약 §10.3 N10).
+- 종료 코드 0은 출력을 끝까지 썼을 때만 낸다.
 """
 import argparse
 import sys
