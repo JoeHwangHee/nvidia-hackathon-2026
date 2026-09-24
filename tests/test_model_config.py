@@ -69,6 +69,7 @@ class ModelConfigTest(unittest.TestCase):
         self.assertFalse(any(isinstance(v, float) for v in walk(cfg)))
         self.assertIsInstance(cfg["request"]["temperature"], Decimal)
         self.assertIs(cfg["request"]["enable_thinking"], False)
+        self.assertEqual(cfg["request"]["structured_output"], "off")  # 켜려면 config_version을 올린다(결정 기록 ⑯)
         for value in walk(cfg):
             if isinstance(value, str):
                 self.assertNotRegex(value, r"(?i)bearer|secret")

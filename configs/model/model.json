@@ -7,7 +7,8 @@
     "temperature": 1.0,
     "top_p": 0.95,
     "max_tokens": 2048,
-    "enable_thinking": false
+    "enable_thinking": false,
+    "structured_output": "off"
   },
   "retry": {
     "max_5xx_retries": 3,
