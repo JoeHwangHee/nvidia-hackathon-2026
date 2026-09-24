@@ -18,12 +18,13 @@
   - 요건 (b)(외부 전송은 NVIDIA 추론 엔드포인트만, L7 method·path 명시, `rules` 생략과 범용 바이너리 + `/**` 금지) 판정과 통과 증거는 최종 4판 정책(17:55 뒤, `nvidia` 블록 하나) 실행만 쓴다. 2판·3판에는 규칙 없는 `openclaw_gateway_dialback` 블록이 남아 있었다.
   - 4판 턴은 SKILL.md를 다시 읽지 않고 exec(셸 명령 실행 도구)만 두 번 불렀다(CLI 두 번, 각각 NIM 1회). 스킬을 읽고 CLI를 부른 기록은 3판 턴(17:46)이다. 같은 세션의 앞 턴 문맥을 썼다는 설명은 `[추론]`이고, 새 세션으로 4판에서 다시 돌리는 일은 MT5에서 한다.
   - 요건 (c)(API 키를 샌드박스 안에 두지 않는다)는 해석 A(2026-09-24(목) 사용자 결정, 결정 기록 `20260924-2010-user-decision-key-rule-interpretation.md`)에 따라 충족. 키 조회는 샌드박스 사용자(UID 998) 권한으로 닿는 곳 기준으로 실제 키 0건이었고, 실제 키는 샌드박스 컨테이너 안에서 root로 도는 감독 프로세스(supervisor)가 게이트웨이에서 받아 가진다(`artifacts/openshell/violation_tests.md` 머리말 "키 조회 범위").
-  - 조건: NemoClaw `agent` 래퍼가 OpenClaw 결과의 `replayInvalid` 표식(OpenClaw 결과는 성공, NemoClaw 기준으로는 미완료 표식) 때문에 종료 코드 1을 냈다. 원인은 미확인이다. 스킬 호출 성공률의 증거를 세는 규칙을 MVP 시험 전에 정한다(`docs/tracking/findings.md`).
+  - 조건: NemoClaw `agent` 래퍼가 OpenClaw 결과의 `replayInvalid` 표식(OpenClaw 결과는 성공, NemoClaw 기준으로는 미완료 표식) 때문에 종료 코드 1을 냈다. 원인은 미확인이고 조사는 MT5에서 한다(`docs/tracking/findings.md`). 스킬 호출 성공률의 증거를 세는 규칙은 결정 기록 `20260924-2315-user-decision-impl-plan-approval.md` D5로 정했다(로드맵 V1 행).
   - 키 주입 방식은 credential placeholder rewrite(헤더 자리표시 값 치환. 샌드박스 안 감독 프로세스의 정책 프록시가, 게이트웨이에서 받은 자격 증명으로 요청 시점에 자리표시 값을 실제 키로 바꾼다)로 정했다(`docs/tracking/decisions/20260924-1556-x1-key-injection.md`). 추론 블록에 node를 넣는 예외는 `docs/plan/DEV_PLAN.md` §4.8에 적었다.
   - 증거는 `artifacts/openshell/violation_tests.md`와 `artifacts/openshell/logs/`, 재현 절차는 `spikes/x1/README.md`다.
 - **PR #18 확인**(2026-09-24(목) 20:19): 사용자가 PR #18의 확인 항목 여덟 가지(N5·N7·N11·N12와 `run_id`=실행명, "증거 복사"·"커밋 사본", 출력 방식 (나), 봉인 관련 출력 범위, 작성 중 더한 `[DESIGN]` 항목, 룰북 부록 41, 설계 명세 경로 표 맞추기, 앱 뼈대(S0) 외부 자문 "반영 없음"에 따른 따로 병합)를 모두 승인했다. 실행 결과 기록 파일 이름은 `scorer_results-{시각}.jsonl`로 바꾸기로 골랐고, 그에 따라 단위 C3을 C3·C4로 나눈 것(65단위)도 21:51에 승인했다. 결정 기록은 `20260924-2055-user-decision-pr18-confirmation.md`다. 봉인 관련 출력 범위는 `20260924-2003-orchestrator-decision-sealed-output-scope.md`, S0 외부 자문 "반영 없음"(같은 날 20:15)은 `20260924-2035-user-decision-s0-no-advisory.md`에 있다.
 - **사용자 결정**(2026-09-24(목) 21:51): 구현 계획은 S0 병합 뒤 따로 세우고 사용자가 오늘 밤 보고 승인한 뒤 두 트랙을 시작한다. 최종 스냅샷 빌드 파일은 `data/snapshots/{snapshot_id}/snapshot_build.sqlite`(동결 폴더에 새 이름, 기존 파일 불변)다. `g0`는 대상국을 뺀 15개국 중 2023년 수입금액 상위 5개국이다. 결정 기록 `20260924-2212-user-decision-impl-plan-after-s0.md`, `20260924-2212-user-decision-snapshot-build-and-g0.md`.
 - **앱 뼈대 S0**(2026-09-24(목), S0 PR): 패키지 15개와 `eval/scorer/`·`eval/datagen/`, 단위 표대로 단위 파일 뼈대(저장소에 두는 앱·커널 54개, 기존 S1 포함), 단위 등록부와 공통 실행기(실행명 확보 N8), 골든 시험 틀, 경계 시험, CLI 진입점 `tradesentry`, Python 3.12.13·uv lock. 시험 `uv run --locked python -m unittest discover -s tests -v`는 종료 코드 0이다(Ran 139: ok 85, skipped 54). 외부 자문은 반영 없음이고(결정 기록 `20260924-2035-user-decision-s0-no-advisory.md`), S0가 정한 위치와 약속은 결정 기록 `20260924-2212-orchestrator-decision-s0-scaffold.md`에 있다.
+- **구현 계획 승인**(2026-09-24(목) 23:09): 자료 계약 PR #18과 S0 PR이 병합된 뒤, 사용자가 두 트랙 구현 계획과 결정 열한 가지(D1~D8, D16~D18)를 승인했고 두 트랙 구현을 시작했다. 결정 기록 `20260924-2315-user-decision-impl-plan-approval.md`.
 - **NIM 연결**: NIM(NVIDIA 클라우드 추론 API)의 Nemotron(NVIDIA 언어 모델)에서 native tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능) 왕복은 구 개발계획의 G4 관문 시험(NIM으로 모델의 도구 호출 왕복을 확인한 이전 계획의 시험)에서 확인한 기록이 있다(`docs/plan/DEV_PLAN.md` §3.1). NAT(NVIDIA 에이전트 실행 추적·평가 도구 모음) 연동은 아직 시작하지 않았다(같은 문서 §3.3). 확인 스크립트는 `scripts/g4_nim_toolcall_probe.py`이고, 이번 문서 작업에서는 다시 돌리지 않았다.
 
 ## 남은 일
@@ -31,11 +32,10 @@
 앱 뼈대(S0)가 있고 단위 구현은 아직 없다. 순서·날짜·완료 기준의 정본은 `docs/plan/ROADMAP.md` §1·§2다.
 
 1. 앱 뼈대 S0는 S0 PR로 들어갔다(위 "된 것"). X1 세로형 최소 통합 시험(NemoClaw(OpenShell, 곧 에이전트를 격리해 돌리는 NVIDIA 샌드박스 런타임 위에서 에이전트를 돌리는 NVIDIA 참조 스택) → 스킬 → 샌드박스 안 CLI → NIM → NAT 추적 → 차단 로그)은 조건부 통과했다(위 "된 것"). `replayInvalid` 원인 조사는 MT5에서 한다
-2. 두 트랙 구현 계획: S0 병합 직후 세우고 사용자가 보고 승인한다(결정 기록 `20260924-2212-user-decision-impl-plan-after-s0.md`). 자료 계약 PR #18은 병합됐다
-3. 두 트랙 구현: 데이터 트랙 DT1~DT8, 모델 트랙 MT1~MT7(단위별 구현 뒤 조립 작업 AS1~AS4)
-4. 2026-09-25(금) MVP(최소 기능 제품) 시험(로드맵 §3 합격 체크리스트)
-5. 룰북 `RB-1`(평가 룰북의 첫 동결 버전) 동결, holdout40(봉인한 합성 평가 사례 40건)·`real_sealed`(봉인한 실자료 평가 묶음) 채점 대상 실행과 정답 대조 채점, 결과·재현 묶음, 제출(마감 2026-09-28(월) 23:59 KST)
-6. 대회 마무리(제출 뒤): NVIDIA 키 재발급 안내와 사본 정리(결정 기록 `20260924-2010-user-decision-key-rule-interpretation.md` ③). 재발급은 사용자가 하고 오케스트레이터가 안내한다. 사본 위치와 정리할 곳은 `docs/operations.md`의 "키 사본 위치와 교체 때 정리할 곳" 절이다
+2. 두 트랙 구현(계획 승인됨, 결정 기록 `20260924-2315-user-decision-impl-plan-approval.md`): 데이터 트랙 DT1~DT8, 모델 트랙 MT1~MT7(단위별 구현 뒤 조립 작업 AS1~AS4)
+3. 2026-09-25(금) MVP(최소 기능 제품) 시험(로드맵 §3 합격 체크리스트)
+4. 룰북 `RB-1`(평가 룰북의 첫 동결 버전) 동결, holdout40(봉인한 합성 평가 사례 40건)·`real_sealed`(봉인한 실자료 평가 묶음) 채점 대상 실행과 정답 대조 채점, 결과·재현 묶음, 제출(마감 2026-09-28(월) 23:59 KST)
+5. 대회 마무리(제출 뒤): NVIDIA 키 재발급 안내와 사본 정리(결정 기록 `20260924-2010-user-decision-key-rule-interpretation.md` ③). 재발급은 사용자가 하고 오케스트레이터가 안내한다. 사본 위치와 정리할 곳은 `docs/operations.md`의 "키 사본 위치와 교체 때 정리할 곳" 절이다
 
 ## 사용자 결정 대기
 
@@ -46,8 +46,7 @@
 - 룰북 `RB-1` 동결 때 확인할 부록 13개 항목: 로드맵 §6.2
 - 대회 참가 조건 확인(교육 미션 DLI(NVIDIA 교육 과정) 강의는 늦어도 2026-09-27(일)까지): 로드맵 §6.5
 - 공개 저장소 방식 결정: 2026-09-28(월) 오전, 로드맵 §6.1
-- 계획 문서 작업 중 오케스트레이터(작업을 나누고 PR을 병합하는 주관 에이전트)가 정해 둔 해석 가운데 사용자 확인이 남은 것: `docs/tracking/decisions/20260924-0810-docs-run-review-decisions.md`의 2·4·6·9·10·11·12·18·19행. 행마다 "사용자 확인" 칸에 확인 시점이 있다. 1·5·13행은 2026-09-24(목)에 승인했다
-- X1 뒤 개발 기계 정리(선택): 사용자 zsh 시작 설정 파일(`.zshrc`)에 NemoClaw가 더한 PATH 블록을 둘지. 되돌리는 방법은 `spikes/x1/README.md`의 "개발 기계 되돌리기" 절에 있다. 명령은 공개 문서(판을 고정한 OpenShell·NemoClaw 문서, Homebrew 공식 manpage(명령 설명서), Docker 공식 문서)로 확인한 것만 적었고, LaunchAgent(로그인할 때 프로그램을 띄우는 macOS 설정) 파일 삭제 등은 `[미확인]`으로 남았다. 1단계 게이트웨이 상태 저장소에 키가 남았는지는 `[미확인]`이고, 키 사본 정리는 대회 마무리 때 한다(위 "남은 일" 6). X1 PR의 병합 조건은 아니다
-- MVP 합격 체크리스트 1번(스킬 호출 성공률)의 증거를 세는 규칙: NemoClaw 래퍼의 종료 코드 1(`replayInvalid`)을 어떻게 볼지, 요청 하나에 CLI가 두 번 돈 경우를 몇 번으로 셀지. MVP 시험 전에 오케스트레이터와 사용자가 정한다(`docs/tracking/findings.md`의 `replayInvalid` 항목)
-- 아직 어느 문서에도 규칙이 없어 정해야 하는 것: `docs/tracking/findings.md`의 해당 항목(재실행 규칙의 빈칸, 봉인 해시 목록의 생성 시각, `checklist`(모델 없는 고정 체크리스트 비교 모드) 모드에서 검증기가 막았을 때의 상태, 시험표 행의 작성 주체, 비밀값 검사 스크립트)
-- 계획 경로 표에 더할 위치: 재채점용 보고서 원문의 커밋 위치(자문 명세서 Q10), `g0` 결과 파일, 화면 `app.py`, 프롬프트·모델 설정 `configs/model/`. 구현 계획 승인 때 함께 여쭙는다(결정 기록 `20260924-2212-orchestrator-decision-s0-scaffold.md`)
+- 계획 문서 작업 중 오케스트레이터(작업을 나누고 PR을 병합하는 주관 에이전트)가 정해 둔 해석 가운데 사용자 확인이 남은 것: `docs/tracking/decisions/20260924-0810-docs-run-review-decisions.md`의 4·6·9·10·11·12·18·19행. 행마다 "사용자 확인" 칸에 확인 시점이 있다. 1·5·13행은 2026-09-24(목)에 승인했고, 2행(`g0` 해석)은 같은 날 21:51 사용자 결정으로 확정했다(결정 기록 `20260924-2212-user-decision-snapshot-build-and-g0.md` ②)
+- X1 뒤 개발 기계 정리(선택): 사용자 zsh 시작 설정 파일(`.zshrc`)에 NemoClaw가 더한 PATH 블록을 둘지. 되돌리는 방법은 `spikes/x1/README.md`의 "개발 기계 되돌리기" 절에 있다. 명령은 공개 문서(판을 고정한 OpenShell·NemoClaw 문서, Homebrew 공식 manpage(명령 설명서), Docker 공식 문서)로 확인한 것만 적었고, LaunchAgent(로그인할 때 프로그램을 띄우는 macOS 설정) 파일 삭제 등은 `[미확인]`으로 남았다. 1단계 게이트웨이 상태 저장소에 키가 남았는지는 `[미확인]`이고, 키 사본 정리는 대회 마무리 때 한다(위 "남은 일" 5). X1 PR의 병합 조건은 아니다
+- 아직 어느 문서에도 규칙이 없어 정해야 하는 것: `docs/tracking/findings.md`의 해당 항목(재실행 규칙의 빈칸, 봉인 해시 목록의 생성 시각, 시험표 행의 작성 주체, 비밀값 검사 스크립트)
+- `checklist` 모드에서 스키마 검사가 막았을 때의 상태 문구(D1은 검증기 차단만 적었다): 2026-09-25(금) 09:00 사용자 확인(`docs/tracking/findings.md`의 해당 항목)
