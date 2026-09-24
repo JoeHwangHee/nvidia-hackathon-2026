@@ -1523,7 +1523,7 @@ CLI(명령줄 실행 도구)는 `tradesentry <명령>` 하나로 모은다.
 
 - **정한 것**
   - 근거 문서가 확인한 옵션은 `request_body_credential_rewrite: true`(REST)와 `websocket_credential_rewrite: true`다. 치환 대상은 요청 본문(UTF-8 JSON·form·text)의 placeholder다 `[사실: R3 문서 §1]`.
-  - NIM API는 `Authorization: Bearer` 헤더로 키를 받는다 `[사실: 대회 조사 문서 §7-2]`. 헤더 주입은 `[미확인]`이다. provider 방식의 자격증명 전달("environment placeholders and proxy rewrite")은 R3 문서도 `[추론]`으로 적었다. X1에서 확인한다.
+  - NIM API는 `Authorization: Bearer` 헤더로 키를 받는다 `[사실: 대회 조사 문서 §7-2]`. 헤더 주입은 `[미확인]`이다. provider 방식의 자격증명 전달("environment placeholders and proxy rewrite")은 R3 문서도 `[추론]`으로 적었다. X1에서 확인한다. X1 결과: 헤더 치환을 확인했다(결정 기록 `20260924-1556-x1-key-injection.md`).
 - **묻는 것**
   1. OpenShell provider 설정으로 요청 헤더(`Authorization: Bearer`)에 자격증명을 넣는 방법을 아는가? 알려진 제약은?
   2. 헤더 주입이 안 되면 `inference.local`이 유일한 경로인가, 다른 대안이 있는가? 단, 키를 샌드박스에 넣는 우회는 쓰지 않는다.
@@ -1635,7 +1635,7 @@ CLI(명령줄 실행 도구)는 `tradesentry <명령>` 하나로 모은다.
 |---|---|---|---|---|
 | 1 | macOS + Docker + 알파 단계 NemoClaw 조합이 문서대로 돌지 않을 수 있다 | NemoClaw 시연 경로, X1 | X1 3시간(조정값). 대체 경로 Brev → OpenShell만 | `[미확인]` |
 | 2 | Docker 안 리눅스 커널에서 Landlock이 실제로 집행되는지 모른다(`best_effort`) | 통제 ①(저장소 경로 차단) | 미끼 파일 위반 시험으로 실측한다. 집행되지 않으면 정답 파일을 샌드박스에 아예 두지 않고, 통제 ①이 기술적으로 성립하지 않았다고 적는다 | `[미확인]` |
-| 3 | 헤더(`Authorization: Bearer`)에 키를 넣는 주입이 되는지 모른다 | 키 주입 후보 하나 | X1에서 실제로 성공한 방식만 채택한다(Q6, Q13) | `[미확인]` |
+| 3 | 헤더(`Authorization: Bearer`)에 키를 넣는 주입이 되는지 모른다 | 키 주입 후보 하나 | X1에서 실제로 성공한 방식만 채택한다(Q6, Q13). X1 결과: 헤더 치환을 확인했다(결정 기록 `20260924-1556-x1-key-injection.md`) | `[미확인]` |
 | 4 | `inference.local` 전달과 CLI 요청 형식이 맞물리는지 모른다 | 키 주입 후보 하나 | X1 | `[미확인]` |
 | 5 | 두 키 주입 방식이 모두 실패할 수 있다 | 채점 대상 실행 경로 전체 | 키를 샌드박스에 넣는 우회를 하지 않고 즉시 사용자 결정을 받는다 | `[미확인]` |
 | 6 | 허용 이벤트 행의 형식과, 파일시스템 거부가 `openshell logs`에 남는지 모른다 | 요건 (a)·(d)의 증거 | 허용 행이 없으면 앱 기록으로 대신하고 그 사실을 적는다. 파일시스템 거부 로그가 없으면 라이브 정책 조회 결과를 함께 남긴다 | `[미확인]` |
