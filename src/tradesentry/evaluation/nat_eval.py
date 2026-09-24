@@ -186,7 +186,11 @@ def _batch_lines(batch_dir: Path) -> list:
 
 def summarize_batch(batch_dir: Path) -> dict:
     """평가 묶음 실행 폴더 하나의 NAT 사후 평가 요약. 사례 실행 폴더는 묶음 폴더의 형제(run_id 이름)다."""
-    if batch_dir.parent.name == "sealed":
+    try:
+        resolved = batch_dir.resolve()
+    except (OSError, RuntimeError):
+        raise NatEvalError("묶음 실행 폴더를 풀 수 없다") from None
+    if "sealed" in (batch_dir.parent.name.lower(), resolved.parent.name.lower()):
         raise NatEvalError("봉인 묶음의 NAT 프로파일은 금지 해제 조건 전에 읽지 않는다(자료 계약 §10.3 N10)")
     runs = []
     for line in _batch_lines(batch_dir):

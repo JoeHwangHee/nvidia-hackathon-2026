@@ -90,6 +90,10 @@ class BatchSummaryTest(unittest.TestCase):
         os.rename(self.result.run_dir, moved)  # 봉인 자리를 흉내 낸 임시 폴더
         with self.assertRaises(nat_eval.NatEvalError):
             nat_eval.summarize_batch(moved)
+        alias = self.outputs / "alias"
+        alias.symlink_to(sealed, target_is_directory=True)
+        with self.assertRaises(nat_eval.NatEvalError):  # 심볼릭 링크로 봉인 자리에 닿아도 읽지 않는다
+            nat_eval.summarize_batch(alias / moved.name)
 
     def test_bad_input(self):
         for bad in ({"runs": [{"mode": "fast"}]}, {"runs": "x"}, {"lines": []}):

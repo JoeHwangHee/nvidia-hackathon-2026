@@ -126,11 +126,24 @@ def read_batch(path: Path) -> list:
     return lines
 
 
+def is_sealed_place(batch_dir: Path, outputs: Path) -> bool:
+    """묶음 실행 폴더가 봉인 자리(outputs/sealed/ 아래)인가. 이름만이 아니라 풀린 경로로도 보고(심볼릭 링크·다른 표기),
+    풀 수 없으면 봉인으로 본다(재실행 대상 목록이 outputs/ 아래로 새지 않게)."""
+    if batch_dir.parent.name.lower() == SEALED_NAME:
+        return True
+    try:
+        sealed_root = (outputs / SEALED_NAME).resolve()
+        parent = batch_dir.resolve().parent
+    except (OSError, RuntimeError):
+        return True
+    return parent == sealed_root or sealed_root in parent.parents
+
+
 def extract(batch_dir: Path, *, outputs: Path, expected_versions: dict | None = None,
             clock: Callable[[], datetime] | None = None, sleep: Callable[[float], None] | None = None
             ) -> tuple[str, dict]:
     """추출 한 번(머리 설명). outputs는 outputs/ 폴더다. (자기 실행명, 건수)를 돌려준다(목록은 파일에만)."""
-    sealed = batch_dir.parent.name == SEALED_NAME
+    sealed = is_sealed_place(batch_dir, outputs)
     home, other = (outputs / SEALED_NAME, outputs) if sealed else (outputs, outputs / SEALED_NAME)
     lines = read_batch(batch_file(batch_dir))
     counts = summarize(lines, expected_versions)

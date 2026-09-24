@@ -88,6 +88,15 @@ class ExtractTest(unittest.TestCase):
         self.assertNotIn("run_case-", out.getvalue())
         self.assertEqual(trace_log.loads(second)["infra_rerun"], 3)
 
+    def test_sealed_place_reached_through_a_symlink_counts_as_sealed(self):
+        result = self.batch(self.outputs / "sealed")
+        alias = self.outputs / "alias"
+        alias.symlink_to(self.outputs / "sealed", target_is_directory=True)
+        run_id, _ = extract.extract(alias / result.run_dir.name, outputs=self.outputs, clock=self.clock,
+                                    sleep=self.clock.sleep)
+        self.assertTrue((self.outputs / "sealed" / run_id).is_dir())
+        self.assertFalse((self.outputs / run_id).exists())  # 재실행 대상 목록이 outputs/ 아래로 새지 않는다
+
     def test_errors_give_exception_names_only(self):
         cwd = os.getcwd()
         os.chdir(self.root)
