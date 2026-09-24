@@ -4,7 +4,7 @@ import unittest
 from decimal import Decimal
 
 from tradesentry.metrics import decompose
-from tradesentry.workflow import investigator
+from tradesentry.workflow import investigator, model_client
 
 SNAP = "controlled_fixture_v0"
 
@@ -63,6 +63,20 @@ class CompactRequiredTest(unittest.TestCase):
                          {"unit_value": {"MONITOR/composition_explained": ["a", "b"], "MAINTAIN/unexplained": ["c"]}})
         other = {"families": {"unit_value": {"claim_metrics": ["U"]}}}
         self.assertIs(investigator.compact_required(other), other)
+
+
+class StatusValueFormatTest(unittest.TestCase):
+    """AS2 5회차: 초안 형식 줄과 초안 요청 메시지의 상태 값은 글자만 둔다(뜻 풀이를 붙이면 모델이 값에 옮겨 적는다)."""
+
+    PLAIN = '"review_status": "MAINTAIN|MONITOR|HOLD"'
+
+    def test_format_line_and_draft_request_carry_bare_values(self):
+        self.assertIn(self.PLAIN, investigator.DRAFT_REQUEST)
+        prompts = model_client.load_model_config().prompts
+        self.assertIn(self.PLAIN, prompts["investigator"])
+        for text in (investigator.DRAFT_REQUEST, prompts["investigator"].split("초안 형식", 1)[1]):
+            self.assertNotIn("MAINTAIN(", text)
+            self.assertNotIn("MONITOR(", text)
 
 
 if __name__ == "__main__":

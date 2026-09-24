@@ -6,6 +6,7 @@
 - `config_version` `model-0.3`: 조사자·Critic 지침에 신호별 판정 규칙(판정 정책 P3과 같은 조건), 도구 인자와 재조회 인자 모양, 단가 신호의 분해·비교국 조회를 한 차례에 부르라는 지시를 더했다(AS2 2회차 실측 원인, 결정 기록 `docs/tracking/decisions/20260925-0605-model-decision-as2-run-case.md` ⑬). 요청 설정은 바꾸지 않았다.
 - `config_version` `model-0.4`: 판정 규칙을 분해 봉투의 모델용 보기에 더한 판정 보조 값(`rule_view`: U0 대비 %로 바꾼 within_effect·residual·합과 하위품목 |r_U@| 최대)으로 적고 수치 예를 더했다. 필수 근거 보기를 계열별 `판정/판정 근거 → 코드`로 줄였다(AS2 3회차, 같은 결정 기록 ⑭).
 - `config_version` `model-0.5`: 조사자·Critic 지침에 세 상태의 뜻 표(MONITOR = 설명됨, MAINTAIN = 설명 안 됨·계속 검토, HOLD = 자료 부족)와 narrative·상태 일치 규칙, Critic의 첫 점검(상태 뒤바뀜), 초안 형식·초안 요청 메시지의 상태 값 뜻, 필수 근거 보기의 설명(근거 ID가 아님), `freeform` 주장 8개 이하를 더했다(AS2 4회차, 같은 결정 기록 ⑮).
+- `config_version` `model-0.6`: 초안 형식 줄과 초안 요청 메시지의 상태 값 옆 뜻 풀이를 뺐다(모델이 `"MAINTAIN(설명 안 됨·계속 검토)"`처럼 값에 옮겨 적어 초안 형식 검사에서 막힘). 뜻은 지침 본문에만 두고 표를 한 문단으로 줄였으며, "비교국과의 차이는 설명되지 않음의 근거가 아니다"를 더했다(AS2 5회차, 같은 결정 기록 ⑯).
 - `investigator.txt`: 조사자 공통 지침(판정 뜻과 신호별 판정 규칙, 금지 문구, 도구 사용과 인자, 초안 JSON 형식). 금지 낱말 목록은 검증기(단위 R3)의 금지 문구 목록(한국어 62개, 영문 앞부분 9개)과 같아야 한다(시험 `tests/test_model_config.py`).
 - `claims_template.txt` / `claims_freeform.txt`: 주장(claims) 쓰는 법. `freeform`만 값을 직접 쓰고, 나머지 모드는 metric_id·근거 ID로 가리킨다(코드가 검증된 지표로 채운다).
 - `critic.txt`: Critic(별도 문맥의 검수자) 지침. 도구 없음, 구조화된 지적과 재조회 요청.

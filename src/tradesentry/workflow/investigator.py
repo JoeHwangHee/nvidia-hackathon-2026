@@ -66,7 +66,7 @@ DRAFT_REQUEST = (
     "[초안 요청] 이 요청에는 도구가 없다. 추가 비교·재조회는 더 할 수 없고, 도구를 부르면 거부된다. 지금까지 받은 "
     "근거만으로 초안을 쓴다.\n"
     "설명·머리말·마크다운 코드 블록 없이 JSON 객체 하나만 답한다. 답의 첫 글자는 { 이고 마지막 글자는 } 이다.\n"
-    '{"review_status": "MAINTAIN(설명 안 됨·계속 검토)|MONITOR(설명됨·지켜봄)|HOLD(자료 부족) 가운데 하나", "signal_status": {"unit_value": "MAINTAIN|MONITOR|HOLD|NOT_TRIGGERED", '
+    '{"review_status": "MAINTAIN|MONITOR|HOLD", "signal_status": {"unit_value": "MAINTAIN|MONITOR|HOLD|NOT_TRIGGERED", '
     '"share": "MAINTAIN|MONITOR|HOLD|NOT_TRIGGERED"}, "claims": [시스템 지침의 claims 쓰는 법대로], '
     '"narrative": "한국어 설명", "hypotheses": ["확인되지 않은 가설 문장"]}')
 PARTNER_RE = re.compile(r"^[A-Z]{2}$")

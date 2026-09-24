@@ -1,5 +1,5 @@
 {
-  "config_version": "model-0.5",
+  "config_version": "model-0.6",
   "model": "nvidia/nemotron-3-super-120b-a12b",
   "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
   "api_key_env": "NVIDIA_API_KEY",
