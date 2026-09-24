@@ -7,7 +7,8 @@ data/snapshots/·data/reference/·outputs/에는 쓰지 않는다. 시험 동안
 확인하는 것
 - 커밋한 텍스트 원천(manifest.json, snapshot_hash.json, snapshot_build.json의 기록 키, 합성 비교국 표)이 다시 만든 것과
   바이트까지 같다(새 작업 폴더에서 materialize 한 번이면 같은 스냅샷이 된다).
-- snapshot_id만으로 단위 S3(raw 대조 켬)이 통과하고 자료 접근층이 연다(--snapshot 값만 바꿔 교체되는 길).
+- snapshot_id만으로 단위 S3(raw 대조 켬)이 통과하고 자료 접근층이 연다. CLI `tradesentry snapshot-verify
+  --snapshot controlled_fixture_v0`도 종료 코드 0이다(--snapshot 값만 바꿔 교체되는 길).
 - 관측 상태 5종이 수입 행에 각각 한 번 이상 있고, 빈칸마다 뜻한 상태가 나온다.
 - 사례 A/B/C의 값이 oracle(eval/dev/oracle_ABC.json)의 입력과 같고, 지표 단위 X1~X3이 그 값에서 oracle 수치를 재현한다.
 - 개발용 정책 dev-0.1 기준값으로 신호 발동(단위 P1)을 돌리면 사례 세 달만 발동한다.
@@ -30,6 +31,7 @@ from pathlib import Path
 from unittest import mock
 
 from tradesentry import ingest
+from tradesentry.cli import dispatch
 from tradesentry.contract import types
 from tradesentry.contract.policy_load import load_policy
 from tradesentry.dal import query
@@ -144,6 +146,18 @@ class SwapBySnapshotIdTest(FixtureTestBase):
                      "peer_group_sources", "normalized_sha256_record", "observation_rules", "coverage_hs10_children"):
             self.assertIs(checks[name], True, name)
         self.assertEqual(report["normalized_sha256"], self.summary["normalized_sha256"])
+
+    def test_cli_snapshot_verify_takes_only_the_snapshot_option(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(dispatch, "OUTPUT_PARENT", Path(tmp)):
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                code = dispatch.main(["snapshot-verify", "--snapshot", SID])  # 실스냅샷과 같은 명령, 값만 다르다
+            self.assertEqual((code, err.getvalue()), (0, ""))
+            [folder] = list(Path(tmp).iterdir())
+            [report_file] = list(folder.iterdir())
+            report = json.loads(report_file.read_text(encoding="utf-8"))
+        self.assertIs(report["ok"], True)
+        self.assertEqual(report["recorded_normalized_sha256"], self.summary["normalized_sha256"])
 
     def test_dal_opens_by_id_and_meta_is_the_contract_snapshot_object(self):
         obj = self.open().snapshot_object()

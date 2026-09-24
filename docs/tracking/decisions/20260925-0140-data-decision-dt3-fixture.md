@@ -160,10 +160,12 @@ DT3(합성 시험자료, 데이터 트랙) 구현에서 자료 계약과 병렬 
 
 ⑫ **교체 확인의 범위와 남은 것** — 잠정
 
-- 이번에 확인한 것은 둘이다.
+- 이번에 확인한 것은 셋이다.
   - 자료 접근층과 단위 S3가 경로 없이 `snapshot_id`만으로 이 자료를 연다.
   - 스냅샷 메타 키가 계약 `snapshot` 객체 키와 같다.
-- CLI(`tradesentry detect --snapshot controlled_fixture_v0` 등)는 아직 조립체와 잇지 않았다. CLI로 교체되는지는 조립 작업 AS1·AS2의 조립 시험과 로드맵 MT5가 확인한다.
+  - MT5 첫 PR이 이은 CLI `tradesentry snapshot-verify --snapshot controlled_fixture_v0`가 종료 코드 0(보고 `ok` 참, raw 대조 켬)이다 `[사실: main 0a1ed2a를 이 작업 브랜치에 병합한 뒤 실행, 시험 SwapBySnapshotIdTest]`.
+- CLI `snapshot-build --snapshot controlled_fixture_v0 --policy dev-0.1`도 이 원천으로 종료 코드 0이다. 다만 MT5 결정대로 비교국 표 파일을 넘기지 않고 `dev-0.1`은 승격하지 않아, 비교국 표와 무거래 확정 행이 없는 개발 빌드가 된다. 그래서 합성 시험자료의 정본 빌드는 ①의 `materialize()`가 만든다.
+- `detect`·`run-case`는 아직 조립체와 잇지 않았다. CLI로 교체되는지는 조립 작업 AS1·AS2의 조립 시험이 확인한다.
 - `g1`이 동결되어 채점 대상 실행의 기본값이 되면, 이 자료에도 합성 `g1` 행이 필요할 수 있다. 필요하면 새 파일 이름과 새 빌드로 더한다(빌드에 쓴 `data/reference/` 파일은 바꾸지 않는다, DT1 결정 ⑪).
 
 ## 검토한 대안
