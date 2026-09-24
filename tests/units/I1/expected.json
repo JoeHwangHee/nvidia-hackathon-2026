@@ -1,0 +1,123 @@
+{
+ "query_id": "check_comparability-91858475dfb147b4",
+ "tool": "check_comparability",
+ "scope": {
+  "hs6": "850431",
+  "partner": "MX",
+  "month": "202401",
+  "baseline_month": "202301",
+  "months": [
+   "202301",
+   "202401"
+  ],
+  "partners": [
+   "MX",
+   "ALL"
+  ],
+  "hs10": [
+   "8504311000",
+   "8504312000"
+  ]
+ },
+ "snapshot_id": "unit_fixture_tools",
+ "source_kind": "controlled",
+ "evidence_ids": [
+  "ev:unit_fixture_tools:observation:3",
+  "ev:unit_fixture_tools:observation:31",
+  "ev:unit_fixture_tools:observation:499",
+  "ev:unit_fixture_tools:observation:501",
+  "ev:unit_fixture_tools:observation:529",
+  "ev:unit_fixture_tools:observation:531",
+  "ev:unit_fixture_tools:observation:273",
+  "ev:unit_fixture_tools:observation:275",
+  "ev:unit_fixture_tools:observation:303",
+  "ev:unit_fixture_tools:observation:305"
+ ],
+ "metrics": [],
+ "comparability": {
+  "comparable": true,
+  "period": {
+   "month": "202401",
+   "baseline_month": "202301",
+   "yoy": true
+  },
+  "units": {
+   "amount": "USD",
+   "weight": "kg"
+  },
+  "units_ok": true,
+  "hs_version": "HSK",
+  "parent": [
+   {
+    "month": "202301",
+    "observation_status": "OBSERVED",
+    "weight_zero": false
+   },
+   {
+    "month": "202401",
+    "observation_status": "OBSERVED",
+    "weight_zero": false
+   }
+  ],
+  "denominator": {
+   "partner": "ALL",
+   "months": [
+    {
+     "month": "202301",
+     "observation_status": "OBSERVED",
+     "hs10_rows": 2
+    },
+    {
+     "month": "202401",
+     "observation_status": "OBSERVED",
+     "hs10_rows": 2
+    }
+   ]
+  },
+  "children": {
+   "months": [
+    {
+     "month": "202301",
+     "observation_status": "OBSERVED",
+     "hs10_rows": 2,
+     "codes": [
+      "8504311000",
+      "8504312000"
+     ]
+    },
+    {
+     "month": "202401",
+     "observation_status": "OBSERVED",
+     "hs10_rows": 2,
+     "codes": [
+      "8504311000",
+      "8504312000"
+     ]
+    }
+   ],
+   "same_hs10_set": true
+  },
+  "signals": {
+   "unit_value": {
+    "evaluable": true,
+    "issues": []
+   },
+   "share": {
+    "evaluable": true,
+    "issues": []
+   }
+  },
+  "rounding": {
+   "weight_rounding_kg": 0.5,
+   "threshold": 30,
+   "r_U_low": -40.1,
+   "r_U_high": -39.9,
+   "direction_stable": true,
+   "threshold_stable": true,
+   "unstable": false
+  }
+ },
+ "missingness": [],
+ "retryable_error": null,
+ "elapsed_ms": 0
+}

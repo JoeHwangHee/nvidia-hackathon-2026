@@ -1,0 +1,7 @@
+{
+ "case_id": "850431-MX-202401",
+ "snapshot_id": "unit_fixture_tools",
+ "scope": {"hs6": "850431", "partner": "MX", "month": "202401", "baseline_month": "202301"},
+ "args": {},
+ "attempt": 2
+}
