@@ -66,6 +66,22 @@ class RunRecordRuleTest(unittest.TestCase):
         ok = completed(execution_status="TIMEOUT", review_status_final=None, signal_status=None, errors=[entry])
         self.assertEqual(run_record.run(ok)["errors"], [entry])
 
+    def test_static_keys_are_checked_before_the_run_with_the_same_rules(self):
+        static = {k: completed()[k] for k in run_record.STATIC_KEYS}
+        self.assertIsNone(run_record.check_static(static))
+        self.assertEqual(len(run_record.STATIC_KEYS), 9)
+        self.assertTrue(set(run_record.STATIC_KEYS) <= set(run_record.RUN_KEYS))
+        bad = {"자료 묶음 밖": dict(static, dataset="dev21"), "모드 밖": dict(static, mode="baseline"),
+               "run_id 형식": dict(static, run_id="run-case-1"), "빈 버전": dict(static, code_version=""),
+               "키 없음": {k: v for k, v in static.items() if k != "rulebook_version"},
+               "실행 뒤 키": dict(static, execution_status="COMPLETED")}
+        for name, facts in bad.items():
+            with self.subTest(name), self.assertRaises(ValueError):
+                run_record.check_static(facts)
+            if name not in ("키 없음", "실행 뒤 키"):  # 같은 값은 끝의 build_record에서도 막힌다(같은 규칙)
+                with self.subTest(name + " build_record"), self.assertRaises(ValueError):
+                    run_record.run(completed(**{k: facts[k] for k in run_record.STATIC_KEYS}))
+
     def test_reserve_waits_for_the_second_and_skips_taken_names(self):
         with tempfile.TemporaryDirectory() as tmp:
             outputs, sealed = Path(tmp) / "outputs", Path(tmp) / "outputs" / "sealed"

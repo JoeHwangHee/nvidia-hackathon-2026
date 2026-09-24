@@ -15,6 +15,8 @@
    런타임 쪽에서 따로 구현한다(S0 결정 "두 트랙에 넘기는 것"). 부모 폴더는 부르는 쪽이 인자로 준다(S0 결정 ⑥).
 2. 실행 결과 기록의 실행 쪽 키(자료 계약 §8.1에서 채점 키 세 개를 뺀 21개)를 검사해 계약 순서대로 만든다.
    채점 키(required_evidence_ok·numeric_ok·provenance_ok)는 샌드박스 밖 채점기만 채우므로 여기서는 받지 않는다.
+   실행 전에 정해지는 키 9개(STATIC_KEYS: 실행명·사례·자료 묶음·모드·버전)는 check_static으로 흐름을 시작하기 전에
+   따로 검사할 수 있다. 값이 틀린 실행이 모델 요청과 도구를 다 쓴 뒤 기록 없이 끝나지 않게 한다(흐름 조정 I12가 부른다).
 
 검사 규칙(자료 계약 §3·§4·§8.1)
 - 값 집합: dataset 5개, mode 4개, execution_status 5개, review_status_final·signal_status의 상태값.
@@ -53,6 +55,8 @@ SIGNAL_STATUSES = ("MAINTAIN", "MONITOR", "HOLD", "NOT_TRIGGERED")
 SIGNAL_CODES = ("unit_value", "share")
 COUNT_KEYS = ("tool_attempts", "model_requests", "tokens_in", "tokens_out", "wall_ms")
 TEXT_KEYS = ("case_id", "policy_version", "rulebook_version", "snapshot_id", "grouping_version", "code_version")
+STATIC_KEYS = ("run_id", "case_id", "dataset", "mode", "policy_version", "rulebook_version", "snapshot_id",
+               "grouping_version", "code_version")
 
 STAMP_FORMAT = "%y%m%d%H%M%S"
 RUN_NAME_RE = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -103,14 +107,7 @@ def _is_count(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
-def build_record(facts: dict) -> dict:
-    """실행 사실로 실행 쪽 키 21개를 계약 순서대로 만든다. 규칙에 어긋나면 ValueError를 낸다."""
-    if not isinstance(facts, dict):
-        raise ValueError("실행 사실은 객체다")
-    extra = sorted(set(facts) - set(RUN_KEYS))
-    missing = [k for k in RUN_KEYS if k not in facts]
-    if extra or missing:
-        raise ValueError(f"실행 쪽 키가 맞지 않는다(없음 {missing}, 더 있음 {extra}). 채점 키는 채점기가 더한다")
+def _static_problems(facts: dict) -> list[str]:
     problems: list[str] = []
     if not isinstance(facts["run_id"], str) or not trace_log.RUN_ID_RE.match(facts["run_id"]):
         problems.append("run_id가 실행명 형식이 아니다")
@@ -119,9 +116,34 @@ def build_record(facts: dict) -> dict:
             problems.append(f"{key}는 빈 문자열이 아닌 문자열이다")
     if facts["dataset"] not in DATASETS:
         problems.append("dataset이 자료 묶음 5개 밖이다")
-    mode = facts["mode"]
-    if mode not in MODES:
+    if facts["mode"] not in MODES:
         problems.append("mode가 모드 4개 밖이다")
+    return problems
+
+
+def check_static(facts: dict) -> None:
+    """실행 전에 정해지는 키 9개(STATIC_KEYS)만 build_record와 같은 규칙으로 검사한다. 어긋나면 ValueError를 낸다."""
+    if not isinstance(facts, dict):
+        raise ValueError("실행 사실은 객체다")
+    extra = sorted(set(facts) - set(STATIC_KEYS))
+    missing = [k for k in STATIC_KEYS if k not in facts]
+    if extra or missing:
+        raise ValueError(f"실행 전 키가 맞지 않는다(없음 {missing}, 더 있음 {extra})")
+    problems = _static_problems(facts)
+    if problems:
+        raise ValueError("; ".join(problems))
+
+
+def build_record(facts: dict) -> dict:
+    """실행 사실로 실행 쪽 키 21개를 계약 순서대로 만든다. 규칙에 어긋나면 ValueError를 낸다."""
+    if not isinstance(facts, dict):
+        raise ValueError("실행 사실은 객체다")
+    extra = sorted(set(facts) - set(RUN_KEYS))
+    missing = [k for k in RUN_KEYS if k not in facts]
+    if extra or missing:
+        raise ValueError(f"실행 쪽 키가 맞지 않는다(없음 {missing}, 더 있음 {extra}). 채점 키는 채점기가 더한다")
+    problems = _static_problems(facts)
+    mode = facts["mode"]
     status = facts["execution_status"]
     if status not in cause_codes.EXECUTION_STATUSES:
         problems.append("execution_status가 실행 상태 5개 밖이다")
