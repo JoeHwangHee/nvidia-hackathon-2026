@@ -13,7 +13,7 @@ DT5(시나리오 명세와 dev20 + 독립 정답표, holdout40용 결정적 검�
 
 | 항목 | 내용 |
 |---|---|
-| 날짜 | 2026-09-25(금) 01:53(기록 시각). 결정은 2026-09-25(금) 01:05~01:50 DT5 구현 중에 했다. 05:30에 2회차(오케스트레이터 지시와 Codex 1회차 검토, 채점기 DT8 2회차 확인 반영)로 ①·②·④·⑤·⑦·⑪·⑭와 "영향과 넘길 곳"을 고치고 ⑮·⑯을 더했다(항목마다 "2회차"로 표시) |
+| 날짜 | 2026-09-25(금) 01:53(기록 시각). 결정은 2026-09-25(금) 01:05~01:50 DT5 구현 중에 했다. 05:30에 2회차(오케스트레이터 지시와 Codex 1회차 검토, 채점기 DT8 2회차 확인 반영)로 ①·②·④·⑤·⑦·⑪·⑭와 "영향과 넘길 곳"을 고치고 ⑮·⑯을 더했다(항목마다 "2회차"로 표시). 06:00에 3회차(평가 방법론·무역통계 검토 1회차 반영)로 ①·②·④·⑦과 "영향과 넘길 곳"을 고치고 ⑰을 더했다("3회차"로 표시) |
 | 제목 | dev20 입력·정답 하위 경로 배치, 스냅샷 `dev20`과 설치 방식, 사례 식별자, 합성 비교국 표, 판정 근거 규칙과 필수 근거(잠정 포함), 분류 4~7·9의 해석, 부모 원본 계열 ID, 자체 검산, V4 보고 형식, 채점기 대응 |
 | 결정 | 아래 "결정 내용" ①~⑯ |
 | 이유와 근거 | 항목마다 적었다 |
@@ -31,7 +31,7 @@ DT5(시나리오 명세와 dev20 + 독립 정답표, holdout40용 결정적 검�
   - `input/cases.json`: 사례 목록. 사례마다 `case_id`·`hs6`·`partner`·`month` 넷만 있고, 식별자 순으로 적는다(순서가 분류를 드러내지 않게).
   - `input/source/raw/`: 응답 XML(`<request_id>.xml` 102개). 2회차: 나머지 텍스트 원천(`manifest.json`, `collection_log.json`, `snapshot_hash.json`)은 `data/snapshots/dev20/`으로, 합성 비교국 표는 `data/reference/peer_group_dev20.csv`로 옮겼다(②·④). 스냅샷 폴더의 `raw/`는 `.gitignore`가 빼므로 응답 XML만 여기에 남는다.
   - `answers/answers.json`(정답표), `answers/parent_series_ids.json`(부모 원본 계열 ID 목록, holdout40 제외 목록), `answers/generation_rules.json`(생성 규칙: 합성 세계, 사례별 사건과 손으로 정한 기대 판정).
-- 샌드박스 허용 목록에는 `eval/dev/dev20/input/`(또는 그 아래 필요한 파일)만 넣고 상위 폴더 `eval/dev/dev20/`와 `answers/`는 넣지 않는다. 허용 목록은 경로 앞부분 일치라서 상위 폴더를 넣으면 정답표를 막을 수 없다 `[사실: 병렬 개발 규칙 §6.5]`. 채점 대상 실행이 쓰는 것은 사례 목록과 설치한 스냅샷(②)뿐이다.
+- 샌드박스 허용 목록에는 사례 목록 파일 `eval/dev/dev20/input/cases.json`만 넣고(3회차: 시나리오 명세의 §7.1 표와 맞췄다. `input/`을 넣으면 앞부분 일치라 응답 XML `input/source/raw/`도 들어간다. 정답은 아니지만 실행에 필요 없다) 상위 폴더 `eval/dev/dev20/`와 `answers/`는 넣지 않는다. 허용 목록은 경로 앞부분 일치라서 상위 폴더를 넣으면 정답표를 막을 수 없다 `[사실: 병렬 개발 규칙 §6.5]`. 채점 대상 실행이 쓰는 것은 사례 목록과 설치한 스냅샷(②)뿐이다.
 - 생성 코드(`eval/datagen/dev20.py`)에는 사례별 기대 상태를 두지 않는다. 사례별 기대 판정은 정답 하위 경로의 생성 규칙에만 있다(시험이 코드에 사례 식별자가 없는지 본다). `eval/datagen/`도 샌드박스에 넣지 않는다(정답을 담지는 않지만 평가 자료 도구다) `[추론]`.
 
 ② **스냅샷 ID `dev20`과 설치 방식** — 확정(2회차에 설치 방식을 바꿨다)
@@ -41,9 +41,9 @@ DT5(시나리오 명세와 dev20 + 독립 정답표, holdout40용 결정적 검�
   - 커밋하는 파일: `data/snapshots/dev20/manifest.json`·`collection_log.json`·`snapshot_hash.json`(텍스트 원천), `data/snapshots/dev20/snapshot_build.json`(빌드 기록, 자료 계약 §4.4 규칙 4의 SQLite 밖 기록), `data/reference/peer_group_dev20.csv`(④), `eval/dev/dev20/input/source/raw/*.xml`(응답 XML 102개).
   - 설치 명령 `uv run --locked python -m eval.datagen.dev20 install`(저장소 루트, 키·네트워크 없음)이 만드는 파일(모두 `.gitignore`가 뺀다): `data/snapshots/dev20/raw/*.xml`(위 응답 XML의 사본), `snapshot.sqlite`(수집기 SQLite 재현. 수집기 `store_result`, 고정 시각 2026-09-25T00:00:00+09:00), `snapshot_build.sqlite`(단위 S2 빌드).
   - 순서: `outputs/datagen_dev20-{시각}/`에 수집기 폴더를 재현하고 단위 S2로 빌드 → 단위 S3 검증(raw 대조 켬)과 사례 목록의 `normalized_sha256` 대조 → 스냅샷 폴더에 이미 있는 것을 모두 대조(raw는 바이트, 수집기 SQLite는 표별 행, 빌드 SQLite는 `normalized_sha256`, 빌드 기록은 시각 키 `build_file`·`built_at`·`installed_at`·`installed_from`을 뺀 기록 키). 하나라도 다르면 아무것도 쓰지 않고 종료 코드 1 → 없는 것만 이미 있으면 실패하는 방식으로 만든다(덮지 않는다, N12) → 끝에 CLI와 같은 입력(`snapshot_id`만)으로 단위 S3를 돌려 `ok`가 거짓이면 종료 코드 1.
-  - 빌드 기록은 없을 때만 install이 쓴다. 커밋본은 2026-09-25(금) 05:25의 첫 설치가 쓴 것이다. `check`는 커밋된 빌드 기록의 시각 키를 뺀 기록 키가 다시 만든 빌드와 같은지도 본다.
+  - 빌드 기록은 없을 때만 install이 쓴다. 커밋본은 2026-09-25(금) 05:51의 설치(3회차에 ④의 비교국 표를 고쳐 다시 만든 뒤)가 쓴 것이다. `check`는 커밋된 빌드 기록의 시각 키를 뺀 기록 키가 다시 만든 빌드와 같은지도 본다.
   - 확인 `[사실: 2026-09-25(금) 05:25 작업 폴더]`: 첫 install 종료 코드 0(새로 만든 것: raw 102개, `snapshot.sqlite`, `snapshot_build.sqlite`, `snapshot_build.json`), 다시 부르면 0건 종료 코드 0, 그 뒤 `uv run --locked tradesentry snapshot-verify --snapshot dev20` 종료 코드 0·보고 `ok` 참(검사 18개 모두 통과, raw 대조 포함), `git status`에는 커밋할 텍스트 원천만 보였다. 새 체크아웃 흉내(05:31, 커밋 f082203 이후 머리를 `git archive`로 푼 폴더): `uv sync --locked` 0 → install 0(새로 만든 것 raw 102개·`snapshot.sqlite`·`snapshot_build.sqlite`) → `tradesentry snapshot-verify --snapshot dev20` 0·보고 `ok` 참(raw 대조 켬, 실패·건너뜀 0) → `git status` 0줄 → `dev20 check` 0.
-- 기록값: `normalized_sha256` = `362e687a8ffd5fd82be1e578357aa74e5db4d5fa9173b1a97d26169a869f9d2b`(정책 `dev-0.1`, 승격 없음, 비교국 표 `peer_group_dev20.csv` sha256 `f631fad0…ba26d6d`). raw 결합 sha256 = `297218ff708efa14504b698ab21175b3b88cbfa627e5899bbd24b5fed58df25c`. `input/cases.json`의 `snapshot_normalized_sha256`에도 같은 값이 있다. 1회차 값(`3b45fdd2…`, raw `395734be…`)은 ⑮·⑯으로 자료가 바뀌어 더는 쓰지 않는다.
+- 기록값(3회차): `normalized_sha256` = `e10b41a985ae36098f32723f9627c86fa09f2ea048edd1b614bdbcf474d47c16`(정책 `dev-0.1`, 승격 없음, 비교국 표 `peer_group_dev20.csv` sha256 `ab80108a…85e46d7f`). raw 결합 sha256 = `297218ff708efa14504b698ab21175b3b88cbfa627e5899bbd24b5fed58df25c`(2회차와 같다. 응답 XML은 바뀌지 않았다). `input/cases.json`의 `snapshot_normalized_sha256`에도 같은 값이 있다. 1회차 값(`3b45fdd2…`, raw `395734be…`)과 2회차 값(`362e687a…`)은 더는 쓰지 않는다.
 - 자료 접근층은 `open_snapshot("dev20")`으로 기본 자리에서 연다. 채점기 실행 조건 입력 파일의 `snapshot.file`을 비우면 채점기도 같은 기본 자리를 본다 `[사실: 독립 채점기 PR #30(병합 전, 커밋 1436b9b)의 eval/scorer/__main__.py snapshot.file 기본값]`.
 - 1회차 방식(텍스트 원천 전부를 `eval/dev/dev20/input/source/`에 두고 install이 빌드만 설치)은 CLI `snapshot-verify`가 비교국 표와 raw를 찾지 못해 실패했고, 설치 기록 `snapshot_build.json`이 추적 안 된 파일로 남았다. 2회차 방식으로 둘 다 풀렸다.
 
@@ -55,7 +55,7 @@ DT5(시나리오 명세와 dev20 + 독립 정답표, holdout40용 결정적 검�
 
 - 자리(2회차): 단위 S3는 빌드 기록에 적힌 비교국 표를 `data/reference/`에서만 찾는다(DT1 결정 기록 ⑨·⑪). 그래서 DT3 결정 기록 ⑧과 같이 `data/reference/peer_group_dev20.csv`(파일 이름은 `peer_group_{snapshot_id}.csv`)에 둔다. 병렬 개발 규칙 §1.4의 표에 없는 경로이고 소유는 D다. 다른 단위는 이 파일 이름을 직접 읽지 않고 빌드 기록을 거쳐 찾는다.
 
-- 합성 자료의 비교 대상은 자료 안의 합성 `peer_group`이다 `[사실: 자료 계약 §2.3.6]`. 합성 스냅샷 안에서 `g0` 규칙(대상국을 뺀 상대국 가운데 2023년 부모 HS6 수입금액 상위 5개국, 같으면 국가 코드순)으로 골라 `grouping_version`=`g0`, `method`=`import_value_topk`, `source_version`=`dev20`, `input_sha256`=raw 결합 sha256, `params_hash`=후보국·k·방법·기준연도의 sha256으로 적는다. 자료 접근층 `peers()`가 `grouping_version`으로 거르고, 비교 대상은 MVP 시험까지 `g0`이기 때문이다 `[사실: src/tradesentry/dal/query.py peers, 자료 계약 §1.3]`. 상대국이 6개라 비교국은 늘 나머지 5개국이다(예: `850450-XN` 계열의 비교국은 `XL`·`XM`·`XO`·`XP`·`XQ`).
+- 합성 자료의 비교 대상은 자료 안의 합성 `peer_group`이다 `[사실: 자료 계약 §2.3.6]`. 합성 스냅샷 안에서 `g0` 규칙(대상국을 뺀 상대국 가운데 2023년 부모 HS6 수입금액 상위 5개국, 같으면 국가 코드순)으로 골라 `grouping_version`=`g0`, `method`=`import_value_topk`, `source_version`=`dev20`, `input_sha256`=raw 결합 sha256, `params_hash`는 단위 G1(`src/tradesentry/grouping/g0.py` `compute_params_hash`)과 같은 규칙(자료 계약 §2.3.6 "k, 기준연도, 후보국 목록의 해시": `{"candidates": 정렬한 후보국, "k": 정수, "source_year": 정수}`의 정규 JSON sha256)으로 적는다. 3회차: 2회차까지는 `method`를 더하고 기준연도를 문자열로 넣어 G1과 다른 값이었다(무역통계 검토 권고 1). V2는 grouping을 import하지 않고 같은 식을 따로 적었다. CSV의 빈 값(`baci_country_code`·`similarity`·`community_id`)도 G1 `to_csv`·`peer_group_g0.csv`처럼 `null`로 쓴다(같은 검토 권고 6, 2회차까지는 빈 칸). 자료 접근층 `peers()`가 `grouping_version`으로 거르고, 비교 대상은 MVP 시험까지 `g0`이기 때문이다 `[사실: src/tradesentry/dal/query.py peers, 자료 계약 §1.3]`. 상대국이 6개라 비교국은 늘 나머지 5개국이다(예: `850450-XN` 계열의 비교국은 `XL`·`XM`·`XO`·`XP`·`XQ`).
 - `g1` 동결 뒤 dev20을 `g1`로 돌리면 비교국 행을 찾지 못해 설명 안 됨(`MAINTAIN`) 사례가 비교 미완료 보류로 바뀐다. 합성 자료의 `g1` 행을 어떻게 둘지는 정하지 않았다 `[미확인]`.
 
 ⑤ **판정 근거 규칙과 필수 근거** — `hold_inconsistent`만 잠정(D17), 나머지 확정
@@ -74,7 +74,7 @@ DT5(시나리오 명세와 dev20 + 독립 정답표, holdout40용 결정적 검�
 
 ⑦ **분류 5·6·7의 해석** — 잠정(D17·U4·U2)
 
-- 분류 5: 부모 HS6 금액 ≠ HS10 하위 금액 합(1건), 기준월·비교월 HS10 코드 집합 변경(1건: 코드 신설·소멸로 본 HS 정의 변경). 단위·HS 버전 표기가 다른 변형은 수집기 형식이 스냅샷 전체의 단위와 관측 행 `hs_version`(`HSK`)을 고정해 만들 수 없다 `[사실: src/tradesentry/snapshot/build.py COLLECTOR_HS_VERSION, 수집기 store_result]`.
+- 분류 5: 부모 HS6 금액 ≠ HS10 하위 금액 합(1건), 기준월·비교월 HS10 코드 집합 변경(1건). 3회차 설명(무역통계 검토 권고 3): 이 사례는 한 HS10이 비교월 한 달만 사라지고 다른 HS10이 그 달에만 나오므로 HSK 개정(보통 1월 1일 시행, 이후 계속 쓰임)의 모양이 아니라 "그 달 그 세번 거래 없음 + 다른 세번 거래"로 읽힌다. 기대 `HOLD`는 분해식이 같은 HS10 집합에서만 쓰인다는 규칙(자료 계약 §11.2) 때문이라 그대로 맞다. 자료는 다시 만들지 않고 정답표 메모만 "집합이 달라 분해 불가"로 고쳤다. holdout40에서 개정 변형을 만들면 명세 분류 5대로 연초부터 이어지게 한다. 단위·HS 버전 표기가 다른 변형은 수집기 형식이 스냅샷 전체의 단위와 관측 행 `hs_version`(`HSK`)을 고정해 만들 수 없다 `[사실: src/tradesentry/snapshot/build.py COLLECTOR_HS_VERSION, 수집기 store_result]`.
 - 분류 6: 반올림 불안정 1건과 중량 0 하위품목 1건. 2회차에 반올림 사례를 ⑯의 제안값 안으로 다시 만들었다: 기준월 120 USD·12 kg, 비교월 162 USD·12 kg(단가 +35.0%, 두 달 모두 최소 기준 100 USD·10 kg 이상). 규칙 후보(U4, 사용자 승인 전: 발동한 단가 신호에만, 금액은 그대로 두고 두 달 부모 중량을 Q ± 0.5 kg로 움직일 때의 r_U 구간이 r_U ≥ 0이면 하한 < θ, r_U < 0이면 상한 > −θ일 때 불안정, 경계와 같으면 안정)로 구간이 약 +24.2%~+46.7%라 하한이 30% 아래(기준에서 5.8%p)여서 불안정이다. 1회차 값(12·20 USD, 1 kg)은 최소 기준에 걸려 사례가 아니게 되므로 버렸다. 정확히 100 USD·10 kg에 두지 않은 이유: "이상"을 "초과"로 읽는 정책이 나와도 결과가 같게. 반올림 사례는 사례 밖 경보를 피하려고 기준월을 2022년(비교월 2023년)에 두었다.
 - 분류 7: 전체국가 분모가 대상국 금액보다 작다(점유율 142.9%). 비교월 1건, 기준월 1건. 분모가 없으면 점유율이 계산되지 않아 신호가 발동하지 않으므로, "분모 완전성 부족"을 공식 분모가 전체 국가를 담지 못한 경우로 만들었다 `[추론: 자료 계약 §11.1 분모 규칙, 구 개발계획 §4 4]`. 대상국이 그 HS6의 약 80%를 차지하게 해 다른 나라 점유율 변화를 기준 아래로 두었다.
 
@@ -124,6 +124,13 @@ DT5(시나리오 명세와 dev20 + 독립 정답표, holdout40용 결정적 검�
 - 자체 검산이 셋(최소 기준, 규칙 후보와 판정 근거 규칙의 일치, 구간 끝의 거리)을 보고, 시험이 제안값을 바꿔 각각 멈추는지 본다. 제안값은 생성 코드의 상수(`PROPOSED_MIN_AMOUNT`, `PROPOSED_MIN_WEIGHT`, `ROUNDING_KG`)이고, 정책 파일에는 넣지 않았다(`policy_v1`은 사용자 승인 대상).
 - 승인값이 제안과 다르면 ⑪대로 다시 검증하고 필요하면 다시 만든다.
 
+⑰ **3회차 검토 반영** — 확정(평가 방법론·무역통계 검토 1회차, 오케스트레이터 지시)
+
+- 공개 명세에서 dev20 사례별 생성 값(분류 6 반올림 사례의 금액·중량·구간)과 실제 dev20 사례 식별자 예시를 지웠다(명세는 holdout40 생성 에이전트의 입력이다. 병렬 개발 규칙 §6.8, 로드맵 DT5 행). 그 값은 이 기록 ⑦에만 둔다. 명세의 식별자 예시는 dev20에 없는 `999901-XA-202401`이다.
+- 비교국 표 `params_hash`와 빈 값 표기를 G1과 맞춰(④) dev20을 생성 규칙에서 다시 만들었다. 발동·사례·정답은 그대로이고, 비교국 표와 `normalized_sha256`만 바뀌었다(②).
+- 자체 검산의 규칙 키별 불변식 여섯 개(단가·점유율 `unexplained`, 단가·점유율 `hold_inconsistent`, 분류 3, 분류 9)에 음성 시험을 더했다(`tests/units/V2/test_dev20.py` `CommittedRulesNegativeTest`: 커밋된 생성 규칙의 규칙 키나 분류 번호를 자료와 맞지 않게 바꾸거나 분류 5의 부모 덮어쓰기를 빼면 각 불변식의 문구로 멈춘다). 정답 노출 시험은 샌드박스에 함께 들어가는 스냅샷 쪽 텍스트와 비교국 표까지 넓혔다.
+- 명세: 분류 7이 실제 API에서 나오지 않는 주입된 불일치임, HS10이 합성 세번임, 총계 행 위치, "필수 근거의 뜻" 절에 남은 낡은 `[미확인]`, 생성 도구를 다시 쓸 때의 독립 검산과 부모 원본 계열 ID 재계산, dev20 점수는 방향 확인용임을 적었다.
+
 ## 검토한 대안
 
 - 빌드한 SQLite를 `eval/dev/dev20/input/`에 커밋하는 안: 채점기·자료 접근층에 경로를 넘기면 설치 없이 쓸 수 있지만, 런타임 CLI에는 개발 빌드 경로를 받는 수단이 아직 없고(DT1 결정 기록 ⑥) 이진 파일은 검토할 수 없다. 텍스트 원천 + 결정적 재빌드 + 기본 자리 설치를 골랐다.
@@ -145,6 +152,13 @@ DT5(시나리오 명세와 dev20 + 독립 정답표, holdout40용 결정적 검�
   - 비교국 표 자리: 둘 다 `data/reference/peer_group_{snapshot_id}.csv`다(④). 단위 S3와 CLI `snapshot-verify`의 기본 경로가 찾는다.
   - 원천과 재생성: 둘 다 텍스트 원천과 빌드 기록을 스냅샷 폴더에 커밋하고 raw XML·수집기 SQLite·빌드를 `.gitignore`가 빼는 자리에 결정적으로 다시 만든다. 다른 점: DT3는 raw XML까지 생성 규칙에서 다시 만들고(`fixture.materialize()`), dev20은 응답 XML을 `eval/dev/dev20/input/source/raw/`에 커밋해 복사한다(②).
   - 승격: DT3는 관측 상태 5종을 위해 합성 빌드에 승격 규칙을 적용하고 빌드 기록 `policy_version`을 null로 둔다. dev20은 `dev-0.1`로 빌드해 승격하지 않는다(관측 상태는 `OBSERVED`·`REQUEST_FAILED`·`NOT_COLLECTED` 셋).
+- **dev20 점수 해석의 상한**(3회차, 평가 방법론 검토 권고 4. 보조 지표를 읽을 때 옆에 적는다)
+  - 상태 정확도 상한 17/20: 분류 6 반올림 1건과 분류 7 두 건은 현재 런타임이 기대 상태를 낼 규칙이 없다(위 항목).
+  - 근거 충족 처리정확도 상한 약 14/20: `hold_inconsistent` 5건과 반올림 1건, 모두 6건이 필수 근거 판정에서 막힐 수 있다(D17과 채점기 판정에 따라 달라진다).
+  - 모든 사례 보류 점수 8/20(분류 10은 `MAINTAIN`·`unresolved_evidence` 참이라 빠진다). Wilson 95% 구간 [21.9%, 61.3%]. 구간이 겹치지 않게 이기려면 17/20(하한 64.0%) 이상이 필요하다(16/20의 하한 58.4%는 겹친다). 이는 근거 충족 상한보다 높으므로 dev20 점수로 "보류 기준보다 낫다"를 주장할 수 없다. dev20 점수는 방향 확인용이다 `[사실: 2026-09-25(금) 05:55 Wilson 식 계산]`.
+  - 모든 사례 보류 점수는 런타임이 지금 낼 수 없는 `HOLD` 사례에서도 점수를 받고, 근거를 충족했다고 가정한 값이라 시스템의 근거 충족 정확도와 바로 비교하지 않는다.
+  - 필수 근거 이름 두 개의 공용 약속 여부(사용자 확인)에 따라 정답 6건이 바뀔 수 있다.
+- **원천 모양의 알려진 차이**(3회차, 무역통계 검토 권고 4): 실응답은 국가별(`nitemtrade`) 응답의 총계 행이 첫 행이고 전체국가(`itemtrade`) 응답은 마지막 행인데, dev20 합성 원천은 둘 다 첫 행에 둔다. 합성 XML에는 실응답의 `balPayments`·`statCdCntnKor1` 같은 필드도 없다. 수집기는 행 위치와 이 필드들을 쓰지 않으므로 빌드 결과는 같다. 자료는 다시 만들지 않았다.
 - **DT6(holdout40)**: 입력은 명세, 생성 규칙(`policy_v1`), 제외 목록 `eval/dev/dev20/answers/parent_series_ids.json`이다. 봉인 직전 `python -m eval.datagen.holdout40_check`와 자체 검산을 돌린다. ⑤의 잠정 규칙이 확정되기 전에 생성하면 동결 뒤 고칠 수 없는 채점 불가 사례가 생길 수 있으므로 D17 결정 뒤에 생성하는 것이 안전하다 `[추론]`.
 - **DT4 ②(`policy_v1` 제안)**: 승인되면 dev20을 다시 검증한다(⑪).
 - **`.gitignore`**: 고치지 않는다. 2회차 설치 방식에서 설치물은 모두 기존 무시 규칙(`data/snapshots/*/raw/`, `data/snapshots/*/*.sqlite`)에 걸리고, 커밋하는 텍스트만 스냅샷 폴더에 남는다(②). 1회차의 한 줄 추가 제안은 거둔다.
