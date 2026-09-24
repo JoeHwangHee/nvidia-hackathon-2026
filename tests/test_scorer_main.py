@@ -288,6 +288,42 @@ class SealedBatchTest(ScorerCommandBase):
         self.assertEqual((code, err), (cli.EXIT_FAILED, ""))
 
 
+class Dev20AnswersTest(unittest.TestCase):
+    """dev20 정답표는 저장소 안 eval/dev/dev20/answers/answers.json(DT5 결정 기록 ⑭)에서 읽는다. 합성 정답표만 쓴다."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name) / "repo"
+
+    def test_path_is_fixed(self):
+        self.assertEqual(cli.DEV20_ANSWERS, ("eval", "dev", "dev20", "answers", "answers.json"))
+
+    def test_reads_answer_table_from_dev20_path(self):
+        with self.assertRaises(c1.ScorerInputError):  # 파일이 없으면 입력 오류
+            cli.load_answers("dev20", self.root, {})
+        path = self.root.joinpath(*cli.DEV20_ANSWERS)
+        path.parent.mkdir(parents=True)
+        answers = fx.load_oracle()
+        answers["cases"][0]["expected"]["required_evidence"] = ["country_and_world_change_shown"]
+        answers["cases"][0]["expected"]["signals"] = {"unit_value": "NOT_TRIGGERED", "share": "TRIGGERED"}
+        answers["cases"][1]["expected"]["required_evidence"] = ["precision_sensitivity_shown"]
+        path.write_text(dump(answers), encoding="utf-8")
+        table = cli.c3.read_answer_table(cli.load_answers("dev20", self.root, {}))
+        self.assertEqual(len(table), len(answers["cases"]))
+        both = copy.deepcopy(answers)  # 두 신호가 모두 발동하면 합친 목록은 받지 않는다(신호별 객체)
+        both["cases"][0]["expected"].update(
+            signals={"unit_value": "TRIGGERED", "share": "TRIGGERED"},
+            signal_status={"unit_value": "MONITOR", "share": "MONITOR"},
+            required_evidence=["comparability_ok", "country_and_world_change_shown"])
+        with self.assertRaises(c1.ScorerInputError):
+            cli.c3.read_answer_table(both)
+        both["cases"][0]["expected"]["required_evidence"] = {"unit_value": ["comparability_ok"],
+                                                             "share": ["country_and_world_change_shown"]}
+        self.assertEqual(cli.c3.read_answer_table(both)[answers["cases"][0]["case_id"]]["required_evidence"],
+                         {"unit_value": ["comparability_ok"], "share": ["country_and_world_change_shown"]})
+
+
 class UntrustedInputTest(ScorerCommandBase):
     """믿지 않는 보고서·묶음 기록은 그 보고서 하나의 결과로 끝나고 묶음 채점을 멈추지 않는다(보안 검토 1회차 막는 지적)."""
 

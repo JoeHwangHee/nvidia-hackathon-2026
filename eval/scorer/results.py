@@ -162,7 +162,8 @@ def _required_evidence(value: object, signals: dict[str, str], case_id: str) -> 
     triggered = [s for s in SIGNALS if signals[s] == TRIGGERED]
     if isinstance(value, list):
         if len(triggered) != 1:
-            _fail(f"정답표 사례 {case_id}는 두 신호가 모두 발동해 required_evidence를 신호별 객체로 적어야 한다")
+            _fail(f"정답표 사례 {case_id}는 두 신호가 모두 발동해 required_evidence를 신호별 객체"
+                  '({"unit_value": [...], "share": [...]})로 적어야 한다(합친 목록은 공통 코드의 신호를 알 수 없다)')
         by_signal = {triggered[0]: value}
     elif isinstance(value, dict) and set(value) == set(triggered):
         by_signal = {s: value[s] for s in triggered}

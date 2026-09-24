@@ -55,6 +55,7 @@ DT8(독립 채점기, 데이터 트랙) 구현(단위 C1~C4와 채점기 명령,
 - 코드는 ④의 13개 이름만 받고, 그 신호 계열의 코드여야 한다(단가: `parent_child_match_V_and_Q`, `weight_share_decomposition`, `per_child_unit_value_stable`, `comparability_ok`, `partner_comparison_done`, `missingness_listed`, `failure_vs_not_collected_distinguished`, `no_zero_fill`, `precision_sensitivity_shown` / 점유율: `country_and_world_change_shown`, `partner_comparison_done`, `comparability_ok`, `missingness_listed`, `failure_vs_not_collected_distinguished`, `no_zero_fill`). 판정 정책 P5 규칙표의 계열별 합집합이다.
 - 모르는 코드, 계열에 없는 코드, 교정 전후 세 코드(`correction_snapshots_before_after`, `recalculated_values`, `change_reason`)는 입력 오류다. 교정 세 코드는 동결 스냅샷 하나로 도는 v1에 해당 사례가 없다(MT1 결정 ⑥).
 - 그 밖의 키(원자료, 기대 수치)는 채점에 쓰지 않는다. 수치 기대값은 채점기가 원본 행에서 따로 계산한다.
+- dev20 정답표 경로 `DEV20_ANSWERS`는 `eval/dev/dev20/answers/answers.json`이다(DT5 결정 기록 ⑭). DT5 브랜치의 정답표를 이 함수로 읽어 보면(읽기만) 20건 가운데 19건이 통과하고 새 이름 둘(`country_and_world_change_shown`, `precision_sensitivity_shown`)도 받는다. 두 신호가 모두 발동한 1건은 필수 근거를 합친 목록으로 적어 입력 오류다. 합친 목록에서는 두 계열에 모두 있는 코드(`comparability_ok` 등 다섯)가 어느 신호의 근거인지 알 수 없어 채점기가 나누지 않는다. DT5가 그 사례를 신호별 객체로 적어야 dev20 채점이 된다.
 
 ④ **필수 근거 코드의 판정 조건** — 잠정(MT1 결정 D17의 공개 판정 조건 표가 정해지면 맞춘다. `precision_sensitivity_shown`은 사용자 확인 U4 뒤)
 
@@ -163,7 +164,7 @@ DT8(독립 채점기, 데이터 트랙) 구현(단위 C1~C4와 채점기 명령,
 
 ## 영향과 넘길 곳
 
-- DT5(시나리오 명세·dev20)·DT6(holdout40): 정답표를 ③의 형식으로 만든다. 코드는 판정 근거에 맞게 고른다(④ 표 아래). 경로가 정해지면 오케스트레이터가 `DEV20_ANSWERS`와 봉인 파일 이름(`SEALED_FILES`)을 알린다.
+- DT5(시나리오 명세·dev20)·DT6(holdout40): 정답표를 ③의 형식으로 만든다. 코드는 판정 근거에 맞게 고른다(④ 표 아래). `DEV20_ANSWERS`는 정해졌다(③). 두 신호가 모두 발동한 dev20 사례의 `required_evidence`는 신호별 객체로 적는다(③). 봉인 파일 이름(`SEALED_FILES`)은 정해지면 오케스트레이터가 알린다.
 - MT1(D17): 공개 판정 조건 표를 ④와 맞춘다. HOLD를 사유별로 나누면 ④의 대체 조건을 다시 본다.
 - MT3(검증기): ⑦의 해석, ⑫의 `flow`(수입 행만) 확인, `ALL` HS6 `OBSERVED` 근거, 상대국 HS10 키의 HS4 행 불가를 같게 맞춘다.
 - DT1(자료 접근층): 근거 ID `rowid_of`에도 19자리 상한을 둔다(⑨). ⑦이 확정되면 자료 접근층의 빠진 HS10 표시를 맞춘다. `g0`를 적재한 빌드를 정본 자리에 옮긴다(⑧의 주의).

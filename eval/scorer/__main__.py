@@ -33,7 +33,8 @@ N8), 그 이름을 표준 출력 첫 줄로 알린 뒤 scorer_claims-{시각}.js
 - 봉인 묶음은 인자 해석 뒤 어떤 예외에서도 표준 출력에 끝 상태만 낸다(N10). 오류 문장에는 로컬 절대경로를 넣지
   않는다(N13: OSError는 형식 이름과 strerror만).
 
-아직 정해지지 않은 것(F1 전 보완, 한 곳에 모았다): dev20 정답표 경로(DT5, DEV20_ANSWERS), 봉인 정답표·표본 파일 이름
+dev20 정답표 경로(DEV20_ANSWERS)는 DT5 결정 기록 ⑭의 eval/dev/dev20/answers/answers.json이다.
+아직 정해지지 않은 것(F1 전 보완, 한 곳에 모았다): 봉인 정답표·표본 파일 이름
 (DT6·DT7, SEALED_FILES), 평가 묶음 실행 이름과 묶음 기록 도메인명(MT7, BATCH_DOMAINS), 사례 폴더 안 보고서 파일의
 도메인명(AS3, REPORT_DOMAIN). 모르면 오류로 멈춘다.
 """
@@ -68,7 +69,7 @@ BATCH_DOMAINS = {"evaluate": "evaluation_batch_run"}  # 평가 묶음 실행 이
 REPORT_DOMAIN = "reports_render_ko"  # 사례 실행 폴더 안 보고서 객체 파일의 도메인명(단위 R2, AS3에서 맞춘다)
 SNAPSHOT_FILE = "snapshot_build.sqlite"
 ORACLE_PATH = ("eval", "dev", "oracle_ABC.json")
-DEV20_ANSWERS: tuple[str, ...] | None = None  # 로드맵 DT5가 정한다
+DEV20_ANSWERS: tuple[str, ...] | None = ("eval", "dev", "dev20", "answers", "answers.json")  # DT5 결정 기록 ⑭
 SEALED_FILES: dict[str, str | None] = {"holdout40": None, "real_sealed": None}  # 봉인 폴더 기준 상대경로(DT6·DT7)
 SEALED_MANIFEST = ("eval", "sealed_manifest.json")
 SEALED_ENV = "TRADESENTRY_SEALED_DIR"
