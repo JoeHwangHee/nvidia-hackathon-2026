@@ -19,3 +19,4 @@
 | `20260924-2212-user-decision-impl-plan-after-s0.md` | 2026-09-24(목) 22:12 | 두 트랙 구현 계획은 S0(앱 뼈대) 병합 뒤 따로 세우고 사용자가 보고 승인한 뒤 착수 | 사용자 | 유효 |
 | `20260924-2212-user-decision-snapshot-build-and-g0.md` | 2026-09-24(목) 22:12 | 최종 스냅샷 빌드 파일 `data/snapshots/{snapshot_id}/snapshot_build.sqlite`와 `g0` 해석(대상국을 뺀 15개국 중 상위 5개국) | 사용자 | 유효 |
 | `20260924-2212-orchestrator-decision-s0-scaffold.md` | 2026-09-24(목) 22:12 | S0가 정할 위치와 S0 뼈대의 약속 확정(계획 경로 표를 바꾸는 항목 제외) | 오케스트레이터 | 유효 |
+| `20260924-2315-user-decision-impl-plan-approval.md` | 2026-09-24(목) 23:15 | 두 트랙 구현 계획 승인과 결정 열한 가지(D1~D8, D16~D18) | 사용자 | 유효 |
