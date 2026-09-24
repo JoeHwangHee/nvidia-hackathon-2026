@@ -1,0 +1,1407 @@
+{
+ "schema_version": 1,
+ "dataset": "dev20",
+ "snapshot_id": "dev20",
+ "policy_version": "dev-0.1",
+ "fixed_time": "2026-09-25T00:00:00+09:00",
+ "world": {
+  "period": {
+   "start": "202201",
+   "end": "202412"
+  },
+  "hs4": "8504",
+  "hs6": [
+   "850450",
+   "850431",
+   "850432",
+   "850490"
+  ],
+  "partners": [
+   "XL",
+   "XM",
+   "XN",
+   "XO",
+   "XP",
+   "XQ"
+  ],
+  "noise": {
+   "seed": 20260925,
+   "quantity_permille": 20,
+   "price_permille": 10
+  },
+  "series": {
+   "850450": {
+    "XL": {
+     "1000": [
+      900,
+      75
+     ],
+     "2000": [
+      300,
+      75
+     ]
+    },
+    "XM": {
+     "1000": [
+      1000,
+      100
+     ],
+     "2000": [
+      500,
+      100
+     ]
+    },
+    "XN": {
+     "1000": [
+      1400,
+      100
+     ],
+     "9000": [
+      600,
+      100
+     ]
+    },
+    "XO": {
+     "1000": [
+      800,
+      80
+     ],
+     "2000": [
+      400,
+      80
+     ]
+    },
+    "XP": {
+     "1000": [
+      900,
+      90
+     ],
+     "2000": [
+      600,
+      60
+     ]
+    },
+    "XQ": {
+     "1000": [
+      700,
+      70
+     ],
+     "2000": [
+      800,
+      100
+     ]
+    }
+   },
+   "850431": {
+    "XL": {
+     "1000": [
+      1800,
+      90
+     ],
+     "2000": [
+      1050,
+      210
+     ]
+    },
+    "XM": {
+     "1000": [
+      250,
+      50
+     ],
+     "2000": [
+      500,
+      50
+     ],
+     "9000": [
+      1000,
+      50
+     ]
+    },
+    "XN": {
+     "1000": [
+      900,
+      90
+     ],
+     "2000": [
+      600,
+      120
+     ]
+    },
+    "XO": {
+     "1000": [
+      1250,
+      125
+     ],
+     "2000": [
+      250,
+      25
+     ]
+    },
+    "XP": {
+     "1000": [
+      2800,
+      280
+     ],
+     "2000": [
+      1200,
+      240
+     ]
+    },
+    "XQ": {
+     "1000": [
+      300,
+      30
+     ],
+     "2000": [
+      100,
+      20
+     ]
+    }
+   },
+   "850432": {
+    "XL": {
+     "1000": [
+      6000,
+      600
+     ],
+     "2000": [
+      2000,
+      400
+     ]
+    },
+    "XM": {
+     "1000": [
+      240,
+      20
+     ],
+     "2000": [
+      120,
+      30
+     ]
+    },
+    "XN": {
+     "1000": [
+      200,
+      20
+     ],
+     "2000": [
+      100,
+      20
+     ]
+    },
+    "XO": {
+     "1000": [
+      200,
+      20
+     ],
+     "9000": [
+      150,
+      30
+     ]
+    },
+    "XP": {
+     "1000": [
+      200,
+      20
+     ],
+     "2000": [
+      100,
+      20
+     ]
+    },
+    "XQ": {
+     "1000": [
+      210,
+      30
+     ],
+     "2000": [
+      90,
+      30
+     ]
+    }
+   },
+   "850490": {
+    "XL": {
+     "1000": [
+      200,
+      20
+     ],
+     "2000": [
+      100,
+      20
+     ]
+    },
+    "XM": {
+     "1000": [
+      300,
+      30
+     ],
+     "2000": [
+      200,
+      50
+     ]
+    },
+    "XN": {
+     "1000": [
+      5000,
+      500
+     ],
+     "2000": [
+      3000,
+      600
+     ]
+    },
+    "XO": {
+     "1000": [
+      200,
+      20
+     ],
+     "2000": [
+      100,
+      20
+     ]
+    },
+    "XP": {
+     "1000": [
+      300,
+      20
+     ]
+    },
+    "XQ": {
+     "1000": [
+      200,
+      20
+     ],
+     "2000": [
+      100,
+      20
+     ]
+    }
+   }
+  },
+  "rest_of_world": {
+   "850450": {
+    "1000": [
+     1000,
+     100
+    ],
+    "2000": [
+     500,
+     100
+    ],
+    "9000": [
+     500,
+     50
+    ]
+   },
+   "850431": {
+    "1000": [
+     1000,
+     100
+    ],
+    "2000": [
+     500,
+     100
+    ],
+    "9000": [
+     500,
+     25
+    ]
+   },
+   "850432": {
+    "1000": [
+     300,
+     30
+    ],
+    "2000": [
+     200,
+     40
+    ]
+   },
+   "850490": {
+    "1000": [
+     400,
+     40
+    ],
+    "2000": [
+     200,
+     40
+    ]
+   }
+  },
+  "peer_k": 5,
+  "peer_source_year": 2023
+ },
+ "cases": [
+  {
+   "case_id": "850450-XL-202403",
+   "hs6": "850450",
+   "partner": "XL",
+   "month": "202403",
+   "scenario_class": 1,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202303"
+    },
+    {
+     "type": "children",
+     "month": "202403",
+     "values": {
+      "1000": [
+       180,
+       15
+      ],
+      "2000": [
+       540,
+       135
+      ]
+     }
+    }
+   ],
+   "rule": {
+    "unit_value": "composition_explained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MONITOR",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "per_child_unit_value_stable",
+     "comparability_ok"
+    ]
+   },
+   "note": "하위 단가(12·4 USD/kg)는 그대로이고 중량 비중이 50:50에서 10:90으로 싼 품목 쪽으로 옮겨 단가 -40%. within 0, 잔차 0"
+  },
+  {
+   "case_id": "850431-XM-202404",
+   "hs6": "850431",
+   "partner": "XM",
+   "month": "202404",
+   "scenario_class": 1,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202304"
+    },
+    {
+     "type": "children",
+     "month": "202404",
+     "values": {
+      "1000": [
+       50,
+       10
+      ],
+      "2000": [
+       200,
+       20
+      ],
+      "9000": [
+       2400,
+       120
+      ]
+     }
+    }
+   ],
+   "rule": {
+    "unit_value": "composition_explained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MONITOR",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "per_child_unit_value_stable",
+     "comparability_ok"
+    ]
+   },
+   "note": "하위품목 셋의 단가(5·10·20)는 그대로이고 비싼 품목 비중이 1/3에서 80%로 늘어 단가 +51.4%. within 0, 잔차 0"
+  },
+  {
+   "case_id": "850432-XM-202402",
+   "hs6": "850432",
+   "partner": "XM",
+   "month": "202402",
+   "scenario_class": 1,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202302"
+    },
+    {
+     "type": "children",
+     "month": "202402",
+     "values": {
+      "1000": [
+       48,
+       4
+      ],
+      "2000": [
+       184,
+       46
+      ]
+     }
+    }
+   ],
+   "rule": {
+    "unit_value": "composition_explained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MONITOR",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "per_child_unit_value_stable",
+     "comparability_ok"
+    ]
+   },
+   "note": "작은 계열(점유율 약 3.5%). 하위 단가(12·4)는 그대로이고 비싼 품목 비중이 40%에서 8%로 줄어 단가 -35.6%"
+  },
+  {
+   "case_id": "850450-XM-202405",
+   "hs6": "850450",
+   "partner": "XM",
+   "month": "202405",
+   "scenario_class": 2,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202305"
+    },
+    {
+     "type": "children",
+     "month": "202405",
+     "values": {
+      "1000": [
+       600,
+       100
+      ],
+      "2000": [
+       300,
+       100
+      ]
+     }
+    }
+   ],
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "두 하위품목 단가가 모두 -40%, 비중은 그대로(mix 0). within/U0 = -40%. 비교국은 평소 수준"
+  },
+  {
+   "case_id": "850431-XL-202406",
+   "hs6": "850431",
+   "partner": "XL",
+   "month": "202406",
+   "scenario_class": 2,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202306"
+    },
+    {
+     "type": "children",
+     "month": "202406",
+     "values": {
+      "1000": [
+       540,
+       90
+      ],
+      "2000": [
+       1155,
+       210
+      ]
+     }
+    }
+   ],
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "비싼 하위품목 단가 -70%, 싼 품목 +10%, 비중 그대로. 단가 -40.5%가 모두 within"
+  },
+  {
+   "case_id": "850432-XO-202404",
+   "hs6": "850432",
+   "partner": "XO",
+   "month": "202404",
+   "scenario_class": 2,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202304"
+    },
+    {
+     "type": "children",
+     "month": "202404",
+     "values": {
+      "1000": [
+       330,
+       22
+      ],
+      "9000": [
+       210,
+       28
+      ]
+     }
+    }
+   ],
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "두 하위품목 단가 +50%에 비중이 조금 옮음. 단가 +54.3% 가운데 within +50.7%p(U0 대비), mix는 작다"
+  },
+  {
+   "case_id": "850450-XN-202407",
+   "hs6": "850450",
+   "partner": "XN",
+   "month": "202407",
+   "scenario_class": 3,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202307"
+    },
+    {
+     "type": "children",
+     "month": "202407",
+     "values": {
+      "1000": [
+       840,
+       100
+      ],
+      "9000": [
+       360,
+       100
+      ]
+     }
+    },
+    {
+     "type": "scale",
+     "month": "202407",
+     "who": [
+      "XL",
+      "XM",
+      "XO",
+      "XP",
+      "XQ"
+     ],
+     "volume": "1",
+     "price": "0.75"
+    }
+   ],
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국 하위 단가 모두 -40%(within). 같은 달 비교국 다섯 나라 단가도 약 -25%(탐지 기준 아래)로 함께 내림"
+  },
+  {
+   "case_id": "850490-XM-202403",
+   "hs6": "850490",
+   "partner": "XM",
+   "month": "202403",
+   "scenario_class": 3,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202303"
+    },
+    {
+     "type": "children",
+     "month": "202403",
+     "values": {
+      "1000": [
+       165,
+       30
+      ],
+      "2000": [
+       110,
+       50
+      ]
+     }
+    },
+    {
+     "type": "scale",
+     "month": "202403",
+     "who": [
+      "XL",
+      "XN",
+      "XO",
+      "XP",
+      "XQ"
+     ],
+     "volume": "1",
+     "price": "0.8"
+    }
+   ],
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국 하위 단가 모두 -45%(within). 비교국 다섯 나라(지배적 공급국 포함) 단가도 약 -20%로 함께 내림"
+  },
+  {
+   "case_id": "850450-XO-202409",
+   "hs6": "850450",
+   "partner": "XO",
+   "month": "202409",
+   "scenario_class": 4,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202309"
+    },
+    {
+     "type": "children",
+     "month": "202409",
+     "values": {
+      "1000": [
+       480,
+       80
+      ],
+      "2000": [
+       240,
+       80
+      ]
+     }
+    },
+    {
+     "type": "request",
+     "endpoint": "nitemtrade",
+     "hsSgn": "850450",
+     "cntyCd": "XO",
+     "strtYymm": "202401",
+     "status": "NOT_COLLECTED"
+    }
+   ],
+   "rule": {
+    "unit_value": "hold_missing",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "missingness_listed",
+     "failure_vs_not_collected_distinguished",
+     "no_zero_fill"
+    ]
+   },
+   "note": "부모 HS6 단가 -40%. 비교월 연도의 대상국 HS10 조회(HS6 요청)가 수집되지 않음(NOT_COLLECTED) → 분해 불가"
+  },
+  {
+   "case_id": "850432-XP-202408",
+   "hs6": "850432",
+   "partner": "XP",
+   "month": "202408",
+   "scenario_class": 4,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202308"
+    },
+    {
+     "type": "children",
+     "month": "202408",
+     "values": {
+      "1000": [
+       120,
+       20
+      ],
+      "2000": [
+       60,
+       20
+      ]
+     }
+    },
+    {
+     "type": "request",
+     "endpoint": "nitemtrade",
+     "hsSgn": "850432",
+     "cntyCd": "XP",
+     "strtYymm": "202301",
+     "status": "FAILED"
+    }
+   ],
+   "rule": {
+    "unit_value": "hold_missing",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "missingness_listed",
+     "failure_vs_not_collected_distinguished",
+     "no_zero_fill"
+    ]
+   },
+   "note": "부모 HS6 단가 -40%. 기준월 연도의 대상국 HS10 조회가 실패(REQUEST_FAILED) → 분해 불가"
+  },
+  {
+   "case_id": "850431-XN-202408",
+   "hs6": "850431",
+   "partner": "XN",
+   "month": "202408",
+   "scenario_class": 5,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202308"
+    },
+    {
+     "type": "children",
+     "month": "202408",
+     "values": {
+      "1000": [
+       640,
+       90
+      ],
+      "2000": [
+       360,
+       120
+      ]
+     }
+    },
+    {
+     "type": "parent",
+     "month": "202408",
+     "value": [
+      900,
+      210
+     ]
+    }
+   ],
+   "rule": {
+    "unit_value": "hold_inconsistent",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "비교월 부모 HS6 금액 900 USD와 HS10 하위 합 1,000 USD가 다름(금액 정확 일치 위반). 부모 단가 -40%"
+  },
+  {
+   "case_id": "850432-XQ-202410",
+   "hs6": "850432",
+   "partner": "XQ",
+   "month": "202410",
+   "scenario_class": 5,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202310"
+    },
+    {
+     "type": "children",
+     "month": "202410",
+     "values": {
+      "1000": [
+       126,
+       30
+      ],
+      "3000": [
+       54,
+       30
+      ]
+     }
+    }
+   ],
+   "rule": {
+    "unit_value": "hold_inconsistent",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "기준월과 비교월의 HS10 코드 집합이 다름(비교월에 2000이 없고 3000이 그 달에만 나옴) → 동일 HS10 집합이 아니라 분해 불가. 부모 단가 -40%"
+  },
+  {
+   "case_id": "850490-XP-202309",
+   "hs6": "850490",
+   "partner": "XP",
+   "month": "202309",
+   "scenario_class": 6,
+   "events": [
+    {
+     "type": "children",
+     "month": "202209",
+     "values": {
+      "1000": [
+       120,
+       12
+      ]
+     }
+    },
+    {
+     "type": "children",
+     "month": "202309",
+     "values": {
+      "1000": [
+       162,
+       12
+      ]
+     }
+    }
+   ],
+   "rule": {
+    "unit_value": "rounding_unstable",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "precision_sensitivity_shown"
+    ]
+   },
+   "note": "기준월 120 USD·12 kg, 비교월 162 USD·12 kg(단가 +35.0%). 두 달 모두 policy_v1 제안 최소 기준(100 USD·10 kg) 이상. 금액은 그대로 두고 두 달 부모 중량을 ±0.5 kg 움직이면 단가 변화율 구간이 약 +24.2%~+46.7%라 하한이 기준 30% 아래(반올림 불안정)"
+  },
+  {
+   "case_id": "850431-XO-202410",
+   "hs6": "850431",
+   "partner": "XO",
+   "month": "202410",
+   "scenario_class": 6,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202310"
+    },
+    {
+     "type": "children",
+     "month": "202410",
+     "values": {
+      "1000": [
+       700,
+       150
+      ],
+      "2000": [
+       200,
+       0
+      ]
+     }
+    }
+   ],
+   "rule": {
+    "unit_value": "hold_inconsistent",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "비교월 하위품목 하나가 금액 200 USD·중량 0 kg이라 그 품목 단가를 계산할 수 없음 → 분해 불가. 부모 단가 -40%"
+  },
+  {
+   "case_id": "850432-XL-202406",
+   "hs6": "850432",
+   "partner": "XL",
+   "month": "202406",
+   "scenario_class": 7,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202306"
+    },
+    {
+     "type": "exact",
+     "month": "202406"
+    },
+    {
+     "type": "world",
+     "month": "202406",
+     "values": {
+      "1000": [
+       4000,
+       400
+      ],
+      "2000": [
+       1600,
+       320
+      ]
+     }
+    }
+   ],
+   "rule": {
+    "unit_value": null,
+    "share": "hold_inconsistent"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "HOLD"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "country_and_world_change_shown",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "비교월 전체국가 분모 5,600 USD가 대상국 금액 8,000 USD보다 작음(점유율 142.9%). 대상국 금액·단가는 그대로"
+  },
+  {
+   "case_id": "850490-XN-202305",
+   "hs6": "850490",
+   "partner": "XN",
+   "month": "202305",
+   "scenario_class": 7,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202205"
+    },
+    {
+     "type": "exact",
+     "month": "202305"
+    },
+    {
+     "type": "world",
+     "month": "202205",
+     "values": {
+      "1000": [
+       3500,
+       350
+      ],
+      "2000": [
+       2100,
+       420
+      ]
+     }
+    }
+   ],
+   "rule": {
+    "unit_value": null,
+    "share": "hold_inconsistent"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "HOLD"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "country_and_world_change_shown",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "기준월 전체국가 분모 5,600 USD가 대상국 금액 8,000 USD보다 작음(기준월 점유율 142.9%). 비교월은 정상"
+  },
+  {
+   "case_id": "850450-XQ-202402",
+   "hs6": "850450",
+   "partner": "XQ",
+   "month": "202402",
+   "scenario_class": 8,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202302"
+    },
+    {
+     "type": "exact",
+     "month": "202402"
+    },
+    {
+     "type": "scale",
+     "month": "202402",
+     "who": [
+      "XL",
+      "XM",
+      "XN",
+      "XO",
+      "XP",
+      "ROW"
+     ],
+     "volume": "0.4",
+     "price": "1"
+    }
+   ],
+   "rule": {
+    "unit_value": null,
+    "share": "unexplained"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "MAINTAIN"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "country_and_world_change_shown",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국 금액은 그대로인데 다른 나라 물량이 60% 줄어 전체국가 분모가 작아짐(점유율 약 +14.8pp). 분모 축소는 산술 설명일 뿐"
+  },
+  {
+   "case_id": "850450-XP-202411",
+   "hs6": "850450",
+   "partner": "XP",
+   "month": "202411",
+   "scenario_class": 8,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202311"
+    },
+    {
+     "type": "children",
+     "month": "202411",
+     "values": {
+      "1000": [
+       120,
+       12
+      ],
+      "2000": [
+       80,
+       8
+      ]
+     }
+    }
+   ],
+   "rule": {
+    "unit_value": null,
+    "share": "unexplained"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "MAINTAIN"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "country_and_world_change_shown",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국 물량이 크게 줄어(금액 1,500→200 USD, 단가 그대로) 점유율 약 -11.6pp. 분모는 완전함"
+  },
+  {
+   "case_id": "850431-XQ-202401",
+   "hs6": "850431",
+   "partner": "XQ",
+   "month": "202401",
+   "scenario_class": 9,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202301"
+    },
+    {
+     "type": "children",
+     "month": "202401",
+     "values": {
+      "1000": [
+       180,
+       30
+      ],
+      "2000": [
+       60,
+       20
+      ]
+     }
+    }
+   ],
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국의 이 HS6는 그 나라 8504 수입의 약 16%뿐이라 HS4 합계로 보면 단가 변화가 약 -7%로 작아 보임(범위 함정). 사례 범위(HS6)에서는 하위 단가 모두 -40%(within)"
+  },
+  {
+   "case_id": "850431-XP-202412",
+   "hs6": "850431",
+   "partner": "XP",
+   "month": "202412",
+   "scenario_class": 10,
+   "events": [
+    {
+     "type": "exact",
+     "month": "202312"
+    },
+    {
+     "type": "children",
+     "month": "202412",
+     "values": {
+      "1000": [
+       1400,
+       280
+      ],
+      "2000": [
+       600,
+       240
+      ]
+     }
+    },
+    {
+     "type": "request",
+     "endpoint": "nitemtrade",
+     "hsSgn": "850431",
+     "cntyCd": "XP",
+     "strtYymm": "202401",
+     "status": "FAILED"
+    }
+   ],
+   "rule": {
+    "unit_value": "hold_missing",
+    "share": "unexplained"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "MAINTAIN"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": true,
+    "required_evidence": {
+     "unit_value": [
+      "missingness_listed",
+      "failure_vs_not_collected_distinguished",
+      "no_zero_fill"
+     ],
+     "share": [
+      "country_and_world_change_shown",
+      "partner_comparison_done",
+      "comparability_ok"
+     ]
+    }
+   },
+   "note": "단가 -50%(비교월 연도 HS10 조회 실패로 분해 불가 → HOLD)와 점유율 약 -11.9pp(분모 완전, 설명 안 됨 → MAINTAIN)"
+  }
+ ]
+}

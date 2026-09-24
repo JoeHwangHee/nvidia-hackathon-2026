@@ -1,0 +1,13 @@
+{
+  "blocked": false,
+  "revise": false,
+  "execution_status": null,
+  "schema_failed": false,
+  "record_only": true,
+  "validator_findings": [
+    {"check": "validator", "code": "NUMERIC_MISMATCH", "path": "claims[1].value", "claim_id": "c2",
+     "detail": "검증된 지표 값과 다르다. 적힌 값: 3.66, 같은 자리의 지표 값: 3.60"},
+    {"check": "validator", "code": "PROSE_UNBACKED", "path": "narrative", "claim_id": null,
+     "detail": "PT-1 표현 '55%': 같은 보고서의 typed claim으로 뒷받침되지 않는다(룰북 B3-2)"}
+  ]
+}

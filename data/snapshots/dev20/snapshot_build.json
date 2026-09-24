@@ -1,0 +1,25 @@
+{
+ "schema_version": 1,
+ "snapshot_id": "dev20",
+ "normalized_sha256": "e10b41a985ae36098f32723f9627c86fa09f2ea048edd1b614bdbcf474d47c16",
+ "raw_sha256": "297218ff708efa14504b698ab21175b3b88cbfa627e5899bbd24b5fed58df25c",
+ "policy_version": "dev-0.1",
+ "confirmed_no_trade_rule": null,
+ "confirmed_no_trade_rows": 0,
+ "peer_group_files": [
+  {
+   "file_name": "peer_group_dev20.csv",
+   "sha256": "ab80108a0a94fbb9745222d45d1d352ff955bce3431b13804992f53785e46d7f"
+  }
+ ],
+ "row_counts": {
+  "collection_receipt": 104,
+  "observation": 6900,
+  "peer_group": 120,
+  "snapshot_meta": 14
+ },
+ "build_file": "snapshot_build.sqlite",
+ "built_at": "2026-09-25T05:51:28+09:00",
+ "installed_from": "snapshot_build-260925055128.sqlite",
+ "installed_at": "2026-09-25T05:51:28+09:00"
+}

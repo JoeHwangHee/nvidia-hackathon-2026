@@ -1,0 +1,27 @@
+{
+ "schema_version": 1,
+ "dataset": "dev20",
+ "id_rule": "ps_ + sha256(정규 JSON {\"children\": {HS10 뒤 4자리: [[V, Q] 월별]}, \"parent\": [[V, Q] 월별], \"period\": {\"start\", \"end\"}})의 16진수 소문자 앞 16자. 정규 JSON은 키 정렬, 구분자 ',' ':', ensure_ascii=False. 기본 계열은 사례 사건을 얹기 전의 대상 계열(부모 HS6와 HS10 하위품목의 월별 금액·중량)",
+ "parent_series_ids": [
+  "ps_014ece3392f2246f",
+  "ps_08b7848b2f1b36e5",
+  "ps_1cd070ddcd149195",
+  "ps_2d256f211c256f96",
+  "ps_309f21632818ddd9",
+  "ps_448156909c5d2544",
+  "ps_4ae2e013510b6e58",
+  "ps_560f3102be9af3c1",
+  "ps_625b710163fa3e3b",
+  "ps_6e5179347455a12d",
+  "ps_9035ab7b4a9443c2",
+  "ps_94a2e6c64f4a5d97",
+  "ps_9a889a97d91a84a9",
+  "ps_9f04b65ecab6436b",
+  "ps_a5966f4ebceac5df",
+  "ps_aa2b2d77c721376f",
+  "ps_ad452947467ac843",
+  "ps_b5063c696f6b1f39",
+  "ps_b9f52085e946baea",
+  "ps_f50d2d72eabdb527"
+ ]
+}

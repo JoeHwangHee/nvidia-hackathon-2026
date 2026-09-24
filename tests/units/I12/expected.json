@@ -1,0 +1,180 @@
+{
+ "record": {
+  "run_id": "run_case-260925143015",
+  "case_id": "A-composition",
+  "dataset": "controlled_fixture_v0",
+  "mode": "full",
+  "policy_version": "dev-0.1",
+  "rulebook_version": "RB-1",
+  "snapshot_id": "controlled_fixture_v0",
+  "grouping_version": "g0",
+  "code_version": "abc1234",
+  "review_status_final": "MONITOR",
+  "signal_status": {
+   "unit_value": "MONITOR",
+   "share": "NOT_TRIGGERED"
+  },
+  "unresolved_evidence": false,
+  "execution_status": "COMPLETED",
+  "tool_attempts": 3,
+  "model_requests": 2,
+  "tokens_in": 2700,
+  "tokens_out": 240,
+  "wall_ms": 1415,
+  "critic_used": true,
+  "revision_used": false,
+  "errors": []
+ },
+ "report": {
+  "report_id": "run_case-260925143015-report1",
+  "run_id": "run_case-260925143015",
+  "case_id": "A-composition",
+  "mode": "full",
+  "claims": [
+   {
+    "claim_id": "c1",
+    "claim_type": "change",
+    "hs6": "850450",
+    "partner": "CN",
+    "period": "202401",
+    "baseline_period": "202301",
+    "metric": "r_U",
+    "value": -40.0,
+    "unit": "%",
+    "direction": "DOWN",
+    "evidence_ids": [
+     "ev:controlled_fixture_v0:observation:1024",
+     "ev:controlled_fixture_v0:observation:1025"
+    ],
+    "text": "단가가 전년 같은 달보다 낮다."
+   }
+  ],
+  "narrative": "단가 신호는 하위품목 구성 변화로 설명될 가능성이 있다.",
+  "hypotheses": [
+   "구성 변화 가설"
+  ],
+  "review_status": "MONITOR",
+  "signal_status": {
+   "unit_value": "MONITOR",
+   "share": "NOT_TRIGGERED"
+  },
+  "unresolved_evidence": false,
+  "evidence_ids": [
+   "ev:controlled_fixture_v0:observation:1024",
+   "ev:controlled_fixture_v0:observation:1025"
+  ],
+  "validator_findings": [],
+  "report_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "created_at": "2026-09-25T00:00:00+09:00",
+  "policy_version": "dev-0.1",
+  "snapshot_id": "controlled_fixture_v0",
+  "grouping_version": "g0"
+ },
+ "events": [
+  [
+   "run_start",
+   null,
+   null
+  ],
+  [
+   "stage_start",
+   "basic",
+   null
+  ],
+  [
+   "tool_call",
+   "basic",
+   "check_comparability"
+  ],
+  [
+   "tool_result",
+   "basic",
+   "check_comparability"
+  ],
+  [
+   "tool_call",
+   "basic",
+   "get_history"
+  ],
+  [
+   "tool_result",
+   "basic",
+   "get_history"
+  ],
+  [
+   "model_request",
+   "basic",
+   null
+  ],
+  [
+   "model_response",
+   "basic",
+   null
+  ],
+  [
+   "state_change",
+   "basic",
+   "draft"
+  ],
+  [
+   "validator_result",
+   "basic",
+   "draft"
+  ],
+  [
+   "stage_end",
+   "basic",
+   null
+  ],
+  [
+   "stage_start",
+   "critic",
+   null
+  ],
+  [
+   "model_request",
+   "critic",
+   null
+  ],
+  [
+   "model_response",
+   "critic",
+   null
+  ],
+  [
+   "state_change",
+   "critic",
+   "after_critic"
+  ],
+  [
+   "stage_end",
+   "critic",
+   null
+  ],
+  [
+   "tool_call",
+   "basic",
+   "verify_evidence"
+  ],
+  [
+   "tool_result",
+   "basic",
+   "verify_evidence"
+  ],
+  [
+   "validator_result",
+   "basic",
+   "verify"
+  ],
+  [
+   "state_change",
+   "final",
+   "final"
+  ],
+  [
+   "run_end",
+   null,
+   "COMPLETED"
+  ]
+ ]
+}

@@ -1,0 +1,25 @@
+{
+ "schema_version": 1,
+ "snapshot_id": "controlled_fixture_v0",
+ "normalized_sha256": "7453bf78c9b7bbab9781aeba316132a2945c6d11fdd61b56007e931c02241cae",
+ "raw_sha256": "2f8b7f899a1d5fb8b315864c72d12e843cb2e981df9d48e3457337f0e6b9501a",
+ "policy_version": null,
+ "confirmed_no_trade_rule": "ingest_verify_candidates",
+ "confirmed_no_trade_rows": 1,
+ "peer_group_files": [
+  {
+   "file_name": "peer_group_controlled_fixture_v0.csv",
+   "sha256": "b688a74fd5cf1db64ac77c70dfb62f9b56904c73c121a573ab668f44de16f208"
+  }
+ ],
+ "row_counts": {
+  "collection_receipt": 131,
+  "observation": 8330,
+  "peer_group": 150,
+  "snapshot_meta": 14
+ },
+ "build_file": "snapshot_build.sqlite",
+ "built_at": "2026-09-25T01:46:56+09:00",
+ "installed_from": "snapshot_build-260925014655.sqlite",
+ "installed_at": "2026-09-25T01:46:56+09:00"
+}

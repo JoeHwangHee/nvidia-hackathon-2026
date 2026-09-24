@@ -1,0 +1,45 @@
+# TradeSentry OpenShell provider 프로필 — 키 주입 설정(단위 F6, 소유 M, 보안 검토)
+#
+# provider는 OpenShell 게이트웨이에 등록하는 자격 증명 묶음이다. 채점 대상 실행 샌드박스(configs/openshell/policy.yaml)에
+# 붙인다. 키 주입 방식은 X1에서 실제로 성공한 credential placeholder rewrite(헤더 자리표시 값 치환)다(결정 기록
+# docs/tracking/decisions/20260924-1556-x1-key-injection.md).
+#   - 샌드박스 안 에이전트 쪽 프로세스(샌드박스 사용자 권한)의 환경변수 NVIDIA_API_KEY에는 자리표시 값만 있다.
+#   - CLI는 그 값을 `Authorization: Bearer` 헤더에 실어 보낸다. 샌드박스 안에서 root로 도는 감독 프로세스의 정책 프록시가
+#     게이트웨이에서 받은 자격 증명으로 요청 시점에 실제 키로 바꾼다(요건 (c), 해석 A).
+#   - auth_style·header_name은 OpenShell 0.0.116에서 저장·검증되는 메타데이터이고 치환 위치를 정하지 않는다
+#     (OpenShell v0.0.116 docs/sandboxes/providers-v2.mdx 216행). 목적지는 이 프로필이 아니라 샌드박스 정책이 연다
+#     (providers_v2_enabled는 켜지 않는다, 결정 기록 1556 "검토한 대안" ②).
+# 출발점: X1 초안 spikes/x1/policy/x1-nvidia-chat.profile.yaml. 목적지·rules는 policy.yaml의 블록과 같고, 실행 파일만 이
+# 이미지의 경로로 바꿨다.
+#
+# 등록(오케스트레이터가 돌린다. 키는 래퍼가 자식 프로세스 환경에만 넣고, 명령에는 변수 이름만 준다)
+#   openshell provider profile import -f configs/openshell/provider_profile.yaml
+#   python3 spikes/x1/with_nvidia_key.py --env-file <저장소 .env> -- \
+#     openshell provider create --name tradesentry-nvidia --type tradesentry-nvidia-chat --credential NVIDIA_API_KEY
+# 시연 샌드박스는 이 프로필을 쓰지 않는다. NemoClaw 온보딩이 만든 provider nvidia-prod(자리표시 변수
+# NVIDIA_INFERENCE_API_KEY)를 그대로 쓴다.
+# 이 파일에는 키 값을 적지 않는다. credentials에는 변수 이름만 있다.
+id: tradesentry-nvidia-chat
+display_name: TradeSentry NVIDIA chat completions
+description: TradeSentry CLI. NVIDIA NIM POST /v1/chat/completions only, for the sandbox image Python.
+category: inference
+credentials:
+- name: api_key
+  description: NVIDIA API key
+  env_vars:
+  - NVIDIA_API_KEY
+  required: true
+  auth_style: bearer
+  header_name: authorization
+endpoints:
+- host: integrate.api.nvidia.com
+  port: 443
+  protocol: rest
+  enforcement: enforce
+  rules:
+  - allow:
+      method: POST
+      path: /v1/chat/completions
+binaries:
+- /opt/tradesentry/python/**
+inference_capable: true

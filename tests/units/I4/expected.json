@@ -1,0 +1,414 @@
+{
+ "query_id": "decompose_hs-39ac1791692743a9",
+ "tool": "decompose_hs",
+ "scope": {
+  "hs6": "850431",
+  "partner": "MX",
+  "month": "202401",
+  "baseline_month": "202301",
+  "months": [
+   "202301",
+   "202401"
+  ],
+  "partners": [
+   "MX"
+  ],
+  "hs10": [
+   "8504311000",
+   "8504312000"
+  ]
+ },
+ "snapshot_id": "unit_fixture_tools",
+ "source_kind": "controlled",
+ "evidence_ids": [
+  "ev:unit_fixture_tools:observation:3",
+  "ev:unit_fixture_tools:observation:31",
+  "ev:unit_fixture_tools:observation:273",
+  "ev:unit_fixture_tools:observation:275",
+  "ev:unit_fixture_tools:observation:303",
+  "ev:unit_fixture_tools:observation:305"
+ ],
+ "metrics": [
+  {
+   "metric_id": "within_effect-a1f0c555562e7947",
+   "formula_version": "1",
+   "inputs": {
+    "metric": "within_effect",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": "202301",
+    "V_0": 6000,
+    "Q_0": 1000,
+    "V_1": 3600,
+    "Q_1": 1000,
+    "hs10_values": {
+     "8504311000": {
+      "V_0": 1000,
+      "Q_0": 500,
+      "V_1": 1600,
+      "Q_1": 800
+     },
+     "8504312000": {
+      "V_0": 5000,
+      "Q_0": 500,
+      "V_1": 2000,
+      "Q_1": 200
+     }
+    }
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:3",
+    "ev:unit_fixture_tools:observation:31",
+    "ev:unit_fixture_tools:observation:273",
+    "ev:unit_fixture_tools:observation:275",
+    "ev:unit_fixture_tools:observation:303",
+    "ev:unit_fixture_tools:observation:305"
+   ],
+   "value": 0.00,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": 1.5
+  },
+  {
+   "metric_id": "mix_effect-b0003da8ca908a9e",
+   "formula_version": "1",
+   "inputs": {
+    "metric": "mix_effect",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": "202301",
+    "V_0": 6000,
+    "Q_0": 1000,
+    "V_1": 3600,
+    "Q_1": 1000,
+    "hs10_values": {
+     "8504311000": {
+      "V_0": 1000,
+      "Q_0": 500,
+      "V_1": 1600,
+      "Q_1": 800
+     },
+     "8504312000": {
+      "V_0": 5000,
+      "Q_0": 500,
+      "V_1": 2000,
+      "Q_1": 200
+     }
+    }
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:3",
+    "ev:unit_fixture_tools:observation:31",
+    "ev:unit_fixture_tools:observation:273",
+    "ev:unit_fixture_tools:observation:275",
+    "ev:unit_fixture_tools:observation:303",
+    "ev:unit_fixture_tools:observation:305"
+   ],
+   "value": -2.40,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": 1.5
+  },
+  {
+   "metric_id": "residual-c39061baf5ccda01",
+   "formula_version": "1",
+   "inputs": {
+    "metric": "residual",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": "202301",
+    "V_0": 6000,
+    "Q_0": 1000,
+    "V_1": 3600,
+    "Q_1": 1000,
+    "hs10_values": {
+     "8504311000": {
+      "V_0": 1000,
+      "Q_0": 500,
+      "V_1": 1600,
+      "Q_1": 800
+     },
+     "8504312000": {
+      "V_0": 5000,
+      "Q_0": 500,
+      "V_1": 2000,
+      "Q_1": 200
+     }
+    }
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:3",
+    "ev:unit_fixture_tools:observation:31",
+    "ev:unit_fixture_tools:observation:273",
+    "ev:unit_fixture_tools:observation:275",
+    "ev:unit_fixture_tools:observation:303",
+    "ev:unit_fixture_tools:observation:305"
+   ],
+   "value": 0.00,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": 1.5
+  },
+  {
+   "metric_id": "U@8504311000-3d6dfb8028c3a218",
+   "formula_version": "1",
+   "inputs": {
+    "metric": "U@8504311000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202301",
+    "baseline_period": null,
+    "V": 1000,
+    "Q": 500
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:273"
+   ],
+   "value": 2.00,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "U@8504311000-6cea20f56565cb6c",
+   "formula_version": "1",
+   "inputs": {
+    "metric": "U@8504311000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": null,
+    "V": 1600,
+    "Q": 800
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:303"
+   ],
+   "value": 2.00,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "r_U@8504311000-17c477cc9ec5fe89",
+   "formula_version": "1",
+   "inputs": {
+    "metric": "r_U@8504311000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": "202301",
+    "V_0": 1000,
+    "Q_0": 500,
+    "V_1": 1600,
+    "Q_1": 800
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:273",
+    "ev:unit_fixture_tools:observation:303"
+   ],
+   "value": 0.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "w@8504311000-12c5eff053958b7e",
+   "formula_version": "1",
+   "inputs": {
+    "metric": "w@8504311000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202301",
+    "baseline_period": null,
+    "Q": 500,
+    "Q_total": 1000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:273",
+    "ev:unit_fixture_tools:observation:275"
+   ],
+   "value": 50.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "w@8504311000-5e1516aaa1bcc649",
+   "formula_version": "1",
+   "inputs": {
+    "metric": "w@8504311000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": null,
+    "Q": 800,
+    "Q_total": 1000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:303",
+    "ev:unit_fixture_tools:observation:305"
+   ],
+   "value": 80.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "U@8504312000-35326976276d45e5",
+   "formula_version": "1",
+   "inputs": {
+    "metric": "U@8504312000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202301",
+    "baseline_period": null,
+    "V": 5000,
+    "Q": 500
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:275"
+   ],
+   "value": 10.00,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "U@8504312000-ef73e82639b36bc3",
+   "formula_version": "1",
+   "inputs": {
+    "metric": "U@8504312000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": null,
+    "V": 2000,
+    "Q": 200
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:305"
+   ],
+   "value": 10.00,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "r_U@8504312000-8d93f789e7d23cad",
+   "formula_version": "1",
+   "inputs": {
+    "metric": "r_U@8504312000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": "202301",
+    "V_0": 5000,
+    "Q_0": 500,
+    "V_1": 2000,
+    "Q_1": 200
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:275",
+    "ev:unit_fixture_tools:observation:305"
+   ],
+   "value": 0.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "w@8504312000-77cc256c539b1556",
+   "formula_version": "1",
+   "inputs": {
+    "metric": "w@8504312000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202301",
+    "baseline_period": null,
+    "Q": 500,
+    "Q_total": 1000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:275",
+    "ev:unit_fixture_tools:observation:273"
+   ],
+   "value": 50.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "w@8504312000-2b9ea4861efc3312",
+   "formula_version": "1",
+   "inputs": {
+    "metric": "w@8504312000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": null,
+    "Q": 200,
+    "Q_total": 1000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:305",
+    "ev:unit_fixture_tools:observation:303"
+   ],
+   "value": 20.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  }
+ ],
+ "comparability": {
+  "parent_check": [
+   {
+    "period": "202301",
+    "row_count": 2,
+    "V_parent": 6000,
+    "V_hs10": 6000,
+    "Q_parent": 1000,
+    "Q_hs10": 1000,
+    "tolerance": 1.5,
+    "V_match": true,
+    "Q_match": true
+   },
+   {
+    "period": "202401",
+    "row_count": 2,
+    "V_parent": 3600,
+    "V_hs10": 3600,
+    "Q_parent": 1000,
+    "Q_hs10": 1000,
+    "tolerance": 1.5,
+    "V_match": true,
+    "Q_match": true
+   }
+  ],
+  "hs10": [
+   {
+    "month": "202301",
+    "observation_status": "OBSERVED",
+    "codes": [
+     "8504311000",
+     "8504312000"
+    ]
+   },
+   {
+    "month": "202401",
+    "observation_status": "OBSERVED",
+    "codes": [
+     "8504311000",
+     "8504312000"
+    ]
+   }
+  ],
+  "same_hs10_set": true
+ },
+ "missingness": [],
+ "retryable_error": null,
+ "elapsed_ms": 0
+}
