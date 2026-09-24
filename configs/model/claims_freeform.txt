@@ -1,0 +1,6 @@
+claims 쓰는 법: 이 요청에서는 주장의 값·단위·근거 ID를 직접 쓴다.
+- 주장 하나는 {"claim_id": "c1", "claim_type": "value|change|share|share_change|decomposition|comparison|data_status", "hs6": "6자리 품목 코드", "partner": "상대국 코드 또는 ALL", "period": "YYYYMM", "baseline_period": "YYYYMM 또는 null", "metric": "지표 기호", "value": 수 또는 관측 상태 코드 또는 null, "unit": "단위 또는 null", "direction": "UP|DOWN|FLAT|NA", "evidence_ids": ["ev: 로 시작하는 근거 ID"], "text": "한국어 한 문장"} 이다.
+- 지표 기호와 단위: V(USD), Q(kg), U(USD/kg, 소수 2자리), r_U(%, 소수 1자리, 비율에 100을 곱한 값), s(%, 소수 1자리), d_s(pp, 소수 1자리), within_effect·mix_effect·residual(USD/kg, 소수 2자리), HS10 하위 지표 U@<HS10>·r_U@<HS10>·w@<HS10>(w@는 %), 자료 상태는 observation_status 또는 observation_status@<HS10>(값은 OBSERVED·NOT_COLLECTED·REQUEST_FAILED·UNRESOLVED_ZERO·CONFIRMED_NO_TRADE 가운데 하나).
+- 부모 HS6 값이 있는 달에 HS10 하위 자료만 빠졌으면, 그 자료 상태 주장의 metric은 observation_status@<빠진 HS10 코드>로 쓰고 hs6는 부모 HS6로 쓴다(HS6 수준 observation_status로 쓰지 않는다).
+- 값은 근거의 지표에서 옮긴다. 근거 ID는 근거에 있는 ev: ID만 쓴다. 변화를 말하지 않는 주장의 baseline_period는 null, direction은 NA다.
+- text에 숫자를 쓰면 그 주장의 value와 같은 소수 자리나 더 거친 자리로 쓰고, 증감 어휘는 그 주장의 direction과 같은 방향만 쓴다. text에도 금지 낱말을 쓰지 않는다.

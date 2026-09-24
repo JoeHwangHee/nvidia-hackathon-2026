@@ -5,7 +5,7 @@
 소유: M
 입력: 실행 기록
 출력: 정답 없는 지표
-허용 import: 표준 라이브러리, nat, tradesentry.contract, tradesentry.runlog
+허용 import: 표준 라이브러리, nat, yaml, tradesentry.contract, tradesentry.runlog
 
 S0 뼈대다. 진입 함수 run의 몸통은 아직 NotImplementedError다. 정본: docs/plan/UNITS.md §3.10.
 """

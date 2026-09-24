@@ -1,0 +1,170 @@
+"""단위 I13(workflow_nat_wrap) 골든 쌍 밖 규칙 시험(로드맵 MT4 완료 기준: NAT 실행 추적과 프로파일 결과, MVP 7번).
+
+- 흐름 조정(단위 I12)을 NAT로 감싸 돌리면 NIM 요청마다 LLM 구간(토큰 포함)과 도구 시도마다 TOOL 구간이 남고,
+  WORKFLOW_END까지 파일에 쓰이며(wait_for_tasks), 프로파일 파일이 N7 폴더에 NAT가 정한 이름으로 생긴다.
+- NAT 추적·프로파일 파일에 로컬 절대경로가 없다(N13): 임시 폴더, 가상환경(sys.prefix, site-packages), 현재 폴더,
+  홈 폴더(바꾼 HOME과 실제 홈), 일반 절대경로 접두어. 폴더가 이미 있으면 쓰지 않는다(N8).
+- 흐름이 예외를 내도 NAT 추적을 끝까지 쓰고 예외를 다시 낸다. `nat` 명령 진입점과 pymilvus(둘 다 import 때 .env를
+  읽는다)를 불러오지 않고, NAT를 불러오는 함수는 모두 먼저 .env 자동 로드·텔레메트리 끔 환경을 둔다.
+"""
+import ast
+import os
+import pwd
+import socket
+import sys
+import tempfile
+import unittest
+import uuid
+from pathlib import Path
+from unittest import mock
+
+from tradesentry.runlog import trace as trace_log
+from tradesentry.workflow import model_client as mc
+from tradesentry.workflow import nat_wrap, orchestrate
+
+from ..I12 import harness as h
+from ..I7.fakes import FakeClock, ScriptedTransport
+
+MODEL = "nvidia/nemotron-3-super-120b-a12b"
+# 일반 절대경로 접두어(시험 파일에만 둔다. 비밀값·경로 검사에 걸리지 않게 이어 붙여 만든다)
+PATH_PREFIXES = tuple("/" + part + "/" for part in ("Users", "home", "private", "tmp")) + ("/" + "var/folders/",)
+
+
+def _refuse_network(*args, **kwargs):
+    raise OSError("이 시험에서는 네트워크 연결을 쓰지 않는다")
+
+
+class NatWrapTest(unittest.TestCase):
+    """골든 시험과 같은 환경(HOME·봉인 폴더는 없는 경로, python-dotenv 끔, 소켓 연결 막음)에서 돈다."""
+
+    def setUp(self):
+        super().setUp()
+        missing = Path(tempfile.gettempdir()) / f"tradesentry-i13-{uuid.uuid4().hex}"  # 만들지 않는 경로
+        self.missing = missing
+        environment = mock.patch.dict(os.environ, {"TRADESENTRY_SEALED_DIR": str(missing / "sealed"),
+                                                   "HOME": str(missing / "home"), "PYTHON_DOTENV_DISABLED": "1"})
+        environment.start()
+        self.addCleanup(environment.stop)
+        for target in ("socket.socket.connect", "socket.create_connection"):
+            patcher = mock.patch(target, _refuse_network)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def run_flow(self, mode, script, fake=None):
+        config = mc.load_model_config()
+        memory = trace_log.MemoryTrace(h.RUN_ID)
+
+        def flow(nat_sink):
+            clock = FakeClock()
+            ctx = orchestrate.RunContext(run_id=h.RUN_ID, case=h.CASE_A, mode=mode, dataset="controlled_fixture_v0",
+                                         rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
+            return orchestrate.orchestrate(ctx, (fake or h.FakePorts()).ports(), config,
+                                           transport=ScriptedTransport(script, clock),
+                                           sink=trace_log.Tee(memory, nat_sink), clock_ms=clock.clock_ms,
+                                           sleep_ms=clock.sleep_ms)
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        nat_dir = Path(tmp.name) / "run_case-260925143015" / "workflow_nat_wrap-260925143015"
+        nat_dir.parent.mkdir()
+        return nat_wrap.run_under_nat(flow, nat_dir, model=MODEL), nat_dir, memory
+
+    def test_flow_under_nat_leaves_llm_and_tool_spans_matching_the_run_record(self):
+        fake = h.FakePorts(checks=[h.PASS, h.BLOCK, h.PASS])
+        script = [h.draft_answer(status="MAINTAIN"), h.tools_answer("decompose_hs", "compare_partners", "get_history"),
+                  h.draft_answer(status="MAINTAIN")]
+        outcome, nat_dir, memory = self.run_flow("agent", script, fake)
+        record = outcome["result"]["record"]
+        summary = outcome["nat"]
+        self.assertEqual(record["execution_status"], "COMPLETED")
+        self.assertTrue(summary["workflow_end"])
+        self.assertEqual(summary["llm_spans"], record["model_requests"])
+        calls = len([r for r in memory.records if r["event"] == "tool_call"])
+        executed = len([r for r in memory.records if r["event"] == "tool_result"])
+        self.assertEqual(summary["tool_spans"], calls)  # 도구 시도마다 구간 하나(막힌 시도도)
+        # tool_attempts는 세는 법(흐름 조정 COUNT_BLOCKED_TOOL_ATTEMPTS, 사용자 확인 대기)을 따른다
+        self.assertEqual(record["tool_attempts"], calls if orchestrate.COUNT_BLOCKED_TOOL_ATTEMPTS else executed)
+        self.assertGreater(calls, executed)  # 이 대본에는 막힌 시도가 있다
+        self.assertEqual(summary["tokens"]["prompt_tokens"], record["tokens_in"])
+        self.assertEqual(summary["tokens"]["completion_tokens"], record["tokens_out"])
+        self.assertEqual(summary["nat_events"][:2], ["WORKFLOW_START", "FUNCTION_START"])
+        self.assertEqual(summary["nat_events"][-2:], ["FUNCTION_END", "WORKFLOW_END"])
+        self.assertEqual(sorted(p.name for p in nat_dir.iterdir()),
+                         sorted((nat_wrap.NAT_TRACE_NAME,) + nat_wrap.PROFILE_FILES))
+        self.assertEqual(outcome["profile_files"], sorted(nat_wrap.PROFILE_FILES))
+        local = {str(nat_dir.parent), tempfile.gettempdir(), sys.prefix, sys.base_prefix, str(Path.cwd()),
+                 os.path.expanduser("~"), pwd.getpwuid(os.getuid()).pw_dir, "site-packages"}
+        for path in nat_dir.iterdir():  # 로컬 절대경로가 없다(N13)
+            with self.subTest(file=path.name):
+                text = path.read_text(encoding="utf-8")
+                self.assertEqual([p for p in sorted(local) if p in text], [])
+                self.assertEqual([p for p in PATH_PREFIXES if p in text], [])
+        self.assertEqual((memory.records[0]["event"], memory.records[-1]["event"]), ("run_start", "run_end"))
+        self.assertFalse(self.missing.exists())  # HOME 아래에 아무것도 만들지 않았다
+        self.assertNotIn("pymilvus", sys.modules)  # import 때 .env를 읽는 의존성을 불러오지 않았다
+        self.assertNotIn("nat.cli.entrypoint", sys.modules)
+
+    def test_existing_folder_is_not_reused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(FileExistsError):
+                nat_wrap.run_under_nat(lambda sink: None, Path(tmp), model=MODEL)
+
+    def test_flow_error_is_raised_after_the_nat_trace_is_finished(self):
+        def flow(nat_sink):
+            nat_sink.emit("stage_start", "basic", {"stage": "basic"})
+            nat_sink.emit("model_request", "basic", {"request_no": 1, "attempt": 1})
+            raise KeyError("흐름 안의 오류")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            nat_dir = Path(tmp) / "workflow_nat_wrap-260925143015"
+            with self.assertRaises(KeyError):
+                nat_wrap.run_under_nat(flow, nat_dir, model=MODEL)
+            api = nat_wrap.nat_api()
+            types = [s.event_type.value for s in nat_wrap.read_nat_trace(api, nat_dir)]
+        self.assertEqual(types[-1], "WORKFLOW_END")
+        self.assertEqual(types.count("LLM_START"), types.count("LLM_END"))  # 열린 구간을 닫았다
+        self.assertEqual(types.count("SPAN_START"), types.count("SPAN_END"))
+
+    def test_nat_is_loaded_through_the_python_api_only(self):
+        nat_wrap.nat_api()
+        self.assertEqual(os.environ.get("PYTHON_DOTENV_DISABLED"), "1")
+        self.assertEqual(os.environ.get("NAT_TELEMETRY_ENABLED"), "false")
+        self.assertNotIn("nat.cli.entrypoint", sys.modules)
+        tree = ast.parse(Path(nat_wrap.__file__).read_text(encoding="utf-8"))
+        top = [n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]
+        names = [a.name for n in top for a in n.names] + [n.module or "" for n in top if isinstance(n, ast.ImportFrom)]
+        self.assertFalse([n for n in names if n == "nat" or n.startswith("nat.") or n == "yaml"])
+
+    def test_profile_and_trace_readers_prepare_the_environment_themselves(self):
+        # write_profile·read_nat_trace를 nat_api 없이 따로 불러도(결과 정리 쪽) .env 자동 로드·텔레메트리가 꺼진다
+        for name in ("PYTHON_DOTENV_DISABLED", "NAT_TELEMETRY_ENABLED"):
+            os.environ.pop(name, None)
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(nat_wrap.read_nat_trace(None, Path(tmp)), [])  # 추적 파일이 없으면 빈 목록
+        self.assertEqual((os.environ.get("PYTHON_DOTENV_DISABLED"), os.environ.get("NAT_TELEMETRY_ENABLED")),
+                         ("1", "false"))
+        for name in ("PYTHON_DOTENV_DISABLED", "NAT_TELEMETRY_ENABLED"):
+            os.environ.pop(name, None)
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / nat_wrap.PROFILE_FILES[0]).write_text("", encoding="utf-8")
+            with self.assertRaises(FileExistsError):  # 이미 있는 이름이면 쓰지 않지만, 환경은 먼저 둔다
+                nat_wrap.write_profile([], Path(tmp))
+        self.assertEqual((os.environ.get("PYTHON_DOTENV_DISABLED"), os.environ.get("NAT_TELEMETRY_ENABLED")),
+                         ("1", "false"))
+        self.assertNotIn("pymilvus", sys.modules)
+
+    def test_template_values_may_not_interpolate_environment_variables(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bad = Path(tmp) / "workflow.yml"
+            bad.write_text(nat_wrap.DEFAULT_WORKFLOW_CONFIG.read_text(encoding="utf-8").replace(
+                "project: tradesentry", "project: ${NVIDIA_PROJECT}"), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                nat_wrap.load_workflow_config(Path(tmp) / "x", bad)
+        config = nat_wrap.load_workflow_config(Path("outputs") / "x")
+        self.assertEqual(config["workflow"], {"_type": nat_wrap.FUNCTION_TYPE})
+        self.assertEqual(config["general"]["telemetry"]["tracing"][nat_wrap.EXPORTER_TYPE]["output_path"],
+                         str(Path("outputs") / "x" / nat_wrap.NAT_TRACE_NAME))
+
+
+if __name__ == "__main__":
+    unittest.main()

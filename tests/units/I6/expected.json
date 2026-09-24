@@ -1,0 +1,7 @@
+{
+ "allowed": false,
+ "reason": "tool_attempts_limit",
+ "same_as": null,
+ "counts": {"recorded": 8, "consumed": 8, "basic": 5, "revision": 2, "final": 1, "revision_stages": 1},
+ "remaining": 0
+}

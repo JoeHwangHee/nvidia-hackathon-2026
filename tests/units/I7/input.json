@@ -1,0 +1,7 @@
+{
+ "stage": "basic",
+ "messages": [
+  {"role": "system", "content": "조사자 지침(시험용)"},
+  {"role": "user", "content": "사례 A-composition 초안을 JSON으로 써라"}
+ ]
+}
