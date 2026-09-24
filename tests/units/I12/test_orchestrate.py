@@ -8,6 +8,7 @@ critic_used 기준, 기록 없이 끝나던 두 경로, 배선(unit_ports)의 P4
 """
 import json
 import unittest
+from decimal import Decimal
 from unittest import mock
 
 from tradesentry.runlog import cause_codes
@@ -409,7 +410,8 @@ class UnitPortsTest(unittest.TestCase):
         missing = {"evidence_id": "ev:controlled_fixture_v0:status:7", "partner_code": "CN", "hs_code": "850450",
                    "month": "202401", "observation_status": "NOT_COLLECTED"}
         envelopes = [dict(h.ENVELOPES["check_comparability"], missingness=[missing]), h.ENVELOPES["get_history"]]
-        draft = self.ports(policy={"policy_version": "dev-0.1"}).checklist_draft({"evidence": envelopes})
+        policy = {"policy_version": "dev-0.1", "thresholds": {"unit_value": 30, "share": 10}}
+        draft = self.ports(policy=policy).checklist_draft({"evidence": envelopes})
         self.assertEqual(draft["review_status"], "HOLD")
         self.assertEqual(seen["evidence"], {"missingness": [missing], "unit_value": {"comparisons": {
             "comparability": "done", "partners": "not_performed"}}})  # 미발동 점유율 블록은 없다
@@ -418,6 +420,69 @@ class UnitPortsTest(unittest.TestCase):
         self.assertEqual(seen["evidence"], {"from": "AS2", "n": 2})
         failed = dict(h.ENVELOPES["compare_partners"], retryable_error={"code": "bad_args"})
         self.assertEqual(orchestrate.comparison_marks([failed])["partners"], "not_performed")
+
+    def test_policy_thresholds_go_to_the_validator_as_numbers_only(self):
+        seen = {}
+        self.patch("tradesentry.validator.validate.run", lambda inp: seen.update(inp) or {"findings": []})
+        policy = {"policy_version": "dev-0.1", "thresholds": {"unit_value": 30, "share": Decimal("10.0")}}
+        report = {"evidence_ids": []}
+        self.ports(policy=policy).check_report({"report": report, "evidence": [], "revision_used": False})
+        self.assertEqual(seen["thresholds"], [30, Decimal("10.0")])
+        seen.clear()
+        self.ports().check_report({"report": report, "evidence": [], "revision_used": False})
+        self.assertNotIn("thresholds", seen)  # 정책을 받지 않았으면 넘기지 않는다(R3에서 생략 가능)
+        for bad in ({"thresholds": {"unit_value": 30.0, "share": 10}}, {"thresholds": {"unit_value": "30"}}, {}):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                self.ports(policy=bad)  # R3가 조용히 버릴 값은 실행 전에 막는다
+
+
+class MergedUnitsTest(unittest.TestCase):
+    """병합된 다른 트랙 단위(R1~R4 보고서·검증기, P4 사례 집계, P5 필수 근거, K4 정책)를 대역 없이 unit_ports로 부른다.
+    도구와 도구 예산(MT2, 아직 병합 전)만 대역이다. 입력 모양이 어긋나면(배선 누락) 여기서 드러난다."""
+
+    ROWS = {h.EV[0]: {"table": "observation", "hs_code": "850450", "partner_code": "CN", "month": "202301",
+                      "flow": "import", "amount_usd": 600, "net_weight_kg": 100, "observation_status": "OBSERVED"},
+            h.EV[1]: {"table": "observation", "hs_code": "850450", "partner_code": "CN", "month": "202401",
+                      "flow": "import", "amount_usd": 360, "net_weight_kg": 100, "observation_status": "OBSERVED"}}
+    CLAIM = {"claim_id": "c1", "claim_type": "change", "hs6": "850450", "partner": "CN", "period": "202401",
+             "baseline_period": "202301", "metric": "r_U", "value": -40.0, "unit": "%", "direction": "DOWN",
+             "evidence_ids": [h.EV[0], h.EV[1]], "text": "단가가 전년 같은 달보다 낮다."}
+
+    def run_merged(self, mode, script, policy=None):
+        from tradesentry.runlog import trace as trace_log
+
+        config = mc.load_model_config()
+        clock = h.FakeClock()
+        fake = h.FakePorts()
+        ports = orchestrate.unit_ports(h.CASE_A, mode, h.RUN_ID, config.limits, grouping_version="g0", policy=policy,
+                                       rows=lambda ids: {i: self.ROWS.get(i) for i in ids})
+        ports.tool, ports.budget = fake.tool, fake.budget
+        sink = trace_log.MemoryTrace(h.RUN_ID, clock=trace_log.now_kst)
+        ctx = orchestrate.RunContext(run_id=h.RUN_ID, case=h.CASE_A, mode=mode, dataset="controlled_fixture_v0",
+                                     rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
+        result = orchestrate.orchestrate(ctx, ports, config, transport=h.ScriptedTransport(script, clock), sink=sink,
+                                         clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)
+        return result, sink.records
+
+    def test_full_and_freeform_complete_with_the_merged_units(self):
+        from tradesentry.contract.policy_load import load_policy
+
+        result, _ = self.run_merged("full", [h.draft_answer(), h.critic_answer()], policy=load_policy("dev-0.1"))
+        self.assertEqual((result["record"]["execution_status"], result["report"]["validator_findings"]),
+                         ("COMPLETED", []))
+        result, _ = self.run_merged("freeform", [h.draft_answer(claims=[self.CLAIM]), h.critic_answer()])
+        self.assertEqual((result["record"]["execution_status"], result["report"]["validator_findings"]),
+                         ("COMPLETED", []))
+        self.assertRegex(result["report"]["report_hash"], r"^[0-9a-f]{64}$")
+
+    def test_status_mismatch_is_recorded_in_freeform_and_revised_in_full_by_the_real_validator(self):
+        freeform, _ = self.run_merged("freeform", [mismatched(claims=[self.CLAIM]), h.critic_answer()])
+        self.assertEqual(freeform["record"]["execution_status"], "COMPLETED")
+        self.assertEqual([f["code"] for f in freeform["report"]["validator_findings"]], ["STATUS_INCONSISTENT"])
+        full, records = self.run_merged("full", [mismatched(), h.critic_answer(), h.draft_answer(status="HOLD")])
+        self.assertEqual((full["record"]["execution_status"], full["record"]["revision_used"]), ("COMPLETED", True))
+        self.assertEqual([r["data"]["decision"] for r in h.events(records, "validator_result")],
+                         ["pass", "block", "pass"])  # 첫 검사는 스키마만 본다
 
 
 if __name__ == "__main__":

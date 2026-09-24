@@ -55,6 +55,7 @@ errors는 원인 분류 코드 항목 하나다(단위 L3: 원인, 누적 시도
   Critic problems, validator_result에 rejected_requests(틀 채우기가 채우지 못해 버린 요청, 단위 R1 rejected).
 """
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Callable
 
 from tradesentry.policy import case_aggregate as policy_case_aggregate
@@ -190,6 +191,23 @@ def default_evidence_state(case: dict, evidence: list) -> dict:
     return state
 
 
+def policy_thresholds(policy: object) -> list:
+    """정책 객체(단위 K4)의 탐지 임계값을 검증기 R3 입력 thresholds 모양(수 목록: 단가 %, 점유율 pp)으로 옮긴다.
+
+    R3는 형식이 틀린 값(float·문자열)을 오류 없이 버려 산문 검사 EX-5(정책 기준값 언급 빼기)가 조용히 꺼지므로, int와
+    Decimal만 넘기고 다른 형식이면 ValueError로 드러낸다."""
+    thresholds = policy.get("thresholds") if isinstance(policy, dict) else None
+    if not isinstance(thresholds, dict):
+        raise ValueError("정책 객체에 thresholds가 없다")
+    values = []
+    for signal in ("unit_value", "share"):
+        value = thresholds.get(signal)
+        if isinstance(value, bool) or not isinstance(value, (int, Decimal)):
+            raise ValueError(f"정책 thresholds.{signal}는 int나 Decimal이다(float·문자열을 넘기지 않는다)")
+        values.append(value)
+    return values
+
+
 def _unresolved_triggered(signals: dict | None, signal_status: object) -> bool:
     """발동한 신호의 판정에 MAINTAIN과 HOLD가 섞였나(P4·R3와 같은 기준). 판정 객체가 틀리면 거짓."""
     if not isinstance(signal_status, dict):
@@ -236,11 +254,13 @@ def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimit
     {case_id, snapshot_id, scope, args}이고, MT2 공통 틀의 선택 키(policy_version·grouping_version·attempt·envelopes)는
     조립(AS2)에서 맞춘다 `[미확인]`.
 
-    AS2(사례 조사 조립)가 넘겨야 하는 것: policy(단위 K4 정책 객체, checklist의 P3가 쓴다), rows(근거 ID 목록 ->
-    {근거 ID: 스냅샷 행 또는 None}, 단위 K3 자료 접근층으로 푼다. 검증기 R3의 원본 대조에 쓴다), evidence_state(사례,
-    봉투 목록 -> P3 근거 상태. 없으면 default_evidence_state로 missingness·comparisons만 채워 P3가 입력 오류로 멈춘다).
+    AS2(사례 조사 조립)가 넘겨야 하는 것: policy(단위 K4 정책 객체. checklist의 P3가 쓰고, 탐지 임계값은 검증기 R3
+    입력 thresholds로 옮겨 모든 모드에 넘긴다), rows(근거 ID 목록 -> {근거 ID: 스냅샷 행 또는 None}, 단위 K3 자료
+    접근층으로 푼다. 검증기 R3의 원본 대조에 쓴다), evidence_state(사례, 봉투 목록 -> P3 근거 상태. 없으면
+    default_evidence_state로 missingness·comparisons만 채워 P3가 입력 오류로 멈춘다).
     """
     made = {"reports": 0}
+    thresholds = policy_thresholds(policy) if policy is not None else None  # 형식이 틀리면 실행 전에 ValueError
 
     def tool(name: str, args: dict) -> dict:
         return TOOL_UNITS[name].run({"case_id": case.get("case_id"), "snapshot_id": case.get("snapshot_id"),
@@ -280,10 +300,12 @@ def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimit
         ids = sorted({e for e in (report.get("evidence_ids") or []) if isinstance(e, str)}
                      | {e for env in evidence if isinstance(env, dict) for e in (env.get("evidence_ids") or [])
                         if isinstance(e, str)})
-        out = validator_validate.run({
-            "case": case, "report": report, "envelopes": evidence, "rows": rows(ids) if rows else {},
-            "run": {"run_id": run_id, "mode": mode, "snapshot_id": case.get("snapshot_id"),
-                    "policy_version": case.get("policy_version"), "grouping_version": grouping_version}})
+        request = {"case": case, "report": report, "envelopes": evidence, "rows": rows(ids) if rows else {},
+                   "run": {"run_id": run_id, "mode": mode, "snapshot_id": case.get("snapshot_id"),
+                           "policy_version": case.get("policy_version"), "grouping_version": grouping_version}}
+        if thresholds is not None:
+            request["thresholds"] = list(thresholds)
+        out = validator_validate.run(request)
         findings = out["findings"]
         decision = validator_gate.run({"mode": mode, "findings": findings, "revision_used": inp["revision_used"]})
         return {"schema_ok": not decision["schema_failed"],
