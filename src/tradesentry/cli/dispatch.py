@@ -5,12 +5,14 @@
 소유: M
 입력: 명령
 출력: 조립체 1~4 호출
-허용 import: 표준 라이브러리, tradesentry.contract, tradesentry.cli, tradesentry.snapshot, tradesentry.dal, tradesentry.metrics, tradesentry.policy, tradesentry.grouping, tradesentry.tools, tradesentry.workflow, tradesentry.reports, tradesentry.validator, tradesentry.runlog, tradesentry.evaluation
+허용 import: 표준 라이브러리, tradesentry.contract, tradesentry.cli, tradesentry.snapshot, tradesentry.dal, tradesentry.metrics, tradesentry.policy, tradesentry.grouping, tradesentry.tools, tradesentry.workflow, tradesentry.reports, tradesentry.validator, tradesentry.runlog, tradesentry.evaluation.batch_run, tradesentry.evaluation.extract, tradesentry.evaluation.nat_eval
 
 S0 뼈대다. 진입 함수 run의 몸통은 아직 NotImplementedError다. 정본: docs/plan/UNITS.md §3.8.
 main은 설치 명령 tradesentry의 진입점이다(pyproject.toml [project.scripts]). S0에서는 인자를 읽은 뒤 어느 명령도
 조립체를 부르지 않고, 분명한 오류 문장과 종료 코드 3으로 끝난다. 명령마다 잇는 일은 ASSEMBLIES의 작업이 한다.
 종료 코드: 0 도움말, 2 인자 오류(argparse), 3 구현되지 않은 명령.
+평가 하네스는 모듈 단위로만 허용한다. 호스트 전용 샌드박스 밖 실행기(단위 E2, tradesentry.evaluation.sealed_runner)는
+CLI가 부르지 않는다.
 """
 import sys
 
