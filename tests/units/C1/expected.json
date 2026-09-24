@@ -120,6 +120,36 @@
   "note": ""
  },
  {
+  "run_id": "run_case-260925100001",
+  "report_id": "report-run_case-260925100001",
+  "claim_id": "c9",
+  "source": "claim",
+  "outcome": "CORRECT",
+  "expected_value": -40.0,
+  "reported_value": -40.0,
+  "unit_expected": "%",
+  "unit_reported": "%",
+  "tolerance": 0.1,
+  "referent_resolved": true,
+  "evidence_ok": true,
+  "note": ""
+ },
+ {
+  "run_id": "run_case-260925100001",
+  "report_id": "report-run_case-260925100001",
+  "claim_id": "c10",
+  "source": "claim",
+  "outcome": "CORRECT",
+  "expected_value": 0.00,
+  "reported_value": 0.00,
+  "unit_expected": "USD/kg",
+  "unit_reported": "USD/kg",
+  "tolerance": 0.01,
+  "referent_resolved": true,
+  "evidence_ok": true,
+  "note": ""
+ },
+ {
   "run_id": "run_case-260925100002",
   "report_id": "report-run_case-260925100002",
   "claim_id": "c1",
@@ -131,8 +161,8 @@
   "unit_reported": "USD/kg",
   "tolerance": 0.01,
   "referent_resolved": true,
-  "evidence_ok": true,
-  "note": "WRONG_VALUE: 계산할 수 없는 대상에 값을 적었다: HS10 하위 자료가 없다(분해하지 않는다)"
+  "evidence_ok": false,
+  "note": "WRONG_VALUE: 계산할 수 없는 대상에 값을 적었다: 202401 HS10 하위 자료 없음(REQUEST_FAILED); UNSUPPORTED: 인용할 그 키의 상태 행이 없다"
  },
  {
   "run_id": "run_case-260925100002",
@@ -162,7 +192,7 @@
   "tolerance": null,
   "referent_resolved": true,
   "evidence_ok": false,
-  "note": "WRONG_VALUE: 기대 관측 상태는 REQUEST_FAILED다; UNSUPPORTED: 인용할 그 키의 상태 행이 없다"
+  "note": "WRONG_VALUE: 기대 관측 상태는 REQUEST_FAILED다; UNSUPPORTED: 주장한 상태를 보여 주는 그 키의 행이 없다"
  },
  {
   "run_id": "run_case-260925100002",
@@ -178,5 +208,35 @@
   "referent_resolved": true,
   "evidence_ok": true,
   "note": "WRONG_VALUE: 기대값과 다르다"
+ },
+ {
+  "run_id": "run_case-260925100002",
+  "report_id": "report-run_case-260925100002",
+  "claim_id": "c5",
+  "source": "claim",
+  "outcome": "WRONG_VALUE",
+  "expected_value": "OBSERVED",
+  "reported_value": "REQUEST_FAILED",
+  "unit_expected": null,
+  "unit_reported": null,
+  "tolerance": null,
+  "referent_resolved": true,
+  "evidence_ok": false,
+  "note": "WRONG_VALUE: 기대 관측 상태는 OBSERVED다; UNSUPPORTED: 주장한 상태를 보여 주는 그 키의 행이 없다"
+ },
+ {
+  "run_id": "run_case-260925100002",
+  "report_id": "report-run_case-260925100002",
+  "claim_id": "c6",
+  "source": "claim",
+  "outcome": "WRONG_REFERENT",
+  "expected_value": null,
+  "reported_value": -40.0,
+  "unit_expected": "%",
+  "unit_reported": "%",
+  "tolerance": null,
+  "referent_resolved": false,
+  "evidence_ok": false,
+  "note": "WRONG_REFERENT: 비교집합(g0) 밖 상대국이다(DE); 대상을 풀지 못해 값과 근거를 대조하지 않았다"
  }
 ]

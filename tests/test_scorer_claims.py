@@ -4,8 +4,11 @@
   따로 계산해 재현하는지 본다.
 - 룰북 docs/eval/RULEBOOK.md B3-1의 예시 1~14와 경계 사례 1~19(손계산 예제)의 판정을 재현하는지 본다. 예시 1~8의
   v2 값은 tests/scorer_fixtures.py가 합성 행으로 다시 만든다(실제 스냅샷 파일은 쓰지 않는다).
+- 수집 계획 대조(상대국·코드·월의 실제 조합), 비교집합 소속, 형식 검사(fullmatch), null 기대값의 근거, 믿지 않는 값의
+  크기·형식, 부모 중량 0(DT2 결정 ⑫), C형 자료 상태의 근거 행 규칙(검증기 결정 MT3 ⑨)을 본다(검토 1회차 반영).
 - 네트워크·키·봉인 폴더 없이 돈다.
 """
+import time
 import unittest
 from decimal import Decimal
 from fractions import Fraction
@@ -332,6 +335,299 @@ class EvidenceAndInterpretationTest(unittest.TestCase):
             fx.claim("c2", "value", "U", Decimal("20.43"), "USD/kg", "NA", [self.rows.ev(self.ids["cn_2401"])])])
         records = c1.run({"snapshot": self.rows.doc(), "reports": [report]})
         self.assertEqual([(r["claim_id"], r["outcome"]) for r in records], [("c1", C), ("c2", c1.WRONG_VALUE)])
+
+
+class PlanMembershipTest(unittest.TestCase):
+    """data_status 주장의 수집 계획 대조는 상대국·코드·월의 실제 조합으로 한다(Codex 검토 1회차 막는 지적 1)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rows, cls.ids = fx.rulebook_snapshot()
+
+    def status(self, value: str, names: list[str], **fields) -> dict:
+        metric = fields.pop("metric", "observation_status")
+        evidence = [self.rows.ev(self.ids[name]) for name in names]
+        return score(self.rows, fx.claim("s", "data_status", metric, value, None, "NA", evidence, **fields))
+
+    def test_cross_combination_outside_plan_is_not_collected_with_nothing_to_cite(self):
+        # TR(계획 밖 비교국)·850450·202301: 상대국·HS6·달이 각각 스냅샷 어딘가에 있지만 이 조합을 맡은 계획 요청이 없다
+        record = self.status("NOT_COLLECTED", [], partner="TR", period="202301")
+        self.assertEqual((record["outcome"], record["expected_value"]), (c1.UNSUPPORTED, "NOT_COLLECTED"))
+        self.assertTrue(record["referent_resolved"])  # 대상 오류가 아니다
+        self.assertEqual(self.status("UNRESOLVED_ZERO", [], partner="TR", period="202301")["outcome"], c1.WRONG_VALUE)
+
+    def test_comparison_target_cites_not_collected_rows_of_its_requests(self):
+        self.assertEqual(self.status("NOT_COLLECTED", ["tr_hs6_2401"], partner="TR")["outcome"], C)
+        self.assertEqual(self.status("NOT_COLLECTED", ["tr_hs4_2401"], partner="TR", hs6="850431")["outcome"], C)
+        self.assertEqual(self.status("NOT_COLLECTED", ["cn_2401"], partner="TR")["outcome"], c1.UNSUPPORTED)
+
+    def test_month_outside_plan_period_is_not_collected(self):
+        record = self.status("NOT_COLLECTED", [], period="202501")
+        self.assertEqual((record["outcome"], record["expected_value"]), (c1.UNSUPPORTED, "NOT_COLLECTED"))
+
+    def test_plan_key_without_status_rows_is_unresolved_zero_with_nothing_to_cite(self):
+        # JP·850490·202401: 성공한 HS4 스캔이 맡았는데 응답에 그 HS6 행이 없고 상태 행도 없다(잠정 해석)
+        record = self.status("UNRESOLVED_ZERO", ["jp_2401"], partner="JP", hs6="850490")
+        self.assertEqual((record["outcome"], record["expected_value"]), (c1.UNSUPPORTED, "UNRESOLVED_ZERO"))
+        self.assertIn("잠정", record["note"])
+        self.assertEqual(self.status("NOT_COLLECTED", [], partner="JP", hs6="850490")["outcome"], c1.WRONG_VALUE)
+
+    def test_plan_key_without_rows_or_successful_request_is_undeterminable(self):
+        self.assertEqual(self.status("NOT_COLLECTED", [], partner="PH")["outcome"], c1.WRONG_VALUE)
+
+    def test_collected_but_out_of_scope_hs6_is_wrong_referent(self):
+        self.assertEqual(self.status("OBSERVED", ["cn_850440_2401"], hs6="850440")["outcome"], c1.WRONG_REFERENT)
+        record = score(self.rows, fx.claim("c", "value", "V", 5000, "USD", "NA", [self.rows.ev(self.ids["cn_850440_2401"])],
+                                           hs6="850440"))
+        self.assertEqual(record["outcome"], c1.WRONG_REFERENT)
+
+    def test_snapshot_without_collection_plan_is_input_error(self):
+        doc = self.rows.doc()
+        doc["tables"]["snapshot_meta"] = [r for r in doc["tables"]["snapshot_meta"] if r["key"] != "collection_plan"]
+        with self.assertRaises(c1.ScorerInputError):
+            c1.Snapshot.from_json(doc)
+
+
+class ComparisonSetTest(unittest.TestCase):
+    """comparison 주장은 실행 기록 grouping_version의 비교집합에 든 상대국이어야 한다(Codex 검토 1회차 막는 지적 2)."""
+
+    CN = {"hs6": "850450", "partner": "CN", "month": "202401", "grouping_version": "g0"}
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rows, cls.ids = fx.rulebook_snapshot()
+        cls.snap = c1.Snapshot.from_json(cls.rows.doc())
+
+    def compare(self, partner: str, names: list[str], context: dict | None, **fields) -> dict:
+        claim = fx.claim("c", "comparison", fields.pop("metric", "r_U"), fields.pop("value", Decimal("-38.7")),
+                         fields.pop("unit", "%"), fields.pop("direction", "DOWN"),
+                         [self.rows.ev(self.ids[name]) for name in names], partner=partner,
+                         baseline=fields.pop("baseline", "202301"), **fields)
+        return c1.score_claim(claim, 0, self.snap, "run_case-260925100000", "report-1", self.rows.snapshot_id, context)
+
+    def test_member_of_comparison_set(self):
+        record = self.compare("JP", ["jp_2401", "jp_2301"], self.CN)
+        self.assertEqual(record["outcome"], C, record["note"])
+
+    def test_partner_outside_comparison_set_is_wrong_referent(self):
+        record = self.compare("KH", ["kh_2401", "kh_2301"], self.CN, value=None, direction="NA")
+        self.assertEqual(record["outcome"], c1.WRONG_REFERENT)
+        self.assertIn("비교집합(", record["note"])
+        self.assertEqual(self.compare("CN", ["cn_2401", "cn_2301"], self.CN)["outcome"], c1.WRONG_REFERENT)
+
+    def test_grouping_version_without_frozen_set_is_wrong_referent(self):
+        record = self.compare("JP", ["jp_2401", "jp_2301"], dict(self.CN, grouping_version="g1"))
+        self.assertEqual(record["outcome"], c1.WRONG_REFERENT)
+        self.assertIn("g1", record["note"])
+
+    def test_missing_context_or_other_product_is_wrong_referent(self):
+        self.assertEqual(self.compare("JP", ["jp_2401", "jp_2301"], None)["outcome"], c1.WRONG_REFERENT)
+        self.assertEqual(self.compare("JP", ["jp_2401", "jp_2301"], self.CN, hs6="850490")["outcome"],
+                         c1.WRONG_REFERENT)
+        with self.assertRaises(c1.ScorerInputError):
+            self.compare("JP", ["jp_2401", "jp_2301"], dict(self.CN, partner="ALL"))
+
+    def test_out_of_plan_peer_value_is_null_backed_by_not_collected_rows(self):
+        record = self.compare("TR", ["tr_hs4_2401"], dict(self.CN, partner="JP"), metric="V", value=None, unit="USD",
+                              direction="NA", baseline=None)
+        self.assertEqual(record["outcome"], C, record["note"])
+
+
+class FormatStrictnessTest(unittest.TestCase):
+    """형식 검사는 문자열 전체 대조와 ASCII 숫자로 하고 rowid는 19자리 이하다(무역통계 검토 1회차 막는 지적 1)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rows, cls.ids = fx.rulebook_snapshot()
+        cls.snap = c1.Snapshot.from_json(cls.rows.doc())
+
+    def test_rowid_with_newline_or_too_many_digits_does_not_resolve(self):
+        rowid = self.ids["cn_2401"]
+        for bad in (f"{rowid}\n", "1" * 20, "9" * 4301, "9223372036854775808", "\uff11"):
+            with self.subTest(rowid=bad[:24]):
+                cited, note = c1.resolve_evidence([f"ev:kcs_202201_202412_v2:observation:{bad}"],
+                                                  "kcs_202201_202412_v2", self.snap)
+                self.assertIsNone(cited)
+                self.assertLess(len(note), 120)
+
+    def test_newline_or_unicode_digits_in_referent_fields_are_uninterpretable(self):
+        good = fx.claim("c", "data_status", "observation_status@8504501010", "OBSERVED", None, "NA",
+                        [self.rows.ev(self.ids["cn_kids_2401"][0])])
+        self.assertEqual(score(self.rows, good)["outcome"], C)
+        for field, value in (("metric", "observation_status@8504501010\n"), ("hs6", "850450\n"),
+                             ("period", "202401\n"), ("partner", "CN\n"), ("hs6", "\uff18\uff15\uff10\uff14\uff15\uff10")):
+            with self.subTest(field=field, value=value):
+                record = score(self.rows, dict(good, **{field: value}))
+                self.assertEqual(record["outcome"], c1.WRONG_REFERENT)
+                self.assertFalse(record["referent_resolved"])
+
+
+class NullExpectationEvidenceTest(unittest.TestCase):
+    """기대값이 null인 주장도 그 키의 상태 행을 인용해야 한다(무역통계 검토 1회차 막는 지적 2)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rows, cls.ids = fx.rulebook_snapshot()
+
+    def check(self, claim: dict, outcome: str) -> dict:
+        record = score(self.rows, claim)
+        self.assertEqual(record["outcome"], outcome, record["note"])
+        return record
+
+    def ev(self, *names: str) -> list[str]:
+        out = []
+        for name in names:
+            value = self.ids[name]
+            out += [self.rows.ev(r) for r in value] if isinstance(value, list) else [self.rows.ev(value)]
+        return out
+
+    def test_missing_parent_needs_its_status_row(self):
+        for metric, unit in (("V", "USD"), ("U", "USD/kg")):
+            with self.subTest(metric=metric):
+                self.check(fx.claim("c", "value", metric, None, unit, "NA", self.ev("jp_2401"), partner="FR"),
+                           c1.UNSUPPORTED)
+                self.check(fx.claim("c", "value", metric, None, unit, "NA", self.ev("fr_2401"), partner="FR"), C)
+        self.check(fx.claim("c", "value", "V", None, "USD", "NA", self.ev("mx_hs4_2401"), partner="MX"), C)
+
+    def test_key_without_any_status_row_cannot_be_supported(self):
+        record = self.check(fx.claim("c", "value", "V", None, "USD", "NA", self.ev("jp_2401"), partner="JP",
+                                     hs6="850490"), c1.UNSUPPORTED)
+        self.assertIn("인용할 그 키의 상태 행이 없다", record["note"])
+
+    def test_share_with_missing_numerator_needs_its_status_row(self):
+        self.check(fx.claim("c", "share", "s", None, "%", "NA", self.ev("all_hs6_202401"), partner="FR"),
+                   c1.UNSUPPORTED)
+        self.check(fx.claim("c", "share", "s", None, "%", "NA", self.ev("fr_2401", "all_hs6_202401"), partner="FR"), C)
+
+    def test_c_type_decomposition_needs_the_failed_hs10_status_row(self):
+        rows = fx.Rows("controlled_fixture_v0", fx.ORACLE_PLAN)  # oracle C 모양, 기준월 HS10 행이 있다
+        parents = [rows.obs("DE", "850450", "202301", 600, 100, request="hs4_DE_2023"),
+                   rows.obs("DE", "850450", "202401", 360, 100, request="hs4_DE_2024")]
+        kids = [rows.obs("DE", "8504501010", "202301", 500, 50, request="hs6_DE_2023"),
+                rows.obs("DE", "8504501020", "202301", 100, 50, request="hs6_DE_2023")]
+        failed = rows.obs("DE", "850450", "202401", None, None, "REQUEST_FAILED", request="hs6_DE_2024")
+        base = {"partner": "DE", "baseline": "202301"}
+        for cited, outcome in ((parents, c1.UNSUPPORTED), (parents + kids, c1.UNSUPPORTED),
+                               (parents + kids + [failed], C)):
+            with self.subTest(cited=cited):
+                claim = fx.claim("c", "decomposition", "mix_effect", None, "USD/kg", "NA",
+                                 [rows.ev(r) for r in cited], **base)
+                self.assertEqual(score(rows, claim)["outcome"], outcome)
+
+
+class UntrustedValueTest(unittest.TestCase):
+    """믿지 않는 보고서 값이 채점을 멈추거나 끝나지 않게 하지 않는다(보안 검토 1회차 막는 지적)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rows, cls.ids = fx.rulebook_snapshot()
+        cls.good = fx.claim("c", "value", "U", Decimal("20.34"), "USD/kg", "NA", [cls.rows.ev(cls.ids["cn_2401"])])
+
+    def test_number_size_limits(self):
+        for value, ok in ((Decimal("1E+99"), True), (Decimal("1E+100"), False), (10 ** 100 - 1, True),
+                          (-(10 ** 100), False), (Decimal("1E-100"), True), (Decimal("1E-101"), False),
+                          (Decimal("0E-1000000"), False), (Decimal("1" * 101), False)):
+            with self.subTest(value=str(value)[:20]):
+                self.assertIs(c1.is_number(value), ok)
+
+    def test_huge_exponent_is_uninterpretable_and_fast(self):
+        started = time.monotonic()
+        record = score(self.rows, dict(self.good, value=c1.loads_json("1e999999999")))
+        self.assertLess(time.monotonic() - started, 1.0)
+        self.assertEqual(record["outcome"], c1.WRONG_REFERENT)
+        self.assertIn("해석 불가", record["note"])
+
+    def test_unhashable_or_deep_values_do_not_raise(self):
+        deep: list = []
+        for _ in range(3000):
+            deep = [deep]
+        record = score(self.rows, dict(self.good, direction=[], unit=deep, evidence_ids=["ev:" + "x" * 100000]))
+        self.assertEqual(record["outcome"], c1.WRONG_UNIT)  # 판정 순서: 대상 → 단위 → 방향
+        self.assertIn("WRONG_DIRECTION: direction <list>", record["note"])
+        self.assertLess(len(record["note"]), 400)
+
+    def test_too_many_claims_is_input_error(self):
+        report = fx.report("run_case-260925100000", [self.good] * (c1.MAX_CLAIMS_PER_REPORT + 1))
+        with self.assertRaises(c1.ScorerInputError):
+            c1.score_report_claims(report, c1.Snapshot.from_json(self.rows.doc()), report["run_id"],
+                                   self.rows.snapshot_id)
+
+
+class ZeroParentWeightTest(unittest.TestCase):
+    """부모 중량이 한 시점이라도 0이면 분해 세 값 모두 null이다(DT2 결정 ⑫, 부모 대조가 허용오차 안이어도)."""
+
+    def test_all_three_effects_are_null(self):
+        rows = fx.Rows("controlled_fixture_v0", fx.ORACLE_PLAN)
+        rows.obs("CN", "850450", "202301", 100, 0, request="hs4_CN_2023")
+        rows.obs("CN", "8504501010", "202301", 100, 1, request="hs6_CN_2023")   # 부모 0kg, 하위 1kg(허용오차 1.0 안)
+        rows.obs("CN", "850450", "202401", 200, 10, request="hs4_CN_2024")
+        rows.obs("CN", "8504501010", "202401", 200, 10, request="hs6_CN_2024")
+        snap = c1.Snapshot.from_json(rows.doc())
+        for base in c1.DECOMPOSITION_BASES:
+            with self.subTest(base=base):
+                want = c1.expect_decomposition(snap, base, "CN", "850450", "202401", "202301")
+                self.assertIsNone(want.value)
+                self.assertIn("⑫", want.note)
+
+
+class DataStatusRowRuleTest(unittest.TestCase):
+    """C형 자료 상태와 근거 행 규칙: 검증기 결정 MT3 ⑨와 같은 해석으로 claim마다 따로 판정한다."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.oracle_rows, cls.oracle_ids = fx.oracle_snapshot(fx.load_oracle())
+        cls.rows, cls.ids = fx.rulebook_snapshot()
+
+    def status(self, rows: fx.Rows, value: str, evidence: list[int], **fields) -> dict:
+        metric = fields.pop("metric", "observation_status")
+        return score(rows, fx.claim("s", "data_status", metric, value, None, "NA", [rows.ev(r) for r in evidence],
+                                    **fields))
+
+    def test_c_type_is_stated_per_hs10_code_not_at_hs6_level(self):
+        de = self.oracle_ids["C-missing-hs10"]
+        failed = de["hs10_status_comparison"]
+        record = self.status(self.oracle_rows, "REQUEST_FAILED", [failed], partner="DE")
+        self.assertEqual((record["outcome"], record["expected_value"]), (c1.WRONG_VALUE, "OBSERVED"))
+        self.assertEqual(self.status(self.oracle_rows, "OBSERVED", [de["parent_comparison"]], partner="DE")["outcome"], C)
+        for code in ("8504501010", "8504509999"):  # 요청 전체가 실패하면 코드는 스냅샷 행에서 확인하지 않는다
+            with self.subTest(code=code):
+                self.assertEqual(self.status(self.oracle_rows, "REQUEST_FAILED", [failed], partner="DE",
+                                             metric=f"observation_status@{code}")["outcome"], C)
+
+    def test_partner_hs10_key_does_not_take_hs4_scan_rows(self):
+        mx_hs4, (kid, _) = self.ids["mx_hs4_2401"], self.ids["mx_kids_2401"]
+        self.assertEqual(self.status(self.rows, "REQUEST_FAILED", [mx_hs4], partner="MX")["outcome"], C)
+        self.assertEqual(self.status(self.rows, "OBSERVED", [kid], partner="MX",
+                                     metric="observation_status@8504501010")["outcome"], C)
+        wrong = self.status(self.rows, "REQUEST_FAILED", [mx_hs4], partner="MX", metric="observation_status@8504501010")
+        self.assertEqual(wrong["outcome"], c1.WRONG_VALUE)
+        self.assertFalse(wrong["evidence_ok"])
+        absent = self.status(self.rows, "UNRESOLVED_ZERO", [mx_hs4], partner="MX",
+                             metric="observation_status@8504501030")
+        self.assertEqual((absent["outcome"], absent["expected_value"]), (c1.UNSUPPORTED, "UNRESOLVED_ZERO"))
+
+    def test_all_hs10_key_takes_both_denominator_requests(self):
+        rows = fx.Rows("controlled_fixture_v0", fx.ORACLE_PLAN)
+        hs4 = rows.obs("ALL", "8504", "202401", None, None, "REQUEST_FAILED", request="it_hs4_2024")
+        hs6 = rows.obs("ALL", "850450", "202401", None, None, "REQUEST_FAILED", request="it_hs6_2024")
+        cn = rows.obs("CN", "850450", "202401", None, None, "REQUEST_FAILED", request="hs6_CN_2024")
+        for row in (hs4, hs6):
+            self.assertEqual(self.status(rows, "REQUEST_FAILED", [row], partner="ALL",
+                                         metric="observation_status@8504501010")["outcome"], C)
+        self.assertEqual(self.status(rows, "REQUEST_FAILED", [cn], partner="ALL",
+                                     metric="observation_status@8504501010")["outcome"], c1.UNSUPPORTED)
+
+    def test_conflicting_claims_are_each_judged(self):
+        de = self.oracle_ids["C-missing-hs10"]
+        failed = [self.oracle_rows.ev(de["hs10_status_comparison"])]
+        claims = [fx.claim("a", "data_status", "observation_status@8504501010", "REQUEST_FAILED", None, "NA", failed,
+                           partner="DE"),
+                  fx.claim("b", "data_status", "observation_status@8504501010", "NOT_COLLECTED", None, "NA", failed,
+                           partner="DE"),
+                  fx.claim("c", "data_status", "observation_status", "REQUEST_FAILED", None, "NA", failed, partner="DE")]
+        report = fx.report("run_case-260925100000", claims, snapshot_id=self.oracle_rows.snapshot_id)
+        records = c1.run({"snapshot": self.oracle_rows.doc(), "reports": [report]})
+        self.assertEqual([r["outcome"] for r in records], [C, c1.WRONG_VALUE, c1.WRONG_VALUE])
 
 
 if __name__ == "__main__":
