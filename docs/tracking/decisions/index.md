@@ -19,3 +19,4 @@
 | `20260924-2212-user-decision-impl-plan-after-s0.md` | 2026-09-24(목) 22:12 | 두 트랙 구현 계획은 S0(앱 뼈대) 병합 뒤 따로 세우고 사용자가 보고 승인한 뒤 착수 | 사용자 | 유효 |
 | `20260924-2212-user-decision-snapshot-build-and-g0.md` | 2026-09-24(목) 22:12 | 최종 스냅샷 빌드 파일 `data/snapshots/{snapshot_id}/snapshot_build.sqlite`와 `g0` 해석(대상국을 뺀 15개국 중 상위 5개국) | 사용자 | 유효 |
 | `20260924-2212-orchestrator-decision-s0-scaffold.md` | 2026-09-24(목) 22:12 | S0가 정할 위치와 S0 뼈대의 약속 확정(계획 경로 표를 바꾸는 항목 제외) | 오케스트레이터 | 유효 |
+| `20260925-0048-model-decision-mt3-validator.md` | 2026-09-25(금) 00:48 | MT3 검증기·보고서의 세부 결정(사유 형식, 단위 입출력, C형 자료 상태와 근거 행 규칙, `report_hash` 검사, 금지 문구 목록) | 소유 트랙(M) | 유효. ③·④·⑭·⑰은 잠정(`RB-1` 동결 전에 새 기록으로 확정) |
