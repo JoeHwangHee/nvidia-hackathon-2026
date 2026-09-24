@@ -204,7 +204,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
   - 16개국 안에서 대상국을 뺀 상위 5개국 선택
   - 대만(`TW`)이 BACI(프랑스 CEPII가 만드는 국가 간 연간 교역 자료) 490 "Asia n.e.s."에 대응한다는 주석
 - BACI 값(천USD/톤, 연간)이 관세청 월별 USD/kg 지표와 한 지표 안에서 섞이지 않았는지 본다.
-- `g0` 결과 `data/reference/peer_group_g0.csv`도 M이 계산하고(로드맵 MT6) D가 검수한다. D는 자료 계약 §2.3.6(정본)의 `g0` 필드 값을 확인한다: `scope_type`=`hs6`, `method`=`import_value_topk`(대상국을 뺀 나머지 15개국에서, v2 부모 HS6 행의 2023년 1~12월 수입금액 합(`OBSERVED` 행)이 큰 순서로 5개국. 합이 같으면 국가 코드 사전순), `grouping_version`=`g0`, `source_version`=`kcs_202201_202412_v2`, `source_year`=2023, `input_sha256`=v2의 `raw_sha256`, `similarity`·`community_id`=`null`.
+- `g0` 결과 `data/reference/peer_group_g0.csv`도 M이 계산하고(로드맵 MT6) D가 검수한다. D는 자료 계약 §2.3.6(정본)의 `g0` 필드 값을 확인한다: `scope_type`=`hs6`, `method`=`import_value_topk`(대상국을 뺀 나머지 15개국에서, v2 부모 HS6 행의 2023년 1~12월 수입금액 합(`OBSERVED` 행)이 큰 순서로 5개국. 합이 같으면 국가 코드 사전순), `scope_id`=대상 HS6 코드, `peer_rank`=1~5(금액 큰 순), `peer_id`=비교국 코드, `grouping_version`=`g0`, `source_version`=`kcs_202201_202412_v2`, `source_year`=2023, `input_sha256`=v2의 `raw_sha256`, `similarity`·`community_id`=`null`, `params_hash`=매개변수(k, 기준연도, 후보국 목록)의 해시.
 
 ## 4. 공용 약속과 변경 승인
 
