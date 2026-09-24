@@ -4,17 +4,34 @@
 - 한도는 개발 플랜 §6.6·자료 계약 §8.1의 조정값과 같다(도구 8회 = 기본 5 + 재조회 2 + 최종 검증 1, 수정 1회,
   모델 요청 10회, 300초, 누적 토큰 32,000, 5xx 재전송 요청당 3회). 바꾸려면 공용 약속 절차를 거친다.
 - 프롬프트 파일이 있고, 금지 낱말(부정문으로도 쓰지 않음)·산문 숫자·증감 규칙과 JSON 초안 형식을 담는다. 금지 낱말은
-  "금지 낱말:" 줄에만 나온다(나머지 지침 글이 그 낱말을 되풀이해 모델이 따라 쓰지 않게). 검증기(단위 R3)의 금지 목록이
-  병합돼 있으면 두 프롬프트가 그 목록을 모두 담는지 본다(MT3 보고에서 넘어온 조건).
+  "금지 낱말:" 줄에만 나온다(프롬프트 파일 넷의 나머지 글이 그 낱말을 되풀이해 모델이 따라 쓰지 않게).
+- 금지 낱말 목록은 검증기(단위 R3)의 금지 문구 목록과 항목마다 한 번씩 같다. 검증기가 아직 병합되지 않은 동안은 MT3
+  브랜치 커밋 b5948c3의 목록(PINNED_*, 한국어 62개와 영문 앞부분 9개)과 맞추고, 병합되면 실제 목록과도 맞춘다(목록이
+  바뀌면 이 시험이 실패해 프롬프트를 함께 고치게 한다).
 """
 import json
 import re
 import unittest
+from collections import Counter
 from decimal import Decimal
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEL_DIR = ROOT / "configs" / "model"
+PROMPT_FILES = ("investigator.txt", "critic.txt", "claims_template.txt", "claims_freeform.txt")
+
+# 검증기 금지 문구 목록의 사본(MT3 브랜치 b5948c3 src/tradesentry/validator/validate.py의 FORBIDDEN_PHRASES·
+# FORBIDDEN_LATIN). 검증기가 병합되면 아래 병합 뒤 시험이 실제 목록과 이 사본을 함께 맞춘다.
+PINNED_PHRASES = (
+    "부정 거래", "부정 수입", "부정 수출", "부정 행위", "부정 가능성", "부정 의혹", "부정 여부", "부정의 증거", "부정 소지",
+    "부정 신고", "부정한 방법", "사기 거래", "사기 행위", "불법", "위법", "탈법", "편법", "탈세", "탈루", "밀수", "범죄",
+    "혐의", "관세법 위반", "법 위반", "법률 위반", "관세 포탈", "관세 회피", "원산지 조작", "원산지를 조작", "원산지 세탁",
+    "원산지 위장", "원산지 둔갑", "원산지 속임", "원산지 우회", "원산지 회피", "원산지를 바꿔", "원산지를 바꾼",
+    "원산지 판정", "원산지 판단", "우회 수입", "우회 수출", "우회 환적", "환적", "제3국을 거쳐", "제3국 경유",
+    "제3국을 경유", "저가 신고", "과소 신고", "허위 신고", "가격 조작", "개별 거래가격", "개별 거래의 가격", "덤핑",
+    "통관 보류", "추징", "적발", "압수", "처벌", "고발", "정상 확정", "정상으로 확정", "정상 거래")
+PINNED_LATIN = ("fraud", "illegal", "smuggl", "circumvent", "dumping", "evasion", "under-invoic", "transship",
+                "misdeclar")
 
 
 def load() -> dict:
@@ -78,9 +95,7 @@ class ModelConfigTest(unittest.TestCase):
         for name in ("investigator", "critic"):
             self.assertIn("부정문으로도", texts[name])
             self.assertIn("JSON 객체 하나만", texts[name])
-            listed, rest = forbidden_line(texts[name])
-            self.assertGreaterEqual(len(listed), 40)
-            self.assertEqual([p for p in listed if p in rest], [], name)  # 금지 낱말은 목록 줄에만 있다
+            self.assertIn("띄어쓰기를 바꾸거나 붙여 써도", texts[name])
         for phrase in ("같은 소수 자리나 더 거친 자리", "단위 없는 개수", "같은 방향"):
             self.assertIn(phrase, texts["investigator"])
         self.assertIn("도구를 부를 수 없다", texts["critic"])
@@ -90,20 +105,27 @@ class ModelConfigTest(unittest.TestCase):
             self.assertIn(status, texts["investigator"])
         self.assertIsNone(re.search(r"[A-Za-z0-9]{32,}", "".join(texts.values())))  # 키처럼 긴 토큰이 없다
 
+    def test_prompts_list_the_pinned_validator_list_each_exactly_once(self):
+        self.assertEqual((len(PINNED_PHRASES), len(set(PINNED_PHRASES)), len(PINNED_LATIN)), (62, 62, 9))
+        expected = Counter(PINNED_PHRASES + PINNED_LATIN)
+        for name in ("investigator.txt", "critic.txt"):
+            listed, _ = forbidden_line((MODEL_DIR / name).read_text(encoding="utf-8"))
+            self.assertEqual(Counter(listed), expected, name)  # 빠짐·더함·중복 없이 항목마다 한 번
+        for name in PROMPT_FILES:  # 목록 줄 밖(네 파일 모두)에는 금지 낱말이 없다(영문은 대소문자 무시)
+            _, rest = forbidden_line((MODEL_DIR / name).read_text(encoding="utf-8"))
+            self.assertEqual([p for p in expected if p.lower() in rest.lower()], [], name)
+
     def test_prompts_cover_the_validator_forbidden_list_once_merged(self):
         from tradesentry.validator import validate
 
         phrases = getattr(validate, "FORBIDDEN_PHRASES", None)
         if phrases is None:
             self.skipTest("검증기(단위 R3, 로드맵 MT3)가 아직 병합되지 않아 금지 목록이 없다")
-        latin = getattr(validate, "FORBIDDEN_LATIN", ())
-        cfg = load()
-        for name in ("investigator", "critic"):
-            text = (MODEL_DIR / cfg["prompts"][name]).read_text(encoding="utf-8")
-            listed, _ = forbidden_line(text)
-            joined = " ".join(listed)
-            self.assertEqual([p for p in phrases if p not in listed], [], name)
-            self.assertEqual([w for w in latin if w not in joined.lower()], [], name)
+        latin = tuple(getattr(validate, "FORBIDDEN_LATIN", ()))
+        self.assertEqual((tuple(phrases), latin), (PINNED_PHRASES, PINNED_LATIN))  # 바뀌면 사본과 프롬프트를 함께 고친다
+        for name in ("investigator.txt", "critic.txt"):
+            listed, _ = forbidden_line((MODEL_DIR / name).read_text(encoding="utf-8"))
+            self.assertEqual(Counter(listed), Counter(tuple(phrases) + latin), name)
 
 
 if __name__ == "__main__":
