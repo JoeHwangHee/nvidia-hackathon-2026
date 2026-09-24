@@ -273,6 +273,19 @@ def check_key(row: Row, ctx: Context) -> tuple[bool, str]:
     return row.rc == 0 and data.get("verdict") == "NO_REAL_KEY", note + " (UID 샌드박스 사용자 범위)"
 
 
+def check_snapshot_verify(row: Row, ctx: Context) -> tuple[bool, str]:
+    """샌드박스 안 스냅샷 검증(raw 대조 제외, 결정 기록 ⑫). raw 없이 도는 검사가 모두 통과하고 다시 계산한
+    normalized_sha256이 빌드 기록값과 같아야 한다."""
+    data = row.data
+    failed = data.get("failed") or []
+    same = bool(data.get("normalized_sha256")) and data.get("normalized_sha256") == data.get("recorded")
+    ok = row.rc == 0 and data.get("ok") is True and same and not failed
+    note = f"normalized_sha256 {data.get('normalized_sha256', '?')}" + ("(기록값과 같다)" if same else "(기록값과 다르거나 없다)")
+    if failed:
+        note += ", 실패 검사: " + ", ".join(map(str, failed))
+    return ok, note
+
+
 def check_sha_info(row: Row, ctx: Context) -> tuple[bool | None, str]:
     """이미지 포함 목록 기록의 sha256. --image-manifest-sha256(스테이징 출력)을 주면 대조하고, 없으면 정보 행이다."""
     got = row.data.get("sha256")
@@ -290,11 +303,35 @@ def check_policy_match(row: Row, ctx: Context) -> tuple[bool, str]:
     state = ctx.sandboxes[row.sandbox]
     if state.policy is None:
         return False, f"라이브 정책을 읽지 못했다({state.policy_error})"
-    if state.policy == ctx.scored_committed:
-        return True, "커밋한 configs/openshell/policy.yaml과 구조가 같다"
-    keys = sorted(k for k in set(state.policy) | set(ctx.scored_committed)
-                  if state.policy.get(k) != ctx.scored_committed.get(k))
-    return False, "다른 최상위 키: " + ", ".join(keys)
+    live, committed = dedupe_fs(state.policy), dedupe_fs(ctx.scored_committed)
+    if live == committed:
+        return True, "커밋한 configs/openshell/policy.yaml과 구조가 같다(파일시스템 목록의 겹친 항목은 하나로 본다)"
+    keys = sorted(k for k in set(live) | set(committed) if live.get(k) != committed.get(k))
+    notes = []
+    for kind in ("read_only", "read_write"):
+        got = (live.get("filesystem_policy") or {}).get(kind) or []
+        want = (committed.get("filesystem_policy") or {}).get(kind) or []
+        extra, missing = [e for e in got if e not in want], [e for e in want if e not in got]
+        if extra or missing:
+            notes.append(f"{kind} 라이브에만 {extra or '없음'}, 커밋에만 {missing or '없음'}")
+    return False, "다른 최상위 키: " + ", ".join(keys) + ("; " + "; ".join(notes) if notes else "")
+
+
+def dedupe_fs(policy: dict) -> dict:
+    """파일시스템 허용 목록의 똑같은 항목을 처음 것 하나로 줄인 사본(결정 기록 ⑬). 순서와 다른 키는 그대로다.
+
+    커밋 정책이 OpenShell이 스스로 더하는 /var/log를 이미 적었는데 OpenShell이 또 더하면 같은 항목이 두 번 나올 수 있다
+    [미확인]. 겹친 항목은 허용 범위를 바꾸지 않으므로 구조 비교에서만 하나로 본다. 해시(라이브 본문 바이트)는 줄이지 않는다.
+    """
+    out = dict(policy)
+    fs = policy.get("filesystem_policy")
+    if isinstance(fs, dict):
+        fs = dict(fs)
+        for kind in ("read_only", "read_write"):
+            if isinstance(fs.get(kind), list):
+                fs[kind] = list(dict.fromkeys(fs[kind]))
+        out["filesystem_policy"] = fs
+    return out
 
 
 def check_requirement_b(row: Row, ctx: Context) -> tuple[bool, str]:
@@ -372,6 +409,21 @@ def _node_child(*command: str) -> list[str]:
     return [NODE, "-e", NODE_SPAWN, "--", *command]
 
 
+# 샌드박스 안 스냅샷 검증 탐침. 단위 S3 verify_snapshot을 check_raw=False로 부른다(raw는 반입하지 않는다). CLI 명령
+# snapshot-verify는 raw 대조를 늘 켜므로 샌드박스 안에서는 종료 1이 설계대로다(결정 기록 ⑫).
+VERIFY_CODE = ("import json,sys\n"
+               "from tradesentry.snapshot import verify\n"
+               "r=verify.verify_snapshot(sys.argv[1],check_raw=False)\n"
+               "bad=[c.get('name') for c in r.get('checks',[]) if c.get('ok') is False]\n"
+               "print(json.dumps({'snapshot_id':sys.argv[1],'ok':r.get('ok'),'normalized_sha256':r.get('normalized_sha256'),"
+               "'recorded':r.get('recorded_normalized_sha256'),'failed':bad}))\n"
+               "sys.exit(0 if r.get('ok') and not bad else 1)\n")
+
+
+def _verify(snapshot_id: str) -> list[str]:
+    return ["env", f"PYTHONPATH={IMAGE_ROOT}/src", f"{IMAGE_ROOT}/.venv/bin/python", "-c", VERIFY_CODE, snapshot_id]
+
+
 def scored_rows(name: str, kind: str, stamp: str, args: argparse.Namespace) -> list[Row]:
     absent_args = ["absent", IMAGE_ROOT, "/sandbox", "--skip", f"{IMAGE_ROOT}/python", "--skip", f"{IMAGE_ROOT}/.venv"]
     for extra in args.absent_name:
@@ -400,6 +452,10 @@ def scored_rows(name: str, kind: str, stamp: str, args: argparse.Namespace) -> l
             _probe(IMAGE_PY, "fs_probe.py", "sha256", IMAGE_MANIFEST), check_sha_info,
             info=not args.image_manifest_sha256),
     ]
+    for number, snapshot_id in enumerate(args.verify_snapshot or ["controlled_fixture_v0"], start=1):
+        rows.append(Row(f"S{number}", name, kind, "(a) 입력 무결성",
+                        f"스냅샷 {snapshot_id} 검증(raw 대조 제외, 단위 S3 check_raw=False)",
+                        "통과, normalized_sha256 = 빌드 기록값", _verify(snapshot_id), check_snapshot_verify))
     if kind == KIND_OFFICIAL:
         return rows
     rows[6:6] = [
@@ -723,6 +779,9 @@ def run(args: argparse.Namespace, runner: Runner) -> int:
     if args.scored and args.scored == args.demo:
         sys.stderr.write("오류: --scored와 --demo는 다른 샌드박스다\n")
         return 2
+    if any(not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", value) for value in args.verify_snapshot):
+        sys.stderr.write("오류: --verify-snapshot은 스냅샷 ID 형식이다\n")
+        return 2
     if args.image_manifest_sha256 and not SHA256_RE.fullmatch(args.image_manifest_sha256):
         sys.stderr.write("오류: --image-manifest-sha256은 16진수 소문자 64자다\n")
         return 2
@@ -842,6 +901,8 @@ def main(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     run_parser.add_argument("--scored-provider", default="tradesentry-nvidia", help="채점 샌드박스에 붙은 provider 이름")
     run_parser.add_argument("--ro-write-path", help="쓰기 거부를 볼 샌드박스 안 폴더(기본: 이미지의 쓰기 탐침 폴더)")
     run_parser.add_argument("--absent-name", action="append", default=[], help="부재를 확인할 파일 이름(여러 번)")
+    run_parser.add_argument("--verify-snapshot", action="append", default=[],
+                            help="샌드박스 안에서 raw 대조 없이 검증할 스냅샷 ID(여러 번, 기본 controlled_fixture_v0)")
     run_parser.add_argument("--image-manifest-sha256",
                             help="스테이징 도구가 출력한 manifest_sha256(주면 M1 행을 대조 행으로 판정한다)")
     run_parser.add_argument("--demo", help="NemoClaw 시연 샌드박스 이름")

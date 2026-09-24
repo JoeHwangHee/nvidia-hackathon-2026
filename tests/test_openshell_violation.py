@@ -107,6 +107,9 @@ class FakeOpenShell(ovt.Runner):
             return 0, "", ""
         if command[0] == "cat":
             return 1, "", f"cat: {command[1]}: Permission denied\n"
+        if "verify_snapshot" in joined:
+            return 0, json.dumps({"snapshot_id": command[-1], "ok": True, "normalized_sha256": "c" * 64,
+                                  "recorded": "c" * 64, "failed": []}) + "\n", ""
         if "key_check.py" in joined:
             return 0, json.dumps({"checker": "tradesentry_key_check", "verdict": "NO_REAL_KEY",
                                   "env_NVIDIA_API_KEY": "placeholder", "proc_environ_readable": 3,
@@ -273,16 +276,43 @@ class RunTest(RunHarness):
         text = next(self.run_dir().glob("*.md")).read_text(encoding="utf-8")
         table = text.split("## 2. 시험표", 1)[1].split("## 3.", 1)[0]
         rows = [line.split("|")[1].strip() for line in table.splitlines() if line.startswith("| ") and SCORED in line]
-        self.assertEqual(rows, ["P1", "P2", "P3", "P4", "P5", "A2", "A3", "B1", "C1", "M1", "D1"])
+        self.assertEqual(rows, ["P1", "P2", "P3", "P4", "P5", "A2", "A3", "B1", "C1", "M1", "S1", "D1"])
         self.assertIn(ovt.KIND_OFFICIAL, text)
         self.assertIn("봉인 입력 쓰기 거부", text)
         executed = [" ".join(call) for call in runner.calls if call[:2] == ["sandbox", "exec"]]
         self.assertFalse(any(ovt.NIM_URL in call or ovt.MODELS_URL in call for call in executed))
 
+    def test_policy_match_ignores_duplicate_fs_entries_and_names_differences(self):
+        body = (ROOT / ovt.SCORED_POLICY).read_text(encoding="utf-8")
+        runner = FakeOpenShell()
+        runner.bodies[SCORED] = body.replace("  - /var/log\n", "  - /var/log\n  - /var/log\n", 1)
+        code, _, _ = self.run_tool(runner, demo=None)
+        self.assertEqual(code, 0)
+        runner = FakeOpenShell()
+        runner.bodies[SCORED] = body.replace("  - /var/log\n", "", 1)
+        code, _, _ = self.run_tool(runner, demo=None)
+        self.assertEqual(code, 1)
+        text = sorted(self.outputs.iterdir())[-1]
+        table = next(text.glob("*.md")).read_text(encoding="utf-8")
+        self.assertIn("커밋에만 ['/var/log']", table)
+
+    def test_snapshot_verify_rows(self):
+        runner = FakeOpenShell(overrides={"verify_snapshot": (1, json.dumps({
+            "ok": False, "normalized_sha256": "c" * 64, "recorded": "d" * 64, "failed": ["normalized_sha256"]}), "")})
+        code, _, _ = self.run_tool(runner, "--verify-snapshot", "controlled_fixture_v0", "--verify-snapshot", "dev20",
+                                   demo=None)
+        self.assertEqual(code, 1)
+        table = next(self.run_dir().glob("*.md")).read_text(encoding="utf-8")
+        self.assertIn("| S2 |", table)
+        self.assertIn("실패 검사: normalized_sha256", table)
+        verify = [call for call in runner.calls if call[:2] == ["sandbox", "exec"] and "verify_snapshot" in " ".join(call)]
+        self.assertEqual([call[-1] for call in verify], ["controlled_fixture_v0", "dev20"])
+
     def test_argument_errors(self):
         for argv in (["run"], ["run", "--scored", "Bad_Name"], ["run", "--scored", "../x"],
                      ["run", "--scored", "same", "--demo", "same"],
-                     ["run", "--scored", "ok", "--image-manifest-sha256", "xyz"]):
+                     ["run", "--scored", "ok", "--image-manifest-sha256", "xyz"],
+                     ["run", "--scored", "ok", "--verify-snapshot", "../x"]):
             with self.subTest(argv=argv):
                 err = io.StringIO()
                 with contextlib.redirect_stderr(err):
