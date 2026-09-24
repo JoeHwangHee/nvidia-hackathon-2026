@@ -23,25 +23,34 @@
   쓰면 한 차례에 도구 호출을 여럿 낸 모델이 예약된 최종 검증 몫을 빼앗을 수 있기 때문이다.
 - 그래서 "9번째 시도 차단"은 예산을 쓴 시도가 8건이면 그 뒤의 모든 시도를 막는다는 뜻으로 구현했다.
 - 실행 결과 기록의 tool_attempts(§8.1)에 예산을 쓴 시도 수(consumed)를 적을지, 막힌 시도까지 센 기록 수(recorded)를
-  적을지는 이 단위가 정하지 않는다(열린 결정, 보고서). 이 단위는 두 수를 모두 돌려준다.
+  적을지는 이 단위가 정하지 않는다. 사용자 확인 대기다(결정 기록 20260925-0150-model-decision-mt2-tools.md ⑤. 평가
+  방법론 검토는 consumed를 권한다). 이 단위는 두 수를 모두 돌려준다.
 
 판정 순서(앞에서 걸리면 멈춘다. 사유 이름은 흐름 조정의 budget_block 종류와 맞췄다)
 1. deadline: now_ms와 deadline_ms를 받았고 now_ms ≥ deadline_ms면 막는다(전체 deadline이 먼저다).
-2. unknown_tool: 도구 5개 밖의 이름이다.
+2. unknown_tool: 도구 5개 밖의 이름이다. invalid_args: 후보 인자를 정규화할 수 없다(아래).
 3. critic_no_tools: Critic 차례에는 도구를 부르지 않는다(§5.3).
 4. tool_attempts_limit: 예산을 쓴 시도가 한도(8)에 닿았다. 9번째 시도는 단계와 관계없이 여기서 막힌다.
 5. revision_limit: 수정 단계는 1회다. 예산을 쓴 시도의 순서에서 revision이 이어진 한 덩어리를 수정 단계 하나로
    보고, 새 덩어리를 여는 후보를 막는다(흐름 조정은 수정 단계 번호를 넘기지 않으므로 순서로 판단한다).
+   이 판단은 보조 장치다. 도구를 부르지 않은 수정 단계와, Critic 차례만 사이에 낀 재진입은 도구 시도 순서에 드러나지
+   않아 여기서 보지 못한다. "두 번째 수정 단계 차단"(MVP 체크리스트 2번)의 증거는 흐름 조정(단위 I12)의 시험이다.
 6. 단계별 몫: basic_limit(기본 경로 5회, 그 가운데 1회는 verify_evidence 몫으로 남긴다), requery_limit(수정 단계의
    조회 2회. 세 번째 재조회를 막는다), final_verify_only·final_verify_limit(최종 단계는 verify_evidence 1회만).
-7. same_args: 같은 도구를 같은 인자(정규화한 인자: 객체 키 순서, 목록의 순서·중복은 따지지 않는다)로 예산을 쓴
-   시도가 이미 있으면 막는다. 동결 스냅샷이라 결과가 같고, 영구적 자료 부재를 같은 인자로 반복 조회하지 않기
+7. same_args: 같은 도구를 같은 인자(정규화한 인자: 객체 키 순서와 목록의 순서는 따지지 않고, 목록의 중복은 따진다)로
+   예산을 쓴 시도가 이미 있으면 막는다. 중복을 남기는 까닭: 도구가 중복 목록(예: partners ["CN","CN"])을 invalid_args로
+   거부한 뒤 고친 재호출(["CN"])이 같은 인자로 막히면 복구할 수 없다(룰북 시나리오 9 "복구할 수 있는 잘못된 조회 범위"). 동결 스냅샷이라 결과가 같고, 영구적 자료 부재를 같은 인자로 반복 조회하지 않기
    때문이다(개발 플랜 §6.6). verify_evidence는 뺀다: 흐름 조정이 예약한 차례에만 부르고, 같은 근거 목록이라도 그사이
    받은 봉투가 늘면 대조 결과가 달라질 수 있다. verify_evidence의 횟수는 5·6의 몫이 막는다.
 
 한도 값(limits): 흐름 조정 설정(configs/model/model.json의 limits)과 같은 키 tool_attempts, basic_tool_attempts,
 revision_stages, revision_requeries, final_verify를 읽는다. 빠진 키는 자료 계약 §5.3 값(8, 5, 1, 2, 1)이다. 다른
-키(model_requests 등)는 다른 단위의 한도라 읽지 않는다. 값은 1 이상의 정수다.
+키(model_requests 등)는 다른 단위의 한도라 읽지 않는다. 값은 1 이상이고 계약 값 이하인 정수다(계약 값보다 크면
+ValueError: 설정이 한도를 넓히지 못한다. 시험용으로 낮추는 것은 된다).
+
+후보 인자(args)를 정규화할 수 없으면(객체가 아님, 문자열이 아닌 키, 소수·float 등 허용 밖 값) 예외 대신 막는다
+(사유 invalid_args, 닫힌 쪽). 시도 기록(attempts)의 모양이 틀리면 부르는 코드의 오류라 ValueError다.
+deadline: ToolBudget에 deadline_ms를 주면 check·gate에 now_ms가 꼭 있어야 한다(없으면 ValueError, 조용히 건너뛰지 않는다).
 
 run 입력: {"attempts": [시도 기록…], "candidate": {"tool", "args", "stage"}, "limits"?, "now_ms"?, "deadline_ms"?}
 run 출력: {"allowed": 참거짓, "reason": 사유 또는 null, "same_as": 같은 인자 시도의 순번(0부터) 또는 null,
@@ -70,6 +79,7 @@ REQUERY_LIMIT = "requery_limit"
 FINAL_VERIFY_ONLY = "final_verify_only"
 FINAL_VERIFY_LIMIT = "final_verify_limit"
 SAME_ARGS = "same_args"
+INVALID_ARGS = "invalid_args"
 
 
 def parse_limits(limits: object = None) -> dict[str, int]:
@@ -84,6 +94,8 @@ def parse_limits(limits: object = None) -> dict[str, int]:
             value = limits[key]
             if isinstance(value, bool) or not isinstance(value, int) or value < 1:
                 raise ValueError(f"limits.{key}는 1 이상의 정수여야 한다")
+            if value > CONTRACT_LIMITS[key]:
+                raise ValueError(f"limits.{key}는 자료 계약 §5.3 한도({CONTRACT_LIMITS[key]})보다 클 수 없다")
             out[key] = value
     return out
 
@@ -95,15 +107,14 @@ def _normalize(value: object, where: str) -> object:
         return {k: _normalize(v, f"{where}.{k}") for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         items = [_normalize(v, f"{where}[]") for v in value]
-        unique = {json.dumps(v, sort_keys=True, ensure_ascii=False): v for v in items}
-        return [unique[k] for k in sorted(unique)]
+        return sorted(items, key=lambda v: json.dumps(v, sort_keys=True, ensure_ascii=False))  # 순서만 무시, 중복은 남김
     if value is None or isinstance(value, (str, bool, int)):
         return value
     raise ValueError(f"{where}: 인자 값은 문자열·정수·참거짓·null·목록·객체만 쓴다({type(value).__name__})")
 
 
 def canonical_args(args: object) -> str:
-    """같은 인자인지 비교할 정규화 문자열. 객체 키 순서와 목록의 순서·중복은 따지지 않는다."""
+    """같은 인자인지 비교할 정규화 문자열. 객체 키 순서와 목록의 순서는 따지지 않고 목록의 중복은 따진다."""
     if not isinstance(args, dict):
         raise ValueError("args는 객체여야 한다")
     return json.dumps(_normalize(args, "args"), sort_keys=True, ensure_ascii=False, separators=(",", ":"))
@@ -131,7 +142,13 @@ def _check_record(record: object, where: str, *, candidate: bool) -> dict:
         raise ValueError(f"{where}.tool은 빈 문자열이 아닌 문자열이어야 한다")
     if not candidate and tool not in types.TOOLS:
         raise ValueError(f"{where}.tool이 도구 5개 가운데 하나가 아니다(도구 밖 이름은 blocked로만 기록한다)")
-    return {"tool": tool, "key": canonical_args(record["args"]), "stage": record["stage"], "outcome": outcome}
+    try:
+        key = canonical_args(record["args"])
+    except ValueError:
+        if not candidate:
+            raise
+        key = None  # 정규화할 수 없는 후보 인자: 예외 대신 invalid_args로 막는다(decide)
+    return {"tool": tool, "key": key, "stage": record["stage"], "outcome": outcome}
 
 
 def _clock(now_ms: object, deadline_ms: object) -> tuple[int, int] | None:
@@ -176,6 +193,8 @@ def decide(attempts: object, candidate: object, limits: object = None, *, now_ms
         return _verdict(False, DEADLINE, counts, lim)
     if cand["tool"] not in types.TOOLS:
         return _verdict(False, UNKNOWN_TOOL, counts, lim)
+    if cand["key"] is None:
+        return _verdict(False, INVALID_ARGS, counts, lim)
     stage, tool = cand["stage"], cand["tool"]
     if stage == "critic":
         return _verdict(False, CRITIC_NO_TOOLS, counts, lim)
@@ -212,7 +231,7 @@ class ToolBudget:
     - record: 도구를 부른 결과(ok·failed·cache_hit)나 흐름이 막은 시도(blocked)를 기록한다.
     - recorded: 막힌 시도까지 센 기록 수. consumed: 예산을 쓴 시도 수. 실행 결과 기록의 tool_attempts에 어느 쪽을
       적을지는 열린 결정이다(머리 설명).
-    - deadline_ms를 주면 check·gate에 now_ms를 함께 줘야 deadline을 본다.
+    - deadline_ms를 주면 check·gate에 now_ms가 꼭 있어야 한다(없으면 ValueError. deadline 검사를 조용히 건너뛰지 않는다).
     """
 
     def __init__(self, limits: object = None, *, deadline_ms: int | None = None) -> None:
@@ -221,9 +240,10 @@ class ToolBudget:
         self.attempts: list[dict] = []
 
     def check(self, tool: str, args: dict, stage: str, *, now_ms: int | None = None) -> dict:
-        deadline = self.deadline_ms if now_ms is not None else None
+        if self.deadline_ms is not None and now_ms is None:
+            raise ValueError("deadline_ms가 있으면 now_ms를 함께 줘야 한다(deadline 검사를 건너뛰지 않는다)")
         return decide(self.attempts, {"tool": tool, "args": args, "stage": stage}, self.limits,
-                      now_ms=now_ms if deadline is not None else None, deadline_ms=deadline)
+                      now_ms=now_ms if self.deadline_ms is not None else None, deadline_ms=self.deadline_ms)
 
     def gate(self, tool: str, args: dict, stage: str, *, now_ms: int | None = None) -> dict:
         verdict = self.check(tool, args, stage, now_ms=now_ms)

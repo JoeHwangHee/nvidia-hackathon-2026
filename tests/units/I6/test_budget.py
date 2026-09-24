@@ -5,7 +5,10 @@ MVP 합격 체크리스트 2번(docs/plan/ROADMAP.md §3)의 도구 쪽 증거�
 - 9번째 시도 차단(실패·캐시 적중·verify_evidence·같은 도구 다른 인자 재호출도 예산을 쓴다)
 - 막힌 시도는 기록(recorded)에만 들고 예산을 쓰지 않는다(예약된 최종 검증 몫을 지킨다)
 - 수정 단계의 세 번째 재조회 차단, 두 번째 수정 단계 차단, Critic 차례의 도구 차단, deadline 우선
-- 같은 인자 재호출 차단(인자 정규화)과 verify_evidence 예외, 기본 경로의 verify_evidence 몫, 최종 단계 규칙
+- 같은 인자 재호출 차단(인자 정규화: 순서는 무시, 중복은 따짐)과 시나리오 9의 고친 재호출, verify_evidence 예외,
+  기본 경로의 verify_evidence 몫, 최종 단계 규칙
+- 정규화할 수 없는 후보 인자는 막음(invalid_args), 한도 값 위쪽 제한, deadline에 now_ms 필수
+- 수정 단계 판단의 한계(보조 장치): 도구를 부르지 않은 수정 단계는 여기서 보지 못한다
 - 흐름 조정(단위 I12)의 지금 호출 모양({"attempts": 실행한 시도, "candidate", "limits": {"tool_attempts"}})
 """
 import unittest
@@ -75,12 +78,20 @@ class StageTest(unittest.TestCase):
         verdict = budget.decide(attempts, {"tool": "get_history", "args": {"x": 1}, "stage": "revision"}, LIMITS)
         self.assertEqual((verdict["allowed"], verdict["reason"]), (False, budget.REQUERY_LIMIT))
 
-    def test_second_revision_stage_is_blocked(self):
+    def test_second_revision_run_after_another_stage_attempt_is_blocked(self):
+        """예산을 쓴 다른 단계 시도(여기서는 최종 verify_evidence)가 사이에 낀 두 번째 수정 덩어리를 막는다."""
         attempts = basic_path() + [attempt("decompose_hs", "revision"),
                                    {"tool": "verify_evidence", "args": VERIFY_ARGS, "stage": "final", "outcome": "ok"}]
         verdict = budget.decide(attempts, {"tool": "get_history", "args": {"x": 1}, "stage": "revision"}, LIMITS)
         self.assertEqual((verdict["allowed"], verdict["reason"]), (False, budget.REVISION_LIMIT))
         self.assertEqual(verdict["counts"]["revision_stages"], 1)
+
+    def test_revision_stage_without_tool_calls_is_not_visible_here(self):
+        """도구를 부르지 않은 수정 단계는 시도 순서에 드러나지 않아 I6가 보지 못한다(흐름 조정 I12가 막는다)."""
+        attempts = basic_path() + [{"tool": "verify_evidence", "args": VERIFY_ARGS, "stage": "final", "outcome": "ok"}]
+        verdict = budget.decide(attempts, {"tool": "get_history", "args": {"x": 1}, "stage": "revision"}, LIMITS)
+        self.assertTrue(verdict["allowed"])
+        self.assertEqual(verdict["counts"]["revision_stages"], 0)
 
     def test_revision_stage_is_counted_from_the_sequence(self):
         # 수정 단계 안에서 이어지는 조회는 같은 단계다. 막힌 기록이 끼어도 새 단계로 보지 않는다.
@@ -146,6 +157,13 @@ class DeadlineTest(unittest.TestCase):
         self.assertEqual(tb.gate("get_history", {}, "basic", now_ms=1_000)["reason"], budget.DEADLINE)
         self.assertEqual(tb.recorded, 1)
 
+    def test_tool_budget_with_deadline_needs_now(self):
+        tb = budget.ToolBudget(LIMITS, deadline_ms=1_000)
+        with self.assertRaises(ValueError):
+            tb.gate("check_comparability", {}, "basic")
+        self.assertEqual(tb.recorded, 0)
+        self.assertTrue(budget.ToolBudget(LIMITS).gate("check_comparability", {}, "basic")["allowed"])
+
     def test_now_and_deadline_come_together(self):
         with self.assertRaises(ValueError):
             budget.decide([], {"tool": "get_history", "args": {}, "stage": "basic"}, LIMITS, now_ms=1)
@@ -156,9 +174,19 @@ class SameArgsTest(unittest.TestCase):
         attempts = [attempt("check_comparability", "basic"),
                     attempt("compare_partners", "basic", partners=["MY", "ID"], note={"b": 1, "a": 2})]
         verdict = budget.decide(attempts, {"tool": "compare_partners",
-                                           "args": {"note": {"a": 2, "b": 1}, "partners": ["ID", "MY", "ID"]},
+                                           "args": {"note": {"a": 2, "b": 1}, "partners": ["ID", "MY"]},
                                            "stage": "basic"}, LIMITS)
         self.assertEqual((verdict["allowed"], verdict["reason"], verdict["same_as"]), (False, budget.SAME_ARGS, 1))
+
+    def test_duplicates_count_so_a_fixed_recall_is_allowed(self):
+        """룰북 시나리오 9: 중복 목록이 invalid_args로 실패한 뒤 고친 재호출은 같은 인자가 아니다."""
+        attempts = [attempt("compare_partners", "basic", "failed", partners=["CN", "CN"])]
+        fixed = budget.decide(attempts, {"tool": "compare_partners", "args": {"partners": ["CN"]}, "stage": "revision"},
+                              LIMITS)
+        self.assertTrue(fixed["allowed"], fixed["reason"])
+        again = budget.decide(attempts, {"tool": "compare_partners", "args": {"partners": ["CN", "CN"]},
+                                         "stage": "revision"}, LIMITS)
+        self.assertEqual((again["reason"], again["same_as"]), (budget.SAME_ARGS, 0))
 
     def test_same_tool_with_other_args_is_allowed(self):
         attempts = [attempt("compare_partners", "basic", partners=["ID"])]
@@ -203,6 +231,21 @@ class InputTest(unittest.TestCase):
         for bad in ({"tool_attempts": 0}, {"tool_attempts": True}, {"final_verify": "1"}, []):
             with self.assertRaises(ValueError, msg=bad):
                 budget.parse_limits(bad)
+
+    def test_limits_cannot_exceed_the_contract(self):
+        for bad in ({"tool_attempts": 9}, {"basic_tool_attempts": 6}, {"revision_stages": 2}, {"revision_requeries": 3},
+                    {"final_verify": 2}, {"tool_attempts": 100, "basic_tool_attempts": 100}):
+            with self.assertRaises(ValueError, msg=bad):
+                budget.parse_limits(bad)
+        self.assertEqual(budget.parse_limits({"tool_attempts": 3})["tool_attempts"], 3)  # 시험용으로 낮추기는 된다
+
+    def test_invalid_candidate_args_are_blocked_not_raised(self):
+        from decimal import Decimal
+
+        for args in ({"x": 1.5}, {"x": Decimal("1.5")}, "partners=CN", ["CN"], {1: "x"}, None):
+            with self.subTest(args=args):
+                verdict = budget.decide([], {"tool": "compare_partners", "args": args, "stage": "basic"}, LIMITS)
+                self.assertEqual((verdict["allowed"], verdict["reason"]), (False, budget.INVALID_ARGS))
 
     def test_unknown_tool_is_blocked_not_run(self):
         verdict = budget.decide([], {"tool": "run_sql", "args": {"query": "SELECT 1"}, "stage": "basic"}, LIMITS)
