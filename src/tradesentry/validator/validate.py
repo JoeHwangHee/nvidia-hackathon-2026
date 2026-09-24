@@ -5,7 +5,7 @@
 소유: M
 입력: 보고서·봉투·스냅샷
 출력: findings(`validator_findings`)
-허용 import: 표준 라이브러리, tradesentry.contract, tradesentry.dal, tradesentry.metrics, tradesentry.policy, tradesentry.validator
+허용 import: 표준 라이브러리, tradesentry.contract, tradesentry.dal, tradesentry.metrics, tradesentry.policy, tradesentry.validator, tradesentry.reports.render_ko
 
 정본: 개발 플랜 docs/plan/DEV_PLAN.md §7.4(검증기), 자료 계약 docs/rules/DATA_CONTRACT_V1.md §3(상태값), §4.4(근거 ID
 풀림), §6(typed claim), §9.1·§9.4(보고서와 스키마 요건), §11(단위·자릿수), 룰북 docs/eval/RULEBOOK.md B3-1(값 비교)·
@@ -15,7 +15,15 @@ R4가 정한다.
 입력(JSON 객체 하나)
 - `report`: 보고서 초안이나 보고서 객체(자료 계약 §9.1). `report_id`·`evidence_ids`·`validator_findings`·`report_hash`·
   `created_at`은 없어도 된다(검증 뒤 단위 R2가 채운다).
-- `case`: 사례 객체(자료 계약 §2.3.5). 코드가 만든 것이라 형식이 틀리면 ValueError다.
+  - `report_hash`와 초안의 관계: 검증 전 초안에는 `report_hash`가 없고, 그러면 이 검사를 건너뛴다. 필드가 있으면
+    형식(소문자 16진수 64자)과 내용 일치를 본다. 내용 일치는 `claims`·`narrative`·`hypotheses`·`evidence_ids`를 계약
+    §9.1로 정규화해 다시 계산한 값(단위 R2의 `report_hash`, 해시 구현을 한 곳에 두려고 R2 모듈을 import한다)과
+    같은지다. `evidence_ids`가 없으면 R2와 같게 주장들의 근거를 모아 계산한다. 어긋나면 스키마 사유
+    `SCHEMA_REPORT_HASH`로 모든 모드에서 막는다. 흐름 조정(I12)은 초안을 검증한 뒤 R2로 최종 보고서를 만들거나 R2가
+    만든 보고서를 검증한다. 어느 쪽이든 최종 해시는 R2가 계산한다. 저장한 보고서를 다시 검증하면(승인·화면) 이 검사가
+    해시 변조와 해시 뒤 내용 변경을 잡는다.
+- `case`: 사례 객체(자료 계약 §2.3.5). 코드가 만든 것이라 형식이 틀리거나 발동한 신호가 없으면(사례의 정의,
+  개발 플랜 §6.4) ValueError다.
 - `run`: 이 실행의 기대 출처 `{"run_id", "mode", "snapshot_id", "policy_version", "grouping_version"}`
 - `envelopes`: 이 실행에서 도구가 돌려준 봉투 목록(자료 계약 §5). 검증된 지표(`metrics`)와 돌려준 근거의 출처다.
 - `rows`: 스냅샷 조회 결과 `{근거 ID: 행 객체 또는 null}`. 부르는 쪽이 자료 접근층(단위 K3)으로 보고서·봉투의 근거 ID를
@@ -36,13 +44,30 @@ R4가 정한다.
 - 도구가 돌려준 근거는 봉투의 `evidence_ids`, 지표의 `evidence_ids`, `missingness` 항목의 `evidence_ids`·`evidence_id`다.
 - 동등한 행(룰북 B3-1: 같은 키가 두 요청에 중복돼 값이 같은 행)은 테이블과 (`partner_code`, `hs_code`, `month`,
   `flow`, `amount_usd`, `net_weight_kg`, `observation_status`)가 모두 같은 행이다.
+- 자료 상태 주장의 근거 행(`_status_row_supports`): 수집기는 상태 행(`UNRESOLVED_ZERO`·`REQUEST_FAILED`)을 요청 코드
+  자릿수로 쓴다(HS4 스캔 요청은 HS4 코드, HS6 요청은 HS6 코드, 수입·수출 두 흐름). 그래서 자료 상태 주장은 그 키 자신의
+  행이나 그 키를 맡은 요청의 상태 행을 인용한다.
+  - 값이 `OBSERVED`인 주장은 같은 코드의 행만 받는다.
+  - 그 밖의 값은 그 키 자신의 행과 그 키를 맡은 요청의 행을 받는다. 상대국 HS10 키는 HS6 요청(앞 6자리), 상대국 HS6
+    키는 HS4 스캔 요청(앞 4자리)과 HS6 요청 자신, 전체국가(`ALL`) 키는 앞 6자리·앞 4자리 요청 모두다(품목별 API는 HS4·
+    HS6 요청 모두 HS10 행을 준다). 하위 행으로 상위 키의 상태를 뒷받침하지 못한다.
+  - 같은 상대국·HS6·월의 부모 HS6 행(`OBSERVED` 수입 행)이 `rows`에 있으면, 그 키의 HS6 요청 상태 행은 HS10 하위
+    자료가 빠졌다는 뜻이다(자료 계약 §2.3.2 행 규칙 4, oracle C형). 그 행은 `observation_status@<HS10 코드>` 주장만
+    뒷받침하고 HS6 수준 `observation_status` 주장은 뒷받침하지 못한다.
+  - 한 보고서에서 같은 대상의 자료 상태 주장끼리 값이 다르거나, `OBSERVED`가 아닌 자료 상태와 같은 키·월의 값 주장이
+    함께 있으면 `DATA_STATUS_CONFLICT`다. `CONFIRMED_NO_TRADE`는 V·Q를 0으로 보아 s·d_s·w@가 계산되므로 단가(U·r_U,
+    하위품목이면 U@·r_U@)와 분해 효과만 본다(자료 계약 §3.4).
 - 금지 문구 목록과 산문 패턴 정규식은 이 파일에 둔다. 룰북 B3-2가 정본이고, 채점기(eval/scorer)와 따로 구현했다.
+  룰북 EX 표에 없는 빼기 셋(품목 규격 1kVA·16kVA, 분류 자릿수 HSK 10·10단위·6자리, 기준월 표기 t−12)은 무역통계
+  검토 권고로 더한 해석이다. `RB-1` 동결 전에 룰북 EX-1·EX-2와 채점기에 같게 넣을지 오케스트레이터가 정한다.
 - 기호·단위·자릿수·상태값 표는 자료 계약의 사본이다(단위 표 §6 조립 부산물 4. 조립 점검에서 K1·X4로 옮긴다).
 """
 import re
 import unicodedata
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
+
+from tradesentry.reports import render_ko
 
 # ---- 자료 계약 사본 ------------------------------------------------------------------------------------------
 MODES = ("checklist", "agent", "full", "freeform")
@@ -76,6 +101,8 @@ PERIOD_RE = re.compile(r"\d{4}(?:0[1-9]|1[0-2])")
 HS6_RE = re.compile(r"\d{6}")
 PARTNER_RE = re.compile(r"[A-Z]{2}|ALL")
 ROWID_RE = re.compile(r"[1-9]\d*")
+HS10_RE = re.compile(r"\d{10}")
+HASH_RE = re.compile(r"[0-9a-f]{64}")
 
 CODES = {
     "SCHEMA_REPORT": "보고서 키·형식",
@@ -83,6 +110,7 @@ CODES = {
     "SCHEMA_CLAIM_ID": "claim_id 중복·예약어",
     "SCHEMA_STATUS": "판정 상태 값",
     "SCHEMA_SIGNAL_CLAIM": "발동 신호별 주장 요건(계약 §9.4)",
+    "SCHEMA_REPORT_HASH": "report_hash 형식·내용 일치(계약 §9.1)",
     "NUMERIC_MISMATCH": "검증된 지표 값과 다른 숫자",
     "NUMERIC_UNBACKED": "검증된 지표가 없는 숫자",
     "NUMERIC_NOT_COMPUTABLE": "계산 불가 지표에 적은 숫자",
@@ -95,6 +123,7 @@ CODES = {
     "EVIDENCE_UNRESOLVED": "풀리지 않는 근거 ID(풀림 규칙 3·4)",
     "EVIDENCE_TOTAL_ROW": "총계 행 근거",
     "EVIDENCE_NOT_SUPPORTING": "주장을 뒷받침하지 않는 근거",
+    "DATA_STATUS_CONFLICT": "같은 대상의 자료 상태·값 주장끼리 어긋남",
     "PROVENANCE_MISMATCH": "보고서·사례의 출처·버전",
     "PROVENANCE_ENVELOPE": "다른 스냅샷을 조회한 봉투",
     "PROVENANCE_NOT_RETURNED": "이 실행의 도구가 돌려주지 않은 근거",
@@ -114,6 +143,7 @@ def run(inp: object) -> object:
         out.append(_f("schema", "SCHEMA_REPORT", "report", None, "보고서가 JSON 객체가 아니다"))
         return {"findings": out}
     out += _report_schema(report)
+    out += _report_hash_check(report)
     claims = report.get("claims") if isinstance(report.get("claims"), list) else []
     valid = _claim_schema(claims, out)
     statuses_ok = _status_schema(report, out)
@@ -123,6 +153,7 @@ def run(inp: object) -> object:
     out += _provenance(report, ctx)
     for index, claim in valid:
         out += _claim_checks(index, claim, ctx)
+    out += _data_status_conflicts(valid)
     out += _report_evidence(report, claims)
     fields = _prose_fields(report, claims)
     out += _forbidden(fields)
@@ -161,6 +192,8 @@ def _context(inp: object) -> Context:
     signals = case.get("signals")
     if not isinstance(signals, dict) or any(signals.get(s) not in SIGNAL_TRIGGERS for s in SIGNALS):
         raise ValueError("R3 입력의 case.signals가 unit_value·share의 TRIGGERED·NOT_TRIGGERED가 아니다")
+    if not any(signals[s] == "TRIGGERED" for s in SIGNALS):
+        raise ValueError("R3 입력의 case에 발동한 신호가 없다. 사례는 신호가 하나 이상 발동해야 한다(개발 플랜 §6.4)")
     if not isinstance(run_info, dict) or run_info.get("mode") not in MODES or not all(
             isinstance(run_info.get(k), str) for k in ("run_id", "snapshot_id", "policy_version", "grouping_version")):
         raise ValueError("R3 입력의 run에 run_id·mode·snapshot_id·policy_version·grouping_version이 없다")
@@ -237,6 +270,32 @@ def _report_schema(report: dict) -> list[dict]:
     if isinstance(report.get("mode"), str) and report["mode"] not in MODES:
         out.append(_f("schema", "SCHEMA_REPORT", "mode", None, "mode가 네 모드 가운데 하나가 아니다"))
     return out
+
+
+def _report_hash_check(report: dict) -> list[dict]:
+    """report_hash가 있으면 형식과, 네 키를 계약 §9.1로 정규화해 다시 계산한 값과의 일치를 본다(초안에는 없다)."""
+    if "report_hash" not in report:
+        return []
+    value = report["report_hash"]
+    if not (isinstance(value, str) and HASH_RE.fullmatch(value)):
+        return [_f("schema", "SCHEMA_REPORT_HASH", "report_hash", None,
+                   "report_hash는 소문자 16진수 64자의 sha256이어야 한다(계약 §9.1)")]
+    items, narrative, hypotheses = report.get("claims"), report.get("narrative"), report.get("hypotheses")
+    if not (isinstance(items, list) and isinstance(narrative, str) and isinstance(hypotheses, list)):
+        return []  # 네 키의 형식 사유는 SCHEMA_REPORT로 이미 적었다
+    evidence = report.get("evidence_ids")
+    if not isinstance(evidence, list):
+        evidence = render_ko.collect_evidence(items)
+    try:
+        expected = render_ko.report_hash(items, narrative, hypotheses, evidence)
+    except (ValueError, TypeError):
+        return [_f("schema", "SCHEMA_REPORT_HASH", "report_hash", None,
+                   "claims·narrative·hypotheses·evidence_ids를 계약 §9.1로 정규화할 수 없어 다시 계산하지 못했다")]
+    if expected != value:
+        return [_f("schema", "SCHEMA_REPORT_HASH", "report_hash", None,
+                   "claims·narrative·hypotheses·evidence_ids를 계약 §9.1로 정규화해 다시 계산한 값과 다르다"
+                   "(해시를 만든 뒤 내용이 바뀌었거나 해시가 틀렸다)")]
+    return []
 
 
 def _claim_schema(claims: list, out: list) -> list[tuple[int, dict]]:
@@ -465,6 +524,9 @@ def _referent_checks(path: str, claim: dict, base: str, ctx: Context, out: list)
     if claim["hs6"] != ctx.case["hs6"]:
         out.append(_f("validator", "REFERENT_MISMATCH", f"{path}.hs6", claim_id,
                       f"사례 품목({ctx.case['hs6']})이 아닌 품목을 가리킨다"))
+    if "@" in claim["metric"] and not sub_item_ok(claim["metric"].partition("@")[2], claim["hs6"]):
+        out.append(_f("validator", "REFERENT_MISMATCH", f"{path}.metric", claim_id,
+                      "하위품목 코드는 부모 hs6로 시작하는 숫자 10자다(계약 §6.2)"))
     peer = claim["partner"] not in (ctx.case["partner"], "ALL")
     if claim_type == "comparison" and not peer:
         out.append(_f("validator", "REFERENT_MISMATCH", f"{path}.partner", claim_id,
@@ -623,6 +685,10 @@ def _data_status_checks(path: str, claim: dict, ctx: Context, resolved: list, ou
         out.append(_f("validator", "REFERENT_MISMATCH", f"{path}.metric", claim_id,
                       "data_status 주장의 metric은 observation_status나 observation_status@<HS10 코드>다"))
         return
+    if at and not sub_item_ok(code, claim["hs6"]):
+        out.append(_f("validator", "REFERENT_MISMATCH", f"{path}.metric", claim_id,
+                      "하위품목 코드는 부모 hs6로 시작하는 숫자 10자다(계약 §6.2)"))
+        return
     if claim["unit"] is not None:
         out.append(_f("validator", "UNIT_MISMATCH", f"{path}.unit", claim_id, "data_status 주장의 unit은 null이다"))
     if claim["direction"] != "NA":
@@ -633,28 +699,121 @@ def _data_status_checks(path: str, claim: dict, ctx: Context, resolved: list, ou
                       f"사례 품목({ctx.case['hs6']})이 아닌 품목을 가리킨다"))
     if not resolved:
         return
-    for _, row in resolved:
-        hs_code = row.get("hs_code")
-        same_item = hs_code == code if at else isinstance(hs_code, str) and hs_code.startswith(claim["hs6"])
-        if (row.get("observation_status") == claim["value"] and row.get("partner_code") == claim["partner"]
-                and row.get("month") == claim["period"] and same_item):
-            return
+    target = code if at else claim["hs6"]
+    if any(_status_row_supports(claim, target, row, ctx) for _, row in resolved):
+        return
     out.append(_f("validator", "EVIDENCE_NOT_SUPPORTING", f"{path}.evidence_ids", claim_id,
-                  f"인용한 행 가운데 이 대상의 관측 상태가 {claim['value']}인 행이 없다"))
+                  f"인용한 행 가운데 이 대상({target})의 관측 상태가 {claim['value']}임을 보이는 행이 없다. "
+                  "그 키 자신의 행이나 그 키를 맡은 요청의 상태 행을 인용한다"))
+
+
+def status_row_codes(target: str, partner: str, observed: bool) -> tuple[str, ...]:
+    """자료 상태 주장이 인용할 수 있는 행의 hs_code: 그 키 자신과 그 키를 맡은 요청의 코드(상태 행은 요청 코드 자릿수)."""
+    if observed:
+        return (target,)
+    if len(target) == 10:
+        return (target, target[:6], target[:4]) if partner == "ALL" else (target, target[:6])
+    return (target, target[:4])
+
+
+def _status_row_supports(claim: dict, target: str, row: dict, ctx: Context) -> bool:
+    if (row.get("partner_code"), row.get("month"), row.get("observation_status")) != (
+            claim["partner"], claim["period"], claim["value"]):
+        return False
+    hs_code = row.get("hs_code")
+    if hs_code not in status_row_codes(target, claim["partner"], claim["value"] == "OBSERVED"):
+        return False
+    if claim["value"] != "OBSERVED" and len(target) == 6 and hs_code == target \
+            and _parent_row_exists(claim["partner"], target, claim["period"], ctx):
+        return False  # 계약 §2.3.2 행 규칙 4: 부모 HS6 행이 있는 키의 HS6 요청 상태 행은 HS10 하위 자료의 상태다
+    return True
+
+
+def _parent_row_exists(partner: str, hs6: str, period: str, ctx: Context) -> bool:
+    """rows에 같은 상대국·HS6·월의 부모 HS6 값 행(OBSERVED 수입 행)이 있는가."""
+    return any(isinstance(row, dict) and row.get("partner_code") == partner and row.get("hs_code") == hs6
+               and row.get("month") == period and row.get("observation_status") == "OBSERVED"
+               and row.get("flow", "import") == "import" for row in ctx.rows.values())
+
+
+HS6_LEVEL_BASES = ("V", "Q", "U", "s", "r_U", "d_s")  # 부모 HS6 행에서 오는 값(계약 §11.2 원천 규칙)
+NO_TRADE_BASES = ("U", "r_U")  # CONFIRMED_NO_TRADE는 V·Q를 0으로 보아 s·d_s는 계산되고 단가는 계산하지 않는다(§3.4)
+
+
+def _data_status_conflicts(valid: list[tuple[int, dict]]) -> list[dict]:
+    """같은 대상의 자료 상태 주장끼리 값이 다르거나, 값이 없다는 자료 상태와 같은 키·월의 값 주장이 함께 있는가."""
+    out = []
+    statuses = [(i, c) for i, c in valid if c["claim_type"] == "data_status"
+                and (c["metric"] == "observation_status" or c["metric"].startswith("observation_status@"))]
+    groups: dict[tuple, list] = {}
+    for i, claim in statuses:
+        groups.setdefault((claim["partner"], claim["hs6"], claim["metric"], claim["period"]), []).append((i, claim))
+    for items in groups.values():
+        values = sorted({claim["value"] for _, claim in items})
+        if len(values) > 1:
+            for i, claim in items:
+                out.append(_f("validator", "DATA_STATUS_CONFLICT", f"claims[{i}].value", claim["claim_id"],
+                              f"같은 대상의 자료 상태 주장이 서로 다르다({'·'.join(values)})"))
+    numeric = [(i, c) for i, c in valid if c["claim_type"] != "data_status" and _is_number(c["value"])]
+    for i, status in statuses:
+        if status["value"] == "OBSERVED" or status["partner"] == "ALL":
+            continue
+        _, at, code = status["metric"].partition("@")
+        month = status["period"]
+        for _, claim in numeric:
+            if (claim["partner"], claim["hs6"]) != (status["partner"], status["hs6"]) \
+                    or month not in (claim["period"], claim["baseline_period"]):
+                continue
+            symbol_base, symbol_at, symbol_code = claim["metric"].partition("@")
+            no_trade = status["value"] == "CONFIRMED_NO_TRADE"
+            if at:  # 무거래 확정 하위품목의 중량 비중(w@)은 0으로 계산되므로 단가(U@·r_U@)와 분해 효과만 본다
+                sub_bases = NO_TRADE_BASES if no_trade else SUB_ITEM_BASES
+                hit = (symbol_at and symbol_code == code and symbol_base in sub_bases) \
+                    or (not symbol_at and symbol_base in DECOMPOSITION)
+            else:
+                hit = not symbol_at and symbol_base in (NO_TRADE_BASES if no_trade else HS6_LEVEL_BASES)
+            if hit:
+                out.append(_f("validator", "DATA_STATUS_CONFLICT", f"claims[{i}].value", status["claim_id"],
+                              f"값이 있는 같은 키·월의 주장({claim['claim_id']})과 어긋난다: 그 대상을 "
+                              f"{status['value']}로 적었다"))
+                break
+    return out
+
+
+def sub_item_ok(code: str, hs6: str) -> bool:
+    """HS10 하위품목 코드는 숫자 10자이고 부모 hs6로 시작한다(계약 §6.2)."""
+    return bool(HS10_RE.fullmatch(code)) and code.startswith(hs6)
 
 
 # ---- 금지 문구 ----------------------------------------------------------------------------------------------
-# 자료 계약 §6.3·개발 플랜 §12.2: 단가·점유율 변화를 부정·위법·원산지 조작(우회수입 포함)·개별 거래가격의 증거로
-# 쓰지 않고, 경보 해소를 "정상 확정"으로 쓰지 않는다. 뜻을 가리지 않고 낱말이 나오면 사유로 적는다(부정문 포함).
+# 자료 계약 §6.3·개발 플랜 §7.6·§12.2: 단가·점유율 변화를 부정·위법·원산지 조작(우회수입, 즉 제3국을 거쳐 원산지를
+# 바꿔 들여오는 수입 포함)·개별 거래가격의 증거로 쓰지 않고, 통관 조치로 표현하지 않고, 경보 해소를 "정상 확정"으로
+# 쓰지 않는다. 뜻을 가리지 않고 낱말이 나오면 사유로 적는다(부정문 포함). 여러 낱말 문구는 띄어쓰기를 보지 않는다
+# ("부정 가능성"과 "부정가능성"을 같게 잡는다). 목록은 문자열만 담는다(MT4 프롬프트 동기화 시험이 이 두 목록을 읽는다).
 FORBIDDEN_PHRASES = (
-    "부정 거래", "부정거래", "부정 수입", "부정수입", "부정 행위", "부정행위", "불법", "위법", "탈세", "탈루", "밀수",
-    "사기 거래", "사기거래", "범죄", "혐의", "관세법 위반", "법 위반", "법률 위반",
-    "원산지 조작", "원산지를 조작", "원산지 세탁", "원산지 위장", "원산지 둔갑", "원산지 속임",
-    "우회수입", "우회 수입", "우회수출", "우회 수출", "저가 신고", "저가신고", "과소 신고", "과소신고", "허위 신고",
-    "허위신고", "가격 조작", "개별 거래가격", "개별 거래 가격", "개별 거래의 가격", "덤핑",
-    "정상 확정", "정상으로 확정", "정상 거래로 확인", "정상 거래임이 확인",
+    # 부정(不正). "부정" 단독은 "부정적 영향"·"부정할 수 없다" 같은 오탐이 있어 넣지 않는다
+    "부정 거래", "부정 수입", "부정 수출", "부정 행위", "부정 가능성", "부정 의혹", "부정 여부", "부정의 증거",
+    "부정 소지", "부정 신고", "부정한 방법", "사기 거래", "사기 행위",
+    # 위법·불법
+    "불법", "위법", "탈법", "편법", "탈세", "탈루", "밀수", "범죄", "혐의", "관세법 위반", "법 위반", "법률 위반",
+    "관세 포탈", "관세 회피",
+    # 원산지 조작과 우회수입(계약의 풀이 "제3국을 거쳐 원산지를 바꿔 들여오는 수입" 포함), 원산지 판정
+    "원산지 조작", "원산지를 조작", "원산지 세탁", "원산지 위장", "원산지 둔갑", "원산지 속임", "원산지 우회",
+    "원산지 회피", "원산지를 바꿔", "원산지를 바꾼", "원산지 판정", "원산지 판단", "우회 수입", "우회 수출",
+    "우회 환적", "환적", "제3국을 거쳐", "제3국 경유", "제3국을 경유",
+    # 개별 거래가격
+    "저가 신고", "과소 신고", "허위 신고", "가격 조작", "개별 거래가격", "개별 거래의 가격", "덤핑",
+    # 통관 조치("자료 보류"와 겹치지 않게 "보류" 단독은 넣지 않는다)
+    "통관 보류", "추징", "적발", "압수", "처벌", "고발",
+    # 정상 확정·정상 거래(개발 플랜 §6.3: 공통 하락은 정상 거래의 증명이 아니다)
+    "정상 확정", "정상으로 확정", "정상 거래",
 )
-FORBIDDEN_LATIN = ("fraud", "illegal", "smuggl", "circumvent", "dumping", "tax evasion")
+FORBIDDEN_LATIN = ("fraud", "illegal", "smuggl", "circumvent", "dumping", "evasion", "under-invoic", "transship",
+                   "misdeclar")
+# 금지 낱말을 품었지만 금지할 뜻이 아닌 말(무역구제 관세 이름). 대소문자와 띄어쓰기를 가리지 않고 먼저 지운다.
+FORBIDDEN_EXCEPTIONS = ("반덤핑", "덤핑방지", "덤핑 방지", "anti-dumping", "antidumping")
+# 앞 글자가 한글이면 세지 않는 낱말("순환적"·"교환적"·"전환적"의 "환적"). 띄어 쓴 "화물 환적"은 센다.
+WORD_START_PHRASES = ("환적",)
 
 
 def _prose_fields(report: dict, claims: list) -> list[tuple[str, str]]:
@@ -673,14 +832,34 @@ def _prose_fields(report: dict, claims: list) -> list[tuple[str, str]]:
 def _forbidden(fields: list[tuple[str, str]]) -> list[dict]:
     out = []
     for path, text in fields:
-        flat = re.sub(r"\s+", " ", text)
-        lower = flat.lower()
-        hits = [p for p in FORBIDDEN_PHRASES if p in flat] + [p for p in FORBIDDEN_LATIN if p in lower]
-        hits = [p for p in hits if not any(p != q and p in q for q in hits)]  # "관세법 위반" 안의 "법 위반"은 한 번만
-        for phrase in hits:
+        for phrase in forbidden_hits(text):
             out.append(_f("validator", "FORBIDDEN_PHRASE", path, None,
                           f"금지 문구를 썼다: '{phrase}'. 보고서는 담당자의 다음 업무만 제시한다(계약 §6.3)"))
     return out
+
+
+def forbidden_hits(text: str) -> list[str]:
+    """문장에 나온 금지 문구(목록 순서). 예외 낱말을 먼저 지우고, 여러 낱말 문구는 띄어쓰기를 보지 않고, 겹치면 긴 쪽만
+    남긴다."""
+    flat = re.sub(r"\s+", " ", unicodedata.normalize("NFC", text))
+    for word in FORBIDDEN_EXCEPTIONS:
+        flat = re.sub(r"\s?".join(re.escape(ch) for ch in word.replace(" ", "")), " ", flat, flags=re.IGNORECASE)
+    tight, lower = flat.replace(" ", ""), flat.lower()
+    hits = []
+    for phrase in FORBIDDEN_PHRASES:
+        if phrase in WORD_START_PHRASES:
+            found = re.search(r"(?<![가-힣])" + re.escape(phrase), flat) is not None
+        elif " " in phrase:  # 여러 낱말 문구는 띄어쓰기를 보지 않는다("부정가능성"도 잡는다)
+            found = phrase.replace(" ", "") in tight
+        else:  # 한 낱말은 띄어쓰기를 지우지 않은 문장에서 찾는다("재고 발생"을 "고발"로 잡지 않는다)
+            found = phrase in flat
+        if found:
+            hits.append(phrase)
+    hits += [word for word in FORBIDDEN_LATIN if word in lower]
+    unique: dict[str, str] = {}  # 띄어쓰기를 뺀 꼴 → 처음 나온 문구(같은 꼴은 한 번만)
+    for phrase in hits:
+        unique.setdefault(phrase.replace(" ", "").lower(), phrase)
+    return [p for key, p in unique.items() if not any(key != other and key in other for other in unique)]
 
 
 # ---- 산문 패턴(룰북 B3-2) -----------------------------------------------------------------------------------
@@ -719,10 +898,15 @@ EXCLUDE_RES = (
     re.compile(r"\d\s?분기"),
     re.compile(r"\d+\s?개월(?!\s?연속)"),
     re.compile(r"\d{1,2}\s?일"),
+    re.compile(r"(?<![A-Za-z])t\s?[-−+]\s?\d+"),  # 기준월 표기 t−12(해석: 무역통계 검토 권고 4)
     # EX-2 품목 식별(HS와 함께 쓴 숫자, 류·호 표기). HS 코드 집합의 숫자는 아래 CODE_TOKEN_RE로 따로 본다
     re.compile(r"(?<![A-Za-z])[Hh][Ss]\s?[-:]?\s?\d+(?:[.\-]\d+)*"),
     re.compile(r"제\s?\d+\s?(?:류|호)"),
     re.compile(r"\d+\s?(?:류|호)"),
+    # EX-2 확장(해석: 무역통계 검토 권고 4). 품목 규격(1kVA·16kVA)과 분류 자릿수(HSK 10, 10단위, 6자리)
+    re.compile(r"\d+(?:\.\d+)?\s?(?:[kKM]?VA|[kK]V|[kK]W)(?![A-Za-z])"),
+    re.compile(r"(?<![A-Za-z])[Hh][Ss][Kk]\s?\d+"),
+    re.compile(r"\d+\s?(?:단위|자리)"),
     # EX-3 식별자·버전(근거 ID, 라틴 문자와 숫자가 섞인 이름: policy_v1, RB-1, g1, kcs_202201_202412_v2 등)
     re.compile(r"ev:[^\s,;)\]]+"),
     # EX-4 목록 번호와 조사 과정·구조의 개수

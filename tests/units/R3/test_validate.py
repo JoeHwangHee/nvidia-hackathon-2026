@@ -8,12 +8,14 @@
 시험 값은 모두 합성이다(실제 통계가 아니다). 합성 사례 A/B/C는 실제 사건이 아니다.
 """
 import copy
+import hashlib
 import json
 import unittest
 from decimal import Decimal
 from pathlib import Path
 
 from tradesentry.reports import claims as r1
+from tradesentry.reports import render_ko
 from tradesentry.validator import validate
 
 HERE = Path(__file__).resolve().parent
@@ -263,7 +265,7 @@ class TamperTest(unittest.TestCase):
         inp["report"]["hypotheses"].append("관세법 위반이 의심된다.")
         out = validate.run(inp)
         found = [(f["path"], f["detail"].split("'")[1]) for f in out["findings"] if f["code"] == "FORBIDDEN_PHRASE"]
-        self.assertEqual(found, [("narrative", "우회수입"), ("hypotheses[1]", "정상 확정"), ("hypotheses[2]", "관세법 위반")])
+        self.assertEqual(found, [("narrative", "우회 수입"), ("hypotheses[1]", "정상 확정"), ("hypotheses[2]", "관세법 위반")])
 
     def test_signal_family_requirement(self):
         inp = clean_input()
@@ -302,31 +304,129 @@ class TamperTest(unittest.TestCase):
         self.assert_found(inp, "PROVENANCE_REPORT_EVIDENCE", "evidence_ids")
 
 
+def c_type_input() -> dict:
+    """oracle C형 보고서: 하위품목(HS10) 자료에서 나온 주장(분해 효과·w@)을 빼고 부모 HS6 값 주장만 남긴 깨끗한 보고서."""
+    inp = clean_input()
+    inp["report"]["claims"] = [c for c in inp["report"]["claims"]
+                               if "@" not in c["metric"] and c["metric"] not in validate.DECOMPOSITION]
+    inp["report"]["narrative"] = ("단가가 kg당 6.00달러에서 3.60달러로 40.0% 낮아졌다. 하위품목 조회가 실패해 "
+                                  "구성 변화 효과를 계산하지 못했다.")
+    return inp
+
+
+def add_status(inp: dict, claim_id: str, metric: str, value: str, rows: dict, period: str = "202401",
+               partner: str = "CN") -> int:
+    """자료 상태 주장 하나와 그 근거 행을 더한다. 근거 행은 봉투 missingness로 돌려준 것으로 둔다."""
+    evidence = []
+    for rowid, (row_partner, hs_code, month, status) in rows.items():
+        evidence_id = f"{EV}{rowid}"
+        inp["rows"][evidence_id] = {"partner_code": row_partner, "hs_code": hs_code, "hs_level": len(hs_code),
+                                    "month": month, "flow": "import", "amount_usd": None, "net_weight_kg": None,
+                                    "observation_status": status}
+        inp["envelopes"][1]["missingness"].append({"evidence_ids": [evidence_id], "observation_status": status})
+        evidence.append(evidence_id)
+    claim = {"claim_id": claim_id, "claim_type": "data_status", "hs6": "850450", "partner": partner,
+             "period": period, "baseline_period": None, "metric": metric, "value": value, "unit": None,
+             "direction": "NA", "evidence_ids": evidence, "text": ""}
+    claim["text"] = r1.status_text(claim, metric.partition("@")[2] or None)
+    inp["report"]["claims"].append(claim)
+    return len(inp["report"]["claims"]) - 1
+
+
 class DataStatusTest(unittest.TestCase):
-    def status_input(self, status_row: str, value: str) -> dict:
-        inp = clean_input()
-        inp["rows"][f"{EV}202"] = {"partner_code": "CN", "hs_code": "850450", "hs_level": 6, "month": "202401",
-                                   "flow": "import", "amount_usd": None, "net_weight_kg": None,
-                                   "observation_status": status_row}
-        inp["envelopes"][1]["missingness"] = [{"evidence_ids": [f"{EV}202"], "observation_status": status_row}]
-        claim = {"claim_id": "d1", "claim_type": "data_status", "hs6": "850450", "partner": "CN", "period": "202401",
-                 "baseline_period": None, "metric": "observation_status", "value": value, "unit": None,
-                 "direction": "NA", "evidence_ids": [f"{EV}202"], "text": ""}
-        claim["text"] = r1.status_text(claim, None)
-        inp["report"]["claims"].append(claim)
-        return inp
+    """자료 상태 주장의 근거(무역통계 검토 지적 1). 상태 행은 요청 코드 자릿수로 기록되므로(수집기), 자료 상태 주장은
+    그 키 자신의 행이나 그 키를 맡은 요청의 상태 행을 인용한다. 부모 HS6 행이 있는 키의 HS6 요청 상태 행은 HS10 하위
+    자료의 상태다(자료 계약 §2.3.2 행 규칙 4). 행 202·203 등은 합성이다."""
 
-    def test_status_claim_backed_by_its_status_row(self):
-        self.assertEqual(validate.run(self.status_input("REQUEST_FAILED", "REQUEST_FAILED"))["findings"], [])
+    def test_c_type_sub_item_status_backed_by_hs6_request_row(self):
+        # 확인 P2: C형은 observation_status@<HS10>이고 HS6 요청(850450)의 상태 행으로 뒷받침된다.
+        inp = c_type_input()
+        add_status(inp, "d1", "observation_status@8504501010", "REQUEST_FAILED",
+                   {202: ("CN", "850450", "202401", "REQUEST_FAILED")})
+        self.assertEqual(validate.run(inp)["findings"], [])
 
-    def test_status_claim_with_wrong_status(self):
-        inp = self.status_input("REQUEST_FAILED", "NOT_COLLECTED")
-        i = index_of(inp, "d1")
+    def test_hs6_level_status_is_refused_when_parent_row_exists(self):
+        # 확인 P5: 부모 HS6 행(201, OBSERVED)이 있는 키를 HS6 수준 REQUEST_FAILED로 적으면 막는다.
+        inp = c_type_input()
+        i = add_status(inp, "d1", "observation_status", "REQUEST_FAILED",
+                       {202: ("CN", "850450", "202401", "REQUEST_FAILED")})
+        found = codes(validate.run(inp))
+        self.assertIn(("EVIDENCE_NOT_SUPPORTING", f"claims[{i}].evidence_ids"), found)
+        self.assertIn(("DATA_STATUS_CONFLICT", f"claims[{i}].value"), found)  # 같은 키의 단가 주장과 어긋난다
+
+    def test_hs6_level_status_without_parent_row(self):
+        # 부모 HS6 행이 없는 달(v2 빈 응답 208개월의 꼴)은 HS6 요청 상태 행과 HS4 스캔 상태 행(확인 P1)이 모두 근거다.
+        for rowid, hs_code in ((203, "850450"), (204, "8504")):
+            with self.subTest(hs_code=hs_code):
+                inp = c_type_input()
+                add_status(inp, "d1", "observation_status", "UNRESOLVED_ZERO",
+                           {rowid: ("CN", hs_code, "202402", "UNRESOLVED_ZERO")}, period="202402")
+                self.assertEqual(validate.run(inp)["findings"], [])
+
+    def test_child_row_does_not_support_parent_status(self):
+        # 확인 P4: 하위 HS10 행으로 상위(HS6) 키의 상태를 뒷받침하지 못한다.
+        inp = c_type_input()
+        i = add_status(inp, "d1", "observation_status", "REQUEST_FAILED",
+                       {205: ("CN", "8504501010", "202402", "REQUEST_FAILED")}, period="202402")
         self.assertEqual(codes(validate.run(inp)), [("EVIDENCE_NOT_SUPPORTING", f"claims[{i}].evidence_ids")])
 
+    def test_country_sub_item_key_is_not_covered_by_hs4_scan(self):
+        # 상대국 HS10 키를 맡은 요청은 HS6 요청이다(국가별 API의 HS4 스캔은 HS6 행을 준다). ALL은 HS4 요청도 맡는다.
+        inp = c_type_input()
+        i = add_status(inp, "d1", "observation_status@8504501010", "REQUEST_FAILED",
+                       {206: ("CN", "8504", "202402", "REQUEST_FAILED")}, period="202402")
+        self.assertEqual(codes(validate.run(inp)), [("EVIDENCE_NOT_SUPPORTING", f"claims[{i}].evidence_ids")])
+        inp = c_type_input()
+        add_status(inp, "d1", "observation_status@8504501010", "REQUEST_FAILED",
+                   {207: ("ALL", "8504", "202402", "REQUEST_FAILED")}, period="202402", partner="ALL")
+        self.assertEqual(validate.run(inp)["findings"], [])
+
+    def test_observed_status_needs_the_row_of_the_same_code(self):
+        inp = c_type_input()
+        i = add_status(inp, "d1", "observation_status@8504501010", "OBSERVED", {})
+        inp["report"]["claims"][i]["evidence_ids"] = [f"{EV}201"]  # 부모 HS6 행은 HS10 키의 관측을 보이지 않는다
+        self.assertEqual(codes(validate.run(inp)), [("EVIDENCE_NOT_SUPPORTING", f"claims[{i}].evidence_ids")])
+        inp["report"]["claims"][i]["evidence_ids"] = [f"{EV}211"]  # 그 HS10 행
+        self.assertEqual(validate.run(inp)["findings"], [])
+
+    def test_opposite_status_claims_do_not_pass_together(self):
+        # 같은 대상의 자료 상태 주장 둘이 각자 근거를 인용해도 값이 다르면 둘 다 막는다.
+        inp = c_type_input()
+        add_status(inp, "d1", "observation_status@8504501010", "REQUEST_FAILED",
+                   {208: ("CN", "850450", "202402", "REQUEST_FAILED")}, period="202402")
+        add_status(inp, "d2", "observation_status@8504501010", "OBSERVED",
+                   {209: ("CN", "8504501010", "202402", "OBSERVED")}, period="202402")
+        conflicts = [f["claim_id"] for f in validate.run(inp)["findings"] if f["code"] == "DATA_STATUS_CONFLICT"]
+        self.assertEqual(conflicts, ["d1", "d2"])
+
+    def test_sub_item_status_conflicts_with_values_of_that_sub_item(self):
+        # 사례 A(하위품목 자료가 있음)에 C형 상태 주장을 더하면 분해 효과·중량 비중 주장과 어긋난다.
+        inp = clean_input()
+        i = add_status(inp, "d1", "observation_status@8504501010", "REQUEST_FAILED",
+                       {202: ("CN", "850450", "202401", "REQUEST_FAILED")})
+        self.assertEqual(codes(validate.run(inp)), [("DATA_STATUS_CONFLICT", f"claims[{i}].value")])
+
+    def test_confirmed_no_trade_allows_zero_values(self):
+        status = {"claim_id": "d1", "claim_type": "data_status", "hs6": "850450", "partner": "CN", "period": "202402",
+                  "baseline_period": None, "metric": "observation_status", "value": "CONFIRMED_NO_TRADE"}
+        zero_v = {"claim_id": "v1", "claim_type": "value", "hs6": "850450", "partner": "CN", "period": "202402",
+                  "baseline_period": None, "metric": "V", "value": 0}
+        unit_value = {**zero_v, "claim_id": "u1", "metric": "U", "value": Decimal("1.00")}
+        self.assertEqual(validate._data_status_conflicts([(0, status), (1, zero_v)]), [])
+        found = validate._data_status_conflicts([(0, status), (1, unit_value)])
+        self.assertEqual([f["code"] for f in found], ["DATA_STATUS_CONFLICT"])
+        unresolved = {**status, "value": "UNRESOLVED_ZERO"}  # 빈 응답은 0이 아니므로 V 0도 어긋난다
+        self.assertEqual(len(validate._data_status_conflicts([(0, unresolved), (1, zero_v)])), 1)
+        sub = {**status, "metric": "observation_status@8504501010"}  # 무거래 확정 하위품목: w@ 0은 되고 U@는 안 된다
+        zero_w = {**zero_v, "claim_id": "w1", "metric": "w@8504501010", "value": Decimal("0.0")}
+        sub_u = {**zero_v, "claim_id": "u2", "metric": "U@8504501010", "value": Decimal("1.00")}
+        self.assertEqual(validate._data_status_conflicts([(0, sub), (1, zero_w)]), [])
+        self.assertEqual(len(validate._data_status_conflicts([(0, sub), (1, sub_u)])), 1)
+
     def test_status_claim_shape(self):
-        inp = self.status_input("REQUEST_FAILED", "REQUEST_FAILED")
-        i = index_of(inp, "d1")
+        inp = c_type_input()
+        i = add_status(inp, "d1", "observation_status@8504501010", "REQUEST_FAILED",
+                       {202: ("CN", "850450", "202401", "REQUEST_FAILED")})
         inp["report"]["claims"][i]["unit"] = "kg"
         inp["report"]["claims"][i]["direction"] = "DOWN"
         found = codes(validate.run(inp))
@@ -334,6 +434,18 @@ class DataStatusTest(unittest.TestCase):
         self.assertIn(("DIRECTION_MISMATCH", f"claims[{i}].direction"), found)
         inp["report"]["claims"][i]["value"] = "MISSING"
         self.assertIn(("SCHEMA_CLAIM", f"claims[{i}].value"), codes(validate.run(inp)))
+
+    def test_sub_item_code_format_and_parent(self):
+        # 무역통계 검토 권고 5: HS10 코드는 숫자 10자이고 주장의 hs6로 시작한다(계약 §6.2).
+        for metric in ("observation_status@12345", "observation_status@8504311010"):
+            with self.subTest(metric=metric):
+                inp = c_type_input()
+                i = add_status(inp, "d1", metric, "REQUEST_FAILED", {202: ("CN", "850450", "202401", "REQUEST_FAILED")})
+                self.assertEqual(codes(validate.run(inp)), [("REFERENT_MISMATCH", f"claims[{i}].metric")])
+        inp = clean_input()
+        i = index_of(inp, "c7")  # w@8504501010(2023년 1월)
+        inp["report"]["claims"][i]["metric"] = "w@8504311010"
+        self.assertIn(("REFERENT_MISMATCH", f"claims[{i}].metric"), codes(validate.run(inp)))
 
     def test_observed_status_does_not_fill_signal_family(self):
         case = {"hs6": "850450", "partner": "CN", "month": "202401"}
@@ -346,6 +458,119 @@ class DataStatusTest(unittest.TestCase):
                                                    "metric": "observation_status@8504501010"}, case), {"unit_value"})
         self.assertEqual(validate.signal_families({**claim, "claim_type": "value", "metric": "V", "value": 1}, case),
                          set())  # V·Q는 어느 계열 요건도 채우지 않는다(계약 §9.4)
+
+
+class ReportHashTest(unittest.TestCase):
+    """Codex 지적 1: report_hash가 있으면 형식과, 계약 §9.1로 다시 계산한 값과의 일치를 본다(스키마 사유)."""
+
+    def hashed_input(self) -> dict:
+        inp = clean_input()
+        draft = inp["report"]
+        built = render_ko.run({**{k: draft[k] for k in ("report_id", "run_id", "mode", "created_at", "policy_version",
+                                                        "snapshot_id", "grouping_version", "claims", "narrative",
+                                                        "hypotheses", "review_status", "signal_status",
+                                                        "unresolved_evidence")},
+                               "case": inp["case"], "validator_findings": []})
+        inp["report"] = built["report"]
+        return inp
+
+    def hash_findings(self, inp: dict) -> list[dict]:
+        return [f for f in validate.run(inp)["findings"] if f["code"] == "SCHEMA_REPORT_HASH"]
+
+    def test_report_built_by_r2_passes(self):
+        self.assertEqual(validate.run(self.hashed_input())["findings"], [])
+
+    def test_draft_without_hash_skips_the_check(self):
+        self.assertEqual(self.hash_findings(clean_input()), [])
+
+    def test_content_changed_after_hashing_is_blocked(self):
+        tampers = {
+            "narrative": lambda r: r.update(narrative=r["narrative"] + " 추가 문장."),
+            "claims": lambda r: r["claims"][0].update(text=r["claims"][0]["text"] + " "),
+            "hypotheses": lambda r: r["hypotheses"].append("새 가설."),
+            "evidence_ids": lambda r: r["evidence_ids"].reverse(),
+        }
+        for name, tamper in tampers.items():
+            with self.subTest(tamper=name):
+                inp = self.hashed_input()
+                tamper(inp["report"])
+                found = self.hash_findings(inp)
+                self.assertEqual([(f["check"], f["path"]) for f in found], [("schema", "report_hash")])
+
+    def test_hash_format_is_checked(self):
+        for bad in ("A" * 64, "a" * 63, "g" * 64, 12, None):
+            with self.subTest(bad=bad):
+                inp = self.hashed_input()
+                inp["report"]["report_hash"] = bad
+                self.assertEqual(len(self.hash_findings(inp)), 1)
+
+    def test_forged_hash_of_other_content_is_blocked(self):
+        inp = self.hashed_input()
+        inp["report"]["report_hash"] = hashlib.sha256(b"other").hexdigest()
+        self.assertEqual(len(self.hash_findings(inp)), 1)
+
+    def test_hash_without_evidence_list_uses_claim_evidence(self):
+        inp = self.hashed_input()
+        del inp["report"]["evidence_ids"]  # R2와 같게 주장들의 근거를 모아 다시 계산한다
+        self.assertEqual(self.hash_findings(inp), [])
+
+    def test_unhashable_content_is_blocked(self):
+        inp = self.hashed_input()
+        inp["report"]["claims"][0]["value"] = Decimal("NaN")
+        self.assertEqual(len(self.hash_findings(inp)), 1)
+
+
+class ForbiddenPhraseTest(unittest.TestCase):
+    """무역통계 검토 지적 2·권고 3: 자료 계약 §6.3 범주별 표현, 통관 조치, 오탐."""
+
+    def test_contract_categories_are_caught(self):
+        cases = {  # 문장 → 잡혀야 할 문구
+            "부정 가능성이 있다.": ["부정 가능성"],
+            "부정 의혹이 있다.": ["부정 의혹"],
+            "부정 여부는 판단하지 않는다.": ["부정 여부"],
+            "부정가능성을 배제할 수 없다.": ["부정 가능성"],
+            "위법 소지가 있다.": ["위법"],
+            "제3국을 거쳐 원산지를 바꿔 들여왔을 수 있다.": ["원산지를 바꿔", "제3국을 거쳐"],
+            "우회수입일 수 있다.": ["우회 수입"],
+            "개별 거래가격이 낮아졌다.": ["개별 거래가격"],
+            "관세 포탈 가능성이 있다.": ["관세 포탈"],
+            "관세포탈이 의심된다.": ["관세 포탈"],
+            "화물 환적이 늘었을 수 있다.": ["환적"],
+            "통관 보류와 추징이 필요하다.": ["통관 보류", "추징"],
+            "원산지 판정이 필요하다.": ["원산지 판정"],
+            "정상 거래일 수 있다.": ["정상 거래"],
+            "under-invoicing or transshipment": ["under-invoic", "transship"],
+        }
+        for text, want in cases.items():
+            with self.subTest(text=text):
+                self.assertEqual(sorted(validate.forbidden_hits(text)), sorted(want))
+
+    def test_false_positives_are_not_caught(self):
+        for text in ("반덤핑 관세 부과가 끝난 뒤 수입선이 바뀌었을 수 있다.", "덤핑방지관세 부과 기간이다.",
+                     "부정적 영향이 있다.", "부정할 수 없다.", "순환적 요인일 수 있다.", "교환적 관계다.",
+                     "재고 발생이 늘었다.", "정밀 수치를 확인했다.", "자료 보류를 제안한다.", "수입선 전환이 있었다.",
+                     "anti-dumping duty ended"):
+            with self.subTest(text=text):
+                self.assertEqual(validate.forbidden_hits(text), [])
+
+    def test_list_shape_for_prompt_sync(self):
+        # MT4의 프롬프트 동기화 시험은 두 목록을 문자열로 읽는다(목록 모양을 바꾸지 않는다).
+        self.assertTrue(all(isinstance(p, str) and p for p in validate.FORBIDDEN_PHRASES))
+        self.assertTrue(all(isinstance(p, str) and p == p.lower() for p in validate.FORBIDDEN_LATIN))
+        self.assertEqual(len(set(validate.FORBIDDEN_PHRASES)), len(validate.FORBIDDEN_PHRASES))
+
+
+class ProseFalsePositiveTest(unittest.TestCase):
+    """무역통계 검토 권고 4: 품목 규격·분류 자릿수·기준월 표기는 산문 숫자로 잡지 않는다(룰북 EX 표 밖의 해석)."""
+
+    def test_specs_digit_levels_and_baseline_notation(self):
+        inp = clean_input()
+        inp["hs_codes"] += ["850431", "850432"]  # 스냅샷 HS 코드 집합(EX-2)
+        ctx = validate._context(inp)
+        for text in ("850431 변압기 1kVA 이하와 850432 변압기 1kVA 초과 16kVA 이하를 함께 봤다.",
+                     "HSK 10단위 품목과 6자리 품목을 비교했다.", "기준월은 t−12, 비교월은 t다.", "기준월 t-12"):
+            with self.subTest(text=text):
+                self.assertEqual(validate.prose_findings([("narrative", text)], [], ctx), [])
 
 
 class ValueCompareTest(unittest.TestCase):
@@ -480,7 +705,10 @@ class InputErrorTest(unittest.TestCase):
         base = clean_input()
         bad_cases = [None, {**base, "case": {}}, {**base, "run": {**base["run"], "mode": "draft"}},
                      {**base, "envelopes": {}}, {**base, "rows": []},
-                     {**base, "case": {**base["case"], "signals": {"unit_value": "TRIGGERED"}}}]
+                     {**base, "case": {**base["case"], "signals": {"unit_value": "TRIGGERED"}}},
+                     # Codex 권고 2: 발동한 신호가 없는 것은 사례가 아니다(개발 플랜 §6.4, 단위 P4·P5와 같다)
+                     {**base, "case": {**base["case"], "signals": {"unit_value": "NOT_TRIGGERED",
+                                                                   "share": "NOT_TRIGGERED"}}}]
         for bad in bad_cases:
             with self.subTest(bad=type(bad).__name__):
                 with self.assertRaises(ValueError):
