@@ -1,6 +1,6 @@
 """단위 I10(workflow_investigator) 골든 쌍 밖 규칙 시험: 도구 호출 해석, 초안 형식 검사(허용 상태 조합은 막지 않는
 관찰), 잘린 응답, 도구를 주지 않는 요청(tools 없음, 초안 요청 메시지, 구조화 출력은 설정을 켰을 때만), 모드 사이
-메시지가 claims 지침 말고는 같음(룰북 B2)."""
+메시지가 claims 지침 말고는 같음(룰북 B2). off일 때의 동작은 설정을 주입해 본다."""
 import dataclasses
 import json
 import unittest
@@ -68,6 +68,7 @@ class ToolCallTest(unittest.TestCase):
     def test_step_without_tools_sends_no_tools_and_reads_tool_calls_anyway(self):
         tool_calls = [{"id": "x", "type": "function", "function": {"name": "get_history", "arguments": "{}"}}]
         client, transport, config = client_with([{"body": ok_body(None, tool_calls=tool_calls)}])
+        client.settings = dataclasses.replace(client.settings, structured_output="off")  # off일 때의 동작
         messages = inv.initial_messages(config.prompts, {"case_id": "A", "signals": SIGNALS}, "agent", [], None, {})
         result = inv.step(client, messages, stage="basic", mode="agent", signals=SIGNALS, allow_tools=False)
         payload = transport.payloads[0]
@@ -85,16 +86,18 @@ class ToolCallTest(unittest.TestCase):
         self.assertNotIn(inv.DRAFT_REQUEST, [m["content"] for m in payload["messages"]])
 
     def test_structured_output_rides_only_on_the_draft_request_when_enabled(self):
-        for structured, key in (("json_object", "response_format"), ("guided_json", "nvext")):
+        for structured in ("off", "json_object"):
             for allow in (True, False):
                 client, transport, config = client_with([{"body": ok_body(json.dumps(draft()))}])
                 client.settings = dataclasses.replace(client.settings, structured_output=structured)
                 messages = inv.initial_messages(config.prompts, CASE, "full", [], None, {})
                 inv.step(client, messages, stage="basic", mode="full", signals=SIGNALS, allow_tools=allow)
+                payload = transport.payloads[0]
                 with self.subTest(structured=structured, allow_tools=allow):
-                    self.assertEqual(key in transport.payloads[0], not allow)
-                    if structured == "guided_json" and not allow:
-                        self.assertEqual(transport.payloads[0]["nvext"], {"guided_json": inv.draft_schema()})
+                    self.assertEqual("response_format" in payload, structured == "json_object" and not allow)
+                    self.assertNotIn("nvext", payload)
+                    if "response_format" in payload:
+                        self.assertEqual(payload["response_format"], {"type": "json_object"})
 
     def test_mode_picks_the_claims_instruction(self):
         config = mc.load_model_config()
@@ -135,23 +138,20 @@ class ModeParityTest(unittest.TestCase):
                     self.assertNotIn(name, user)
                     self.assertNotIn(name, inv.DRAFT_REQUEST)
 
-    def test_draft_request_and_schema_are_the_same_in_every_mode(self):
+    def test_draft_request_and_response_format_are_the_same_in_every_mode(self):
         sent = {}
         for mode in ("agent", "full", "freeform"):
             claims = [freeform_claim()] if mode == "freeform" else None
             body = json.dumps(draft(**({"claims": claims} if claims else {})), default=str)
             client, transport, config = client_with([{"body": ok_body(body)}])
-            client.settings = dataclasses.replace(client.settings, structured_output="guided_json")
+            client.settings = dataclasses.replace(client.settings, structured_output="json_object")
             _, messages = self.messages(mode)
             inv.step(client, messages, stage="basic", mode=mode, signals=SIGNALS, allow_tools=False)
             payload = transport.payloads[0]
-            sent[mode] = (payload["messages"][-1], payload["nvext"], payload["messages"][1:])
+            sent[mode] = (payload["messages"][-1], payload["response_format"], payload["messages"][1:])
         self.assertEqual(sent["agent"], sent["full"])
-        self.assertEqual(sent["full"], sent["freeform"])  # 초안 요청·스키마·사용자 메시지 모두 같다(차이는 시스템 지침)
-        self.assertEqual(sent["full"][0], {"role": "user", "content": inv.DRAFT_REQUEST})
-        schema = inv.draft_schema()
-        self.assertEqual(schema["required"], list(inv.DRAFT_KEYS))
-        self.assertEqual(schema["properties"]["claims"], {"type": "array", "items": {"type": "object"}})
+        self.assertEqual(sent["full"], sent["freeform"])  # 초안 요청·response_format·사용자 메시지 모두 같다(차이는 시스템 지침)
+        self.assertEqual(sent["full"][:2], ({"role": "user", "content": inv.DRAFT_REQUEST}, {"type": "json_object"}))
 
 
 class DraftCheckTest(unittest.TestCase):

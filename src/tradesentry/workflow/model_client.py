@@ -36,9 +36,10 @@ NIM(NVIDIA 클라우드 추론 API) chat completions를 부르는 클라이언�
   403 본문 error "policy_denied"(L7 거부)를 전송 자리가 error "policy_denied"로 가른다. 재전송하지 않고 CODE_ERROR로
   멈춘다(재실행 대상 아님). detail은 "policy_denied(connect|l7) {상태}", trace model_error에는 http_status와 denial을
   남긴다. 프록시 응답 본문(실행 파일 경로가 들어 있다)은 어디에도 싣지 않는다.
-- 구조화 출력(설정 request.structured_output, 기본 "off", 결정 기록 ⑯): 부르는 쪽이 json_schema를 주고 요청에 도구가
-  없을 때만 싣는다. "json_object"면 response_format {"type": "json_object"}, "guided_json"이면 nvext.guided_json에 그
-  스키마를 싣는다. 도구를 싣는 요청과 "off"에는 어느 것도 싣지 않는다. 도구를 뺀 요청에는 tools·tool_choice 키가 없다.
+- 구조화 출력(설정 request.structured_output, "off"·"json_object", 결정 기록 ⑯): "json_object"이고, 요청에 도구가 없고,
+  부르는 쪽이 json_output을 참으로 줄 때만 response_format {"type": "json_object"}를 싣는다. 도구를 싣는 요청과 "off"에는
+  싣지 않는다. 도구를 뺀 요청에는 tools·tool_choice 키가 없다. nvext.guided_json은 이 모델·엔드포인트가 HTTP 400으로
+  받지 않아(2026-09-25 실측) 설정 값에 두지 않는다.
 - 수는 int와 Decimal만 쓴다. 설정과 응답 본문은 소수를 Decimal로 읽고, HTTP 요청 본문을 만들 때만 float로 바꾼다.
 
 전송 자리 약속(단위 I8 기록 재생과 같은 모양): send(payload, timeout_ms) -> {http_status, body(bytes), error(None·
@@ -67,7 +68,7 @@ LIMIT_KEYS = ("model_requests", "tokens", "wall_ms", "tool_attempts", "basic_too
               "investigator_comparisons", "revision_stages", "revision_requeries", "final_verify")
 PROMPT_KEYS = ("investigator", "claims_template", "claims_freeform", "critic")
 MESSAGE_KEYS = ("role", "content", "tool_calls")
-STRUCTURED_OUTPUT_MODES = ("off", "json_object", "guided_json")
+STRUCTURED_OUTPUT_MODES = ("off", "json_object")  # guided_json은 HTTP 400(실측)이라 받지 않는다
 ALLOWED_ENDPOINT_HOSTS = frozenset({"integrate.api.nvidia.com"})
 ALLOWED_KEY_ENVS = frozenset({"NVIDIA_API_KEY", "NVIDIA_INFERENCE_API_KEY"})
 KEY_VALUE_RE = re.compile(r"[\x21-\x7e]+")  # 공백 없는 출력 가능 ASCII(자리표시 값 openshell:resolve:env:… 포함)
@@ -374,9 +375,9 @@ class ModelClient:
             raise RunStop(cause_codes.BUDGET_TOKENS, stage, "누적 토큰 한도에 닿았다")
         return now
 
-    def build_payload(self, messages: list[dict], tools: list[dict] | None, json_schema: dict | None = None) -> dict:
-        """요청 본문. 도구가 없으면 tools·tool_choice 키를 싣지 않는다. 구조화 출력은 설정이 "off"가 아니고, 도구가 없고,
-        부르는 쪽이 json_schema를 줄 때만 싣는다(json_object는 스키마를 싣지 않고 JSON 객체만 요구한다)."""
+    def build_payload(self, messages: list[dict], tools: list[dict] | None, json_output: bool = False) -> dict:
+        """요청 본문. 도구가 없으면 tools·tool_choice 키를 싣지 않는다. 구조화 출력(response_format json_object)은 설정이
+        "json_object"이고, 도구가 없고, 부르는 쪽이 json_output을 참으로 줄 때만 싣는다."""
         s = self.settings
         payload = {"model": s.model, "messages": messages, "temperature": s.temperature, "top_p": s.top_p,
                    "max_tokens": max(1, min(s.max_tokens, self.budget.limits.tokens - self.budget.tokens_total)),
@@ -384,16 +385,14 @@ class ModelClient:
         if tools:
             payload["tools"] = tools
             payload["tool_choice"] = "auto"
-        elif json_schema is not None and s.structured_output == "json_object":
+        elif json_output and s.structured_output == "json_object":
             payload["response_format"] = {"type": "json_object"}
-        elif json_schema is not None and s.structured_output == "guided_json":
-            payload["nvext"] = {"guided_json": json_schema}
         return payload
 
     def chat(self, messages: list[dict], *, stage: str | None, tools: list[dict] | None = None,
-             json_schema: dict | None = None) -> dict:
+             json_output: bool = False) -> dict:
         """요청 하나를 보내고 응답(message·finish_reason·usage)을 돌려준다. 멈출 원인이 생기면 RunStop을 낸다.
-        json_schema는 도구 없는 요청에서 구조화 출력을 켤 때 쓰는 스키마다(설정이 "off"면 쓰지 않는다)."""
+        json_output은 도구 없는 요청에서 구조화 출력을 청하는 표시다(설정이 "off"면 싣지 않는다)."""
         self._precheck(stage)
         ready = getattr(self.transport, "ready", None)  # 실제 전송 자리만 있다(기록 재생에는 없다)
         if ready is not None:
@@ -402,7 +401,7 @@ class ModelClient:
             except TransportConfigError as exc:
                 raise RunStop(cause_codes.CODE_ERROR, stage, str(exc)) from None
         self.request_no += 1
-        payload = self.build_payload(messages, tools, json_schema)
+        payload = self.build_payload(messages, tools, json_output)
         request_sha = trace_log.canonical_sha256(payload)
         base = {"request_no": self.request_no}
         retries = 0

@@ -28,7 +28,8 @@ dumps)를 쓴다. S0 결정의 계층(contract → dal·runlog → … → workf
 - 도구를 주지 않는 차례(allow_tools 거짓)에는 요청에 tools를 싣지 않고, 대화 끝에 초안 요청 메시지(DRAFT_REQUEST, 모든
   모드에서 글자까지 같다)를 붙인다. 실측에서 tools를 뺀 요청에도 모델이 구조화된 도구 호출을 돌려주었고(마지막 지시가
   "필요하면 도구로"였다), 도구 이력 뒤 tools 없는 요청에서 JSON이 아닌 글을 썼다(결정 기록 ⑯). 구조화 출력 설정(단위 I7
-  request.structured_output, 기본 꺼짐)을 켜면 그 차례에만 모드와 무관한 윗단계 스키마 DRAFT_SCHEMA를 싣는다.
+  request.structured_output, model-0.2부터 "json_object")이 켜져 있으면 그 차례에만 response_format json_object를
+  싣는다(모든 모드 같음). 초안 형식 검사(check_draft)는 그와 별개로 그대로 돈다.
 - 모델 응답의 소수는 Decimal로 읽는다(freeform 값의 끝자리 0 보존, 자료 계약 §9.1).
 """
 import json
@@ -72,21 +73,6 @@ TOOL_DESCRIPTIONS = {
     "compare_partners": "사전에 허용된 비교국을 같은 HS6·월·기준으로 비교한다. partners를 주면 그 가운데 일부만 본다.",
     "decompose_hs": "두 시점의 HS10 하위품목으로 단가 변화를 within_effect·mix_effect·residual로 나누고 부모 대조를 본다.",
 }
-
-
-def draft_schema() -> dict:
-    """구조화 출력(guided_json)에 싣는 초안 윗단계 스키마. 모든 모드에서 같다(claims의 항목 모양은 모드마다 다르므로
-    객체 목록까지만 둔다, 룰북 B2). 초안 형식 검사(check_draft)는 이 스키마와 별개로 그대로 돈다."""
-    return {"type": "object",
-            "properties": {"review_status": {"type": "string", "enum": list(REVIEW_STATUSES)},
-                           "signal_status": {"type": "object",
-                                             "properties": {code: {"type": "string", "enum": list(SIGNAL_STATUSES)}
-                                                            for code in SIGNAL_CODES},
-                                             "required": list(SIGNAL_CODES), "additionalProperties": False},
-                           "claims": {"type": "array", "items": {"type": "object"}},
-                           "narrative": {"type": "string"},
-                           "hypotheses": {"type": "array", "items": {"type": "string"}}},
-            "required": list(DRAFT_KEYS), "additionalProperties": False}
 
 
 def draft_request_message() -> dict:
@@ -369,7 +355,7 @@ def step(client: model_client.ModelClient, messages: list[dict], *, stage: str, 
         answer = client.chat(messages, stage=stage, tools=tool_specs())
     else:
         messages.append(draft_request_message())
-        answer = client.chat(messages, stage=stage, tools=None, json_schema=draft_schema())
+        answer = client.chat(messages, stage=stage, tools=None, json_output=True)
     message = answer["message"]
     truncated = answer.get("finish_reason") == "length"
     if message.get("tool_calls"):
