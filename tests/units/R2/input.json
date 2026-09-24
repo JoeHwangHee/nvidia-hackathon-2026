@@ -30,9 +30,9 @@
      "evidence_ids": ["ev:controlled_fixture_v0:observation:101", "ev:controlled_fixture_v0:observation:201"],
      "text": "2024년 1월 단가가 전년 같은 달보다 40.0% 낮다."},
     {"claim_id": "c5", "claim_type": "data_status", "hs6": "850450", "partner": "CN", "period": "202401", "baseline_period": null,
-     "metric": "observation_status", "value": "REQUEST_FAILED", "unit": null, "direction": "NA",
+     "metric": "observation_status@8504501010", "value": "REQUEST_FAILED", "unit": null, "direction": "NA",
      "evidence_ids": ["ev:controlled_fixture_v0:observation:202"],
-     "text": "2024년 1월 CN HS 850450 자료 상태는 REQUEST_FAILED(요청 실패)다."}
+     "text": "2024년 1월 CN 하위품목 HS 8504501010 자료 상태는 REQUEST_FAILED(요청 실패)다."}
   ],
   "narrative": "단가가 kg당 6.00달러에서 3.60달러로 낮아졌다. 하위품목 조회가 실패해 구성 변화 효과를 계산하지 못했다.",
   "hypotheses": ["하위품목 구성이 바뀌었을 수 있으나 이 자료로는 확인할 수 없다."],
