@@ -118,7 +118,7 @@ class ScoredPolicyTest(unittest.TestCase):
         self.assertIs(fs["include_workdir"], True)
         self.assertEqual(fs["read_write"], ["/tmp", "/dev/null"])
         self.assertEqual(fs["read_only"], ["/usr", "/lib", "/proc", "/dev/urandom", "/etc", "/opt/tradesentry",
-                                           "/sandbox/read_only_probe"])
+                                           "/sandbox/read_only_probe", "/var/log"])
         self.assertEqual(self.policy["landlock"], {"compatibility": "best_effort"})
         self.assertEqual(self.policy["process"], {"run_as_user": "sandbox", "run_as_group": "sandbox"})
 
