@@ -3,8 +3,12 @@
 임시 폴더에 저장소 뿌리를 흉내 낸 트리(oracle 정답표 사본, 합성 스냅샷 SQLite, 평가 묶음 실행 폴더와 사례 실행 폴더,
 실행 조건 입력 파일)를 만들고 가짜 시계로 돌린다. 봉인 묶음 경로는 임시 폴더의 가짜 봉인 폴더(환경변수
 TRADESENTRY_SEALED_DIR로 가리킨다)와 합성 자료만 쓴다. 실제 봉인 폴더와 실제 스냅샷은 쓰지 않는다.
+믿지 않는 보고서·묶음 기록(아주 큰 지수, 목록 direction, 깊은 중첩, U+2028, 크기 상한)이 묶음 채점을 멈추거나
+끝나지 않게 하지 않는지, 예외 경로(폴더 확보 OSError, 심볼릭 링크 봉인 <run_dir>)에서도 봉인 출력 규칙을 지키는지 본다.
 """
 import copy
+import os
+import time
 import hashlib
 import io
 import json
@@ -272,6 +276,133 @@ class SealedBatchTest(ScorerCommandBase):
             self.write_inputs()
             code, out, err = self.run_scorer()
         self.assertEqual((code, err), (cli.EXIT_FAILED, ""))
+
+
+class UntrustedInputTest(ScorerCommandBase):
+    """믿지 않는 보고서·묶음 기록은 그 보고서 하나의 결과로 끝나고 묶음 채점을 멈추지 않는다(보안 검토 1회차 막는 지적)."""
+
+    def report_path(self, case_id: str) -> Path:
+        return next((self.root / "outputs" / self.reports[case_id]["run_id"]).iterdir())
+
+    def results(self) -> list[dict]:
+        return [c1.loads_json(line) for line in (self.score_dir() / "scorer_results-260925150000.jsonl")
+                .read_text(encoding="utf-8").splitlines()]
+
+    def test_poisoned_reports_are_contained(self):
+        a = copy.deepcopy(self.reports["A-composition"])
+        a["claims"][0]["value"] = c1.loads_json("1e999999999")  # 아주 큰 지수: 해석 불가 claim
+        self.report_path("A-composition").write_text(dump(a), encoding="utf-8")
+        b = copy.deepcopy(self.reports["B-residual"])
+        b["claims"][0]["direction"] = []
+        b["review_status"] = []
+        b["narrative"] = "단가가 증가했다."
+        self.report_path("B-residual").write_text(dump(b), encoding="utf-8")
+        c = self.reports["C-missing-hs10"]
+        nested = "[" * 10000 + "]" * 10000
+        self.report_path("C-missing-hs10").write_text(dump(c)[:-1] + f', "extra": {nested}}}', encoding="utf-8")
+        self.write_inputs()
+        started = time.monotonic()
+        code, out, err = self.run_scorer()
+        self.assertLess(time.monotonic() - started, 30)
+        self.assertEqual((code, err), (0, ""), err)
+        # A: 큰 지수 claim은 해석 불가(근거도 대조하지 않음), B: 방향 오류이나 근거는 맞음, C: 읽지 못한 보고서
+        self.assertEqual([(r["numeric_ok"], r["provenance_ok"]) for r in self.results()],
+                         [(False, False), (False, True), (False, False)])
+        summary = (self.score_dir() / "scorer_summary-260925150000.md").read_text(encoding="utf-8")
+        self.assertIn("보고서를 읽지 못한 COMPLETED 실행 1건", summary)
+        self.assertIn("보고서 JSON 중첩이 너무 깊다 1건", summary)
+
+    def test_oversized_report_counts_as_failure(self):
+        report = dict(self.reports["A-composition"], narrative="가" * (cli.MAX_REPORT_BYTES // 3 + 10))
+        self.report_path("A-composition").write_text(dump(report), encoding="utf-8")
+        self.write_inputs()
+        self.assertEqual(self.run_scorer()[0], 0)
+        self.assertFalse(self.results()[0]["numeric_ok"])
+        summary = (self.score_dir() / "scorer_summary-260925150000.md").read_text(encoding="utf-8")
+        self.assertIn("보고서 크기 상한 초과 1건", summary)
+
+    def test_too_much_prose_counts_as_failure(self):
+        report = dict(self.reports["A-composition"], narrative="가" * (cli.c2.MAX_PROSE_CHARS + 1))
+        self.report_path("A-composition").write_text(dump(report), encoding="utf-8")
+        self.write_inputs()
+        self.assertEqual(self.run_scorer()[0], 0)
+        self.assertEqual([r["numeric_ok"] for r in self.results()], [False, True, True])
+
+    def test_batch_line_is_split_only_at_newline(self):
+        lines = copy.deepcopy(self.lines)
+        lines[0]["errors"] = [{"message": "줄\u2028나눔\u2029문자\u0085포함"}]
+        text = "".join(json.dumps(line, ensure_ascii=False) + "\n" for line in lines)
+        self.assertIn("\u2028", text)
+        self.write_inputs(lines=[])
+        (self.batch_dir / f"evaluation_batch_run-{BATCH.rsplit('-', 1)[1]}.jsonl").write_text(text, encoding="utf-8")
+        code, _, err = self.run_scorer()
+        self.assertEqual((code, err), (0, ""))
+
+    def test_conditions_are_checked_more_strictly(self):
+        base = dict(self.conditions)
+        bad_cases = {
+            "thresholds missing": {k: v for k, v in base.items() if k != "policy_detection_thresholds"},
+            "thresholds empty": dict(base, policy_detection_thresholds=[]),
+            "thresholds huge": dict(base, policy_detection_thresholds=[c1.loads_json("1e999999999")]),
+            "partner ALL": dict(base, planned_cases=[dict(base["planned_cases"][0], partner="ALL")]),
+            "month newline": dict(base, planned_cases=[dict(base["planned_cases"][0], month="202401\n")]),
+            "key shape": dict(base, precheck="nv" + "api-" + "x" * 10),
+            "service key shape": dict(base, precheck="service" + "Key=abc"),
+            "too large": dict(base, precheck="가" * cli.MAX_CONDITIONS_BYTES),
+        }
+        for name, conditions in bad_cases.items():
+            with self.subTest(case=name):
+                shutil.rmtree(self.score_dir(), ignore_errors=True)
+                self.write_inputs(conditions=conditions)
+                code, out, err = self.run_scorer()
+                self.assertEqual((code, out.splitlines()[-1]), (cli.EXIT_FAILED, "끝 상태: 실패(입력 오류)"))
+                self.assertNotIn("api-", err)
+
+    def test_snapshot_without_build_meta_is_refused(self):
+        path = self.root / "data" / "snapshots" / "controlled_fixture_v0" / "snapshot_build.sqlite"
+        path.unlink()
+        doc = self.rows.doc()
+        doc["tables"]["snapshot_meta"] = []
+        fx.write_sqlite(path, doc)
+        self.write_inputs()
+        code, _, err = self.run_scorer()
+        self.assertEqual(code, cli.EXIT_FAILED)
+        self.assertIn("스냅샷 메타", err)
+
+    def test_folder_os_error_prints_no_path(self):
+        self.write_inputs()
+        with mock.patch.object(cli.os, "mkdir", side_effect=PermissionError(13, "Permission denied",
+                                                                           str(self.score_dir()))):
+            code, out, err = self.run_scorer()
+        self.assertEqual((code, out), (cli.EXIT_OUTPUT, ""))
+        self.assertIn("PermissionError: Permission denied", err)
+
+
+class SealedExceptionPathTest(SealedBatchTest):
+    """봉인 묶음의 예외 경로에서도 표준 출력에는 끝 상태만, 오류 출력은 비어 있다(보안 검토 1회차 권고 2)."""
+
+    def test_symlink_sealed_run_dir_is_quiet(self):
+        self.write_inputs()
+        link = self.root / "outputs" / "sealed" / "evaluate-260925140001"
+        os.symlink(self.batch_dir, link)
+        code, out, err = self.run_scorer(link)
+        self.assertEqual((code, out, err), (cli.EXIT_USAGE, "끝 상태: 실패(인자 오류)\n", ""))
+
+    def test_folder_os_error_is_quiet(self):
+        self.write_inputs()
+        with mock.patch.object(cli.os, "mkdir", side_effect=PermissionError(13, "Permission denied", "x")):
+            code, out, err = self.run_scorer()
+        self.assertEqual((code, out, err), (cli.EXIT_OUTPUT, "끝 상태: 실패(출력 규칙)\n", ""))
+
+    def test_huge_exponent_in_sealed_batch_finishes(self):
+        a = copy.deepcopy(self.reports["A-composition"])
+        a["claims"][0]["value"] = c1.loads_json("1e999999999")
+        next((self.root / "outputs" / "sealed" / a["run_id"]).iterdir()).write_text(dump(a), encoding="utf-8")
+        self.write_inputs()
+        started = time.monotonic()
+        code, out, err = self.run_scorer()
+        self.assertLess(time.monotonic() - started, 30)
+        self.assertEqual((code, out.splitlines(), err), (0, ["score-260925150000", "끝 상태: 완료"], ""))
 
 
 if __name__ == "__main__":
