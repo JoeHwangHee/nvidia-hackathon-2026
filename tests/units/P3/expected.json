@@ -13,7 +13,7 @@
   "share": [
    {
     "reason": "missing_observation",
-    "partner": "ALL",
+    "partner_code": "ALL",
     "hs_code": "8504501090",
     "month": "202301",
     "observation_status": "UNRESOLVED_ZERO"
