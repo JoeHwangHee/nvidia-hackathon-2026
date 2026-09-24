@@ -138,6 +138,7 @@ ALL_PARTNER = "ALL"  # 전체국가 분모
 FLOWS = ("import", "export")
 METRIC_FLOW = "import"  # 행 규칙 2: 지표는 수입 흐름만 쓴다
 RAW_MONTH_PREFIX = "RAW:"  # 월 형식이 아닌 행(총계 행은 `RAW:총계`)
+TOTAL_ROW_MONTH = "RAW:총계"  # §2.3.2 `month` 형식: 월 행은 `YYYYMM`, 총계 행은 `RAW:총계`(이 둘뿐이다)
 HS_LEVELS = (2, 4, 6, 10)
 MONTH_RE = re.compile(r"(19|20)[0-9]{2}(0[1-9]|1[0-2])")  # `YYYYMM`(§11.4). fullmatch로 쓴다
 HS6_RE = re.compile(r"[0-9]{6}")
