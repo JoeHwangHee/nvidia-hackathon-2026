@@ -60,7 +60,7 @@
 - 인수물(D가 M에게 넘기는 자료·코드 묶음)마다 `schema_version=1`을 표시한다 [DESIGN: 명세 §3.10]. 표시 위치는 다음과 같다 [DESIGN].
   - 스냅샷: `snapshot` 객체에 `schema_version` 값 1을 담는다.
   - 그 밖의 JSON(키와 값으로 된 텍스트 자료 형식) 인수물: 최상위 키 `schema_version`에 1을 담는다(예: §12의 `eval/sealed_manifest.json`).
-  - 줄 단위 기록(채점 결과 `scorer_summary-{시각}.jsonl`, 주장 채점 기록 `scorer_claims-{시각}.jsonl`. 이름 규칙은 §10.3): 명세가 정한 키 목록(§8, §9)을 늘리지 않는다. 계약 버전은 같은 채점 실행 폴더의 요약 `scorer_summary-{시각}.md`에 적는다.
+  - 줄 단위 기록(채점 결과 `scorer_results-{시각}.jsonl`, 주장 채점 기록 `scorer_claims-{시각}.jsonl`. 이름 규칙은 §10.3): 명세가 정한 키 목록(§8, §9)을 늘리지 않는다. 계약 버전은 같은 채점 실행 폴더의 요약 `scorer_summary-{시각}.md`에 적는다.
 - 나머지 인수 조건(자료 계약 검사 명령 통과, 자료 접근층 패키지 `dal/`(스냅샷을 읽는 함수 모음)로 읽힘, 지표 계산 패키지 `metrics/`의 oracle A/B/C 재현, 검증 명령과 종료 코드의 PR(pull request: 변경을 합치기 전에 검토받는 요청) 기록)은 병렬 개발 규칙 `docs/rules/PARALLEL_DEV_RULES.md`의 D → M 인수 조건을 따른다.
 
 ### 1.3 함께 기록하는 버전 축
@@ -699,7 +699,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 기록 주체 열에서 "채점 대상 실행"은 샌드박스 안 실행이 남기는 값이고, "정답 대조 채점"은 샌드박스 밖 채점기가 채우는 값이다 [DESIGN].
 
-- `required_evidence_ok`·`numeric_ok`·`provenance_ok`는 정답표(사례별 필수 근거·기대 수치)나 원본 대조가 있어야 정할 수 있다. 그래서 샌드박스 밖 정답 대조 채점이 채우고, 런타임 검증기의 자기 보고로 채우지 않는다 [DESIGN]. 채점 결과 `scorer_summary-{시각}.jsonl`의 한 줄은 채점 대상 실행이 남긴 키(평가 하네스 단위 `evaluation_batch_run`의 출력 `evaluation_batch_run-{시각}.jsonl`)에 채점기가 이 세 키를 더한 것이다. 채점기는 하네스의 파일을 고치지 않고, 둘을 합친 파일을 자기 실행 폴더에 새로 쓴다(§8.2).
+- `required_evidence_ok`·`numeric_ok`·`provenance_ok`는 정답표(사례별 필수 근거·기대 수치)나 원본 대조가 있어야 정할 수 있다. 그래서 샌드박스 밖 정답 대조 채점이 채우고, 런타임 검증기의 자기 보고로 채우지 않는다 [DESIGN]. 채점 결과 `scorer_results-{시각}.jsonl`의 한 줄은 채점 대상 실행이 남긴 키(평가 하네스 단위 `evaluation_batch_run`의 출력 `evaluation_batch_run-{시각}.jsonl`)에 채점기가 이 세 키를 더한 것이다. 채점기는 하네스의 파일을 고치지 않고, 둘을 합친 파일을 자기 실행 폴더에 새로 쓴다(§8.2).
 - 세 키는 구 개발계획 §8.3 처리정확도 식의 "필수근거", "수치/단위", "출처/버전"에 대응한다 [사실: 구 개발계획 §7·§8.3]. 식의 나머지 두 항은 키를 따로 두지 않는다. "예상 상태 일치"는 `review_status_final`을 정답표와 비교해 얻고, "정상 실행"은 `execution_status`가 `COMPLETED`인지로 얻는다 [추론].
 - 한도 수치(모델 요청 10회, 300초, 32,000토큰, 도구 8회)는 조정값이며 모든 모드에 같게 쓴다. provider(모델 API를 호출하는 라이브러리) 자동 재시도는 끄고, 5xx(서버 오류를 뜻하는 HTTP 응답 코드) 명시 재전송만 `model_requests`에 센다 [DESIGN: 명세 §3.3].
 - `checklist` 모드는 모델을 쓰지 않으므로 `model_requests`, `tokens_in`, `tokens_out`이 0이다 [사실: 구 개발계획 §8.2 "모델 없는 checklist의 토큰은 0으로 표시"].
@@ -708,7 +708,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 - 이름과 위치는 이름·출력 규칙(§10.3)을 따른다. 실행 하나가 `outputs/{실행명}/` 폴더 하나이고, 그 안의 파일 이름은 `{도메인명}-{시각}.{확장자}`다 [DESIGN: 2026-09-24(목) 사용자 결정].
 - 실행 쪽 키: 평가 묶음 실행(여러 사례 실행을 한 번에 돌리는 평가 실행, `tradesentry evaluate`)이 그 실행 폴더(`outputs/evaluate-{시각}/`. 봉인 묶음이면 `outputs/sealed/` 아래의 실행 폴더)의 `evaluation_batch_run-{시각}.jsonl`에 한 줄에 실행 1건을 적는다. 이 파일에는 채점 대상 실행이 남기는 키만 있다 [DESIGN]. 봉인 묶음은 단위 E2(샌드박스 밖 실행기)가 돌리고, 단위 E2의 묶음 기록도 `outputs/sealed/` 아래 자기 실행 폴더에 둔다(§10.3 N10). 단위 E2의 묶음 기록 도메인명과 봉인 묶음 실행 폴더의 실행 이름은 로드맵 MT7에서 F1 전에 정한다 [미확인].
-- 평가 결과: 채점기가 실행 쪽 키에 정답 대조 채점의 세 키를 더해 채점 실행 폴더 `outputs/score-{시각}/`의 `scorer_summary-{시각}.jsonl`에 한 줄에 실행 1건(위 키 전부)을 적는다. 하네스의 `evaluation_batch_run-{시각}.jsonl`은 고치지 않는다. 채점 실행 폴더의 채점기 출력(`scorer_*` 파일)만 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(증거 복사, §10.3 N11). 봉인 묶음의 채점 결과는 금지 해제 조건(정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. §10.3 N10)이 채워진 뒤에만 복사한다 [DESIGN: 명세 §4.12, 2026-09-24(목) 사용자 결정. 해제 조건은 오케스트레이터 결정, 2026-09-24(목) 사용자 확인(PR #18)].
+- 평가 결과: 채점기가 실행 쪽 키에 정답 대조 채점의 세 키를 더해 채점 실행 폴더 `outputs/score-{시각}/`의 `scorer_results-{시각}.jsonl`에 한 줄에 실행 1건(위 키 전부)을 적는다. 하네스의 `evaluation_batch_run-{시각}.jsonl`은 고치지 않는다. 채점 실행 폴더의 채점기 출력(`scorer_*` 파일)만 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(증거 복사, §10.3 N11). 봉인 묶음의 채점 결과는 금지 해제 조건(정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. §10.3 N10)이 채워진 뒤에만 복사한다 [DESIGN: 명세 §4.12, 2026-09-24(목) 사용자 결정. 해제 조건은 오케스트레이터 결정, 2026-09-24(목) 사용자 확인(PR #18)].
 - 실행 추적: trace(실행 중 호출과 응답을 순서대로 남긴 기록) JSONL(JSON 하나를 한 줄에 적는 기록 파일)과 NAT(NeMo Agent Toolkit: 에이전트 실행을 감싸 추적·프로파일·사후 평가를 하는 NVIDIA 도구 모음) 프로파일 결과는 도메인 출력이라 그 실행 폴더 `outputs/{실행명}/`에 둔다. 봉인 묶음 실행이면 `outputs/sealed/{실행명}/`이다. 커밋하지 않고 증거 복사하지도 않는다. 봉인 묶음 실행의 출력은 금지 해제 조건(§10.3 N10)이 채워지기 전에는 열지 않는다 [DESIGN: 2026-09-24(목) 사용자 결정. 해제 조건은 오케스트레이터 결정, 2026-09-24(목) 사용자 확인(PR #18)] [사실: `.gitignore`가 `outputs/`를 제외한다]. NAT가 정하는 파일 이름(예: `standardized_data_all.csv`)과 이 이름 규칙의 대응은 자문 명세서 Q1의 4다 [미확인]. 예상 해법은 §10.3 N7 폴더(`outputs/{실행명}/{도메인명}-{시각}/`)에 NAT가 정한 이름을 그대로 두고, 그 파일 이름을 단위 표의 단위 I13·E4 행에 고정하는 것이다.
 - 실패·미실행·timeout·invalid도 기록하고 분모에 남긴다. 결과를 본 뒤 어려운 사례를 지우지 않는다 [DESIGN: 명세 §3.6].
 - 분모는 결과 줄 수가 아니라 고정 사례 목록(`dev20`, `holdout40`, `real_dev`, `real_sealed` 봉인 표본)으로 센다. `real_dev`의 목록은 그 평가 묶음 실행 때의 정책으로 만든 경보 목록이며 채점 요약 `scorer_summary-{시각}.md`에 기록한다(MVP 대표 지표 첫 값의 분모). 실행되지 않아 결과 줄이 없는 사례도 실패로 센다. 세부는 룰북 `docs/eval/RULEBOOK.md` B5를 따른다 [DESIGN].
@@ -849,7 +849,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 | 봉인 폴더 | 환경변수 `TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`(저장소 밖) | D |
 | 독립 채점기 | `eval/scorer/`(런타임 모듈을 import하지 않음), 실행 `python -m eval.scorer --run <run_dir>`, 출력 `outputs/score-{시각}/` | D |
 | 도메인 출력(커밋 안 함) | `outputs/{실행명}/{도메인명}-{시각}.{확장자}`(trace JSONL, NAT 프로파일 결과, 보고서, 실행 결과 기록 등 도메인 출력 전부). 봉인 묶음 실행은 `outputs/sealed/{실행명}/` | 공동 |
-| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력만 복사: `scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`) | 공동 |
+| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력만 복사: `scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`) | 공동 |
 | 자기채점 결과(커밋) | `artifacts/scorecard/scorecard-{시각}/`(자기채점 실행 폴더의 결과 파일만 복사: `scorecard-{시각}.md`) | 공동 |
 | OpenShell 증거(커밋) | `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일만 복사: 예측·실측 대조표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`) | M(보안 검토) |
 | X1 임시 시험 코드 | `spikes/x1/` | M |

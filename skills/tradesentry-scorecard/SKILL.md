@@ -78,7 +78,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 
 | 무엇 | 경로·명령 |
 |---|---|
-| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(`scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`). 채점 실행 폴더 `outputs/score-{시각}/`의 채점기 출력만 증거 복사한 커밋 사본이다 |
+| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(`scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`). 채점 실행 폴더 `outputs/score-{시각}/`의 채점기 출력만 증거 복사한 커밋 사본이다 |
 | 실행 기록(커밋 안 함, 로컬에만 있음) | 실행 폴더 `outputs/{실행명}/`(trace JSONL, NAT 프로파일 결과 등 도메인 출력. 봉인 묶음 실행은 `outputs/sealed/{실행명}/`). trace는 실행 중 호출과 응답을 단계별로 남긴 기록이고, JSONL은 JSON 하나를 한 줄에 적는 기록 파일이며, 프로파일 결과는 단계별 시간·토큰 측정 결과다 |
 | OpenShell | `configs/openshell/policy.yaml`, OpenShell 증거 폴더 `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일을 증거 복사한 커밋 사본. 시험표 `openshell_violation_tests-{시각}.md`는 예측·실측 대조표이고, 같은 폴더에 감사 로그 발췌 `.txt`와 라이브 정책 조회 본문 `.yaml`이 있다). 시험을 돌릴 때마다 새 폴더가 생긴다. X1 임시 시험 기록은 옛 이름 위치에 있고 규범 G2 증거로 함께 읽는다(자료 계약 §10.3) |
 | NAT | `configs/nat/workflow.yml` |
@@ -109,7 +109,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
    - 요약 값을 그대로 옮기고 새로 계산하지 않는다. 숫자마다 예정 실행 수, `COMPLETED` 수, Wilson 95% 구간(비율의 불확실성을 나타내는 구간), 실패·미실행 수를 요약에서 함께 옮긴다. 실패·미실행은 분모에 남긴 값 그대로 둔다(룰북 B5, B7).
    - 요약에 없는 칸은 "요약에 없음", 그 숫자에 해당하지 않는 칸(예: 비용 값의 Wilson 구간)은 "해당 없음"으로 적는다. 어느 쪽도 계산해서 채우지 않는다.
    - 대표 값(`real_sealed`)은 요약의 "A등급 주장 조건(B3-3)" 줄이 충족이고, 같은 요약에서 다음 셋이 함께 확인될 때만 "등급 A"로 적는다. 하나라도 확인되지 않으면 "A등급 주장 보류(참고치)"로 적는다.
-     - 모드별(`freeform`, `full` 각각) 유효 보고서(`execution_status=COMPLETED`) 20건 이상(조정값). 요약 값이 아니라 커밋된 `artifacts/eval/score-{시각}/scorer_summary-{시각}.jsonl`로 센다.
+     - 모드별(`freeform`, `full` 각각) 유효 보고서(`execution_status=COMPLETED`) 20건 이상(조정값). 요약 값이 아니라 커밋된 `artifacts/eval/score-{시각}/scorer_results-{시각}.jsonl`로 센다.
      - 봉인 해시 재대조 일치. 이 스킬이 직접 확인할 수 없는 줄이므로 요약 값을 옮기고, 그 사실을 근거 줄에 적는다.
      - 동결 커밋 기재(실행 조건의 룰북 줄). git 이력에서 그 커밋이 실제로 있는지 확인한다.
    - 합성 자료(`controlled_fixture_v0`, `dev20`, `holdout40`)에서 나온 숫자는 C를 넘지 않는다. 개발 묶음 값(`dev20`, `real_dev`)은 등급 D이고 대표 숫자가 아니다.
@@ -344,7 +344,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 **서식 예시**(판정 결과가 아니다. 지표 표의 행 모양만 보인다)
 
 ```text
-| 1e | 1 | Nemotron 모델 1개를 조사자·Critic 두 역할로 호출 | outputs/{실행명}/ trace(커밋 안 함) 응답에 담긴 모델 값 nvidia/nemotron-3-super-120b-a12b와 조사자·Critic 역할별 요청, 게이트웨이 provider 설정 조회 기록(inference.local일 때, <위치>), artifacts/eval/score-{시각}/scorer_summary-{시각}.jsonl의 model_requests·critic_used | 같은 모델의 두 역할은 모델 수로 읽어 1점(룰북 A2 1e 주석, 룰북 부록 7). 결과 기록만으로는 모델을 증명하지 못해 trace와 게이트웨이 설정을 함께 적었다 |
+| 1e | 1 | Nemotron 모델 1개를 조사자·Critic 두 역할로 호출 | outputs/{실행명}/ trace(커밋 안 함) 응답에 담긴 모델 값 nvidia/nemotron-3-super-120b-a12b와 조사자·Critic 역할별 요청, 게이트웨이 provider 설정 조회 기록(inference.local일 때, <위치>), artifacts/eval/score-{시각}/scorer_results-{시각}.jsonl의 model_requests·critic_used | 같은 모델의 두 역할은 모델 수로 읽어 1점(룰북 A2 1e 주석, 룰북 부록 7). 결과 기록만으로는 모델을 증명하지 못해 trace와 게이트웨이 설정을 함께 적었다 |
 | 3d | 0 | 증거 없음 | 찾아본 곳: artifacts/eval/score-{시각}/scorer_summary-{시각}.md(trace·NAT 프로파일 요약 없음), test -f configs/nat/workflow.yml(종료 코드 1) | trace와 프로파일 결과는 요약에 옮겨진 것만 증거로 쓴다(룰북 A2 3d 주석) |
 | 4b | 0(무효) |  | artifacts/eval/score-{시각}/scorer_summary-{시각}.md | 근거 한 줄이 비어 무효. 0점으로 계산 |
 ```

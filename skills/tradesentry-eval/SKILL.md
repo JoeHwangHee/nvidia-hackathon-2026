@@ -279,7 +279,7 @@ env -u NVIDIA_API_KEY -u DATA_GO_KR_SERVICE_KEY python -m eval.scorer --run <run
 - 채점기는 키 변수를 뺀 환경에서 돌린다. `env -u`는 지정한 환경변수를 뺀 환경에서 명령을 실행하는 방법이다. 채점기는 모델도 네트워크도 부르지 않으므로 키가 필요 없다. 봉인 경로 변수 `TRADESENTRY_SEALED_DIR`는 채점기가 정답표를 찾는 데 쓰므로 빼지 않는다.
 - 채점기는 `.env`를 읽지 않는다. 기존 `load_env`(`src/tradesentry/ingest.py`)는 `env -u`로 뺀 키를 저장소 루트의 `.env`에서 다시 채우므로 채점기는 이 함수를 부르지 않는다("실행"의 샌드박스) `[사실: src/tradesentry/ingest.py의 load_env]`.
 - `<run_dir>`는 채점할 평가 묶음 실행의 폴더 `outputs/{실행명}/`이고, 봉인 묶음이면 `outputs/sealed/{실행명}/`이다(자료 계약 §10.1). 채점기는 자기 출력을 채점 실행 폴더 `outputs/score-{시각}/`에 쓴다. 봉인 묶음을 채점할 때도 같다. 그때 채점기는 시작 직후 자기가 확보한 실행 폴더 이름을 표준 출력 첫 줄로 알리고, 봉인 묶음을 채점한 채점기 출력은 금지 해제 조건(자료 계약 §10.3 N10) 전에는 에이전트가 열지 않고 커밋하지 않는다.
-- 채점기는 하네스의 `evaluation_batch_run-{시각}.jsonl`을 고치지 않는다. 실행 쪽 키에 세 키를 더한 `scorer_summary-{시각}.jsonl`을 자기 실행 폴더에 새로 쓴다(룰북 B4, 자료 계약 §8.1).
+- 채점기는 하네스의 `evaluation_batch_run-{시각}.jsonl`을 고치지 않는다. 실행 쪽 키에 세 키를 더한 `scorer_results-{시각}.jsonl`을 자기 실행 폴더에 새로 쓴다(룰북 B4, 자료 계약 §8.1).
 - `outputs/`는 커밋하지 않는다. 그래서 재채점용 보고서 원문을 커밋할 위치가 정해지기 전에는 저장소만으로 다시 채점할 수 없다 `[미확인]`(룰북 B7, `docs/plan/SCAFFOLD_BRIEF.md` Q10).
 
 ### 채점 전 확인
@@ -308,7 +308,7 @@ env -u NVIDIA_API_KEY -u DATA_GO_KR_SERVICE_KEY python -m eval.scorer --run <run
 
 | 파일 | 한 줄의 단위 | 키 |
 |---|---|---|
-| `outputs/score-{시각}/scorer_summary-{시각}.jsonl` | 사례 실행 1건 | 실행 결과 기록 키(실행 쪽 키 + 채점기가 더한 세 키, "결과 보고") |
+| `outputs/score-{시각}/scorer_results-{시각}.jsonl` | 사례 실행 1건 | 실행 결과 기록 키(실행 쪽 키 + 채점기가 더한 세 키, "결과 보고") |
 | `outputs/score-{시각}/scorer_claims-{시각}.jsonl` | 채점 단위 1건. typed claim(품목·상대국·기간·지표·값·단위·근거를 정해진 필드에 담은 사실 주장) 1건, 또는 산문 패턴(설명 문장 속 숫자·증감 표현을 잡는 결정적 정규식 목록)에 잡힌 표현 1건 | 주장 채점 기록 키("결과 보고") |
 | `outputs/score-{시각}/scorer_summary-{시각}.md` | 요약 | 룰북 B7 양식 |
 
@@ -319,7 +319,7 @@ env -u NVIDIA_API_KEY -u DATA_GO_KR_SERVICE_KEY python -m eval.scorer --run <run
 
 ### 기록 키(정본: 자료 계약 §8, §9.2)
 
-- `scorer_summary-{시각}.jsonl` 한 줄의 키(실행 결과 기록 키): `run_id, case_id, dataset, mode, policy_version, rulebook_version, snapshot_id, grouping_version, code_version, review_status_final, signal_status, unresolved_evidence, execution_status, required_evidence_ok, numeric_ok, provenance_ok, tool_attempts, model_requests, tokens_in, tokens_out, wall_ms, critic_used, revision_used, errors`
+- `scorer_results-{시각}.jsonl` 한 줄의 키(실행 결과 기록 키): `run_id, case_id, dataset, mode, policy_version, rulebook_version, snapshot_id, grouping_version, code_version, review_status_final, signal_status, unresolved_evidence, execution_status, required_evidence_ok, numeric_ok, provenance_ok, tool_attempts, model_requests, tokens_in, tokens_out, wall_ms, critic_used, revision_used, errors`
   - 키를 늘리지 않는다. 계약 버전 `schema_version`(자료 계약의 버전 번호)은 `scorer_summary-{시각}.md`에 적는다(자료 계약 §1.2).
   - `execution_status`는 `COMPLETED | FAILED | TIMEOUT | INVALID | BUDGET_EXCEEDED` 가운데 하나다.
   - `review_status_final`은 `MAINTAIN`(검토 유지), `MONITOR`(모니터링), `HOLD`(자료 보류) 가운데 하나이거나 `null`이다.
@@ -402,7 +402,7 @@ env -u NVIDIA_API_KEY -u DATA_GO_KR_SERVICE_KEY python -m eval.scorer --run <run
 
 ### 보고와 커밋
 
-- **증거 복사**: 채점이 끝나면 채점 실행 폴더와 같은 이름의 폴더 `artifacts/eval/score-{시각}/`를 만들고, 채점기 출력(`scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`)만 복사한다(자료 계약 §10.3 N11). trace 같은 실행 기록 원본은 복사하지 않는다. 같은 이름의 폴더가 이미 있으면 덮어쓰지 않고 멈춘다(N8). 봉인 묶음은 금지 해제 조건(채점기가 종료 코드 0으로 끝나고 봉인 사건 "채점 완료"를 기록했고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10)이 채워진 뒤에만 복사한다. 커밋 사본은 채점기 출력을 그대로 복사한 것이다. 에이전트는 채점기 출력 파일을 고쳐 쓰지 않는다(N8). 봉인 묶음 출력(`outputs/sealed/` 아래)은 그 조건 전에 열지도 커밋하지도 않는다.
+- **증거 복사**: 채점이 끝나면 채점 실행 폴더와 같은 이름의 폴더 `artifacts/eval/score-{시각}/`를 만들고, 채점기 출력(`scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`)만 복사한다(자료 계약 §10.3 N11). trace 같은 실행 기록 원본은 복사하지 않는다. 같은 이름의 폴더가 이미 있으면 덮어쓰지 않고 멈춘다(N8). 봉인 묶음은 금지 해제 조건(채점기가 종료 코드 0으로 끝나고 봉인 사건 "채점 완료"를 기록했고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10)이 채워진 뒤에만 복사한다. 커밋 사본은 채점기 출력을 그대로 복사한 것이다. 에이전트는 채점기 출력 파일을 고쳐 쓰지 않는다(N8). 봉인 묶음 출력(`outputs/sealed/` 아래)은 그 조건 전에 열지도 커밋하지도 않는다.
 - 커밋 사본은 작업 단위 PR(변경을 `main`에 합치기 전에 검사·검토를 받는 요청)로 커밋한다. 스테이징은 `git add <파일>`로만 하고 `git add -A`·`git add .`를 쓰지 않는다(AGENT_OPS §5). `outputs/`는 커밋하지 않는다.
 - 커밋과 PR 본문 작성 전에, 커밋 사본을 포함해 비밀값·로컬 경로 검사(NVIDIA API 키 접두어, 공공데이터포털 서비스키 요청 파라미터, 로컬 절대경로를 찾는 검사. 실제 패턴 문자열은 검사 스크립트에만 두고 문서에는 적지 않는다)를 돌린다(AGENT_OPS §7.6).
 - 키 값은 어디에도 출력하지 않는다. 변수 이름(`NVIDIA_API_KEY`, `DATA_GO_KR_SERVICE_KEY`)만 쓴다.

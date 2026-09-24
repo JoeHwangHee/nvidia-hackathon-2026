@@ -147,7 +147,7 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 | `1f` | 프로토콜 깊이 | 도구 호출 없음 | native tool call(모델이 API의 도구 호출 형식으로 함수를 부르는 방식)로 도구 5개를 부름 | MCP(모델과 도구를 잇는 표준 프로토콜) 클라이언트로 도구 호출 | MCP 서버 자체 구현 또는 A2A(에이전트끼리 통신하는 프로토콜) |
 
 - **`1a` 세는 법** `[DESIGN]`: 실제 호출·실행 증거가 있는 구성요소만 센다. 설치만 했거나 문서에만 나온 것은 세지 않는다. NIM(NVIDIA 모델 추론 API·서빙)과 Nemotron(NVIDIA 언어 모델 제품군)은 "추론 API로 모델을 부른다"는 하나의 구성요소로 센다(원칙 5의 낮은 해석).
-  - NIM/Nemotron: 결과 기록의 `model_requests`가 0보다 크다(`artifacts/eval/score-{시각}/scorer_summary-{시각}.jsonl`). trace는 `outputs/{실행명}/`에 있다.
+  - NIM/Nemotron: 결과 기록의 `model_requests`가 0보다 크다(`artifacts/eval/score-{시각}/scorer_results-{시각}.jsonl`). trace는 `outputs/{실행명}/`에 있다.
   - NAT(NVIDIA NeMo Agent Toolkit, 에이전트 워크플로를 실행·추적·프로파일·평가하는 라이브러리): `configs/nat/workflow.yml`과 NAT 실행 추적·프로파일 결과(`outputs/{실행명}/`)
   - OpenShell: `1b` 3점 이상의 증거
   - NemoClaw(모델·에이전트 하네스·보안 런타임을 묶은 NVIDIA 참조 스택): `1c` 3점의 증거
@@ -724,7 +724,7 @@ typed claim의 필드는 `claim_id, claim_type, hs6, partner, period, baseline_p
 | 개선·악화 목록 | 비교군 사이에 같은 사례가 좋아지거나 나빠진 목록 |
 
 - **예상 상태 일치** `[DESIGN]`: 사례 판정(`review_status_final`), 신호별 판정(`signal_status`), `unresolved_evidence`가 모두 정답표와 같을 때다. 사례 집계 규칙(`MAINTAIN > HOLD > MONITOR`, `MAINTAIN`과 `HOLD`가 섞이면 `MAINTAIN`에 `unresolved_evidence=true`)까지 맞아야 한다.
-- **채점 필드의 주체** `[DESIGN]`: 결과 기록의 `required_evidence_ok`, `numeric_ok`, `provenance_ok`는 샌드박스 밖 채점기가 정답표로 채운다. 런타임이 쓴 값이 있으면 채점기 값이 우선한다. 실행 쪽 키는 평가 하네스(`evaluation_batch_run`)가 쓰고, 채점기는 하네스의 파일을 고치지 않고 실행 쪽 키에 이 세 키를 더한 파일(`scorer_summary-{시각}.jsonl`)을 자기 실행 폴더에 새로 쓴다.
+- **채점 필드의 주체** `[DESIGN]`: 결과 기록의 `required_evidence_ok`, `numeric_ok`, `provenance_ok`는 샌드박스 밖 채점기가 정답표로 채운다. 런타임이 쓴 값이 있으면 채점기 값이 우선한다. 실행 쪽 키는 평가 하네스(`evaluation_batch_run`)가 쓰고, 채점기는 하네스의 파일을 고치지 않고 실행 쪽 키에 이 세 키를 더한 파일(`scorer_results-{시각}.jsonl`)을 자기 실행 폴더에 새로 쓴다.
 - **정상 실행**: `execution_status=COMPLETED`. 실행 실패로 끝난 보류 화면은 기대 상태가 보류여도 성공이 아니다.
 - **모든 사례를 보류했을 때의 점수** `[DESIGN]`: 발동한 신호는 모두 `HOLD`, 발동하지 않은 신호는 `NOT_TRIGGERED`로 둔 가상의 결과를 예상 상태 일치만으로 채점한다(근거 조건은 충족했다고 가정한 상한). 구 개발계획 §8.1 배분대로면 예상 상태가 `HOLD`인 사례가 최소 16건이라 이 점수는 40% 이상이 된다 `[추론]`.
 - **상태 변화의 해석**: Critic 전후 변화만으로 전체 구조의 성능 향상을 추정하지 않는다. 같은 모델을 두 번 쓴 것을 정확성 보증으로 표현하지 않는다(구 개발계획 §8.3).
@@ -859,9 +859,9 @@ p = x / n
 
 ### B7. 결과 보고 양식
 
-평가 결과는 `artifacts/eval/score-{시각}/`에 `scorer_summary-{시각}.jsonl`(실행 결과 기록), `scorer_claims-{시각}.jsonl`(주장 채점 기록), `scorer_summary-{시각}.md`(요약)로 남긴다.
+평가 결과는 `artifacts/eval/score-{시각}/`에 `scorer_results-{시각}.jsonl`(실행 결과 기록), `scorer_claims-{시각}.jsonl`(주장 채점 기록), `scorer_summary-{시각}.md`(요약)로 남긴다.
 
-- 평가 결과 폴더 이름 `score-{시각}`은 채점 실행의 실행명이다(자료 계약 §10.3 N5·N11). `scorer_summary-{시각}.jsonl`의 각 행은 (사례 × 모드) 실행 1건이고, 그 행의 `run_id`는 사례 실행의 실행명(자료 계약 §4.5)이라 폴더 이름과 겹치지 않는다.
+- 평가 결과 폴더 이름 `score-{시각}`은 채점 실행의 실행명이다(자료 계약 §10.3 N5·N11). `scorer_results-{시각}.jsonl`의 각 행은 (사례 × 모드) 실행 1건이고, 그 행의 `run_id`는 사례 실행의 실행명(자료 계약 §4.5)이라 폴더 이름과 겹치지 않는다.
 - 채점기의 입력인 보고서 원문(보고서 객체)을 커밋할 위치는 계획 경로·명령 표에 없다. 실행 기록 `outputs/`는 커밋하지 않으므로, 지금 계획으로는 저장소만으로 다시 채점할 수 없다 `[미확인]`. 위치는 S0 외부 자문에서 정한다. 이 문서에서 새 경로를 짓지 않는다.
 - 요약 `scorer_summary-{시각}.md`는 채점기만 쓴다. 에이전트는 채점기 출력 파일을 고쳐 쓰지 않는다(자료 계약 §10.3 N8). 채점기가 모르는 값은 실행 조건 입력 파일(채점기가 모르는 실행 조건을 채점기에 넘기는 파일)로 채점기에 들어가고, 채점기는 그 값을 아래 양식의 0절·4절에 그대로 옮긴다. 채점기는 실행 조건을 이 파일에서만 읽는다. 샌드박스가 쓴 파일은 믿지 않는 입력이다. 채점기 명령(`python -m eval.scorer --run <run_dir>`)은 바꾸지 않는다(자료 계약 §8.2).
   - 담는 값: 사전 점검 결과, 샌드박스 이름, 라이브 정책 sha256, 시험표 폴더 이름, 봉인 해시 재대조 결과, 봉인 출처 점검 결과, 스킬 호출 성공률. 봉인 묶음이 아니면 NAT 프로파일 요약과 한국어 품질 표본 점검 결과도 이 파일로 요약에 들어간다.

@@ -670,7 +670,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 - 코드가 모델의 틀린 상태를 조용히 정답으로 고치지 않는다.
 - 실행 실패 때문에 화면에 보류로 보이는 것과 평가의 정답 보류를 같게 보지 않는다(구 개발계획 §5.3).
 - 실행 결과 기록 키(run 1건): `run_id, case_id, dataset, mode, policy_version, rulebook_version, snapshot_id, grouping_version, code_version, review_status_final, signal_status, unresolved_evidence, execution_status, required_evidence_ok, numeric_ok, provenance_ok, tool_attempts, model_requests, tokens_in, tokens_out, wall_ms, critic_used, revision_used, errors`
-- 실행 기록(trace JSONL, NAT 프로파일 결과)은 그 실행 폴더 `outputs/{실행명}/`에 두고 커밋하지 않는다. 봉인 묶음 실행은 `outputs/sealed/{실행명}/`이다. 실행 쪽 키는 평가 하네스(단위 `evaluation_batch_run`)가 `evaluation_batch_run-{시각}.jsonl`에 쓰고, 채점기가 세 키를 더한 평가 결과를 채점 실행 폴더에 새로 쓴다. 평가 결과는 채점 실행 폴더의 채점기 출력(`scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`)만 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(증거 복사). trace와 NAT 프로파일 결과는 복사하지 않고, 봉인 묶음은 금지 해제 조건이 채워진 뒤에만 복사한다(자료 계약 §8.2·§10.3).
+- 실행 기록(trace JSONL, NAT 프로파일 결과)은 그 실행 폴더 `outputs/{실행명}/`에 두고 커밋하지 않는다. 봉인 묶음 실행은 `outputs/sealed/{실행명}/`이다. 실행 쪽 키는 평가 하네스(단위 `evaluation_batch_run`)가 `evaluation_batch_run-{시각}.jsonl`에 쓰고, 채점기가 세 키를 더한 평가 결과를 채점 실행 폴더에 새로 쓴다. 평가 결과는 채점 실행 폴더의 채점기 출력(`scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`)만 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(증거 복사). trace와 NAT 프로파일 결과는 복사하지 않고, 봉인 묶음은 금지 해제 조건이 채워진 뒤에만 복사한다(자료 계약 §8.2·§10.3).
 - 키 값은 로그·trace·결과 파일에 남지 않아야 한다.
 
 ### 7.6 승인(모의, 코드 검증만)
@@ -899,7 +899,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | 봉인 폴더 | 환경변수 `TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`(저장소 밖) | D |
 | 독립 채점기 | `eval/scorer/`(런타임 모듈을 import하지 않음), 실행 `python -m eval.scorer --run <run_dir>`, 출력 `outputs/score-{시각}/` | D |
 | 도메인 출력(커밋 안 함) | `outputs/{실행명}/{도메인명}-{시각}.{확장자}`(trace JSONL, NAT 프로파일 결과, 보고서, 실행 결과 기록 등 도메인 출력 전부). 봉인 묶음 실행은 `outputs/sealed/{실행명}/` | 공동 |
-| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력만 복사: `scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`) | 공동 |
+| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력만 복사: `scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`) | 공동 |
 | 자기채점 결과(커밋) | `artifacts/scorecard/scorecard-{시각}/`(자기채점 실행 폴더의 결과 파일만 복사: `scorecard-{시각}.md`) | 공동 |
 | OpenShell 증거(커밋) | `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일만 복사: 예측·실측 대조표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`) | M(보안 검토) |
 | X1 임시 시험 코드 | `spikes/x1/` | M |
@@ -930,7 +930,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | `units/` | 공동 | 단위 등록부와 공통 실행기(개발 전용, `python -m tradesentry.units <단위 ID> --in <입력 파일>`) | — |
 
 - 패키지는 파이썬 모듈 파일을 여럿 담는 폴더이고, 단위는 혼자 실행하고 시험할 수 있게 파일 하나로 만든 가장 작은 구현 조각이다. 2026-09-24(목) 사용자 결정(도메인 재편 A안)으로 계획 모듈을 패키지로 바꿨고, import 경로(예: `tradesentry.metrics`)는 그대로다. 단위별 파일·도메인명·입출력·조립 판정 후보는 `docs/plan/UNITS.md`가 정본이다.
-- 그 밖의 단위: 화면 `app.py`(단위 A2), 프롬프트·모델 설정(단위 I9), 런타임 스킬·OpenShell 정책·샌드박스 이미지·키 주입 설정·위반 시험(단위 F3~F7), 국가 코드 대응표(단위 G3), 평가 자료 도구 `eval/datagen/`(단위 V2·V4·V5), 독립 채점기 `eval/scorer/`(단위 C1~C3).
+- 그 밖의 단위: 화면 `app.py`(단위 A2), 프롬프트·모델 설정(단위 I9), 런타임 스킬·OpenShell 정책·샌드박스 이미지·키 주입 설정·위반 시험(단위 F3~F7), 국가 코드 대응표(단위 G3), 평가 자료 도구 `eval/datagen/`(단위 V2·V4·V5), 독립 채점기 `eval/scorer/`(단위 C1~C4).
 
 ### 10.3 파일 소유
 

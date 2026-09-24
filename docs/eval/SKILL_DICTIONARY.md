@@ -195,7 +195,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
   - 실행 기록은 실행 폴더 `outputs/{실행명}/`(봉인 묶음은 `outputs/sealed/{실행명}/`)에 남긴다(커밋하지 않음). 실행명은 시각이 붙지 않은 실행 이름에 시작 시각을 붙인 `{실행 이름}-{yymmddhhmmss}`다(`docs/rules/DATA_CONTRACT_V1.md` §10.3). 실패·미실행·timeout·invalid는 분모에 남긴다.
 - 채점(정답 대조 채점)
   - 샌드박스 밖에서 독립 채점기 `eval/scorer/`(런타임 모듈을 import하지 않고 따로 만든 채점 프로그램)로 한다: `python -m eval.scorer --run <run_dir>`.
-  - 결과는 채점 실행 폴더 `outputs/score-{시각}/`에 쓰고(`scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`), 이 채점기 출력만 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(증거 복사).
+  - 결과는 채점 실행 폴더 `outputs/score-{시각}/`에 쓰고(`scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`), 이 채점기 출력만 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(증거 복사).
 - 봉인 자료
   - 봉인 입력은 공식 채점 대상 실행 전용 샌드박스를 새로 만들어 읽기 전용으로 넣는다. 정답표는 어떤 샌드박스에도 넣지 않고 샌드박스 밖 채점기만 읽는다.
   - 채점 전에 해시를 다시 대조한다. 봉인 해시와 실제 파일이 다르면 그 묶음의 채점을 무효로 하고 사용자에게 올린다.
