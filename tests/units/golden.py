@@ -24,9 +24,11 @@
   그런 출력과, 바이트나 문자열 파일처럼 형식이 다른 출력은 단위 폴더의 test_golden.py에서 compare를 바꿔 쓴다.
 
 시험 환경(GoldenMixin.setUp)
-- TRADESENTRY_SEALED_DIR와 HOME을 존재하지 않는 임시 경로로 고정하고, 소켓 연결(socket.socket.connect,
+- TRADESENTRY_SEALED_DIR와 HOME을 존재하지 않는 임시 경로로 고정하고, PYTHON_DOTENV_DISABLED=1로 python-dotenv의
+  .env 자동 로드를 끄며(NAT가 import 때 load_dotenv()를 부른다), 소켓 연결(socket.socket.connect,
   socket.create_connection)을 예외를 내는 함수로 바꾼다. 시험이 끝나면 되돌린다.
-- 단위 폴더의 test_golden.py에서 setUp을 새로 쓰면 먼저 super().setUp()을 부른다.
+- 단위 폴더의 시험 파일은 test_golden_pair를 새로 정의하지 않는다. setUp을 새로 쓰면 super().setUp()을 부른다.
+  compare나 golden_dir를 바꾼 파일은 허용하되, tests/test_units_registry.py가 목록으로 알린다(검토자가 본다).
 """
 import ast
 import json
@@ -117,7 +119,8 @@ class GoldenMixin:
         super().setUp()
         missing = Path(tempfile.gettempdir()) / f"tradesentry-golden-{uuid.uuid4().hex}"  # 만들지 않는 경로
         environment = mock.patch.dict(os.environ, {"TRADESENTRY_SEALED_DIR": str(missing / "sealed"),
-                                                   "HOME": str(missing / "home")})
+                                                   "HOME": str(missing / "home"),
+                                                   "PYTHON_DOTENV_DISABLED": "1"})
         environment.start()
         self.addCleanup(environment.stop)
         for target in ("socket.socket.connect", "socket.create_connection"):

@@ -10,6 +10,7 @@ import ast
 import os
 import re
 import socket
+import sys
 import tempfile
 import unittest
 from decimal import Decimal
@@ -144,6 +145,40 @@ def skip_uses(source: str) -> list[str]:
     return sorted(found)
 
 
+def golden_file_findings(source: str) -> tuple[list[str], list[str]]:
+    """단위 폴더 시험 파일의 골든 틀 규칙 위반과, 알릴 덮어쓰기(compare·golden_dir)를 찾는다."""
+    problems: list[str] = []
+    overrides: list[str] = []
+    for node in ast.walk(ast.parse(source)):
+        if not isinstance(node, ast.ClassDef):
+            continue
+        for item in node.body:
+            if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                name = item.name
+            elif isinstance(item, ast.Assign) and any(isinstance(t, ast.Name) for t in item.targets):
+                name = next(t.id for t in item.targets if isinstance(t, ast.Name))
+            elif isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name):
+                name = item.target.id
+            else:
+                continue
+            if name == "test_golden_pair":
+                problems.append(f"{node.name}.test_golden_pair를 새로 정의한다")
+            elif name == "setUp" and not _calls_super_setup(item):
+                problems.append(f"{node.name}.setUp이 super().setUp()을 부르지 않는다")
+            elif name in ("compare", "golden_dir"):
+                overrides.append(f"{node.name}.{name}")
+    return problems, overrides
+
+
+def _calls_super_setup(node: ast.AST) -> bool:
+    for inner in ast.walk(node):
+        if isinstance(inner, ast.Call) and isinstance(inner.func, ast.Attribute) and inner.func.attr == "setUp" \
+                and isinstance(inner.func.value, ast.Call) and isinstance(inner.func.value.func, ast.Name) \
+                and inner.func.value.func.id == "super":
+            return True
+    return False
+
+
 def run_golden(unit_id: str, entry, expected_json: str | None, input_json: str = "{}") -> unittest.TestResult:
     """임시 골든 폴더와 가짜 진입 함수로 GoldenMixin.test_golden_pair를 한 번 돌린다(run은 뼈대가 아니라고 본다)."""
     from units import golden  # discover가 tests/를 맨 위 경로로 넣으므로 tests/units는 units로 불린다
@@ -222,11 +257,13 @@ class GoldenRuleTest(unittest.TestCase):
     def test_golden_run_has_no_home_sealed_folder_or_network(self):
         seen = {}
         home_before = os.environ.get("HOME")
+        dotenv_before = os.environ.get("PYTHON_DOTENV_DISABLED")
         create_connection_before = socket.create_connection
 
         def probe(inp):
             seen["home"] = os.environ["HOME"]
             seen["sealed"] = os.environ["TRADESENTRY_SEALED_DIR"]
+            seen["dotenv"] = os.environ.get("PYTHON_DOTENV_DISABLED")
             try:
                 socket.create_connection(("127.0.0.1", 9), timeout=1)
                 seen["create_connection"] = "연결됨"
@@ -246,9 +283,39 @@ class GoldenRuleTest(unittest.TestCase):
         self.assertFalse(Path(seen["sealed"]).exists())
         self.assertIn("네트워크", seen["create_connection"])
         self.assertIn("네트워크", seen["connect"])
+        self.assertEqual(seen["dotenv"], "1")  # 시험 중에는 python-dotenv의 .env 자동 로드가 꺼져 있다
         self.assertEqual(os.environ.get("HOME"), home_before)  # 시험이 끝나면 되돌린다
+        self.assertEqual(os.environ.get("PYTHON_DOTENV_DISABLED"), dotenv_before)
         self.assertIs(socket.create_connection, create_connection_before)
         self.assertNotIn("connect", vars(socket.socket))
+
+    def test_unit_folders_keep_the_golden_rule(self):
+        base = ROOT / "tests" / "units"
+        problems: list[str] = []
+        overrides: list[str] = []
+        for folder in sorted(p for p in base.iterdir() if p.is_dir() and p.name != "__pycache__"):
+            for path in sorted(folder.glob("*.py")):
+                found, changed = golden_file_findings(path.read_text(encoding="utf-8"))
+                rel = path.relative_to(ROOT).as_posix()
+                problems += [f"{rel}: {item}" for item in found]
+                overrides += [f"{rel}: {item}" for item in changed]
+        self.assertEqual(problems, [], "\n".join(problems))
+        if overrides:  # 허용한다. 실패가 아니라 검토자가 볼 정보로 시험 출력에 남긴다
+            print(f"\n정보: 골든 비교(compare)나 골든 폴더(golden_dir)를 바꾼 단위 시험 파일: {'; '.join(overrides)}",
+                  file=sys.stderr)
+
+    def test_golden_rule_findings(self):
+        overridden = "class GoldenTest:\n    def test_golden_pair(self):\n        pass\n"
+        assigned = "class GoldenTest:\n    test_golden_pair = lambda self: None\n"
+        no_super = "class GoldenTest:\n    def setUp(self):\n        self.x = 1\n"
+        with_super = "class GoldenTest:\n    def setUp(self):\n        super().setUp()\n        self.x = 1\n"
+        compare = ("class GoldenTest:\n    def compare(self, output, expected):\n        pass\n\n"
+                   "    def golden_dir(self):\n        return None\n")
+        self.assertEqual(golden_file_findings(overridden)[0], ["GoldenTest.test_golden_pair를 새로 정의한다"])
+        self.assertEqual(golden_file_findings(assigned)[0], ["GoldenTest.test_golden_pair를 새로 정의한다"])
+        self.assertEqual(golden_file_findings(no_super)[0], ["GoldenTest.setUp이 super().setUp()을 부르지 않는다"])
+        self.assertEqual(golden_file_findings(with_super), ([], []))
+        self.assertEqual(golden_file_findings(compare), ([], ["GoldenTest.compare", "GoldenTest.golden_dir"]))
 
     def test_unit_folders_skip_only_with_allowance(self):
         from units import golden
