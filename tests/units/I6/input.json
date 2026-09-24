@@ -1,0 +1,89 @@
+{
+ "attempts": [
+  {
+   "tool": "check_comparability",
+   "args": {},
+   "stage": "basic",
+   "outcome": "ok"
+  },
+  {
+   "tool": "get_history",
+   "args": {},
+   "stage": "basic",
+   "outcome": "ok"
+  },
+  {
+   "tool": "compare_partners",
+   "args": {
+    "partners": [
+     "ZZ"
+    ]
+   },
+   "stage": "basic",
+   "outcome": "failed"
+  },
+  {
+   "tool": "compare_partners",
+   "args": {
+    "partners": [
+     "ID",
+     "MY"
+    ]
+   },
+   "stage": "basic",
+   "outcome": "ok"
+  },
+  {
+   "tool": "verify_evidence",
+   "args": {
+    "metric_ids": [
+     "m-1"
+    ],
+    "evidence_ids": []
+   },
+   "stage": "basic",
+   "outcome": "ok"
+  },
+  {
+   "tool": "decompose_hs",
+   "args": {},
+   "stage": "revision",
+   "outcome": "ok"
+  },
+  {
+   "tool": "check_comparability",
+   "args": {
+    "extra": true
+   },
+   "stage": "revision",
+   "outcome": "cache_hit"
+  },
+  {
+   "tool": "verify_evidence",
+   "args": {
+    "metric_ids": [
+     "m-1"
+    ],
+    "evidence_ids": []
+   },
+   "stage": "final",
+   "outcome": "ok"
+  }
+ ],
+ "candidate": {
+  "tool": "compare_partners",
+  "args": {
+   "partners": [
+    "PH"
+   ]
+  },
+  "stage": "revision"
+ },
+ "limits": {
+  "tool_attempts": 8,
+  "basic_tool_attempts": 5,
+  "revision_stages": 1,
+  "revision_requeries": 2,
+  "final_verify": 1
+ }
+}
