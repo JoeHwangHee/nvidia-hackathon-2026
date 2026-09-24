@@ -82,6 +82,7 @@ DT1(자료 접근층과 계약 커널, 데이터 트랙) 구현에서 자료 계
 ⑨ **스냅샷 검증(단위 S3)의 범위** `[DESIGN]`
 
 - `check_raw`는 raw 대조(raw에서 다시 만든 행과 한 칸씩 비교)만 켜고 끈다. raw 없이 볼 수 있는 계약 검사는 늘 돈다: HS 코드는 숫자이고 자릿수는 2·4·6·10, 달은 수집 기간 안(`RAW:` 원문은 `OBSERVED` 총계 행만), 상태와 수신 기록(`OBSERVED`·`UNRESOLVED_ZERO`·`CONFIRMED_NO_TRADE`는 `OK`, `REQUEST_FAILED`는 `FAILED`, `NOT_COLLECTED`는 수신 기록 없음), 행의 상대국·코드·달이 요청 조건 안, raw 위치 칸의 모양(수집기 규칙), `NOT_COLLECTED` 행 집합이 수집 계획과 비교국 표에서 다시 계산한 집합과 같음, `CONFIRMED_NO_TRADE`는 수입·HS6 자릿수 행에만 있고 승격 규칙을 다시 적용한 집합과 같음, 상대국 키마다 HS10 하위 자리(HS6 조회의 HS10 행이나 HS6 자릿수 상태 행), 비교국 표 행 규칙(⑧).
+- 관측 행 규칙은 수집 계획을 메타 `collection_plan`에서 수집기 `build_manifest`로 다시 만들어 본다. 그래서 manifest가 `build_manifest(collection_plan)`과 같고 raw 위치 칸이 수집기 규칙(`{request_id}.xml`, `item[n]`)을 따르는 스냅샷을 전제로 한다. 합성 스냅샷(DT3)도 수집기 형식 원천을 만든 뒤 단위 S2로 빌드해야 이 검사를 통과한다.
 - 비교국 표 원본 대조: 입력 `peer_group_files`가 있으면 그 파일로, 없으면 빌드 기록의 파일 이름을 `data/reference/`(계획 경로 표의 "그룹핑 결과" 자리)에서 찾아, sha256을 빌드 기록과 대조하고 행을 다시 읽어 저장된 행과 비교한다. 찾지 못하면 건너뛰고 보고에 적는다.
 
 ⑩ **도구 봉투와 개발용 정책** `[DESIGN]`
