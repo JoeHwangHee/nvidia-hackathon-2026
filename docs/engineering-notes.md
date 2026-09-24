@@ -35,9 +35,9 @@
 
 ### NAT 명령이 저장소의 `.env`를 읽는다
 
-- 증상: 키 변수를 뺀 환경(`env -u`)에서 `nat run`·`nat eval`을 돌려도 키가 프로세스 환경에 들어간다.
-- 원인: NAT(NVIDIA 에이전트 실행 추적·평가 도구 모음) 1.9.0의 `nat` 명령 진입점은 import 때 `load_dotenv()`를 부른다. python-dotenv(`.env` 파일을 환경변수로 읽는 라이브러리)의 `find_dotenv()`는 현재 폴더가 아니라 호출한 파일의 폴더(가상환경 안 `site-packages/nat/cli/`)에서 위로 올라가며 `.env`를 찾는다. 가상환경이 저장소 안(`.venv/`)이면 저장소의 `.env`에 닿는다 `[사실: 2026-09-24(목) S0 NVIDIA 스택 검토에서 가짜 .env로 재현]`. `nat`을 대화형으로 한 번 쓰며 사용 통계 전송에 동의하면 그 뒤 `nat` 명령은 통계를 보낸다 `[사실: 같은 검토, NAT 소스]`.
-- 대응: `nat` 명령 대신 파이썬 API를 쓴다. 명령을 써야 하면 `nat`을 부를 수 있는 모든 프로세스에 `PYTHON_DOTENV_DISABLED=1`(python-dotenv 1.2.0부터)과 `NAT_TELEMETRY_ENABLED=false`를 준다. 단위 E2(샌드박스 밖 실행기)는 `nat`에 닿지 않는다(경계 시험). NAT를 lock에 넣는 작업(로드맵 MT4)에서 확인한다.
+- 증상: 키 변수를 뺀 환경(`env -u`)에서 `nat run`·`nat eval`을 돌려도 키가 프로세스 환경에 들어갈 수 있다 `[추론: 아래 원인]`.
+- 원인: NAT(NVIDIA 에이전트 실행 추적·평가 도구 모음) 1.9.0의 `nat` 명령 진입점은 import 때 `load_dotenv()`를 부른다. python-dotenv(`.env` 파일을 환경변수로 읽는 라이브러리)의 `find_dotenv()`는 현재 폴더가 아니라 호출한 파일의 폴더(가상환경 안 `site-packages/nat/cli/`)에서 위로 올라가며 `.env`를 찾는다. 가상환경이 저장소 안(`.venv/`)이면 저장소의 `.env`에 닿는다 `[사실: NAT v1.9.0 nat/cli/entrypoint.py 42행. 같은 호출을 같은 폴더 구조와 가짜 .env로 재현했다(2026-09-24(목) S0 NVIDIA 스택 검토). NAT 자체는 실행하지 않았다]`. 탐색은 가상환경 위쪽 폴더를 모두 거쳐 가장 가까운 `.env`를 찾는다. 저장소 밖 worktree(작업 복사본)의 가상환경이면 그 worktree 위쪽 폴더만 찾는다. `nat`을 대화형으로 한 번 쓰며 사용 통계 전송에 동의하면 그 뒤 `nat` 명령은 통계를 보낸다 `[사실: 같은 검토, NAT 소스]`.
+- 대응: `nat` 명령 대신 파이썬 API를 쓴다. 명령을 써야 하면 `nat`을 부를 수 있는 모든 프로세스에 `PYTHON_DOTENV_DISABLED=1`(python-dotenv 1.2.0부터)과 `NAT_TELEMETRY_ENABLED=false`를 준다. 단위 E2(샌드박스 밖 실행기)는 `nat`에 닿지 않는다(경계 시험). NAT를 lock에 넣는 작업(로드맵 MT4)에서 확인한다. NAT의 python-dotenv 요구는 `>=1.1.1,<2`라 lock이 1.2.0 이상으로 풀렸는지도 본다.
 - 정본: 결정 기록 `docs/tracking/decisions/20260924-2212-orchestrator-decision-s0-scaffold.md`
 
 ### macOS 기본 셸에서 검사 스크립트가 엉뚱하게 멈춘다
