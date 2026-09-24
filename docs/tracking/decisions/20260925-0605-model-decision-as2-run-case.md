@@ -19,7 +19,7 @@
 |---|---|
 | 날짜 | 2026-09-25(금) 06:05(기록 시각). 바탕은 `main` cf9d607 + MT4 브랜치 6dfc489(병합 02ebeb5)이고, 작업 중 AS1(#32)이 병합된 `main` d945792를 받았다(f9e5633). 코드 커밋은 c9085f8(단위 I12)·81b9df9(단위 F2) |
 | 제목 | `run-case` 배선 순서·도구 자리·근거 상태 변환·C형 펼치기·출력 파일, 실자료 스냅샷 거부(잠정), 조립 점검 1·2·5단계 결과와 단위 표 판정 갱신 |
-| 결정 | 아래 "결정 내용" ①~⑫ |
+| 결정 | 아래 "결정 내용" ①~⑫. ⑬은 2회차(실제 NIM 실측 6회 뒤, 같은 날 06:3x)에 더했다 |
 | 이유와 근거 | 항목마다 적었다 |
 | 검토한 대안 | 아래 "검토한 대안" |
 | 결정 주체 | 소유 트랙(M). ⑩은 AS1 결정 ⑤와 같은 오케스트레이터 결정(작업 지시)을 따른다 |
@@ -130,6 +130,23 @@
 
 - 지표 X3의 `children` 입력은 MT2 도구 공통 틀의 `children_rows`(`src/tradesentry/tools/check_comparability.py`)가 만든다. 값이 있는 달은 HS10 행마다 행 하나, 값 행이 있는 달의 상태 행은 빠진 자료로만, 무거래 확정 달은 부모의 무거래 확정 근거를 붙인 빈 행, C형 달은 `hs10_codes`를 붙인 상태 행이다. AS2는 이 모양을 그대로 쓴다.
 - 이로써 DT2 결정 ①은 `parent`·`world`(AS1 ②)와 `children`(이 항목)이 모두 확정이다. 다만 `parent`·`world` 변환이 AS1 어댑터(단위 F2)와 도구 공통 틀(단위 I1) 두 곳에 있다(AS4에 넘기는 관찰).
+
+⑬ **실측 뒤 지침 수정(2회차, 구성 단위 I9 `model-0.3`)** — 확정(효과는 재실측으로 확인)
+
+- 실측(오케스트레이터, 실제 NIM, `controlled_fixture_v0`·`dev-0.1`) 6회 가운데 4회가 기대와 달랐다. 원인(trace로 확인) `[사실]`
+  - A `full` 첫 실행 HOLD: 조사자가 `decompose_hs`를 부르지 않고 MONITOR를 썼다. Critic이 옳게 지적했지만 재조회 인자(`hs6`·`partners`·`months`)가 도구 인자 규칙(`compare_partners`만 `partners`, 나머지 `{}`) 밖이라 버려졌다. 수정 단계의 조사자도 분해를 부르지 않고 HOLD로 바꿨다.
+  - A `agent` MAINTAIN: 분해(within 0.00, mix −2.40, residual 0.00)를 받고도 MAINTAIN을 썼다. 비교국 조회는 `partners`를 문자열 `"[ALL]"`로 줘 `invalid_call`로 막혔다. 지침에 MONITOR의 수치 조건이 없었다.
+  - A `freeform` INVALID(SCHEMA_INVALID): 분해를 부르지 않고 분해 값을 지어 썼다(검증기 기록만). Critic의 재조회 인자가 버려졌고, 수정 단계 답이 JSON 문법 오류(`"hs6": "850": "850450"`)로 초안 형식 검사에서 실패했다. 도구를 싣는 요청이라 `json_object` 구조화 출력이 실리지 않는 차례였다.
+  - C `full` INVALID(VALIDATOR_BLOCKED): 첫 초안 HOLD는 통과했다. Critic이 HOLD 사례에 허용 밖 인자의 재조회를 요청하며 수정을 요구했고, 조사자가 Critic 문장(단가 하락)을 `hypotheses`에 옮겼다. 초안에 r_U 주장이 없어 R3 `PROSE_UNBACKED`(PT-6 '하락', `hypotheses[0]`)로 최종 차단됐다.
+  - B `full`은 기대대로 MAINTAIN이었지만 첫 초안은 MONITOR였다(Critic이 바로잡음). A `full` 두 번째 실행은 분해를 부르고 MONITOR였다.
+- 공통 원인: 지침에 판정 정책의 수치 조건(MT1 결정 ④·⑥·⑦을 모든 모드가 받는 공개 규칙에 싣기, MT1 결정 기록 "영향과 넘길 곳"의 MT4 항목)과 도구·재조회 인자 모양이 없었다. 판정 정책(P1~P5)과 검증기(R3·R4)의 동작은 원인이 아니다(검증기 차단은 규칙대로였다).
+- 고친 것(모든 모드에 같은 글, 룰북 B2)
+  - 조사자 지침: 판정 절을 P3과 같은 조건으로 바꿨다(HOLD 사유, MONITOR의 θ·U0 부등식, 비교국 비교 뒤 MAINTAIN, 비교국 자료가 모두 빠지면 HOLD). 초안 전에 `compare_partners`와(단가 발동 시) `decompose_hs`를 한 차례에 함께 부르고, 분해 없이 단가 MONITOR·MAINTAIN을 주지 않는다. 도구 인자 모양, HOLD여도 r_U·d_s 주장, 검수자 문장을 산문에 옮기지 않기를 적었다. θ는 `check_comparability`의 `comparability.rounding.threshold`(정책 단가 임계값)에서 읽게 했다(코드 변경 없음).
+  - Critic 지침: 같은 판정 규칙 요약, 규칙과 근거에 맞으면 `needs_revision` 거짓, HOLD 사례에 빠진 자료 재조회를 요청하지 않기, 재조회 `args` 모양과 같은 인자 재요청 금지, 지적 문장에 숫자·증감 어휘 금지.
+  - 반올림 불안정은 지침의 HOLD 사유에서 뺐다. 지금 P3에 넘기는 값이 늘 거짓(⑧)이라 `checklist`와 같은 조건으로 맞췄다. U4를 켜면 지침에도 같은 줄을 더한다.
+  - `config_version` `model-0.3`. 요청 설정(temperature 1.0·top_p 0.95·`enable_thinking` 끔)은 바꾸지 않았다.
+- 토큰: 지침이 길어져 비교를 두 차례로 나눠 부르는 `full` 경로의 추정이 31,402 → 31,973(한도 32,000)이 됐다. 지침이 한 차례에 부르게 하므로 그 경로는 추정 25,368이다(시험 `test_directed_single_turn_comparison_path_has_room`). 비교 뒤 수정 단계가 붙는 경로는 전처럼 한도를 넘는 남은 위험이다(MT4 결정 ⑮). 추정은 실자료 크기(HS10 8개)의 합성 봉투 기준이고, 합성 시험자료 사례는 실측 13,517~26,358이었다.
+- 남은 것: 모델의 JSON 문법 오류와 판정 흔들림은 확률적이다. 효과는 사례 × 모드 반복 재실측으로 본다(보고 AS2-2 §5).
 
 ## 조립 점검 결과(조립체 3, `docs/plan/UNITS.md` §5의 1·2·5단계)
 
