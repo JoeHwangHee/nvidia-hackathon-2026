@@ -239,6 +239,17 @@ class ExactValueTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             x3.exact_value({**good, "inputs": {**good["inputs"], "metric": "s"}})
 
+    def test_effect_objects_do_not_share_inputs(self):
+        # 무역통계 검토 2회차 권고 4: 분해 세 객체는 hs10_values를 따로 가진다. 한 객체를 고쳐도 다른 객체는 그대로다.
+        got = by_key(run(*ORACLE_A))
+        within, mix = got[("within_effect", "202401")], got[("mix_effect", "202401")]
+        self.assertIsNot(within["inputs"]["hs10_values"], mix["inputs"]["hs10_values"])
+        self.assertIsNot(within["inputs"]["hs10_values"][A], mix["inputs"]["hs10_values"][A])
+        within["inputs"]["hs10_values"][A]["Q_1"] = 40
+        self.assertEqual(x3.exact_value(mix), Fraction(-12, 5))  # mix −2.4 그대로
+        with self.assertRaises(ValueError):
+            x3.exact_value(within)  # 고친 객체만 value와 어긋난다
+
 
 class RejectTest(unittest.TestCase):
     def test_bad_inputs(self):

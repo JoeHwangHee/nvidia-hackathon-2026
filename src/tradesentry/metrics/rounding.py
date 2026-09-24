@@ -39,6 +39,7 @@ run 출력
 - values: [{"metric": 기호, "unit": 단위, "value": 표시 값 또는 null}, ...]
 - weight_checks: [{"difference": |Q_parent − Q_hs10|, "tolerance": 허용오차, "within_tolerance": 참/거짓}, ...]
 """
+import copy
 import hashlib
 import json
 import re
@@ -155,8 +156,9 @@ def metric(symbol: str, *, hs6: str, partner: str, period: str, baseline_period:
     """자료 계약 §2.3.4 `metric` 객체를 만든다.
 
     value는 정확한 값(int·Fraction) 또는 None이다. 표시 자릿수로 한 번 반올림해 담는다. None이면 사유(flags)가
-    있어야 한다. values는 계산에 쓴 입력값(정수나 null)이다. 근거 ID는 순서를 지키며 중복을 뺀다. snapshot_id를
-    주면 근거 ID가 모두 그 스냅샷의 것인지 보고, metric_id 해시에 넣는다(단위 X1~X3은 늘 준다).
+    있어야 한다. values는 계산에 쓴 입력값(정수나 null)이고 깊은 복사로 담는다(같은 values로 만든 객체끼리 공유하지
+    않는다). 근거 ID는 순서를 지키며 중복을 뺀다. snapshot_id를 주면 근거 ID가 모두 그 스냅샷의 것인지 보고,
+    metric_id 해시에 넣는다(단위 X1~X3은 늘 준다).
     """
     unit, _ = unit_and_places(symbol)
     if value is None and not flags:
@@ -168,7 +170,7 @@ def metric(symbol: str, *, hs6: str, partner: str, period: str, baseline_period:
                 raise ValueError(f"{symbol}: 근거 ID가 스냅샷 {snapshot_id}의 것이 아니다(§4.4 풀림 규칙 2): {ev!r}")
     inputs: dict[str, object] = {"metric": symbol, "hs6": hs6, "partner": partner, "period": period,
                                  "baseline_period": baseline_period}
-    inputs.update(values)
+    inputs.update(copy.deepcopy(values))  # 객체마다 따로 가진다(같은 values로 만든 객체끼리 공유하지 않는다)
     body: dict[str, object] = {
         "formula_version": FORMULA_VERSION,
         "inputs": inputs,
