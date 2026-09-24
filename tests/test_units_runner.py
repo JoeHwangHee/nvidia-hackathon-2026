@@ -144,7 +144,8 @@ class RunUnitTest(TempOutputsMixin, unittest.TestCase):
         code = runner.run_unit(unit_id, input_path, outputs_root=self.outputs, clock=clock.now, sleep=clock.sleep,
                                out=out, err=err)
         text = out.getvalue() + err.getvalue()
-        self.assertNotIn(str(self.tmp), text)  # 로컬 절대경로를 출력하지 않는다(N13)
+        for local in (str(self.tmp), str(runner.REPO_ROOT), str(Path.home())):
+            self.assertNotIn(local, text)  # 로컬 절대경로를 출력하지 않는다(N13)
         return code, out.getvalue(), err.getvalue()
 
     def test_unimplemented_runtime_unit_reserves_run_dir_then_fails(self):
@@ -190,6 +191,24 @@ class RunUnitTest(TempOutputsMixin, unittest.TestCase):
                 code, _, err = self.run_unit(unit_id, source)
                 self.assertEqual(code, runner.EXIT_USAGE)
                 self.assertTrue(err.startswith("오류:"))
+                self.assertFalse(self.outputs.exists())
+
+    def test_entry_load_error_does_not_print_local_paths(self):
+        module_file = runner.REPO_ROOT / "src" / "tradesentry" / "metrics" / "unit_value.py"
+        errors = [
+            ImportError(f"cannot import name 'run' from 'tradesentry.metrics.unit_value' ({module_file})",
+                        name="tradesentry.metrics.unit_value", path=str(module_file)),
+            AttributeError(f"module loaded from {Path.home() / 'unit_value.py'} has no attribute 'run'"),
+        ]
+        for exc in errors:
+            with self.subTest(error=type(exc).__name__):
+                with mock.patch.object(registry, "load_entry", side_effect=exc):
+                    code, _, err = self.run_unit("X1", self.empty)
+                self.assertEqual(code, runner.EXIT_USAGE)
+                self.assertIn(type(exc).__name__, err)
+                self.assertIn("tradesentry.metrics.unit_value", err)  # 예외 이름과 모듈 이름만 적는다
+                self.assertNotIn(str(runner.REPO_ROOT), err)
+                self.assertNotIn(str(Path.home()), err)
                 self.assertFalse(self.outputs.exists())
 
     def test_wrong_output_type_is_output_error(self):

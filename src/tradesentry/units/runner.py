@@ -2,6 +2,8 @@
 
 실행(저장소 루트에서): python -m tradesentry.units <단위 ID> --in <입력 파일>
 
+개발 전용이다. 봉인 자료(holdout40·real_sealed)나 봉인 묶음 출력(outputs/sealed/)에 쓰지 않는다.
+
 이름·출력 규칙(자료 계약 docs/rules/DATA_CONTRACT_V1.md §10.3)
 - 실행 이름은 그 단위의 도메인명이고, 실행명(run_id)은 {도메인명}-{yymmddhhmmss}다(N5).
 - 출력은 outputs/{실행명}/{도메인명}-{시각}.{확장자} 하나다(N6). 시각은 실행을 시작한 KST(한국 표준시, UTC+9)
@@ -11,7 +13,9 @@
   시각보다 앞서지 않는다. 만든 뒤 다른 부모 폴더(outputs/sealed/)에 같은 이름이 있으면 방금 만든 빈 폴더를 지우고
   다음 초로 넘어간다. 만들기에 실패해도 다음 초로 넘어간다. 시각은 컴퓨터 시간대와 관계없이 KST로 만든다.
 - 덮어쓰기 금지: 출력 파일은 이미 있으면 실패하는 방식(open 모드 "xb")으로 쓴다.
-- 로컬 절대경로를 출력하지 않는다(N13). 경로는 outputs/부터 적는다.
+- 로컬 절대경로를 출력하지 않는다(N13). 경로는 outputs/부터 적는다. 오류 문장에는 예외의 원문(파이썬 ImportError
+  원문에는 모듈 파일의 절대경로가 들어간다) 대신 예외 이름과 모듈 이름만 적는다. run() 안에서 난 그 밖의 예외는
+  파이썬 기본 traceback을 그대로 낸다(개발 도구의 정상 동작).
 
 입력과 출력 값
 - 입력 파일은 JSON 문서 하나다. 비었거나 공백뿐이면(예: 빈 파일, /dev/null) 입력 없음(None)으로 넘긴다.
@@ -142,13 +146,15 @@ def write_output(run_dir: Path, domain: str, stamp: str, ext: str, value: object
         else:
             raise OutputRuleError(f"등록부에 없는 출력 확장자: {ext}")
     except (TypeError, ValueError) as exc:
-        raise OutputRuleError(f"출력 값을 {ext}로 쓸 수 없다: {exc}") from exc
+        raise OutputRuleError(f"출력 값을 {ext}로 쓸 수 없다({type(exc).__name__})") from exc
     target = run_dir / f"{domain}-{stamp}.{ext}"
     try:
         with open(target, "xb") as fh:
             fh.write(payload)
     except FileExistsError as exc:
         raise OutputRuleError(f"{target.name}이 이미 있다. 덮어쓰지 않는다") from exc
+    except OSError as exc:
+        raise OutputRuleError(f"{target.name}을 쓰지 못했다({type(exc).__name__})") from exc
     return target
 
 
@@ -177,7 +183,10 @@ def run_unit(unit_id: str, input_path: Path, *,
     try:
         entry = registry.load_entry(unit)
     except (ImportError, AttributeError, LookupError) as exc:
-        print(f"오류: 단위 {unit_id}의 진입 함수를 불러오지 못했다({type(exc).__name__}: {exc})", file=err)
+        # 예외 원문은 적지 않는다. ImportError 원문에는 모듈 파일의 로컬 절대경로가 들어간다(N13).
+        missing = f", 불러오지 못한 모듈 {exc.name}" if isinstance(exc, ImportError) and exc.name else ""
+        print(f"오류: 단위 {unit_id}의 진입 함수 {unit.module}.{unit.entry}를 불러오지 못했다"
+              f"({type(exc).__name__}{missing})", file=err)
         return EXIT_USAGE
     if outputs_root is None:
         if not (REPO_ROOT / "pyproject.toml").is_file():
@@ -188,7 +197,10 @@ def run_unit(unit_id: str, input_path: Path, *,
         run_id, stamp, run_dir = reserve_run_dir(outputs_root, outputs_root / "sealed", unit.domain,
                                                  clock=clock, sleep=sleep)
     except RunNameError as exc:
-        print(f"오류: {exc}", file=err)
+        print(f"오류: {exc}", file=err)  # S0가 만든 문장이다(도메인명과 시도 횟수만 든다)
+        return EXIT_OUTPUT
+    except OSError as exc:
+        print(f"오류: 실행 폴더를 만들지 못했다({type(exc).__name__})", file=err)
         return EXIT_OUTPUT
     print(f"실행명: {run_id}", file=out)
     print(f"실행 폴더: outputs/{run_id}/", file=out)
@@ -201,7 +213,7 @@ def run_unit(unit_id: str, input_path: Path, *,
     try:
         path = write_output(run_dir, unit.domain, stamp, unit.ext, value)
     except OutputRuleError as exc:
-        print(f"오류: 출력 규칙 위반: {exc}", file=err)
+        print(f"오류: 출력 규칙 위반: {exc}", file=err)  # S0가 만든 문장이다(확장자·형 이름·파일 이름만 든다)
         return EXIT_OUTPUT
     print(f"출력: outputs/{run_id}/{path.name}", file=out)
     return EXIT_OK
@@ -210,7 +222,8 @@ def run_unit(unit_id: str, input_path: Path, *,
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m tradesentry.units",
-        description="등록부의 단위 하나를 혼자 돌린다(개발 전용). 출력은 outputs/{도메인명}-{시각}/에 쓴다.")
+        description="등록부의 단위 하나를 혼자 돌린다. 출력은 outputs/{도메인명}-{시각}/에 쓴다. "
+                    "개발 전용이다. 봉인 자료나 봉인 묶음 출력에 쓰지 않는다.")
     parser.add_argument("unit_id", metavar="UNIT_ID", help="단위 ID(docs/plan/UNITS.md §3), 예: X1")
     parser.add_argument("--in", dest="input_file", required=True, metavar="INPUT_FILE",
                         help="입력 파일(JSON 문서 하나. 비어 있으면 입력 없음)")
