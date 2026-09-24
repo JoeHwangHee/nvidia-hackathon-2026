@@ -100,6 +100,17 @@ class RegistryTest(unittest.TestCase):
                       if p.is_dir() and p.name != "__pycache__"]
             self.assertEqual(nested, [], package)
 
+    def test_golden_frames_match_registry(self):
+        base = ROOT / "tests" / "units"
+        folders = {p.name for p in base.iterdir() if p.is_dir() and p.name != "__pycache__"}
+        self.assertEqual(folders, set(registry.UNITS))  # 등록부 단위마다 하나, V3·V6 등 등록부 밖 단위는 없다
+        self.assertTrue((base / "__init__.py").is_file())
+        for unit_id in registry.UNITS:
+            with self.subTest(unit_id=unit_id):
+                self.assertTrue((base / unit_id / "__init__.py").is_file())  # 없으면 discover가 내려가지 않는다
+                text = (base / unit_id / "test_golden.py").read_text(encoding="utf-8")
+                self.assertIn(f'UNIT_ID = "{unit_id}"', text)
+
     def test_sealed_only_units_are_not_in_repository(self):
         for name in ("holdout40_gen", "sealed_holdout40_gen", "real_sample", "sealed_real_sample"):
             self.assertEqual([p for p in ROOT.glob(f"src/**/{name}.py")] + [p for p in ROOT.glob(f"eval/**/{name}.py")],
@@ -111,6 +122,24 @@ class RegistryTest(unittest.TestCase):
         self.assertEqual(fields, {"단위 ID": "Z9", "허용 import": "표준 라이브러리, tradesentry.contract"})
         self.assertEqual(registry.header_allowed_imports(fields), ["표준 라이브러리", "tradesentry.contract"])
         self.assertEqual(registry.read_header("x = 1\n"), {})
+
+
+class GoldenRuleTest(unittest.TestCase):
+    """골든 시험이 건너뛰는 조건(run이 아직 뼈대)을 가르는 규칙(tests/units/golden.py)."""
+
+    def test_skeleton_detection(self):
+        from units import golden  # discover가 tests/를 맨 위 경로로 넣으므로 tests/units는 units로 불린다
+
+        skeleton = 'def run(inp):\n    """설명."""\n    raise NotImplementedError("아직")\n'
+        bare = "def run(inp):\n    raise NotImplementedError\n"
+        implemented = 'def run(inp):\n    """설명."""\n    return {"U": inp}\n'
+        partial = 'def run(inp):\n    if inp is None:\n        raise NotImplementedError\n    return inp\n'
+        self.assertTrue(golden.is_skeleton_source(skeleton, "run"))
+        self.assertTrue(golden.is_skeleton_source(bare, "run"))
+        self.assertFalse(golden.is_skeleton_source(implemented, "run"))
+        self.assertFalse(golden.is_skeleton_source(partial, "run"))
+        self.assertFalse(golden.is_skeleton_source(skeleton, "other"))
+        self.assertTrue(all(golden.is_skeleton(u) for u in registry.UNITS.values() if u.entry))
 
 
 if __name__ == "__main__":
