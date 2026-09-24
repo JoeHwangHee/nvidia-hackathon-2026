@@ -190,3 +190,22 @@ def independent_normalized_sha256(path: Path) -> str:
                                 separators=(",", ":")))
         lines += [json.dumps(row, ensure_ascii=False, separators=(",", ":")) for row in dump["tables"][table]["rows"]]
     return hashlib.sha256("".join(line + "\n" for line in lines).encode("utf-8")).hexdigest()
+
+
+def install_fixture_build(root: Path, *, policy: dict | None = None, peers: bool = True) -> Path:
+    """root 아래에 원천을 만들고 단위 S2로 빌드해 정본 자리(root/SNAPSHOT_ID/snapshot_build.sqlite)로 옮긴다.
+
+    policy가 없으면 시험용 정책(승격 규칙 있음)을 쓴다. 정본 빌드 파일 경로를 돌려준다.
+    """
+    from tradesentry.contract.policy_load import parse_policy
+    from tradesentry.snapshot import build
+
+    folder = make_source(root)
+    csv_path = write_peer_group_csv(Path(root) / "peer_group.csv")
+    out = Path(root) / "outputs" / "snapshot_build-260925000000"
+    out.mkdir(parents=True)
+    build.build_snapshot(SNAPSHOT_ID, out_dir=out, stamp="260925000000", source_dir=folder,
+                         policy=parse_policy(TEST_POLICY if policy is None else policy),
+                         peer_group_files=[csv_path] if peers else [])
+    build.install_build(out / "snapshot_build-260925000000.sqlite", folder)
+    return folder / build.BUILD_FILE

@@ -1,0 +1,16 @@
+{
+ "snapshot_id": "unit_fixture_s2",
+ "hs6": "850450",
+ "partner": "JP",
+ "months": ["202301", "202302"],
+ "grouping_version": "g1",
+ "evidence_ids": [
+  "ev:unit_fixture_s2:observation:13",
+  "ev:unit_fixture_s2:observation:1",
+  "ev:unit_fixture_s2:peer_group:4",
+  "ev:kcs_202201_202412_v2:observation:13",
+  "ev:unit_fixture_s2:observation_all:13",
+  "ev:unit_fixture_s2:observation:69",
+  "ev:unit_fixture_s2:observation:013"
+ ]
+}
