@@ -1,0 +1,11 @@
+{"runs": [
+ {"mode": "full", "execution_status": "COMPLETED", "model_requests": 5, "tokens_in": 13402, "tokens_out": 629, "wall_ms": 12726,
+  "profile": {"files": 5, "llm_calls": 5, "llm_ms": 12718, "nat_tokens": 14031, "tool_calls": 6, "workflow_ms": 12726,
+              "stage_spans": {"basic": 1, "critic": 1, "revision": 1, "final": 1, "other": 0}}},
+ {"mode": "full", "execution_status": "COMPLETED", "model_requests": 4, "tokens_in": 9000, "tokens_out": 901, "wall_ms": 9001,
+  "profile": {"files": 4, "llm_calls": 4, "llm_ms": 8000, "nat_tokens": 9901, "tool_calls": 5, "workflow_ms": null,
+              "stage_spans": {"basic": 1, "critic": 1, "revision": 0, "final": 1, "other": 0}}},
+ {"mode": "agent", "execution_status": "FAILED", "model_requests": 3, "tokens_in": 3000, "tokens_out": 100, "wall_ms": 9000,
+  "profile": null},
+ {"mode": "checklist", "execution_status": "COMPLETED", "model_requests": 0, "tokens_in": 0, "tokens_out": 0, "wall_ms": 120,
+  "profile": null}]}
