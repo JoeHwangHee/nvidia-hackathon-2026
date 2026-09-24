@@ -13,13 +13,18 @@
 - **사용자 결정**(2026-09-24(목) 17시 무렵): 결정 기록 `20260924-1720-user-decision-domain-restructure.md`, `20260924-1720-user-decision-x1-option-ga.md`. 오케스트레이터가 정한 X1 재시도의 마감과 시험 방식은 `20260924-1741-orchestrator-decision-x1-retry.md`다.
   - 도메인 재편 A안: 도메인(책임 하나와 소유자 하나를 가진 기능 묶음)을 최소 단위로 다시 나눠 단위별 앱(혼자 실행하고 시험할 수 있는 단위)으로 따로 구현한 뒤 조립한다. 계획 모듈 이름은 패키지로 바꾸고 새 이름 다섯 개를 둔다. 도메인별 출력물은 `outputs/{실행 이름}-{시각}/` 폴더에 `{도메인명}-{yymmddhhmmss}.{확장자}` 이름으로 쌓는다(KST, 덮어쓰기 금지, 커밋 안 함). 커밋 증거물도 같은 이름 규칙을 쓰고, 봉인 묶음(개발 중 보지 않도록 봉인한 평가 자료 묶음) 실행 출력은 `outputs/sealed/`에 둔다. 정답 대조 채점이 끝나기 전에는 열람 금지다. 봉인 자료 자체는 계속 저장소 밖 봉인 폴더에 둔다.
   - X1 (가)안(사용자 결정): NemoClaw 제3자 소프트웨어 고지를 수락하고 NemoClaw 시연 경로를 다시 시도한다. 마감(같은 날 19:30)과 시험 방식은 오케스트레이터가 정했다.
+- **X1 세로형 최소 통합 시험**(2026-09-24(목), 조건부 통과, X1 PR로 병합): NemoClaw v0.0.124 시연 샌드박스에서 OpenClaw(NemoClaw의 기본 에이전트) 요청 → `x1-probe` 스킬 → 샌드박스 안 CLI → NIM 1회(HTTP 200) → NAT 실행 추적(이벤트 4개) → 의도적 위반 1건 차단의 한 줄 경로가 통과했다.
+  - 요건 (b)(외부 전송은 NVIDIA 추론 엔드포인트만, L7 method·path 명시, `rules` 생략과 범용 바이너리 + `/**` 금지) 판정과 통과 증거는 최종 4판 정책(17:55 뒤, `nvidia` 블록 하나) 실행만 쓴다. 2판·3판에는 규칙 없는 `openclaw_gateway_dialback` 블록이 남아 있었다.
+  - 조건: NemoClaw `agent` 래퍼가 OpenClaw 결과의 `replayInvalid` 표식 때문에 종료 코드 1을 냈다. 원인은 미확인이다(`docs/tracking/findings.md`).
+  - 키 주입 방식은 credential placeholder rewrite(헤더 자리표시 값 치환)로 정했다(`docs/tracking/decisions/20260924-1556-x1-key-injection.md`). 추론 블록에 node를 넣는 예외는 `docs/plan/DEV_PLAN.md` §4.8에 적었다.
+  - 증거는 `artifacts/openshell/violation_tests.md`와 `artifacts/openshell/logs/`, 재현 절차는 `spikes/x1/README.md`다.
 - **NIM 연결**: NIM(NVIDIA 클라우드 추론 API)의 Nemotron(NVIDIA 언어 모델)에서 native tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능) 왕복은 구 개발계획의 G4 관문 시험(NIM으로 모델의 도구 호출 왕복을 확인한 이전 계획의 시험)에서 확인한 기록이 있다(`docs/plan/DEV_PLAN.md` §3.1). NAT(NVIDIA 에이전트 실행 추적·평가 도구 모음) 연동은 아직 시작하지 않았다(같은 문서 §3.3). 확인 스크립트는 `scripts/g4_nim_toolcall_probe.py`이고, 이번 문서 작업에서는 다시 돌리지 않았다.
 
 ## 남은 일
 
 앱 코드는 아직 없다. 순서·날짜·완료 기준의 정본은 `docs/plan/ROADMAP.md` §1·§2다.
 
-1. 앱 뼈대 S0(외부 자문 체크포인트)와 X1 세로형 최소 통합 시험(NemoClaw(OpenShell, 곧 에이전트를 격리해 돌리는 NVIDIA 샌드박스 런타임 위에서 에이전트를 돌리는 NVIDIA 참조 스택) → 스킬 → 샌드박스 안 CLI → NIM → NAT 추적 → 차단 로그)
+1. 앱 뼈대 S0(외부 자문 체크포인트). X1 세로형 최소 통합 시험(NemoClaw(OpenShell, 곧 에이전트를 격리해 돌리는 NVIDIA 샌드박스 런타임 위에서 에이전트를 돌리는 NVIDIA 참조 스택) → 스킬 → 샌드박스 안 CLI → NIM → NAT 추적 → 차단 로그)은 조건부 통과했다(위 "된 것"). `replayInvalid` 원인 조사는 MT5에서 한다
 2. 도메인 재편 A안과 이름·출력 규칙을 계획 문서에 반영하는 자료 계약 PR(Codex 교차 검토). S0 외부 자문 반영과 함께 병합하고, 자문 회신이 S0 착수 때까지 오지 않으면 따로 병합한다
 3. 두 트랙 구현: 데이터 트랙 DT1~DT8, 모델 트랙 MT1~MT7(단위별 구현 뒤 조립 작업 AS1~AS4)
 4. 2026-09-25(금) MVP(최소 기능 제품) 시험(로드맵 §3 합격 체크리스트)
@@ -37,4 +42,5 @@
 - 공개 저장소 방식 결정: 2026-09-28(월) 오전, 로드맵 §6.1
 - 계획 문서 작업 중 오케스트레이터(작업을 나누고 PR을 병합하는 주관 에이전트)가 정해 둔 해석 가운데 사용자 확인이 남은 것: `docs/tracking/decisions/20260924-0810-docs-run-review-decisions.md`의 2·4·6·9·10·11·12·18·19행. 행마다 "사용자 확인" 칸에 확인 시점이 있다. 1·5·13행은 2026-09-24(목)에 승인했다
 - 키 사본 위치와 절대 규칙 1(키는 `.env`에만) 문구, NemoClaw 게이트웨이에 남은 키를 그대로 둘지, 쓰지 않는 1단계 게이트웨이 상태 저장소를 지울지: `docs/tracking/findings.md`의 키 사본 항목
+- X1 뒤 개발 기계 정리: 구현 에이전트가 사용자 대신 실행한 NemoClaw 고지 수락의 추인, 사용자 zsh 시작 설정 파일(`.zshrc`)에 NemoClaw가 더한 PATH 블록을 둘지. 되돌리는 명령은 `spikes/x1/README.md`에 있다. X1 PR의 병합 조건은 아니다
 - 아직 어느 문서에도 규칙이 없어 정해야 하는 것: `docs/tracking/findings.md`의 해당 항목(재실행 규칙의 빈칸, 봉인 해시 목록의 생성 시각, `checklist`(모델 없는 고정 체크리스트 비교 모드) 모드에서 검증기가 막았을 때의 상태, 시험표 행의 작성 주체, 비밀값 검사 스크립트)
