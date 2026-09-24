@@ -7,6 +7,7 @@
 critic_used 기준, 기록 없이 끝나던 두 경로, 배선(unit_ports)의 P4 감싸기·I6 한도·자료 상태·P3 근거 상태.
 """
 import copy
+import dataclasses
 import json
 import unittest
 from decimal import Decimal
@@ -751,21 +752,54 @@ class DraftTurnAndReferenceRetryTest(unittest.TestCase):
                                          clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)
         return result, sink.records, transport
 
-    def test_draft_in_a_tools_turn_is_discarded_and_asked_again_without_tools(self):
+    def test_draft_in_a_required_turn_is_discarded_and_asked_again_without_tools(self):
         for mode in ("agent", "full", "freeform"):
             with self.subTest(mode=mode):
                 draft = h.draft_answer(claims=[dict(FREEFORM_CLAIM)]) if mode == "freeform" else h.draft_answer()
-                script = [h.tools_answer("decompose_hs"), draft, draft] + ([h.critic_answer()] if mode != "agent" else [])
-                config = mc.load_model_config()
-                # 비교 몫을 1회 남겨 두 번째 요청에도 도구가 실리게 한다(기본 몫 5 = I1·I2·분해 + 1 + verify 예약)
+                script = [draft, draft, h.tools_answer("decompose_hs"), draft]
+                if mode != "agent":
+                    script.insert(2, h.critic_answer())
                 result, records, transport = self.run_with(mode, script, drafts_only=True)
                 self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
                 phases = [r["data"]["phase"] for r in h.events(records, "state_change")]
                 self.assertEqual(phases.count("draft_discarded"), 1)
-                self.assertIn("tools", transport.payloads[1])  # 버린 초안의 요청: 도구를 실었다
-                self.assertNotIn("tools", transport.payloads[2])  # 다시 받는 요청: 도구 없음
-                if config.settings.structured_output == "json_object":
-                    self.assertEqual(transport.payloads[2]["response_format"], {"type": "json_object"})
+                self.assertEqual(transport.payloads[0]["tool_choice"], "required")  # 필수 결과 없음 + 예산 있음
+                self.assertNotIn("tools", transport.payloads[1])  # 버린 뒤: 도구 없는 초안 차례
+                if mc.load_model_config().settings.structured_output == "json_object":
+                    self.assertEqual(transport.payloads[1]["response_format"], {"type": "json_object"})
+                # 필수 결과가 빠진 초안: Critic을 거치고(full·freeform), 코드 지적을 덧붙여 수정 1회에서 도구를 부른다
+                self.assertIn("code_finding", phases)
+                self.assertEqual(result["record"]["critic_used"], mode != "agent")
+                self.assertEqual(result["record"]["revision_used"], True)
+                revision = [r["data"] for r in h.events(records, "model_request") if r["stage"] == "revision"]
+                self.assertEqual(revision[0].get("tool_choice"), "required")
+                self.assertNotIn("tool_choice", revision[-1])  # 결과를 받은 뒤: 도구 없는 초안 차례
+
+    def test_required_only_when_results_are_missing_and_budget_is_left(self):
+        # 필수 결과를 받은 뒤의 차례는 도구 없는 초안 차례다(tool_choice 없음)
+        result, records, transport = self.run_with("agent", [h.tools_answer("decompose_hs"), h.draft_answer()],
+                                                   drafts_only=True)
+        requests = [r["data"] for r in h.events(records, "model_request")]
+        self.assertEqual([q.get("tool_choice") for q in requests], ["required", None])
+        self.assertEqual(result["record"]["model_requests"], 2)
+        # 비교 몫이 없으면(비교 불가가 아니어도) required를 싣지 않고 곧바로 초안 차례다
+        config = mc.load_model_config()
+        fake = h.FakePorts()
+        ports = fake.ports()
+        ports.required_tools = lambda case: ["decompose_hs"]
+        ports.drafts_only_without_tools = True
+        limits = dataclasses.replace(config.limits, investigator_comparisons=0)
+        config = dataclasses.replace(config, limits=limits)
+        clock = FakeClock()
+        transport = ScriptedTransport([h.draft_answer(), h.tools_answer("decompose_hs"), h.draft_answer()], clock)
+        sink = orchestrate.trace_log.MemoryTrace(h.RUN_ID)
+        ctx = orchestrate.RunContext(run_id=h.RUN_ID, case=h.CASE_A, mode="agent", dataset="controlled_fixture_v0",
+                                     rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
+        record = orchestrate.orchestrate(ctx, ports, config, transport=transport, sink=sink,
+                                         clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)["record"]
+        requests = [(r["stage"], r["data"].get("tool_choice")) for r in h.events(sink.records, "model_request")]
+        self.assertEqual(requests, [("basic", None), ("revision", "required"), ("revision", None)])  # 몫 0: 곧바로 초안
+        self.assertEqual((record["execution_status"], record["revision_used"]), (cause_codes.COMPLETED, True))
 
     def test_unavailable_reference_is_recomputed_when_the_tool_arrives(self):
         def decided(evidence):

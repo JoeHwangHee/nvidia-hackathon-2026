@@ -278,16 +278,27 @@ class ModelModesTest(RunCaseBase):
                                       ("verify_evidence", "code")])
                     self.assertTrue(all("tools" in p for p in transport.payloads[:1]))
 
-    def test_draft_before_the_required_tools_is_sent_back(self):
-        """필수 조회(4회차): 조사자가 도구 없이 바로 초안을 쓰면 한 번 돌려보내고, 분해·비교국을 받은 뒤의 초안을 쓴다."""
-        draft = draft_answer(draft_for("A", "agent"))
-        files, record, _, transport = self.run_ok(CASES["A"], "agent",
-                                                   [draft, tools_answer("decompose_hs", "compare_partners"), draft])
-        self.assertEqual((record["execution_status"], record["review_status_final"], record["model_requests"]),
-                         (cause_codes.COMPLETED, "MONITOR", 3))
-        refused = [e["data"]["missing_tools"] for e in self.trace(files)
-                   if e["event"] == "state_change" and e["data"]["phase"] == "draft_refused"]
-        self.assertEqual(refused, [["compare_partners", "decompose_hs"]])
+    def test_required_tool_choice_then_draft_turn(self):
+        """8회차 차례 규칙: 필수 결과가 없고 예산이 있는 첫 차례는 tool_choice required, 결과를 받은 뒤는 도구 없는 초안
+        차례(버린 초안 없음, 모델 요청 2회)."""
+        files, record, _, transport = self.run_ok(CASES["A"], "agent", script_for("A", "agent"))
+        self.assertEqual((transport.payloads[0]["tool_choice"], "tools" in transport.payloads[1]), ("required", False))
+        self.assertEqual((record["review_status_final"], record["model_requests"]), ("MONITOR", 2))
+        phases = [e["data"]["phase"] for e in self.trace(files) if e["event"] == "state_change"]
+        self.assertNotIn("draft_discarded", phases)
+
+    def test_draft_without_the_required_results_gets_a_code_finding_and_one_revision(self):
+        """필수 결과 없이 쓴 초안(모델이 required 차례에 초안을 냄 → 버림 → 도구 없는 초안): full은 Critic을 거친 뒤
+        코드 지적을 덧붙여 수정 1회에서 도구를 부른다."""
+        draft = draft_answer(draft_for("A", "full"))
+        script = [draft, draft, critic_answer(needs_revision=False), tools_answer("decompose_hs", "compare_partners"),
+                  draft]
+        files, record, _, _ = self.run_ok(CASES["A"], "full", script)
+        self.assertEqual((record["execution_status"], record["critic_used"], record["revision_used"],
+                          record["review_status_final"]), (cause_codes.COMPLETED, True, True, "MONITOR"))
+        phases = [e["data"]["phase"] for e in self.trace(files) if e["event"] == "state_change"]
+        self.assertEqual([p for p in phases if p in ("draft_discarded", "after_critic", "code_finding")],
+                         ["draft_discarded", "after_critic", "code_finding"])
 
     def test_rule_reference_is_the_p3_status_of_the_received_evidence(self):
         """6회차: 모델 모드에 싣는 규칙 참고값은 받은 봉투로 P3을 돌린 신호별 판정이다(사례마다 checklist와 같은 값)."""

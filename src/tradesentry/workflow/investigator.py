@@ -75,7 +75,8 @@ MONTH_RE = re.compile(r"^\d{6}$")
 TOOL_DESCRIPTIONS = {
     "check_comparability": "사례의 기간·요청 완료·단위·HS 버전·분모·하위자료(HS10)의 존재 상태를 본다. 판정을 내리지 않는다.",
     "get_history": "대상 HS6·상대국의 이력과 전년동월 비교(단가·점유율 지표)를 근거 ID와 함께 본다.",
-    "compare_partners": "사전에 허용된 비교국을 같은 HS6·월·기준으로 비교한다. partners를 주면 그 가운데 일부만 본다.",
+    "compare_partners": ("사전에 허용된 비교국을 같은 HS6·월·기준으로 비교한다. partners는 허용된 비교국 1~5개이고, "
+                         "생략하면 허용된 비교국 전부를 본다. 빈 목록은 쓰지 않는다."),
     "decompose_hs": "두 시점의 HS10 하위품목으로 단가 변화를 within_effect·mix_effect·residual로 나누고 부모 대조를 본다.",
 }
 
@@ -105,6 +106,23 @@ def reference_unavailable_text(missing: list) -> str:
     return REFERENCE_UNAVAILABLE.format(missing=f"(받지 못한 도구: {', '.join(missing)})" if missing else "")
 
 
+PENDING_TOOLS_REQUEST = "[필수 조회] 아직 없는 필수 결과: {names}. 이 차례에는 도구를 부른다."
+
+
+def pending_tools_message(names: list) -> dict:
+    """필수 결과가 빠진 도구 차례의 알림(모든 모드에서 글자까지 같다). 흐름 조정이 tool_choice required와 함께 붙인다."""
+    return {"role": "user", "content": PENDING_TOOLS_REQUEST.format(names=", ".join(names))}
+
+
+CODE_FINDING = "코드 지적: 필수 결과가 없다({names}). 수정 단계에서 이 도구를 불러 결과를 받는다."
+
+
+def code_finding(names: list) -> dict:
+    """흐름 조정이 계산한 빠진 필수 도구를 Critic 지적과 같은 모양으로(수정 지시에 싣는다)."""
+    return {"kind": "missing_evidence", "text": CODE_FINDING.format(names=", ".join(names)), "claim_refs": [],
+            "source": "code"}
+
+
 def required_tools_message(names: list) -> dict:
     """필수 조회 메시지(모든 모드에서 글자까지 같다). 흐름 조정(단위 I12)이 필수 도구 없이 쓴 초안을 돌려보낼 때 붙인다."""
     return {"role": "user", "content": REQUIRED_TOOLS_REQUEST.format(names=", ".join(names))}
@@ -123,7 +141,8 @@ def tool_specs(names=MODEL_TOOLS) -> list[dict]:
         properties = {}
         if name == "compare_partners":
             properties["partners"] = {"type": "array", "items": {"type": "string", "pattern": "^[A-Z]{2}$"},
-                                      "maxItems": 5, "description": "비교할 국가코드(허용된 비교국 가운데)"}
+                                      "minItems": 1, "maxItems": 5,
+                                      "description": "허용된 비교국 가운데 비교할 국가코드 1~5개(생략하면 전부, 빈 목록 금지)"}
         specs.append({"type": "function", "function": {"name": name, "description": TOOL_DESCRIPTIONS[name],
                                                        "parameters": {"type": "object", "properties": properties,
                                                                       "required": []}}})
@@ -444,13 +463,13 @@ def parse_draft(content: str, mode: str, signals: dict) -> tuple[dict | None, li
 
 
 def step(client: model_client.ModelClient, messages: list[dict], *, stage: str, mode: str, signals: dict,
-         allow_tools: bool) -> dict:
+         allow_tools: bool, tool_choice: str = "auto") -> dict:
     """조사자 한 차례. 돌려주는 값: {"kind": "tool_calls", "message", "calls", "truncated"} 또는
     {"kind": "draft", "message", "draft"(없으면 None), "problems", "status_notes", "truncated"}. 도구를 주지 않았는데
     부르면 도구 호출로 돌려주고, 흐름 조정이 그 시도를 막는다. 잘린 응답(finish_reason length)의 초안은 형식 문제다.
     allow_tools가 거짓이면 messages 끝에 초안 요청 메시지(DRAFT_REQUEST)를 붙이고(대화에 남는다) tools 없이 보낸다."""
     if allow_tools:
-        answer = client.chat(messages, stage=stage, tools=tool_specs())
+        answer = client.chat(messages, stage=stage, tools=tool_specs(), tool_choice=tool_choice)
     else:
         messages.append(draft_request_message())
         answer = client.chat(messages, stage=stage, tools=None, json_output=True)

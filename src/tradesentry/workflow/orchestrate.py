@@ -55,6 +55,10 @@ checklist: 모델 없이 check_comparability → get_history → decompose_hs(�
   필수 도구 결과가 갖춰진 뒤(수정 단계 재조회 포함) 다시 계산해 싣는다.
 - 초안은 도구 없는 차례에서만(Ports.drafts_only_without_tools, 조립 AS2가 켠다): 도구를 준 차례에 온 초안 본문은 버리고
   (state_change draft_discarded) 곧바로 도구 없는 초안 요청(구조화 출력 json_object)으로 다시 받는다.
+- 차례 규칙(조립이 위 둘을 켰을 때, AS2 ⑲): 필수 결과(필수 도구 + 수정 단계의 Critic 재조회 요청)가 빠졌고 그 차례에 예산이
+  있을 때만 도구 차례다(도구 목록은 전부, tool_choice "required", 알림 한 줄 PENDING_TOOLS_REQUEST). 아니면 곧바로 도구 없는
+  초안 차례다. Critic(full·freeform) 뒤에도 필수 결과가 빠졌고 재조회 예산이 있으면 코드 지적(code_finding)을 Critic
+  결과(agent는 수정 지시)에 덧붙이고 수정 1회로 간다. 스키마 실패 초안이 Critic을 건너뛰는 규칙(개발 플랜 §6.6)은 그대로다.
 
 다른 작업 단위를 부르는 자리(Ports). unit_ports가 그 단위들의 run을 부르는 얇은 배선을 한곳에 모았다. 보고서·
 검증기(MT3 R1~R4)와 정책(MT1 P3~P5)은 각 작업 브랜치에 커밋된 입출력에 맞췄고(병합 전 대조), 도구 5개·도구 예산(MT2)은
@@ -518,24 +522,44 @@ class _Flow:
                 "requeries": max(0, self._allowance_left("requery")) if tools_enabled else 0,
                 "model_requests": max(0, self.limits.model_requests - self.budget.model_requests)}
 
-    def investigate(self, messages: list[dict], *, allowance: str, max_tool_turns: int, tools_enabled: bool) -> dict:
+    def directed(self) -> bool:
+        """조립(AS2)이 켠 차례 규칙: 초안은 도구 없는 차례에서만, 도구 차례는 필수 결과가 빠지고 예산이 있을 때만."""
+        return self.ports.drafts_only_without_tools and self.ports.required_tools is not None
+
+    def pending_tools(self, requested: list) -> list:
+        """이 차례에 아직 없는 필수 결과: 필수 도구 가운데 결과를 받지 못한 것 + Critic이 재조회를 요청했는데 이 단계에서
+        아직 부르지 않은 도구(나온 순서, 중복 없음)."""
+        called = {c.get("tool") for c in self.executed if c.get("stage") == self.stage}
+        names = self.missing_required_tools() + [name for name in requested if name not in called]
+        return list(dict.fromkeys(names))
+
+    def investigate(self, messages: list[dict], *, allowance: str, max_tool_turns: int, tools_enabled: bool,
+                    requested: list | None = None) -> dict:
         """조사자 차례를 도구 호출이 끝날 때까지 돈다.
 
         {"draft": 초안 또는 None, "problems": 형식 문제, "status_notes": 허용 상태 관찰, "message": 마지막 모델 메시지,
         "was_draft": 마지막 답이 초안 글이었나}를 돌려준다. tools_enabled가 거짓(비교 불가)이면 도구를 주지 않고, 모델이
         불러도 not_comparable로 막는다."""
         tool_turns, refused_turns, nudged, force_draft = 0, 0, False, False
+        directed = self.directed()
         while True:
             self.check_deadline()
-            allow = tools_enabled and tool_turns < max_tool_turns and self._allowance_left(allowance) > 0 \
-                and not force_draft
+            can_call = tools_enabled and tool_turns < max_tool_turns and self._allowance_left(allowance) > 0
+            pending = self.pending_tools(requested or []) if directed else []
+            # 차례 규칙(AS2 ⑲): 필수 결과가 빠졌고 예산이 있으면 도구 차례(tool_choice required, 도구 목록은 전부),
+            # 아니면 곧바로 도구 없는 초안 차례(초안 요청 메시지 + json_object). 조립이 켜지 않으면 전과 같다.
+            allow = (can_call and bool(pending) if directed else can_call) and not force_draft
             if self.ports.reference_status is not None and (not allow or nudged or not self.missing_required_tools()) \
                     and (self.reference_text is None
                          or (not self.reference_available and not self.missing_required_tools())):
                 messages.append(self.reference_message())
+            if directed and allow:
+                messages.append(investigator.pending_tools_message(pending))
             result = investigator.step(self.client, messages, stage=self.stage, mode=self.mode,
-                                       signals=self.signals, allow_tools=allow)
-            missing = self.missing_required_tools() if result["kind"] == "draft" and allow and not nudged else []
+                                       signals=self.signals, allow_tools=allow,
+                                       tool_choice="required" if directed and allow else "auto")
+            missing = self.missing_required_tools() if result["kind"] == "draft" and allow and not nudged \
+                and not directed else []
             if missing:
                 # 공개 판정 규칙에 필요한 도구를 받지 않고 쓴 초안: 받지 않고 한 번만 돌려보낸다(차례마다 1회, 모든 모드 같음)
                 nudged = True
@@ -716,15 +740,24 @@ class _Flow:
                            problems=review["problems"])
                 self.sink.emit("stage_end", "critic", {"stage": "critic"})
                 self.stage = "basic"
+            code_missing = self.missing_required_tools() if self.directed() and comparable \
+                and self._allowance_left("requery") > 0 else []
+            if code_missing:  # 코드 지적(AS2 ⑲): 빠진 필수 결과를 Critic 결과(agent는 수정 지시)에 덧붙이고 수정 1회
+                finding = investigator.code_finding(code_missing)
+                if review is not None:
+                    review = dict(review, findings=list(review["findings"]) + [finding], needs_revision=True)
+                self.state("code_finding", draft, missing_tools=code_missing)
             self.verify(draft, "verify")
             check = self.check(report, "verify")
             if not check["schema_ok"]:
                 problems, findings = ["보고서 스키마 검사 실패"], check["findings"]
             elif self.mode != "freeform" and not check["validator_ok"]:
                 findings = check["findings"]
-            elif not (review and review["needs_revision"]):
+            elif not (review and review["needs_revision"]) and not code_missing:
                 self.stage = "final"
                 return self.complete(report, draft, check)
+            if code_missing and review is None:
+                findings = list(findings) + [investigator.code_finding(code_missing)]
         # 수정 단계(1회). 비교 불가 사례는 여기서도 도구를 주지 않는다(조기 종료, 개발 플랜 §6.6).
         self.stage = "revision"
         self.revision_used = True
@@ -733,7 +766,8 @@ class _Flow:
             messages.append(investigator.assistant_message({"content": turn["message"].get("content") or ""}))
         messages.append(investigator.feedback_message(problems, review, findings, self.remaining(comparable)))
         turn = self.investigate(messages, allowance="requery", max_tool_turns=self.limits.revision_requeries,
-                                tools_enabled=comparable)
+                                tools_enabled=comparable,
+                                requested=[q["tool"] for q in (review or {}).get("requery") or []])
         draft, problems = turn["draft"], turn["problems"]
         self.state("revised", draft, problems=len(problems), problem_list=problems, status_notes=turn["status_notes"])
         self.sink.emit("stage_end", "revision", {"stage": "revision"})

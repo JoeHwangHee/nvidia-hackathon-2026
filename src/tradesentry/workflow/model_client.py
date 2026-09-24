@@ -375,7 +375,8 @@ class ModelClient:
             raise RunStop(cause_codes.BUDGET_TOKENS, stage, "누적 토큰 한도에 닿았다")
         return now
 
-    def build_payload(self, messages: list[dict], tools: list[dict] | None, json_output: bool = False) -> dict:
+    def build_payload(self, messages: list[dict], tools: list[dict] | None, json_output: bool = False,
+                      tool_choice: str = "auto") -> dict:
         """요청 본문. 도구가 없으면 tools·tool_choice 키를 싣지 않는다. 구조화 출력(response_format json_object)은 설정이
         "json_object"이고, 도구가 없고, 부르는 쪽이 json_output을 참으로 줄 때만 싣는다."""
         s = self.settings
@@ -384,13 +385,13 @@ class ModelClient:
                    "stream": False, "chat_template_kwargs": {"enable_thinking": s.enable_thinking}}
         if tools:
             payload["tools"] = tools
-            payload["tool_choice"] = "auto"
+            payload["tool_choice"] = tool_choice  # "auto" 또는 "required"(흐름 조정이 필수 결과가 빠진 차례에만, AS2 ⑲)
         elif json_output and s.structured_output == "json_object":
             payload["response_format"] = {"type": "json_object"}
         return payload
 
     def chat(self, messages: list[dict], *, stage: str | None, tools: list[dict] | None = None,
-             json_output: bool = False) -> dict:
+             json_output: bool = False, tool_choice: str = "auto") -> dict:
         """요청 하나를 보내고 응답(message·finish_reason·usage)을 돌려준다. 멈출 원인이 생기면 RunStop을 낸다.
         json_output은 도구 없는 요청에서 구조화 출력을 청하는 표시다(설정이 "off"면 싣지 않는다)."""
         self._precheck(stage)
@@ -401,7 +402,9 @@ class ModelClient:
             except TransportConfigError as exc:
                 raise RunStop(cause_codes.CODE_ERROR, stage, str(exc)) from None
         self.request_no += 1
-        payload = self.build_payload(messages, tools, json_output)
+        if tool_choice not in ("auto", "required"):
+            raise ValueError("tool_choice는 auto나 required다(도구 이름 지정은 하지 않는다)")
+        payload = self.build_payload(messages, tools, json_output, tool_choice)
         request_sha = trace_log.canonical_sha256(payload)
         base = {"request_no": self.request_no}
         retries = 0
@@ -414,7 +417,8 @@ class ModelClient:
             self.sink.emit("model_request", stage, dict(base, attempt=attempt,
                                                         model_requests=self.budget.model_requests,
                                                         request_sha256=request_sha, timeout_ms=timeout_ms,
-                                                        messages=len(messages), tools=len(tools or [])))
+                                                        messages=len(messages), tools=len(tools or []),
+                                                        **({"tool_choice": tool_choice} if tools else {})))
             try:
                 sent = self.transport.send(payload, timeout_ms)
             except TransportConfigError as exc:
