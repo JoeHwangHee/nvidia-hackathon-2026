@@ -1,0 +1,17 @@
+[
+  {"seq": 1, "ts": "2026-09-25T14:30:15+09:00", "run_id": "run_case-260925143015", "event": "run_start", "stage": null,
+   "data": {"case_id": "A-composition", "mode": "full", "dataset": "controlled_fixture_v0"}},
+  {"seq": 2, "ts": "2026-09-25T14:30:15+09:00", "run_id": "run_case-260925143015", "event": "tool_call", "stage": "basic",
+   "data": {"tool": "check_comparability", "args": {}, "tool_attempts": 1, "source": "code"}},
+  {"seq": 3, "ts": "2026-09-25T14:30:15+09:00", "run_id": "run_case-260925143015", "event": "tool_result", "stage": "basic",
+   "data": {"tool": "check_comparability", "ok": true, "elapsed_ms": 60,
+            "envelope": {"metrics": [{"metric_id": "m1", "value": -40.0, "unit": "%"}], "missingness": []}}},
+  {"seq": 4, "ts": "2026-09-25T14:30:15+09:00", "run_id": "run_case-260925143015", "event": "model_request", "stage": "basic",
+   "data": {"request_no": 1, "attempt": 1, "model_requests": 1, "timeout_ms": 60000}},
+  {"seq": 5, "ts": "2026-09-25T14:30:16+09:00", "run_id": "run_case-260925143015", "event": "model_error", "stage": "basic",
+   "data": {"request_no": 1, "attempt": 1, "http_status": 503, "error": null, "retrying": true, "backoff_ms": 1000}},
+  {"seq": 6, "ts": "2026-09-25T14:30:17+09:00", "run_id": "run_case-260925143015", "event": "budget_block", "stage": "revision",
+   "data": {"kind": "requery_limit", "tool": "compare_partners", "tool_attempts": 7}},
+  {"seq": 7, "ts": "2026-09-25T14:30:18+09:00", "run_id": "run_case-260925143015", "event": "run_end", "stage": null,
+   "data": {"execution_status": "COMPLETED", "cause_code": null, "wall_ms": 3000}}
+]
