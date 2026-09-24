@@ -15,4 +15,4 @@
 | Codex에 넘기지 않는 것 | 같은 문서 §2.3 |
 | 증거·결과 파일에 비밀값과 로컬 절대경로를 넣지 않는 법 | 같은 문서 §7.6 |
 | 감사 기록: `openshell logs`의 허용·차단 이벤트 수집(요건 (d))과 시험표, 감사 저장소로 쓰지 않는 것 | `docs/plan/DEV_PLAN.md` §4.1·§4.4·§12.2 |
-| 공식 채점 때 봉인 입력을 넣는 방식과 순서(`real_sealed`는 샌드박스 밖 실행 드라이버가 사례 식별자만 넘긴다) | `skills/tradesentry-eval/SKILL.md`의 "봉인 자료 취급", `docs/eval/RULEBOOK.md` B5 |
+| 공식 채점 때 봉인 입력을 넣는 방식과 순서(`real_sealed`는 지금 안에서 샌드박스 밖 실행기가 사례 식별자만 넘긴다. 룰북 부록 40번 사용자 확인 대기) | `skills/tradesentry-eval/SKILL.md`의 "봉인 자료 취급", `docs/eval/RULEBOOK.md` B5 |
