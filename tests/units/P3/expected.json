@@ -1,0 +1,23 @@
+{
+ "case_id": "850450-CN-202401",
+ "signal_status": {
+  "unit_value": "MONITOR",
+  "share": "HOLD"
+ },
+ "basis": {
+  "unit_value": "composition_explained",
+  "share": "data_insufficient"
+ },
+ "gaps": {
+  "unit_value": [],
+  "share": [
+   {
+    "reason": "missing_observation",
+    "partner_code": "ALL",
+    "hs_code": "8504501090",
+    "month": "202301",
+    "observation_status": "UNRESOLVED_ZERO"
+   }
+  ]
+ }
+}

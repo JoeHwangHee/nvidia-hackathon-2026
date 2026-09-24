@@ -1,0 +1,55 @@
+{
+ "snapshot_id": "synthetic_real_v0",
+ "dataset": "real_dev",
+ "policy_version": "dev-0.1",
+ "cases": [
+  {
+   "case_id": "999901-XA-202401",
+   "hs6": "999901",
+   "partner": "XA",
+   "month": "202401",
+   "baseline_month": "202301",
+   "signals": {
+    "unit_value": "TRIGGERED",
+    "share": "NOT_TRIGGERED"
+   },
+   "snapshot_id": "synthetic_real_v0",
+   "policy_version": "dev-0.1",
+   "scope": {
+    "hs6": "999901",
+    "partner": "XA",
+    "month": "202401",
+    "baseline_month": "202301"
+   }
+  },
+  {
+   "case_id": "999902-XA-202312",
+   "hs6": "999902",
+   "partner": "XA",
+   "month": "202312",
+   "baseline_month": "202212",
+   "signals": {
+    "unit_value": "NOT_TRIGGERED",
+    "share": "TRIGGERED"
+   },
+   "snapshot_id": "synthetic_real_v0",
+   "policy_version": "dev-0.1",
+   "scope": {
+    "hs6": "999902",
+    "partner": "XA",
+    "month": "202312",
+    "baseline_month": "202212"
+   }
+  }
+ ],
+ "data_quality": [
+  {
+   "hs6": "999902",
+   "partner": "XA",
+   "month": "202312",
+   "baseline_month": "202212",
+   "signal": "unit_value",
+   "reason": "metric_null"
+  }
+ ]
+}
