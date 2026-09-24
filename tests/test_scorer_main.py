@@ -123,6 +123,47 @@ class DevelopmentBatchTest(ScorerCommandBase):
         report_bytes = next((self.root / "outputs").glob("run_case-*/reports_render_ko-*.json")).read_bytes()
         self.assertIn(hashlib.sha256(report_bytes).hexdigest(), summary)
 
+    def rerun(self, stamp: str, status: str, index: int = 0) -> dict:
+        base = self.lines[index]
+        return fx.batch_line(f"run_case-{stamp}", base["case_id"], mode=base["mode"], dataset=self.dataset,
+                             status=status, review=base["review_status_final"])
+
+    def test_missing_planned_run_is_scored_as_failure_not_rejected(self):
+        self.write_inputs(lines=self.lines[1:])  # 룰북 B5: 미실행도 분모에 실패로 남는다(거부하면 남길 수 없다)
+        code, out, err = self.run_scorer()
+        self.assertEqual((code, err), (0, ""), err)
+        summary = (self.score_dir() / "scorer_summary-260925150000.md").read_text(encoding="utf-8")
+        self.assertIn("미실행 1건", summary)
+
+    def test_rerun_shape_of_rulebook_b5(self):
+        self.write_inputs(lines=[self.rerun("260925090000", "FAILED")] + self.lines)
+        self.assertEqual(self.run_scorer()[0], 0)  # FAILED 한 줄 뒤 재실행 한 줄만 받는다
+        bad = {"completed then completed": [self.rerun("260925090000", "COMPLETED")],
+               "timeout then completed": [self.rerun("260925090000", "TIMEOUT")],
+               "three lines": [self.rerun("260925080000", "FAILED"), self.rerun("260925090000", "FAILED")],
+               "failed after completed": [self.rerun("260925110000", "FAILED")]}
+        for name, extra in bad.items():
+            with self.subTest(case=name):
+                with self.assertRaises(c1.ScorerInputError):
+                    cli.check_rerun_shape(extra + self.lines)
+        self.write_inputs(lines=bad["timeout then completed"] + self.lines)
+        code, out, err = self.run_scorer()
+        self.assertEqual(code, cli.EXIT_FAILED)
+        self.assertIn("B5", err)
+
+    def test_absolute_path_shapes_in_conditions_are_rejected(self):
+        for value in ("/etc/x", "tradesentry evaluate --run /workspace/x", "\\\\srv\\share", "D:/x", "C:\\x",
+                      "~" + "/x", '{"f": "/srv/a"}'):
+            with self.subTest(value=value):
+                self.write_inputs(dict(self.conditions, reproduce_evaluate=value))
+                code, out, err = self.run_scorer()
+                self.assertEqual(code, cli.EXIT_FAILED)
+                self.assertIn("N13", err)
+                shutil.rmtree(self.score_dir())
+        for value in ("USD/kg", "https://example.org/a", "a / b", "tradesentry evaluate outputs/x", "2026/09/25",
+                      "~/.tradesentry/sealed/"):
+            self.assertIsNone(cli.ABSOLUTE_PATH.search(value), value)
+
     def test_run_name_is_secured_with_next_second_when_taken(self):
         self.write_inputs()
         self.score_dir().mkdir(parents=True)
@@ -275,6 +316,26 @@ class SealedBatchTest(ScorerCommandBase):
         root = Path(self._tmp.name) / "sealed" / "repo"
         self.assertFalse(cli.sealed_hint(str(root / "outputs" / "evaluate-260925140002"), root))
         self.assertTrue(cli.sealed_hint(str(root / "outputs" / "sealed" / "evaluate-260925140002"), root))
+
+    def test_case_variant_and_dev_symlink_to_sealed_are_quiet(self):
+        self.write_inputs()
+        code, out, err = self.run_scorer(self.root / "outputs" / "SEALED" / BATCH)
+        self.assertEqual((code, out, err), (cli.EXIT_USAGE, "끝 상태: 실패(인자 오류)\n", ""))
+        link = self.root / "outputs" / "evaluate-260925140003"
+        os.symlink(self.batch_dir, link)
+        code, out, err = self.run_scorer(link)
+        self.assertEqual((code, out, err), (cli.EXIT_USAGE, "끝 상태: 실패(인자 오류)\n", ""))
+        self.assertTrue(cli.sealed_hint(str(link), self.root))
+
+    def test_every_sealed_required_value_is_required(self):
+        for key in cli.SEALED_REQUIRED:
+            with self.subTest(key=key):
+                self.setUp()
+                self.conditions.pop(key)
+                self.write_inputs()
+                code, out, err = self.run_scorer()
+                self.assertEqual((code, out.splitlines(), err),
+                                 (cli.EXIT_FAILED, ["score-260925150000", "끝 상태: 실패(입력 오류)"], ""))
 
     def test_bad_sealed_run_dir_prints_only_end_status(self):
         code, out, err = self.run_scorer(self.root / "outputs" / "sealed" / "evaluate-260925139999")

@@ -25,7 +25,7 @@
 - 믿지 않는 입력(샌드박스가 쓴 보고서)에서도 처리 시간이 글자 수에 거의 선형이도록 둔다: 공백 되돌림이 없는 소유
   한정자(`\\s*+`)와 줄 머리·앞 글자 고정, 앞뒤 문맥은 위치 인자(pos·endpos)로 보고 문자열을 자르지 않으며, 빼는 구간은
   바이트 표시(mask)로, 정확한 수 표현의 뒷받침은 반올림 값 색인으로 찾는다. 산문 필드 글자 수의 합이
-  MAX_PROSE_CHARS(잠정)를 넘는 보고서는 채점할 수 없는 보고서다(부르는 쪽이 보고서 단위 실패로 센다). 수 크기가
+  MAX_PROSE_CHARS(잠정)를 넘거나 hypotheses 항목 수가 MAX_HYPOTHESES(잠정)를 넘는 보고서는 채점할 수 없는 보고서다(부르는 쪽이 보고서 단위 실패로 센다). 수 크기가
   채점기 상한(유효 숫자 100자리) 밖인 표현은 뒷받침될 수 없다.
 """
 import hashlib
@@ -115,6 +115,8 @@ REPORT_KEYS = ("report_id", "run_id", "case_id", "mode", "claims", "narrative", 
                "signal_status", "unresolved_evidence", "evidence_ids", "validator_findings", "report_hash",
                "created_at", "policy_version", "snapshot_id", "grouping_version")
 MAX_PROSE_CHARS = 50_000       # 보고서 하나의 산문 필드 글자 수 합 상한(잠정). 넘으면 채점할 수 없는 보고서다
+MAX_HYPOTHESES = 100          # 보고서 하나의 hypotheses 항목 수 상한(잠정). 넘으면 채점할 수 없는 보고서다(빈 항목도
+                              # 센다: 보안 검토 2회차 권고 4, 1 MiB 안의 빈 항목 수십만 개가 보고서마다 수 초를 쓴다)
 MAX_IDENTIFIER_CHARS = 200     # EX-3로 뺄 보고서 식별자 값의 길이 상한(더 긴 값은 식별자로 보지 않는다)
 
 
@@ -566,12 +568,15 @@ def check_prose_size(fields: list[tuple[str, str]]) -> None:
 
 
 def score_report_prose(report: dict, run_id: str, hs_codes: set[str], thresholds: list[Fraction]) -> list[dict]:
-    """보고서 하나의 산문 기록(source=prose)을 필드 순서·시작 위치 순서로 만든다. 산문이 상한을 넘거나 claim 수가 상한을
-    넘으면 입력 오류(ScorerInputError)다."""
+    """보고서 하나의 산문 기록(source=prose)을 필드 순서·시작 위치 순서로 만든다. 산문이 상한을 넘거나 claim 수·hypotheses
+    항목 수가 상한을 넘으면 입력 오류(ScorerInputError)다."""
     report_id = report.get("report_id") if isinstance(report.get("report_id"), str) else ""
     raw_claims = report.get("claims") if isinstance(report.get("claims"), list) else []
     if len(raw_claims) > c1.MAX_CLAIMS_PER_REPORT:
         raise c1.ScorerInputError(f"보고서의 claim 수가 채점기 상한({c1.MAX_CLAIMS_PER_REPORT})을 넘는다")
+    hypotheses = report.get("hypotheses")
+    if isinstance(hypotheses, list) and len(hypotheses) > MAX_HYPOTHESES:
+        raise c1.ScorerInputError(f"보고서의 hypotheses 항목 수가 채점기 상한({MAX_HYPOTHESES})을 넘는다")
     fields = prose_fields(report)
     check_prose_size(fields)
     backing = Backing([_Claim(c, i) for i, c in enumerate(raw_claims) if isinstance(c, dict)])

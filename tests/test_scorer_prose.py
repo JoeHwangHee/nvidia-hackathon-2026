@@ -276,6 +276,11 @@ class UntrustedProseTest(unittest.TestCase):
         report = fx.report("run_case-260925100000", a_claims() * (c1.MAX_CLAIMS_PER_REPORT // 6 + 1))
         with self.assertRaises(c1.ScorerInputError):
             c2.score_report_prose(report, report["run_id"], HS_CODES, [])
+        at_limit = fx.report("run_case-260925100000", [], hypotheses=[""] * c2.MAX_HYPOTHESES)
+        self.assertEqual(c2.score_report_prose(at_limit, at_limit["run_id"], HS_CODES, []), [])
+        over = fx.report("run_case-260925100000", [], hypotheses=[""] * (c2.MAX_HYPOTHESES + 1))  # 빈 항목도 센다
+        with self.assertRaises(c1.ScorerInputError):
+            c2.score_report_prose(over, over["run_id"], HS_CODES, [])
 
 
 if __name__ == "__main__":

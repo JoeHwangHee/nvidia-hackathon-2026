@@ -147,6 +147,28 @@ class AuxiliaryMetricsTest(unittest.TestCase):
         self.assertEqual(plan.first("A-composition", "checklist")["run_id"], "run_case-260925090000")
         self.assertEqual(plan.reruns("checklist"), 1)
 
+    def test_denominator_keeps_unrun_failed_and_unread_runs(self):
+        # 계획 4건(full): 줄 없음·TIMEOUT·COMPLETED인데 보고서를 읽지 못함·정상 → 보고서 단위 오류 3/4, 처리 성공 1/4
+        cases = self.inp["planned"]["cases"] + [dict(self.inp["planned"]["cases"][2], case_id="D-unrun")]
+        answers = dict(self.answers, **{"D-unrun": self.answers["C-missing-hs10"]})
+        full = {r["case_id"]: r for r in self.inp["results"] if r["mode"] == "full"}
+        timeout = dict(full["A-composition"], execution_status="TIMEOUT", review_status_final=None, signal_status=None)
+        from eval.scorer import results as c3
+        unread_line = c3.result_line(full["B-residual"], None, [], self.answers["B-residual"], None, None)  # 보고서 없음
+        results = [timeout, dict(full["B-residual"], **{k: unread_line[k] for k in
+                                                        ("required_evidence_ok", "numeric_ok", "provenance_ok")}),
+                   full["C-missing-hs10"]]
+        plan = c4.Plan(cases, ["full"], results)
+        unread = {full["B-residual"]["run_id"]}
+        rep = c4.representative(plan, c4.ClaimIndex(self.inp["claims"]), unread, "full")
+        self.assertEqual((rep["planned"], rep["report_errors"], rep["unrun"], rep["valid"]), (4, 3, 1, 1))
+        self.assertEqual(rep["errors_by_case"], {"A-composition": True, "B-residual": True, "C-missing-hs10": False,
+                                                 "D-unrun": True})
+        self.assertEqual([c4.processed(plan.final(c, "full"), answers[c]) for c in plan.cases],
+                         [False, False, True, False])  # 처리 성공 1/4
+        stats = c4.auxiliary(plan, answers, "full")
+        self.assertEqual((stats["unrun"], stats["statuses"]["TIMEOUT"]), (1, 1))
+
     def test_render_dev20(self):
         text = c4.run(self.inp)
         for fragment in ("# 평가 결과 요약 — evaluate-260925100000", "## 0. 실행 조건", "## 1. 대표 지표",

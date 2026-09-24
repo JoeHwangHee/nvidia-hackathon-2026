@@ -149,6 +149,21 @@ class ScorerKeysTest(unittest.TestCase):
         self.assertIn("unit_value:parent_child_match_V_and_Q", missing)
         self.assertIn("unit_value:weight_share_decomposition", missing)  # 하위 행을 인용하지 않아 분해 claim이 유효하지 않다
 
+    def test_decomposition_needs_residual_and_every_child_needs_unit_value(self):
+        tags = self.answers["A-composition"]["required_evidence"]
+        a = self.reports["A-composition"]
+        cases = {  # 결정 기록 ④: 분해는 residual 포함(MT1 뜻), 하위 단가는 하위 코드마다
+            "unit_value:weight_share_decomposition": [c for c in a["claims"] if c["metric"] != "residual"],
+            "unit_value:per_child_unit_value_stable": [c for c in a["claims"] if c["metric"] != "r_U@8504501020"],
+        }
+        for tag, claims in cases.items():
+            with self.subTest(tag=tag):
+                report = dict(copy.deepcopy(a), claims=copy.deepcopy(claims))
+                records = scored(self.rows, report)
+                ok, missing = c3.required_evidence_ok(tags, report, records, self.tag_contexts["A-composition"],
+                                                      self.snap, "controlled_fixture_v0")
+                self.assertEqual((ok, missing), (False, [tag]))
+
     def test_zero_fill_and_wrong_status(self):
         c = copy.deepcopy(self.reports["C-missing-hs10"])
         c["claims"].append(fx.claim("c3", "decomposition", "mix_effect", Decimal("-2.40"), "USD/kg", "DOWN",

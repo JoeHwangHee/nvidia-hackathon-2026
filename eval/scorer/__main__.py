@@ -24,6 +24,8 @@ N8), 그 이름을 표준 출력 첫 줄로 알린 뒤 scorer_claims-{시각}.js
   파라미터)이 든 값은 거부한다. 개발 묶음에서 옮기는 값이 없으면 요약에 "미기재"로 적는다. 봉인 묶음은
   SEALED_REQUIRED가 모두 있어야 하고 봉인 해시 재대조가 "일치"여야 하며, 봉인 출력이 있어야 하는 값
   (nat_profile_summary, korean_sample_review)이 있으면 거부한다.
+- 묶음 기록: 계획 밖 (사례, 모드) 줄은 입력 오류다. 계획됐는데 줄이 없는 조합은 거부하지 않고 미실행으로 분모에
+  실패로 남긴다(룰북 B5). 같은 조합의 줄은 FAILED 한 줄 뒤 재실행 한 줄만 받는다(check_rerun_shape).
 
 믿지 않는 입력(샌드박스가 쓴 묶음 기록·보고서)의 크기와 모양
 - 파일 크기 상한: 보고서 MAX_REPORT_BYTES, 묶음 기록·정답표·봉인 파일 MAX_INPUT_BYTES, 실행 조건 입력 파일
@@ -82,8 +84,14 @@ CONDITION_KEYS = frozenset({
 SEALED_REQUIRED = ("rulebook", "scorer_commit", "prose_patterns_commit", "sealed_hash_recheck",
                    "sealed_provenance_check", "prescoring_checks", "precheck", "sandbox")
 SEALED_FORBIDDEN = ("nat_profile_summary", "korean_sample_review")
-ABSOLUTE_PATH = re.compile(r"(?<![\w.])/(?:Users|home|private|tmp|var|root|opt|mnt|Volumes)/|(?<![\w.])~[/](?!\.tradesentry[/]sealed[/])"
-                           r"|\b[A-Za-z]:\\")
+# 절대경로 모양(N13): 거부 목록이 아니라 모양으로 본다. 값의 처음이나 공백·따옴표·구분 기호 뒤의 "/"(뒤에 공백·"/"가
+# 아닌 글자), UNC("\\\\이름"), 드라이브 문자("C:\\"·"C:/"), 홈 폴더 표기(물결표 뒤 빗금, 봉인 폴더 기본값만 빼고)다. "USD/kg"처럼
+# 글자 뒤의 "/"나 "https://"는 걸리지 않는다.
+_PATH_START = r"(?:^|(?<=[\s\"'=(,;<>\[{|]))"
+ABSOLUTE_PATH = re.compile(_PATH_START + r"/(?=[^\s/])"
+                           r"|\\\\(?=[^\\\s])"
+                           r"|(?<![A-Za-z0-9])[A-Za-z]:[\\/]"
+                           r"|" + _PATH_START + r"~[^\s/]*/(?!\.tradesentry/sealed/)")
 # 키 모양(비밀값·로컬 경로 검사 스크립트와 같은 두 가지). 패턴 글자를 나눠 적어 이 파일이 검사에 걸리지 않게 한다.
 SECRET_SHAPE = re.compile("nv" + "api-|service" + r"Key\s*=", re.I)
 RUN_ID_RE = c3.RUN_ID_RE
@@ -110,19 +118,33 @@ def _fail(message: str) -> None:
 
 # ----------------------------------------------------------------------------- 위치와 실행명
 
+def _same_file(a: Path, b: Path) -> bool:
+    try:
+        return os.path.samefile(a, b)
+    except (OSError, ValueError):
+        return False
+
+
 def sealed_hint(arg: str, repo_root: Path) -> bool:
-    """<run_dir> 인자가 봉인 묶음 자리(outputs/sealed/ 아래)를 가리키는가. 마지막 조각은 따라가지 않고(심볼릭 링크여도)
-    부모 폴더만 풀어 본다. 저장소 안 경로 조각에 sealed가 있어도 봉인으로 본다(outputs/sealed/../{실행명}처럼 봉인
-    자리를 지나 개발 자리로 풀리는 경로를 받지 않으려고). 저장소 뿌리까지의 조각은 보지 않는다(뿌리 경로에 sealed라는
-    폴더 이름이 있어도 개발 묶음을 막지 않게). 알 수 없으면 봉인으로 본다(조용한 출력이 안전한 쪽이다)."""
+    """<run_dir> 인자가 봉인 묶음 자리(outputs/sealed/ 아래)를 가리키는가. 이름이 아니라 파일 시스템의 같음(장치·inode,
+    os.path.samefile)으로 본다: 부모 폴더가 outputs/sealed이거나(대소문자 변형·링크 포함), 인자가 심볼릭 링크이면 그
+    대상의 부모가 outputs/sealed이면 봉인이다. 저장소 안 경로 조각에 sealed가 있어도(대소문자 무시) 봉인으로 본다
+    (outputs/sealed/../{실행명}처럼 봉인 자리를 지나 개발 자리로 풀리는 경로를 받지 않으려고). 저장소 뿌리까지의 조각은
+    보지 않는다(뿌리 경로에 sealed라는 폴더 이름이 있어도 개발 묶음을 막지 않게). 알 수 없으면 봉인으로 본다(조용한
+    출력이 안전한 쪽이다). 봉인이면 인자 오류도 끝 상태만 낸다(N10)."""
     try:
         candidate = Path(arg) if Path(arg).is_absolute() else Path.cwd() / arg
+        sealed_root = repo_root / "outputs" / "sealed"
         parts = candidate.parts
         for root in (repo_root.parts, repo_root.resolve().parts):
             if parts[:len(root)] == root:
                 parts = parts[len(root):]
                 break
-        return candidate.parent.resolve() == (repo_root / "outputs" / "sealed").resolve() or "sealed" in parts
+        if any(part.casefold() == "sealed" for part in parts):
+            return True
+        if candidate.parent.resolve() == sealed_root.resolve() or _same_file(candidate.parent, sealed_root):
+            return True
+        return candidate.is_symlink() and _same_file(candidate.resolve().parent, sealed_root)
     except (OSError, RuntimeError, ValueError):
         return True
 
@@ -277,6 +299,20 @@ def read_conditions(path: Path, sealed: bool) -> dict:
         if present:
             _fail(f"봉인 묶음에는 봉인 출력이 있어야 하는 값을 넣지 않는다({', '.join(present)})")
     return doc
+
+
+def check_rerun_shape(lines: list[dict]) -> None:
+    """같은 (사례, 모드)의 줄이 둘 이상이면 룰북 B5의 재실행 모양(FAILED 한 줄 뒤 재실행 한 줄)만 받는다. 줄이 셋
+    이상이거나, 앞 줄(실행명 시각 순, 요약의 Plan과 같은 순서)이 FAILED가 아니면 입력 오류다(결과를 보고 고른 재실행을
+    막는다). 계획됐는데 줄이 없는 조합은 거부하지 않는다: 미실행은 분모에 실패로 남는다(룰북 B5, 자료 계약 §8.2).
+    [잠정] 원인이 인프라 오류뿐인지는 원인 분류(단위 L3)가 정해진 뒤 본다."""
+    grouped: dict[tuple, list[dict]] = {}
+    for line in lines:
+        grouped.setdefault((line["case_id"], line["mode"]), []).append(line)
+    for rows in grouped.values():
+        rows.sort(key=lambda r: (r["run_id"].rsplit("-", 1)[-1], r["run_id"]))
+        if len(rows) > 2 or (len(rows) == 2 and rows[0]["execution_status"] != "FAILED"):
+            _fail("묶음 기록의 같은 (사례, 모드) 줄이 룰북 B5 재실행 모양(FAILED 한 줄 뒤 재실행 한 줄)이 아니다")
 
 
 # ----------------------------------------------------------------------------- 스냅샷
@@ -453,6 +489,7 @@ def score_batch(run_dir: Path, sealed: bool, repo_root: Path, environ: dict, sco
             _fail("묶음 기록의 dataset이 실행 조건 입력 파일과 다르다(한 묶음은 자료 묶음 하나)")
         if (line["case_id"], line["mode"]) not in planned:
             _fail("묶음 기록에 계획 밖 (사례, 모드) 실행이 있다")
+    check_rerun_shape(lines)
     snapshot_ids = {line["snapshot_id"] for line in lines}
     if len(snapshot_ids) != 1:
         _fail("묶음 기록의 snapshot_id가 하나가 아니다")
