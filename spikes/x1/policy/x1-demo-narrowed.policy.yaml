@@ -1,0 +1,49 @@
+# X1 시연 샌드박스(x1-demo) 축소 정책(최종 4판). 출발점은 NemoClaw v0.0.124 온보딩 직후의 라이브 정책
+# (openshell policy get x1-demo --full, 2026-09-24(목) 17:21:59 KST)이고, 빼는 방향으로만 고쳤다.
+# - 정적 계층(filesystem_policy·landlock·process)은 라이브 정책과 글자까지 같다(실행 중에 바꿀 수 없다).
+# - 뺀 블록: clawhub, openclaw_api, openclaw_docs, npm_registry, managed_inference(inference.local /** + 범용 바이너리),
+#   openclaw_gateway_dialback(10.200.0.2 자기 주소, access: full·rules 없음. 빼도 하네스가 돌았다).
+# - 좁힌 블록: nvidia — POST /v1/chat/completions 하나. 바이너리는 /usr/local/bin/openclaw와 /usr/local/bin/node.
+#   2판(openclaw만)에서는 OpenClaw 게이트웨이의 실행 파일이 node(openclaw는 node 스크립트)라 모델 호출이
+#   binary-miss로 거부됐다. 3판부터 실제 실행 파일 node를 더하고 경로는 하나로 둔다(03 문서 §5 템플릿과 다른 점).
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only:
+  - /usr
+  - /lib
+  - /proc
+  - /dev/urandom
+  - /app
+  - /run/nemoclaw/managed-startup-ca-bundle.pem
+  - /run/nemoclaw/managed-startup-runtime.env
+  - /etc
+  - /var/log
+  - /var/lib/dpkg
+  read_write:
+  - /tmp
+  - /dev/null
+  - /dev/pts
+  - /sandbox/.openclaw
+  - /sandbox/.nemoclaw
+  - /home/linuxbrew
+landlock:
+  compatibility: best_effort
+process:
+  run_as_user: sandbox
+  run_as_group: sandbox
+network_policies:
+  nvidia:
+    name: nvidia
+    endpoints:
+    - host: integrate.api.nvidia.com
+      port: 443
+      protocol: rest
+      enforcement: enforce
+      rules:
+      - allow:
+          method: POST
+          path: /v1/chat/completions
+    binaries:
+    - path: /usr/local/bin/openclaw
+    - path: /usr/local/bin/node

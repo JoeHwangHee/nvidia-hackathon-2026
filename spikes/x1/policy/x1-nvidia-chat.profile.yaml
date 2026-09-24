@@ -1,0 +1,30 @@
+# X1 임시 OpenShell provider 프로필(초안).
+# 내장 nvidia 프로필(access: read-write, 바이너리 curl)을 좁혀 추론 요청 한 경로만 연다.
+# 키는 샌드박스 안 감독 프로세스(root로 도는 openshell-sandbox)의 정책 프록시가, 게이트웨이에서 받은
+# 자격 증명으로 요청 시점에 넣는다(자리표시 값 치환). 에이전트 쪽 프로세스는 자리표시 값만 본다.
+# auth_style·header_name은 OpenShell 0.0.116에서 저장·검증되는 메타데이터다(docs/sandboxes/providers-v2.mdx 216행).
+# 헤더 치환은 CLI가 환경변수의 자리표시 값을 authorization 헤더에 실어 보낼 때 일어난다.
+id: x1-nvidia-chat
+display_name: X1 NVIDIA chat completions
+description: X1 spike. NVIDIA NIM POST /v1/chat/completions only, for the X1 probe Python.
+category: inference
+credentials:
+- name: api_key
+  description: NVIDIA API key
+  env_vars:
+  - NVIDIA_API_KEY
+  required: true
+  auth_style: bearer
+  header_name: authorization
+endpoints:
+- host: integrate.api.nvidia.com
+  port: 443
+  protocol: rest
+  enforcement: enforce
+  rules:
+  - allow:
+      method: POST
+      path: /v1/chat/completions
+binaries:
+- /opt/x1/python/**
+inference_capable: true

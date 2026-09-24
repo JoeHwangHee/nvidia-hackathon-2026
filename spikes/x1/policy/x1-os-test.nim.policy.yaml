@@ -1,0 +1,36 @@
+# X1 임시 샌드박스 정책 2판(초안). x1-os-test.policy.yaml과 정적 계층(filesystem_policy·landlock·process)이
+# 글자까지 같고, 동적 계층(network_policies)에 NIM 추론 요청 한 경로만 더했다.
+# `openshell policy set x1-os-test --policy <이 파일> --wait`로 실행 중에 다시 불러온다.
+# 요건 (b): 목적지 하나, method·path 명시, rules 생략 없음, 범용 바이너리 + /** 조합 없음.
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only:
+  - /usr
+  - /lib
+  - /proc
+  - /dev/urandom
+  - /etc
+  - /opt/x1
+  read_write:
+  - /tmp
+  - /dev/null
+landlock:
+  compatibility: best_effort
+process:
+  run_as_user: sandbox
+  run_as_group: sandbox
+network_policies:
+  x1_nim_chat:
+    name: x1-nim-chat
+    endpoints:
+    - host: integrate.api.nvidia.com
+      port: 443
+      protocol: rest
+      enforcement: enforce
+      rules:
+      - allow:
+          method: POST
+          path: /v1/chat/completions
+    binaries:
+    - path: /opt/x1/python/**

@@ -224,7 +224,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 
 | 넣지 않는 것 | 이유 |
 |---|---|
-| Nemotron Nano/Ultra 라우팅 | 조사자와 Critic이 같은 모델이라 라우팅할 대상이 없다. `inference.local`(샌드박스가 보는 추론 주소)은 게이트웨이(샌드박스의 요청을 받아 정책을 적용하고 전달하는 OpenShell 구성요소)당 모델 1개라 요청 단위 라우팅 용도도 아니다 `[사실: 03 문서 §2.1-1]` |
+| Nemotron Nano/Ultra 라우팅 | 조사자와 Critic이 같은 모델이라 라우팅할 대상이 없다. `inference.local`(샌드박스가 보는 추론 주소)은 게이트웨이(샌드박스의 정책과 provider(등록한 자격 증명 묶음) 설정을 보관하고 샌드박스에 내려보내는 OpenShell 제어면)당 모델 1개라 요청 단위 라우팅 용도도 아니다 `[사실: 03 문서 §2.1-1]` |
 | NeMo Guardrails·NemoGuard | NemoGuard는 탈옥·유해성 탐지 NIM이고, NeMo Guardrails는 입력·출력 rail(가드레일 규칙 층) 프레임워크다 `[사실: R3 문서 §6, 대회 조사 문서 §8-8]`. 입력이 동결 통계와 코드가 만든 사례라 빼도 나빠지는 지표가 없다 `[추론]`. 도구가 돌려준 품목명·설명은 데이터로만 다룬다(§6.5) |
 | NeMo Microservices | 2026-10-01(목) 일몰 예정이다 `[사실: 대회 조사 문서 §9]`. 핵심 기술로 적지 않는다 |
 
@@ -236,7 +236,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 - `src/tradesentry/ingest.py`는 표준 라이브러리만 쓰는 상태를 유지한다.
 - 이 저장소의 시스템 `python3`는 3.9.6이고 pandas·openpyxl이 없다 `[사실: 실측 메모 §6]`. 기존 시험 17개는 네트워크 없이 돈다: `python3 -m unittest discover -s tests -v`.
 - OpenShell 게이트웨이는 Linux 전용(glibc 2.28 이상)이라 macOS에서는 Docker 안에서 돌린다 `[사실: R3 문서 §7]`. NemoClaw는 알파 단계다.
-- 키는 `.env`의 `NVIDIA_API_KEY`, `DATA_GO_KR_SERVICE_KEY`만 쓴다. 로그·trace·문서·PR에 쓰지 않는다. 샌드박스 안에는 키를 두지 않는다(§4.6).
+- 키는 `.env`의 `NVIDIA_API_KEY`, `DATA_GO_KR_SERVICE_KEY`만 쓴다. 로그·trace·문서·PR에 쓰지 않는다. 에이전트와 그 자식 프로세스(샌드박스 사용자 권한)가 읽을 수 있는 곳에는 키를 두지 않는다(요건 (c), 해석 A, §4.6).
 - NIM 무료 키에서 HTTP 500이 간헐적으로 난다 `[사실: 실측 메모 §5]`. provider(모델 호출 클라이언트)의 자동 재시도는 끄고, 5xx는 코드가 명시적으로 재전송한다(요청당 최대 3회, 지수 대기, 조정값). 평가 동시성은 1로 시작한다.
 - 기존 NIM 도구 호출 확인 스크립트: `python3 scripts/g4_nim_toolcall_probe.py`.
 
@@ -262,7 +262,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
   - 예외는 하나다: 공식 채점 대상 실행 전용 샌드박스에는 봉인 폴더 전체가 아니라 봉인 입력만 읽기 전용으로 넣는다(§9.8 절차 4). 정답표는 어떤 샌드박스에도 넣지 않는다.
 - **(b)** 외부 전송은 NVIDIA 추론 엔드포인트만 허용한다. L7(HTTP 요청 수준) method·path를 명시하고, `rules` 생략이나 범용 바이너리 + `/**` 조합은 금지한다.
   - 두 샌드박스 모두 이 요건을 지킨다. 채점 대상 실행 샌드박스는 목적지 하나·추론 요청 한 경로로 지킨다(§4.6). 시연 샌드박스가 이 요건을 채우지 못하면 예외를 두지 않고 즉시 사용자 결정을 받는다. 대안의 예는 §5.4 대체 경로(NemoClaw 없이 OpenShell만)다(§4.8).
-- **(c)** API 키를 샌드박스 안에 두지 않는다. 방식은 credential placeholder rewrite(샌드박스에는 자리표시 문자열만 두고 게이트웨이가 실제 키로 바꾸는 방식)와 `inference.local` 중 설치 확인 단계(X1, §5.3)에서 고르고 이유를 기록한다.
+- **(c)** API 키를 샌드박스 안에 두지 않는다. "샌드박스 안"은 에이전트와 그 자식 프로세스(샌드박스 사용자 권한)가 읽을 수 있는 곳이다(해석 A, 결정 기록 `20260924-2010-user-decision-key-rule-interpretation.md`). 샌드박스 컨테이너 안에서 root로 도는 감독 프로세스는 게이트웨이에서 자격 증명을 받아 요청에 넣으므로 실제 키를 가진다 `[사실: OpenShell v0.0.116 docs/about/how-it-works.mdx 116행]`. 방식은 credential placeholder rewrite(샌드박스 프로그램에는 자리표시 문자열만 두고 감독 프로세스의 정책 프록시가 요청 시점에 실제 키로 바꾸는 방식)와 `inference.local` 중 설치 확인 단계(X1, §5.3)에서 고르고 이유를 기록한다. X1은 credential placeholder rewrite를 채택했다(결정 기록 `20260924-1556-x1-key-injection.md`).
 - **(d)** 허용·차단 감사 로그를 `openshell logs`로 수집한다.
   - 근거: 대회 조사 문서 §8-2는 허용·차단이 모두 감사 로그로 기록된다고 적는다. 계층별(네트워크·파일시스템 등)로 실제로 남는지는 X1 실측 전까지 `[미확인]`이다.
   - 이벤트 이름까지 확인한 것은 거부(`HTTP:* DENIED`)와 정책(`CONFIG:*`) 이벤트다 `[사실: R3 문서 §3]`. 허용 이벤트 행의 실제 형식은 X1 실측 전까지 `[미확인]`이다.
@@ -347,12 +347,14 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 
 | 방식 | 동작 | 근거 | 남은 확인 |
 |---|---|---|---|
-| credential placeholder rewrite | 샌드박스 안 프로세스는 자리표시 문자열(placeholder)만 갖고, 게이트웨이가 요청을 내보낼 때 실제 키로 바꾼다. 그래서 샌드박스는 실제 키 값을 보지 못한다. rewrite가 꺼진 목적지로 placeholder를 보내면 upstream(실제 목적지 서버)에 닿기 전에 거부된다 | `[사실: 03 문서 §2.1, R3 문서 §1]` | 근거 문서가 확인한 옵션(`request_body_credential_rewrite`)은 요청 **본문**의 placeholder 치환이다. NIM API는 키를 `Authorization: Bearer` 헤더로 받는다 `[사실: 대회 조사 문서 §7-2]`. 헤더에 키를 넣는 동작은 `[미확인]` |
-| `inference.local` | 샌드박스는 `inference.local`만 보고, 게이트웨이가 설정된 provider(추론 백엔드)로 요청을 전달한다. 샌드박스에 키가 없다는 것은 추론이며, 요건 (c)의 키 조회 시험으로 실측한다 | 전달 방식 `[사실: 대회 조사 문서 §8-2, 03 문서 §2.1-1]`, 키 부재 `[추론]` | CLI의 요청 형식과 게이트웨이 전달이 맞물리는지 `[미확인]` |
+| credential placeholder rewrite | 샌드박스 안 프로그램(샌드박스 사용자 권한)은 자리표시 문자열(placeholder)만 갖고, 샌드박스 안 감독 프로세스의 정책 프록시가 게이트웨이에서 받은 자격 증명으로 요청을 내보낼 때 실제 키로 바꾼다. 그래서 샌드박스 프로그램은 실제 키 값을 보지 못한다. rewrite가 꺼진 목적지로 placeholder를 보내면 upstream(실제 목적지 서버)에 닿기 전에 거부된다 | `[사실: 03 문서 §2.1, R3 문서 §1]` | 근거 문서가 확인한 옵션(`request_body_credential_rewrite`)은 요청 **본문**의 placeholder 치환이다. NIM API는 키를 `Authorization: Bearer` 헤더로 받는다 `[사실: 대회 조사 문서 §7-2]`. **헤더 치환은 X1에서 확인했다**: provider(게이트웨이에 등록한 자격 증명 묶음)를 샌드박스에 붙이고 샌드박스 환경변수의 자리표시 값을 `Authorization: Bearer` 헤더에 실어 보내자, 샌드박스 안 감독 프로세스(supervisor, 샌드박스 컨테이너 안에서 root로 도는 OpenShell 프로세스 `openshell-sandbox`)의 정책 프록시가, 게이트웨이에서 받은 자격 증명으로 요청 시점에 자리표시 값을 실제 키로 바꿔 NIM이 HTTP 200을 냈다 `[사실: artifacts/openshell/violation_tests.md §2 V0, OpenShell v0.0.116 docs/about/how-it-works.mdx 14·116행, docs/sandboxes/manage-providers.mdx 327~330행]`. 보조 근거인 `artifacts/openshell/logs/20260924-x1-demo-openshell-logs.txt` 7·13행은 감독 프로세스가 시작할 때 provider 환경을 받았다는 기록이고, 실제 키 값이 들었는지는 보이지 않는다. 프로필의 `auth_style: bearer`·`header_name: authorization`은 0.0.116에서 저장·검증되는 메타데이터이고 치환을 일으킨 원인이 아니다 `[사실: 같은 판 docs/sandboxes/providers-v2.mdx 216행]`. 키 조회는 샌드박스 사용자(UID 998) 권한으로 닿는 환경변수·파일·읽을 수 있는 `/proc/<pid>/environ` 범위에서 실제 키 0건이었다(PID 1(root 감독 프로세스)은 조회하지 못함). 실제 키는 샌드박스 컨테이너 안 root 감독 프로세스가 가진다 `[사실: artifacts/openshell/violation_tests.md 머리말 "키 조회 범위", §2 V5, §6.3 DA4·DH2, OpenShell v0.0.116 docs/about/how-it-works.mdx 116행]`. 채택은 결정 기록 `20260924-1556-x1-key-injection.md`다 |
+| `inference.local` | 샌드박스는 `inference.local`만 보고, 감독 프로세스의 추론 라우터가 게이트웨이의 추론 설정대로 전달한다. 추론 라우터는 `inference.local` 요청을 가로채 설정된 provider(추론 백엔드)로 넘기는 감독 프로세스의 부분이다. 샌드박스에 키가 없다는 것은 추론이며, 요건 (c)의 키 조회 시험으로 실측한다 | 전달 방식 `[사실: 대회 조사 문서 §8-2, 03 문서 §2.1-1, OpenShell v0.0.116 docs/about/how-it-works.mdx 117행]`, 키 부재 `[추론]`. 공식 문서끼리 표현이 다르다: 같은 판 docs/sandboxes/inference-routing.mdx 16행은 "routes model requests through the gateway", 20행은 "the configured backend for that gateway"라고 적고, docs/about/how-it-works.mdx는 추론 라우터를 샌드박스 데이터면(Sandbox data plane, 감독 프로세스가 도는 샌드박스 쪽)에 둔다(44~49행) | X1에서 전달은 됐다(OpenShell 0.0.116, NIM HTTP 200). 그러나 감독 프로세스(샌드박스 컨테이너 안에서 root로 도는 OpenShell 프로세스)의 추론 라우터가 샌드박스 네트워크 정책 밖에서 처리해, 정책 블록이 없어도 `curl`·시스템 파이썬 등 모든 실행 파일이 썼다. 라우터가 받는 형식 목록에는 채팅·완성·응답·임베딩·모델 조회 다섯 종류가 있었다(실제로 보낸 요청은 `POST /v1/chat/completions`와 `GET /v1/models` 두 종류다). 정책 블록으로 좁히자 요청이 응답 없이 멈췄다 `[사실: artifacts/openshell/violation_tests.md §2 V7·V8]`. 공식 문서도 `inference.local`만 네트워크 감독을 거치지 않고, 추론이 설정되면 어느 샌드박스의 코드든 그 주소를 부를 수 있다고 적는다 `[사실: OpenShell v0.0.116 docs/sandboxes/policies.mdx 72행, docs/sandboxes/inference-routing.mdx 244행]`. 추론 경로는 게이트웨이의 작업 공간(workspace, 게이트웨이 안의 자원 범위) 단위라, 경로의 provider를 붙이지 않은 샌드박스도 그 경로를 썼다 `[사실: 같은 문서 §2 V7 아래 설명]` |
 
 - **채택 규칙**: X1 세로형 최소 통합 시험(§5.3)에서 **실제로 성공한 방식만** 채택하고, 고른 이유를 결정 기록(`docs/tracking/decisions/`)에 남긴다. 두 방식이 모두 실패하면 키를 샌드박스에 넣는 우회를 하지 않고 바로 사용자 결정을 받는다(§5.3·§5.4).
+- **X1 결과**: credential placeholder rewrite(헤더 치환)를 채택했다. `inference.local`도 전달은 됐지만 요건 (b)의 method·path와 실행 파일 제한을 정책으로 보일 수 없어 버렸다 `[사실: 결정 기록 20260924-1556-x1-key-injection.md]`.
+- **채점 대상 실행 샌드박스와 추론 경로**: `inference.local` 경로는 작업 공간 전체에 걸리고 샌드박스 정책으로 좁힐 수 없었다(V7·V8). 그래서 채점 대상 실행 샌드박스는 추론 경로가 설정되지 않은 작업 공간에서 돌려야 요건 (b)를 정책으로 보일 수 있다 `[추론]`. NemoClaw 온보딩은 기본으로 작업 공간 추론 경로를 만든다 `[사실: artifacts/openshell/violation_tests.md §6.1]`. 별도 작업 공간(`--workspace`)이 경로를 격리하는지는 `[미확인]`이며 MT5·MT7에서 확인한다. 공식 문서끼리 범위 표현도 다르다(OpenShell v0.0.116 docs/sandboxes/inference-routing.mdx 328행은 "Gateway-scoped", docs/sandboxes/manage-workspaces.mdx 11~13행은 추론 경로가 작업 공간에 속한다고 적는다). 이 차이도 MT5·MT7에서 확인한다. NemoClaw `credentials add`로 등록한 provider(등록한 자격 증명 묶음)는 게이트웨이 전역이고, 그 뒤 NemoClaw로 만들거나 다시 만드는 샌드박스에 붙는다 `[사실: NemoClaw v0.0.124 docs/reference/commands.mdx 3605행]`. OpenShell 문서가 적는, 샌드박스를 만들 때 provider가 붙는 경로는 둘이다. `--provider`로 하나씩 붙이는 것과, `providers_v2_enabled=false`일 때 샌드박스 명령 이름이 claude·codex·opencode이면 provider를 자동으로 만들어 붙이는 것이다 `[사실: OpenShell v0.0.116 docs/sandboxes/manage-providers.mdx 283~290·306~323행]`. 실행 중에는 Providers v2의 `openshell sandbox provider attach`로 붙인다 `[사실: 같은 판 manage-providers.mdx 298~302행, docs/sandboxes/providers-v2.mdx 853~855행]`. provider는 작업 공간에 속한다 `[사실: 같은 판 docs/sandboxes/manage-workspaces.mdx 11~13행]`. NemoClaw 게이트웨이 위에서 `openshell sandbox create`로 만든 채점 대상 실행 샌드박스에 NemoClaw가 등록한 provider가 붙는지는 `[미확인]`이다. MT5는 샌드박스를 만든 직후 `openshell sandbox provider list <이름>`(같은 판 docs/sandboxes/providers-v2.mdx 62·860행)으로 확인한다. `--no-auto-providers`의 공식 설명은 "skips the provider setup prompt"다 `[사실: 같은 판 docs/get-started/tutorials/first-network-policy.mdx 44행]`. 이 옵션이 위 자동 생성 경로를 끄는지는 `[추론]`이다. 채점 대상 실행 샌드박스를 격리할 후보(별도 게이트웨이, 추론 경로가 없는 작업 공간, X1 1단계(OpenShell만 쓴 시험 샌드박스 `x1-os-test`)에서 쓴 `--no-auto-providers`)는 `[추론]`이며 MT5에서 정한다.
 - **단일 백엔드**: `inference.local`은 게이트웨이당 provider 1개·모델 1개만 연결하는 단일 백엔드다 `[사실: 공식 문서, 03 문서 §2.1-1]`. 조사자와 Critic이 같은 모델이라 라우팅이 필요 없다.
-- **하네스의 추론 경로**: 03 문서 §1 정책에는 OpenClaw가 쓸 수 있는 추론 목적지가 두 곳(`nvidia` 블록의 `integrate.api.nvidia.com`, `managed_inference` 블록의 `inference.local`) 있다 `[사실: 03 문서 §1]`. 하네스가 실제로 어느 경로로 모델을 부르는지는 `[미확인]`이며 X1에서 확인한다(§5.3).
+- **하네스의 추론 경로**: 03 문서 §1 정책에는 OpenClaw가 쓸 수 있는 추론 목적지가 두 곳(`nvidia` 블록의 `integrate.api.nvidia.com`, `managed_inference` 블록의 `inference.local`) 있다 `[사실: 03 문서 §1]`. X1 확인 결과, NemoClaw v0.0.124 기본은 OpenClaw가 `inference.local`(온보딩이 만든 작업 공간 추론 경로)로 부른다. X1 시연 구성은 추론 경로를 지우고 OpenClaw가 `integrate.api.nvidia.com`을 헤더 자리표시 값으로 직접 부르게 바꿨다 `[사실: artifacts/openshell/violation_tests.md §4 "하네스 자체의 추론 경로" 행, §6]`.
 - **채점 대상 실행 샌드박스 기준**으로, 요건 (b)의 허용 목적지는 채택한 방식에 따라 하나로 정해진다: rewrite면 `integrate.api.nvidia.com:443`, `inference.local`이면 `inference.local:443`. 어느 쪽이든 추론 요청 한 경로의 method·path만 연다. 시연 샌드박스는 목적지 하나 약속 대신 §4.8을 따르되 요건 (b)는 지킨다.
 
 ### 4.7 보안 관점 요약
@@ -371,11 +373,13 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 - **방침** `[DESIGN]`: 기본 블록을 빼거나 좁힌다.
   - `clawhub`·`openclaw_docs`·`npm_registry`는 뺀다. 런타임에 패키지·문서를 받을 필요가 없다 `[추론: 03 문서 §5]`.
   - 설치한 NemoClaw의 라이브 정책에 03 문서 §5 하드닝 템플릿의 제거·축소를 적용하고, 템플릿에만 있는 허가는 더하지 않는다. 이 템플릿은 `managed_inference`의 바이너리를 `openclaw`만 남기고(`curl`·`python3`·`node` 제거) 경로를 `POST /v1/**`로 좁히며, `nvidia` 블록도 `POST /v1/chat/completions`·`POST /v1/embeddings`로 좁힌다 `[사실: 03 문서 §5]`.
-  - CLI의 파이썬 실행 파일을 추론 블록의 바이너리에서 빼면(예: `inference.local`을 채택하고 `managed_inference`에서 `python3`를 뺀 경우), 시연 샌드박스에서 CLI의 NIM 호출은 조상 프로세스 상속에 기댄다 `[미확인]`.
-- **확인할 것** `[미확인]`(X1 목록, §5.3):
-  - 하네스 자체의 추론 경로
-  - 조상 프로세스 상속이 실제 환경에서도 문서대로인지
-  - 기본 블록을 빼거나 좁혀도 하네스가 도는지
+  - **예외(X1 결과, 추론 블록에 node)**: OpenClaw 2026.7.1의 `openclaw`는 `#!/usr/bin/env node` 스크립트라서, 샌드박스는 OpenClaw가 보낸 요청의 실행 파일을 `/usr/local/bin/node`로 판정한다. 추론 블록(`nvidia`)의 바이너리를 `openclaw`만 두면 모델 호출이 binary-miss(허용 목록에 없는 실행 파일)로 거부됐다 `[사실: artifacts/openshell/logs/20260924-x1-demo-openshell-logs.txt 528~530행, artifacts/openshell/violation_tests.md §6.3 DA1]`. 그래서 추론 블록에 `/usr/local/bin/node`를 넣되 L7 규칙은 `POST /v1/chat/completions` 하나로 좁힌다. 범용 바이너리의 허가를 추론 요청 한 경로로 좁히는 것이라 §4.1 작성 원칙과 요건 (b)에 맞는다고 본다 `[추론: 결정 기록 20260924-1741-orchestrator-decision-x1-retry.md ④]`. 이 허가는 OpenClaw만의 것이 아니다. 샌드박스 안 어떤 프로세스든 `/usr/local/bin/node`를 실행하면 그 프로세스와 자손(OpenClaw의 exec 도구가 띄운 프로그램 포함)이 쓸 수 있다. 바이너리 신원을 실행 파일 경로와 조상 프로세스 경로로 판정하기 때문이다 `[사실: 03 문서 §3.3, artifacts/openshell/violation_tests.md §6.3 DT3·DT3']`. 정책에 남긴 `openclaw` 항목은 `openclaw.mjs`로 풀려 어떤 실행 파일과도 맞지 않으므로 사실상 쓰이지 않는다 `[사실: artifacts/openshell/logs/20260924-x1-demo-openshell-logs.txt 81~88·528행]`. `/usr/bin/node`가 별도 파일인지는 `[미확인]`이다. 남는 제한은 목적지 하나와 method·path 하나다. 샌드박스 사용자(UID 998) 권한으로 닿는 환경변수·파일·읽을 수 있는 `/proc/<pid>/environ`에는 실제 키가 없었다(PID 1은 조회하지 못함) `[사실: artifacts/openshell/violation_tests.md 머리말 "키 조회 범위", §6.3 DK1~DK4·DH·DH2]`. 실제 키는 샌드박스 컨테이너 안 root 감독 프로세스가 가지며, 에이전트 쪽과의 경계는 UID 분리·Landlock·seccomp다 `[사실: OpenShell v0.0.116 docs/about/how-it-works.mdx 14·113·114·116행, docs/sandboxes/policies.mdx 71행]`. 허가 범위와 위협 근거는 X1 PR(#19) 본문에 적는다. OpenClaw 판이 바뀌면 추론 블록의 실행 파일 판정을 다시 확인한다.
+  - X1 최종 정책(4판)은 NemoClaw 기본 블록 7개 가운데 6개(`clawhub`·`openclaw_api`·`openclaw_docs`·`npm_registry`·`managed_inference`·`openclaw_gateway_dialback`)를 빼고 `nvidia` 블록 하나만 남겼다 `[사실: artifacts/openshell/violation_tests.md §6.2, 정책 파일 spikes/x1/policy/x1-demo-narrowed.policy.yaml]`.
+  - CLI의 파이썬 실행 파일을 추론 블록의 바이너리에서 빼면(예: `inference.local`을 채택하고 `managed_inference`에서 `python3`를 뺀 경우), 시연 샌드박스에서 CLI의 NIM 호출은 조상 프로세스 상속에 기댄다. X1에서 바이너리 목록에 없는 CLI 파이썬이 OpenClaw(node)의 허가를 물려받아 통과했다 `[사실: artifacts/openshell/violation_tests.md §6.3 DA4]`.
+- **확인 결과**(X1 목록, §5.3, 2026-09-24(목) NemoClaw v0.0.124·OpenClaw 2026.7.1·OpenShell 0.0.116):
+  - 하네스 자체의 추론 경로: NemoClaw 기본은 `inference.local`이다. X1 구성에서는 `integrate.api.nvidia.com` 직접 호출(헤더 자리표시 값)로 바꿔 OpenClaw의 모델 호출이 HTTP 200을 받았다 `[사실: artifacts/openshell/violation_tests.md §4, §6.3 DA4]`.
+  - 조상 프로세스 상속: 문서대로다. OpenClaw(node)가 띄운 CLI 파이썬과 `curl`이 `nvidia` 블록 허가를 물려받았고, 목적지·L7 제한은 그대로였다 `[사실: artifacts/openshell/violation_tests.md §6.3 DA4·DT3'·DT4'(4판 재시험)]`.
+  - 기본 블록을 빼거나 좁혀도 하네스가 도는지: 돈다. `nvidia` 블록 하나만 남긴 4판에서 한 줄 경로가 통과했다. 단 바이너리를 `openclaw`만 두면(2판) 돌지 않아 위 예외가 필요했다 `[사실: artifacts/openshell/violation_tests.md §6.3 DA1·DA4]`.
 - **증거**: 시연 샌드박스의 라이브 정책 조회(`openshell policy get <agent> --full`) 결과, 게이트웨이 provider 설정 조회 결과, 남은 블록 목록을 위반 시험표(`artifacts/openshell/violation_tests.md`)에 함께 적는다.
 - **(b)를 채우지 못하면**: 예외를 두지 않고 즉시 사용자 결정을 받는다. 대안의 예는 §5.4 대체 경로(NemoClaw 없이 OpenShell만)다. 키 주입 방식이 모두 실패할 때(§4.6 채택 규칙)와 같은 처리다.
 - 요건 (a)·(c)도 시연 샌드박스에 똑같이 적용한다. 정답표·봉인 자료·키를 들이지 않는다.
@@ -458,7 +462,7 @@ Agent Skills는 에이전트에게 작업 방법을 알려 주는 SKILL.md 형�
 | NVIDIA/skills | `nvidia-skill-finder` | 스킬 찾기 `[추론: 이름 기준]` |
 | 선택 | `nemo-relay-plugin-observability` | 관측성 보강(선택) `[추론: 이름 기준]` |
 
-- 설치 명령 형식: `npx skills add NVIDIA/skills --skill <name>`, `npx skills add NVIDIA/OpenShell --skill <name>`. `skills` CLI는 v1.5.16 이상이 필요하다 `[사실: 대회 조사 문서 §7-1]`. OpenShell 저장소 스킬의 `--skill` 지정 동작은 `[미확인]`이다.
+- 설치 명령 형식: `npx skills add NVIDIA/skills --skill <name>`, `npx skills add NVIDIA/OpenShell --skill <name>`. `skills` CLI는 v1.5.16 이상이 필요하다 `[사실: 대회 조사 문서 §7-1]`. OpenShell 저장소 스킬의 `--skill` 지정 동작은 `[미확인]`이다. X1 구현 에이전트는 동작했다고 보고했지만 저장소 안 실행 기록이 없다(스킬 사전 §5.2).
 - 설치는 구현 단계에서 한다. 이번 문서 작업 단계에서는 설치하지 않는다.
 - **"Skill API" 대응**: "Skill API"는 NVIDIA 공식 제품명이 아니다. 실체는 build.nvidia.com Agent Skills(CLI로 설치하는 지침 묶음)와 NIM API(`https://integrate.api.nvidia.com/v1`) 두 가지다 `[사실: 대회 조사 문서 §7]`. 주최 측의 정확한 의도는 `[미확인]`이므로 **둘 다** 쓴다.
   - Agent Skills: 공식 스킬 조합 + 자체 SKILL.md 저작(런타임 스킬 1개, 평가 스킬 2개)
@@ -1186,9 +1190,10 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | seccomp | 리눅스 커널의 시스템 호출 필터 |
 | L7 규칙 | HTTP method·path·query 수준의 허용 규칙 |
 | prefix | 경로의 앞부분. OpenShell 파일시스템 정책은 가장 긴 일치 prefix로 판정한다 |
-| credential placeholder rewrite | 샌드박스 안에는 자리표시 문자열만 두고, 게이트웨이가 요청을 내보낼 때 실제 키로 바꾸는 방식 |
+| credential placeholder rewrite | 샌드박스 프로그램에는 자리표시 문자열만 두고, 샌드박스 안 감독 프로세스의 정책 프록시가 요청을 내보낼 때 실제 키로 바꾸는 방식 |
 | `inference.local` | 샌드박스가 보는 추론 주소. 게이트웨이가 설정된 provider 1개·모델 1개로 전달한다 |
-| 게이트웨이 | 샌드박스의 요청을 받아 정책을 적용하고 전달하는 OpenShell 구성요소 |
+| 게이트웨이 | 샌드박스의 정책과 provider 설정을 보관하고 샌드박스에 내려보내는 OpenShell 제어면. 요청에 정책을 적용하고 전달하는 일은 감독 프로세스의 정책 프록시가 한다 |
+| 감독 프로세스(supervisor) | 샌드박스 컨테이너 안에서 root로 돌며 정책을 집행하는 OpenShell 프로세스. 나가는 요청의 정책 프록시가 자리표시 값을 실제 키로 바꾼다 |
 | `openshell logs` | 샌드박스의 허용·차단·정책 이벤트를 보는 명령. 감사 증거의 원천. 대회 조사 문서 §8-2는 허용·차단이 모두 기록된다고 적고, 거부·정책 이벤트 이름은 R3 문서 §3에서 확인했다. 계층별로 실제 남는지와 허용 이벤트 행의 형식은 `[미확인]` |
 | 채점 대상 실행 샌드박스 | NemoClaw 없이 TradeSentry CLI만 도는 샌드박스. 봉인 입력은 새로 만든 공식 채점 대상 실행 전용 샌드박스에만 넣는다 |
 | 시연 샌드박스 | NemoClaw의 OpenClaw 하네스·스킬·CLI가 함께 도는 샌드박스. 03 문서 §1 정책과 같은 기본 블록이 딸려 올 수 있으며, 요건 (b)는 예외 없이 지킨다 |
@@ -1220,6 +1225,6 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | Streamlit | 파이썬으로 웹 화면을 만드는 라이브러리 |
 | PR | 작업 브랜치의 변경을 main에 합치기 위한 병합 요청 |
 | squash 병합 | PR의 여러 커밋을 하나로 합쳐 main에 넣는 병합 방식 |
-| upstream | 게이트웨이가 요청을 넘겨주는 실제 목적지 서버 |
+| upstream | 정책 프록시가 요청을 넘겨주는 실제 목적지 서버 |
 | 구 개발계획 G0~G4 | 구 개발계획 §2의 관문(대회 조건, 신규 수집 접근, 24개월 품질, HS10 구성분해, NIM+NAT). 규범 G1~G6과 다르다 |
 | 규범 G1·G2 | 규범의 하드 게이트. G1은 정량 증명 가능성, G2는 교육 미션 정합성 `[DESIGN]` |

@@ -1,0 +1,95 @@
+# x1-os-test 라이브 정책 조회 — 2026-09-24(목) KST
+# 1판: 생성 직후(15:38, spikes/x1/policy/x1-os-test.policy.yaml). provider 합성분 없음(providers_v2_enabled 미설정)
+## openshell policy get x1-os-test --full (1판)
+Version:      1
+Hash:         0d03270a521be32e4462a01e3f045e80df43e0b49968b2a8c37fcc2368f488b8
+Status:       Effective
+Source:       sandbox
+Config rev:   1158079208912354853
+---
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only:
+  - /usr
+  - /lib
+  - /proc
+  - /dev/urandom
+  - /etc
+  - /opt/x1
+  read_write:
+  - /tmp
+  - /dev/null
+landlock:
+  compatibility: best_effort
+process:
+  run_as_user: sandbox
+  run_as_group: sandbox
+
+## openshell policy get x1-os-test --full (4판, 최종. 2판과 같은 내용: spikes/x1/policy/x1-os-test.nim.policy.yaml)
+Version:      4
+Hash:         3c8009005cf17ccd3e551590f59353f29b94fa72978d17808f50c41517d34eb2
+Status:       Effective
+Source:       sandbox
+Config rev:   3527509443982397957
+---
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only:
+  - /usr
+  - /lib
+  - /proc
+  - /dev/urandom
+  - /etc
+  - /opt/x1
+  read_write:
+  - /tmp
+  - /dev/null
+landlock:
+  compatibility: best_effort
+process:
+  run_as_user: sandbox
+  run_as_group: sandbox
+network_policies:
+  x1_nim_chat:
+    name: x1-nim-chat
+    endpoints:
+    - host: integrate.api.nvidia.com
+      port: 443
+      protocol: rest
+      enforcement: enforce
+      rules:
+      - allow:
+          method: POST
+          path: /v1/chat/completions
+    binaries:
+    - path: /opt/x1/python/**
+
+## openshell sandbox provider list x1-os-test
+[1mNAME[0m  [1mTYPE[0m    [1mCREDENTIAL_KEYS[0m  [1mCONFIG_KEYS[0m
+x1-nvidia  x1-nvidia-chat  1                 0
+
+## openshell inference get (15:41:34 설정 뒤)
+[1m[36mInference:[39m[0m
+
+  [2mWorkspace:[0m default
+  [2mProvider:[0m x1-nvidia-route
+  [2mModel:[0m nvidia/nemotron-3-super-120b-a12b
+  [2mVersion:[0m 1
+  [2mTimeout:[0m 60s (default)
+
+[1m[36mSystem inference:[39m[0m
+
+  [2mNot configured[0m
+
+## openshell settings get x1-os-test
+Sandbox:       x1-os-test
+Config Rev:    3527509443982397957
+Policy Source: sandbox
+Policy Hash:   3c8009005cf17ccd3e551590f59353f29b94fa72978d17808f50c41517d34eb2
+Settings:
+  agent_policy_proposals_enabled = <unset> (unset)
+  ocsf_json_enabled = <unset> (unset)
+  proposal_approval_mode = <unset> (unset)
+  providers_v2_enabled = <unset> (unset)

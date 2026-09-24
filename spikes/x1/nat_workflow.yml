@@ -1,0 +1,20 @@
+# X1 임시 NAT(NVIDIA NeMo Agent Toolkit) 워크플로 설정 틀.
+# x1_probe.py가 실행마다 output_path·base_url 등을 채운 사본을 <run_dir>/nat_workflow.yml로 쓴다.
+# 앱의 configs/nat/workflow.yml이 아니다(S0에서 따로 만든다).
+general:
+  telemetry:
+    tracing:
+      x1_file:
+        _type: file
+        output_path: nat_trace.jsonl
+        project: x1-probe
+        mode: overwrite
+
+workflow:
+  _type: x1_nim_once
+  base_url: https://integrate.api.nvidia.com/v1
+  model: nvidia/nemotron-3-super-120b-a12b
+  api_key_env: NVIDIA_API_KEY
+  max_tokens: 64
+  timeout_s: 90.0
+  max_5xx_retries: 3

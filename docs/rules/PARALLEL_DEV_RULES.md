@@ -588,11 +588,12 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 
 이 소절의 규칙은 따로 적지 않으면 `[DESIGN]`이다.
 
-- 키는 `.env`에만 둔다. 쓰는 키는 `NVIDIA_API_KEY`(NVIDIA 추론 API 키)와 `DATA_GO_KR_SERVICE_KEY`(공공데이터포털 관세청 API 키) 둘이다. `.env`는 `.gitignore`에 들어 있다 `[사실: .gitignore]`.
+- 이 소절의 "에이전트"는 두 뜻이다. 사본 위치나 `.env`를 열거나 출력하지 않는 에이전트는 개발 에이전트(오케스트레이터·Claude 보조 에이전트·Codex)다. "에이전트와 그 자식 프로세스"의 에이전트는 샌드박스 안 에이전트(시연의 OpenClaw(NemoClaw의 기본 에이전트 하네스), 채점 대상 실행의 CLI)다.
+- 키의 원본은 `.env`에 둔다. 쓰는 키는 `NVIDIA_API_KEY`(NVIDIA 추론 API 키)와 `DATA_GO_KR_SERVICE_KEY`(공공데이터포털 관세청 API 키) 둘이다. `.env`는 `.gitignore`에 들어 있다 `[사실: .gitignore]`. 사본은 설계된 주입 경로(OpenShell 게이트웨이의 provider 저장소, 샌드박스 안 root 감독 프로세스, NemoClaw 설정, 옮기면 Brev 호스트)에만 생긴다. 에이전트는 사본 위치도 열거나 출력하지 않는다(키 값이 드러날 수 있는 조회 출력 포함). 사본 위치와 키를 교체할 때 갱신하거나 지울 곳은 `docs/operations.md` "키 사본 위치와 교체 때 정리할 곳" 절이다(결정 기록 `20260924-2010-user-decision-key-rule-interpretation.md`).
 - 문서·PR·커밋·로그·trace·결정 기록에는 변수 이름만 쓰고 값을 쓰지 않는다.
 - 에이전트는 `.env` 내용을 열람·출력·복사하지 않는다. 서브에이전트·Codex·검토자에게도 넘기지 않는다.
 - 샌드박스 밖에서 키가 필요한 명령은 실행 프로세스가 환경변수로 읽게 한다. 샌드박스 안에는 환경변수로도 키를 넘기지 않는다.
-- 샌드박스 안에는 키를 두지 않는다. 주입 방식은 credential placeholder rewrite(샌드박스 밖 게이트웨이가 요청 속 자리표시자를 실제 키로 바꿔 넣는 OpenShell 방식)와 `inference.local`(OpenShell 게이트웨이가 제공하는 관리형 추론 주소) 중 X1에서 실제로 성공한 방식만 채택한다. 이유는 결정 기록에 남긴다.
+- 에이전트와 그 자식 프로세스(샌드박스 사용자 권한)가 읽을 수 있는 곳에는 키를 두지 않는다(해석 A, 결정 기록 `20260924-2010-user-decision-key-rule-interpretation.md`). 주입 방식은 X1에서 실제로 성공한 credential placeholder rewrite다. 샌드박스 프로그램에는 자리표시 값만 두고, 샌드박스 안 감독 프로세스(샌드박스 컨테이너 안에서 root로 돌며 정책을 집행하는 OpenShell 프로세스)의 정책 프록시가 게이트웨이에서 받은 자격 증명으로 요청 시점에 실제 키로 바꾼다. 이유는 결정 기록 `20260924-1556-x1-key-injection.md`에 있다.
 - 의도적 위반 시험의 키 조회 항목은 키 값을 출력하지 않는다. 키가 있는지 없는지만 기록한다.
 - 키가 커밋·PR·로그에 나타나면 작업을 멈추고 오케스트레이터가 사용자에게 올린다. 키 교체는 사용자가 한다.
 
@@ -678,7 +679,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 | Nemotron | NVIDIA 언어 모델. 조사자와 Critic이 같은 모델을 별도 문맥으로 쓴다 |
 | typed claim | 정해진 필드로 쓰는 사실 주장 단위 |
 | 근거 ID | 보고서 주장이 가리키는 스냅샷 원본 행의 식별자. 형식 `ev:<snapshot_id>:<table>:<rowid>` |
-| credential placeholder rewrite | 샌드박스 밖 게이트웨이가 요청 속 자리표시자를 실제 키로 바꿔 넣는 OpenShell 방식 |
+| credential placeholder rewrite | 샌드박스 프로그램에는 자리표시자만 두고, 샌드박스 안 감독 프로세스의 정책 프록시가 게이트웨이에서 받은 자격 증명으로 요청 시점에 실제 키로 바꿔 넣는 OpenShell 방식 |
 | `inference.local` | OpenShell 게이트웨이가 제공하는 관리형 추론 주소. 게이트웨이당 provider 1개·모델 1개만 연결한다 |
 | `RB-1` | 룰북의 첫 동결 버전. 2026-09-26(토) 12:00(조정값)에 동결한다 |
 | S0 | 구현 첫 작업 단위인 앱 스캐폴딩. 외부 자문 체크포인트다 |
