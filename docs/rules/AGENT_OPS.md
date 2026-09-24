@@ -277,7 +277,7 @@ echo "$CODEX_EXIT" > <종료 코드 파일>
 | 유사도 그룹핑 `g1`(`src/tradesentry/grouping/`, `data/reference/peer_group_g1.csv`) | ○ | ○ | | | — |
 | OpenShell 정책·위반 시험표, 런타임 스킬·NemoClaw 경로(`configs/openshell/policy.yaml`, OpenShell 증거 `artifacts/openshell/openshell_violation_tests-{시각}/`(`{시각}`은 위반 시험 실행이 시작한 KST 24시간 12자리 시각 `yymmddhhmmss`), `skills/tradesentry/SKILL.md`) | | | ○ | ○ | — |
 | 평가 하네스와 평가 스킬(`src/tradesentry/evaluation/`, `skills/tradesentry-scorecard/SKILL.md`, `skills/tradesentry-eval/SKILL.md`) | | ○ | ○ | ○ | — |
-| 승인(모의)과 화면(`src/tradesentry/approval/`, `app.py`(위치는 S0에서 정한다)) | ○(화면 문구) | | | ○ | — |
+| 승인(모의)과 화면(`src/tradesentry/approval/`, `src/tradesentry/app.py`) | ○(화면 문구) | | | ○ | — |
 | 탐지 조립 AS1(`tradesentry detect`: 지표·판정 정책 단위와 CLI 배선, `docs/plan/UNITS.md` §7) | ○ | ○ | | | 판정 정책 단위의 코드를 고치면 ○ 판정 정책 |
 | 사례 조사 조립 AS2(`tradesentry run-case`: 도구·조사 흐름·보고서·검증기·실행 기록 단위) | 도구·보고서·검증기·판정 정책·`g0` 단위의 코드를 고치면 ○ | ○ | ○ | ○ | 검증기·판정 정책 단위의 코드를 고치면 ○ 검증기·판정 정책 |
 | 평가 실행·채점 연결 AS3(`tradesentry evaluate`와 채점기 입력·출력 형식) | 채점기 코드를 고치면 ○ | ○ | ○ | ○ | 채점기 코드를 고치면 ○ 채점기 |
@@ -493,7 +493,7 @@ S0 앱 스캐폴딩은 구현 첫 작업 단위이고 외부 자문 체크포인
 | OpenShell 정책이 막았다 | 위반 시험 입력, 예측, 실측 종료 코드, `openshell logs`의 차단 행(OpenShell 증거 폴더 `artifacts/openshell/openshell_violation_tests-{시각}/`의 시험표 `.md`와 감사 로그 발췌 `.txt`. X1 임시 시험 기록은 옛 이름, 자료 계약 §10.3). 종료 코드가 0이 아니라는 사실만으로는 차단의 증거가 아니다. 다른 이유로 끝났을 수 있다 |
 | 정책이 통신을 허용했다 | `openshell logs`의 허용 행과 앱 실행 기록. 허용 행이 남지 않으면 실행 조건 대조(평가 묶음의 채점 요약 `scorer_summary-{시각}.md` 실행 조건에 적은 샌드박스 이름·라이브 정책 sha256이, 같은 곳에 적은 시험표 실행 폴더(`openshell_violation_tests-{시각}`) 시험표의 그 샌드박스 행과 같음. 봉인 묶음은 "공식 채점용" 행)를 통과한 평가 묶음 실행이나 시험표의 대조군 NIM 허용 호출의 앱 기록(trace 요청·응답, 종료 코드 0, HTTP 200)으로 대신하고 "허용 증거 출처: 앱 기록(`openshell logs` 행 없음)"을 적는다(룰북 부록 37번). 샌드박스 밖에서 돈 실행의 HTTP 200은 허용 증거가 아니다. 허용 목록에 있다는 사실만으로 안전하다고 쓰지 않는다. 감사 증거는 `openshell logs`와 앱 실행 기록이다 |
 | NIM 호출·NAT 추적이 남았다 | 실행 폴더 `outputs/{실행명}/`(실행명은 실행 이름에 시작 시각을 붙인 `{실행 이름}-{yymmddhhmmss}`. trace JSONL과 NAT 프로파일 결과가 든다)의 경로와 요약. `outputs/`는 커밋하지 않으므로 PR에는 비밀값 없는 발췌만 붙인다 |
-| 평가 숫자 | 커밋된 평가 결과 `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력 `scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`만 같은 이름의 폴더로 복사해 커밋한 것)와 `docs/eval/RULEBOOK.md`의 숫자 등급 표기 |
+| 평가 숫자 | 커밋된 평가 결과 `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력 `scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`를 같은 이름의 폴더로 복사해 커밋한 것. 재채점용 보고서 원문은 `artifacts/eval/score-{시각}/{run_id}/`에 증거 복사한다(조건 다섯은 자료 계약 §10.3 N11))와 `docs/eval/RULEBOOK.md`의 숫자 등급 표기 |
 | 자기채점 점수 | `artifacts/scorecard/scorecard-{시각}/scorecard-{시각}.md`(회차마다 새 자기채점 실행 폴더에서 결과 파일만 복사해 커밋)에 점수마다 근거 한 줄과 경로. 근거 한 줄이 비면 그 판정은 무효다. 증거를 못 찾은 지표는 추정해서 올리지 않는다 |
 | 봉인 자료가 그대로다 | `eval/sealed_manifest.json`의 해시와 채점 직전에 다시 계산한 해시의 대조 결과 |
 
