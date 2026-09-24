@@ -15,7 +15,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 
 ## 한눈에 보기
 
-1. 파일마다 소유 트랙이 하나다. 소유 트랙이 아닌 에이전트는 읽기만 한다. 공동 영역은 `docs/`와 `tests/`다. 예외로 봉인 폴더는 소유 트랙(D)을 포함한 두 트랙의 개발 에이전트와 Codex(교차 검토와 작은 코드 구현에 쓰는 코딩 에이전트) 모두 열거나 읽지 않는다.
+1. 파일마다 소유 트랙이 하나다. 소유 트랙이 아닌 에이전트는 읽기만 한다. 공동 영역은 `docs/`, `tests/`, 패키지 `src/tradesentry/runlog/`·`src/tradesentry/units/`, 도메인 출력 폴더 `outputs/`(커밋 안 함)다. 예외로 봉인 폴더는 소유 트랙(D)을 포함한 두 트랙의 개발 에이전트와 Codex(교차 검토와 작은 코드 구현에 쓰는 코딩 에이전트) 모두 열거나 읽지 않는다.
 2. D는 합성 시험자료(정답을 알고 규칙대로 만든 가짜 자료 묶음) `controlled_fixture_v0`를 먼저 넘긴다. M은 실자료를 기다리지 않고 그것으로 개발한다. 실스냅샷으로는 코드 변경 없이 바꿔 끼운다.
 3. D가 넘기는 것은 M이 인수 조건(넘겨받는 쪽이 확인하는 완료 기준) 다섯 가지로 확인한다. 못 채우면 받지 않고 돌려보낸다.
 4. 공용 약속(두 트랙이 함께 기대는 약속) 일곱 가지는 사용자 승인으로만 바꾼다. 승인을 기다리는 동안에는 그 약속에 의존하는 작업만 멈춘다.
@@ -43,13 +43,15 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 
 ### 1.2 파일 소유 표
 
-경로와 명령은 계획 경로·명령 표(`docs/rules/DATA_CONTRACT_V1.md` §10)와 같다. 이름은 조정값(현재 기본값으로 정했지만 정해진 절차로 바꿀 수 있는 값)이다. S0(구현 첫 작업 단위인 앱 스캐폴딩. 외부 자문 체크포인트)에서 받은 외부 자문으로 이름이 바뀌면 그 표와 이 표를 함께 고친다.
+경로와 명령은 계획 경로·명령 표(`docs/rules/DATA_CONTRACT_V1.md` §10)와 같다. 이름은 조정값(현재 기본값으로 정했지만 정해진 절차로 바꿀 수 있는 값)이다. S0(구현 첫 작업 단위인 앱 스캐폴딩. 외부 자문 체크포인트)에서 받은 외부 자문으로 이름이 바뀌면 그 표와 이 표를 함께 고친다. 2026-09-24(목) 사용자 결정(도메인 재편 A안, 결정 기록 `docs/tracking/decisions/20260924-1720-user-decision-domain-restructure.md`)으로 계획 모듈을 패키지(파이썬 모듈 파일을 여럿 담는 폴더)로 바꿨다. 패키지 안의 단위(혼자 실행하고 시험할 수 있게 파일 하나로 만든 가장 작은 구현 조각)별 소유는 단위 표 `docs/plan/UNITS.md`에 있다.
 
 | 경로·대상 | 소유 | 비고 |
 |---|---|---|
 | `src/tradesentry/ingest.py`(기존 수집기) | D | 표준 라이브러리만 쓴다 |
-| `src/tradesentry/metrics.py`, `src/tradesentry/dal.py` | D | `dal.py`는 자료 접근층(SQLite 스냅샷을 읽기 전용으로 여는 함수 모음) |
-| `src/tradesentry/`의 나머지: `policy.py`, `tools.py`, `workflow.py`, `validator.py`, `reports.py`, `grouping.py`, `approval.py`, `evaluation.py`, `cli.py` | M | `evaluation.py`는 NAT 사후 평가기다(분담 §2). 정답 대조 채점을 하는 독립 채점기와 다르다 |
+| `src/tradesentry/contract/`, `src/tradesentry/snapshot/`, `src/tradesentry/dal/`, `src/tradesentry/metrics/` | D | `contract/`는 공유 커널(계약 타입·근거 ID·정책 수치 읽기·도구 봉투 키), `snapshot/`은 스냅샷 빌드·검증과 합성 스냅샷 생성, `dal/`은 자료 접근층(SQLite 스냅샷을 읽기 전용으로 여는 함수 모음)이다 |
+| `src/tradesentry/`의 M 패키지: `policy/`, `grouping/`, `tools/`, `workflow/`, `reports/`, `validator/`, `evaluation/`, `approval/`, `cli/` | M | `evaluation/`은 평가 하네스(묶음 실행과 실행 결과 기록의 실행 쪽 키), 샌드박스 밖 실행기, 추출 명령, NAT 사후 평가를 담는다(분담 §2의 평가 하네스). 정답 대조 채점을 하는 독립 채점기와 다르다 |
+| `src/tradesentry/runlog/`(trace·실행 결과 기록·원인 분류 코드) | 공동 | 두 트랙의 실행 기록이 같은 형식을 쓰게 한다 |
+| `src/tradesentry/units/`(단위 등록부와 공통 실행기, 개발 전용) | 공동 | 물리 단위(USD·kg)와 관계없다. CLI·런타임 스킬에서 부르지 않는다 |
 | `app.py`(화면) | M | 위치는 계획 경로·명령 표에 아직 없다 |
 | CLI `tradesentry <명령>` | M | `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate` |
 | `data/` 전체(스냅샷·참조 자료) | D | 예외: `data/reference/peer_group_g1.csv`는 M이 계산하고 D가 검수한다(§3.4) |
@@ -64,15 +66,15 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 | `eval/scenarios/SCENARIO_SPEC.md`(시나리오 명세, 공개) | D | |
 | `eval/dev/dev20/`(dev20: 공개 개발용 합성 사례 20건의 입력과 정답표) | D | 평가 정답 파일 |
 | `eval/dev/oracle_ABC.json`(기존) | D | 고치지 않는다. 한국어 표기와 코드의 대응은 `docs/rules/DATA_CONTRACT_V1.md` §3을 따른다 |
-| 평가 자료 생성 스크립트 | D | 위치는 계획 경로·명령 표에 아직 없다. holdout40 생성 코드는 저장소에 두지 않고 봉인 폴더에 둔다(§6.6) |
+| `eval/datagen/`(평가 자료 도구: dev20 생성, holdout40 결정적 검사, 실자료 분할) | D | holdout40 생성 코드는 여기 두지 않는다. 저장소에 두지 않고 봉인 폴더에 둔다(§6.6) |
 | `eval/sealed_manifest.json`(봉인 해시 목록) | D | 해시만 담는다(§6) |
-| `eval/scorer/`(독립 채점기) | D | 런타임 코드를 import하지 않고 복사하지도 않은 독립 구현이다. `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증한다. 실행은 `python -m eval.scorer --run <run_dir>` |
+| `eval/scorer/`(독립 채점기) | D | 런타임 코드(`src/tradesentry/` 아래 모든 패키지. 등록부 `units/`와 커널 `contract/` 포함)를 import하지 않고 복사하지도 않은 독립 구현이다. `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증한다. 실행은 `python -m eval.scorer --run <run_dir>` |
 | 봉인 폴더(`TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`) | D | 저장소 밖이다. 쓰기는 격리된 생성 에이전트만 한다(§6). 두 트랙 개발 에이전트와 Codex는 열거나 읽지 않는다(§6.3). §1.3 "읽기만" 규칙의 예외다 |
-| `artifacts/runs/<run_id>/`(실행 기록, 커밋 안 함) | 공동 | |
-| `artifacts/eval/<run_id>/`, `artifacts/scorecard/<YYYY-MM-DD>-scorecard.md`(커밋) | 공동 | |
-| `artifacts/openshell/violation_tests.md`, `artifacts/openshell/logs/`(커밋) | M(보안 검토) | |
+| `outputs/`(도메인 출력, 커밋 안 함. 실행마다 `outputs/{실행명}/`, 봉인 묶음 실행은 `outputs/sealed/{실행명}/`) | 공동 | 이름 규칙은 자료 계약 §10.3. 봉인 묶음 실행의 출력은 정답 대조 채점이 끝나기 전에는 열지 않는다 |
+| `artifacts/eval/score-{시각}/`, `artifacts/scorecard/scorecard-{시각}/`(커밋. 실행 폴더를 승격한 것) | 공동 | 승격은 실행 폴더를 이름 그대로 `artifacts/{종류}/` 아래로 복사해 커밋하는 일이다 |
+| `artifacts/openshell/openshell_violation_tests-{시각}/`(커밋. 위반 시험 실행 폴더를 승격한 것) | M(보안 검토) | X1 임시 시험 기록은 옛 이름 위치에 있다(자료 계약 §10.3) |
 | `spikes/x1/`(X1: 세로형 최소 통합 시험의 임시 시험 코드) | M | 스캐폴딩 결과에 섞지 않는다 |
-| `docs/`, `tests/` | 공동 | 예외 규칙은 §1.3 |
+| `docs/`, `tests/` | 공동 | 예외 규칙은 §1.3. 단위 골든 시험 `tests/units/{단위 ID}/`도 여기 든다 |
 
 ### 1.3 공동 영역과 "읽기만" 규칙
 
@@ -80,7 +82,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 - 예외: 봉인 폴더에는 "읽기만" 규칙이 적용되지 않는다. 소유 트랙(D)을 포함한 두 트랙의 개발 에이전트와 Codex는 봉인 폴더를 열거나 읽지 않는다(§6.3). 봉인 폴더를 다루는 역할은 §6.3의 셋뿐이다.
 - 한 PR은 한 트랙의 소유 파일만 고친다. 공동 영역은 함께 고쳐도 된다. 두 트랙에 걸친 일은 작업을 나눈다. 예외는 두 트랙의 뼈대를 함께 만드는 S0 하나다.
 - 같은 파일을 고치는 작업 두 개를 동시에 열지 않는다. 오케스트레이터가 작업을 배분할 때 겹침을 확인한다.
-- 공동 영역 `docs/`와 `tests/`는 두 트랙이 모두 쓴다. 다만 다음은 따로 다룬다.
+- 공동 영역(`docs/`, `tests/`, `src/tradesentry/runlog/`, `src/tradesentry/units/`, `outputs/`)은 두 트랙이 모두 쓴다. 다만 다음은 따로 다룬다.
   - `docs/rules/DATA_CONTRACT_V1.md`의 값을 바꾸는 일은 공용 약속 변경이다(§4).
   - `docs/eval/RULEBOOK.md`는 `RB-1`(룰북의 첫 동결 버전) 동결(2026-09-26(토) 12:00, 조정값) 뒤에는 새 버전과 사유로만 바꾼다.
   - `docs/tracking/decisions/`에는 기록을 더하기만 한다(§8).
@@ -89,7 +91,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 
 ### 1.4 표에 없는 경로
 
-- 표에 없는 경로를 만들거나 고쳐야 하면 먼저 소유 트랙을 정해 결정 기록에 남긴다. 예: 기존 `scripts/g4_nim_toolcall_probe.py`, 프롬프트·모델 설정·`app.py`·평가 자료 생성 스크립트의 위치.
+- 표에 없는 경로를 만들거나 고쳐야 하면 먼저 소유 트랙을 정해 결정 기록에 남긴다. 예: 기존 `scripts/g4_nim_toolcall_probe.py`, 프롬프트·모델 설정·`app.py`의 위치.
 - 계획 경로·명령 표에 새 이름을 올려야 하면, 그 표와 그 이름을 쓰는 문서를 한 PR에서 함께 고친다. 문서마다 새 경로를 지어내지 않는다.
 
 ### 1.5 분담 문서에서 옮기며 바뀐 것
@@ -129,7 +131,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 
 ### 2.2 넘기는 시점
 
-- 2026-09-24(목) S0가 끝나 두 트랙이 갈라지면, D는 이 자료를 `dal.py`·`metrics.py`와 함께 첫 인수 묶음으로 넘긴다. 인수 조건(§3)의 "자료 접근층으로 읽힘"과 "oracle A/B/C 재현"이 두 모듈을 요구하기 때문이다.
+- 2026-09-24(목) S0가 끝나 두 트랙이 갈라지면, D는 이 자료를 `dal/`·`metrics/` 패키지와 함께 첫 인수 묶음으로 넘긴다. 인수 조건(§3)의 "자료 접근층으로 읽힘"과 "oracle A/B/C 재현"이 두 패키지를 요구하기 때문이다.
 - 2026-09-25(금) MVP 시험(최소 기능 합격 시험) 전에 인수를 마친다. MVP 합격 체크리스트 1번(A/B/C가 각각 `MONITOR`/`MAINTAIN`/`HOLD`로 끝남)이 이 자료에 기댄다.
 - `[추론]` 현재 `.gitignore`는 `data/snapshots/*/snapshot.sqlite`와 `data/snapshots/*/raw/`를 커밋에서 뺀다 `[사실: .gitignore]`. 그래서 이 파일들만으로는 합성 시험자료가 git을 거쳐 M의 작업 폴더에 도착하지 않는다. 넘기는 방식은 D가 정해 결정 기록에 남긴다. 2026-09-27(일)의 키 없이 도는 스모크 시험(기본 동작만 빠르게 확인하는 시험)도 같은 방식에 기댄다. 이 시험은 커밋된 합성 픽스처(시험에 쓰려고 고정해 둔 자료)와 기록된 trace(실행 중 모델 호출·도구 호출·결과를 차례로 남긴 기록)로 돈다.
 
@@ -137,11 +139,11 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 
 - 인수 전에는 자료 계약(`docs/rules/DATA_CONTRACT_V1.md`)의 객체·필드와 도구 출력 봉투(도구 5개가 공통으로 돌려주는 결과 틀)를 기준으로 코드를 쓴다.
 - 임시 대역(stub. 진짜 자료 대신 정해진 값을 돌려주는 가짜 함수)은 M이 만든 시험 파일 안에만 둔다. 운영 코드에 넣지 않는다.
-- 인수 뒤에는 임시 대역을 `dal.py` 호출로 바꾸고, 같은 시험이 `controlled_fixture_v0`로 통과하는지 확인한다.
+- 인수 뒤에는 임시 대역을 `dal/` 호출로 바꾸고, 같은 시험이 `controlled_fixture_v0`로 통과하는지 확인한다.
 
 ### 2.4 실스냅샷 교체 원칙
 
-- 모든 자료 조회는 `snapshot_id`를 받아 `dal.py`를 거친다. 코드에 스냅샷 이름이나 파일 경로를 박아 두지 않는다.
+- 모든 자료 조회는 `snapshot_id`를 받아 `dal/`을 거친다. 코드에 스냅샷 이름이나 파일 경로를 박아 두지 않는다.
 - 실스냅샷으로 바꿀 때는 CLI 공통 옵션 `--snapshot`의 값만 `controlled_fixture_v0`에서 `kcs_202201_202412_v2`로 바꾼다. 코드는 고치지 않는다.
 - 두 스냅샷은 같은 자료 계약(`schema_version=1`)을 따르고 `source_kind`만 다르다(`controlled`와 `real`).
 - 바꿀 때 코드를 고쳐야 한다면 그것은 자료 계약이나 자료 접근층의 결함이다. M은 우회 코드를 쓰지 않고 D에게 돌려보낸다. 계약 필드를 바꿔야 하면 §4 절차를 거친다.
@@ -159,8 +161,8 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 
 인수물(한 트랙이 다른 트랙에 넘기는 자료나 모듈)은 다음과 같다. 괄호 안은 `docs/plan/ROADMAP.md` §2의 구현 작업 ID다.
 
-- 자료 접근층 `src/tradesentry/dal.py`와 자료 계약 구현(DT1)
-- 지표 계산 `src/tradesentry/metrics.py`(DT2)
+- 자료 접근층 `src/tradesentry/dal/`와 자료 계약 구현 `src/tradesentry/contract/`·`src/tradesentry/snapshot/`(DT1)
+- 지표 계산 `src/tradesentry/metrics/`(DT2)
 - 합성 시험자료 `controlled_fixture_v0`(DT3)
 - dev20(`eval/dev/dev20/`의 입력과 정답표, DT5)
 
@@ -172,18 +174,18 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 |---|---|---|
 | 1 | 인수물마다 `schema_version=1` 표시가 있다 | 스냅샷 정보나 모듈의 계약 버전 표시에서 값을 읽는다 |
 | 2 | 자료 계약 검사 명령이 통과한다 | 종료 코드 0. 검사 명령의 이름은 계획 경로·명령 표에 아직 없다 `[미확인]`. 정해지면 그 표와 이 문서를 함께 고친다 |
-| 3 | 자료 접근층(`dal.py`)으로 읽힌다 | `dal.py`로 인수물을 열어 계약 객체를 읽는 시험이 통과한다 |
-| 4 | `metrics.py`가 oracle A/B/C를 재현한다 | `eval/dev/oracle_ABC.json`의 `expected`에서 아래 목록의 수치 필드가 모두 일치한다 |
+| 3 | 자료 접근층(`dal/`)으로 읽힌다 | `dal/`로 인수물을 열어 계약 객체를 읽는 시험이 통과한다 |
+| 4 | `metrics/` 패키지가 oracle A/B/C를 재현한다 | `eval/dev/oracle_ABC.json`의 `expected`에서 아래 목록의 수치 필드가 모두 일치한다 |
 | 5 | 인수물마다 검증 명령과 종료 코드가 PR에 기록돼 있다 | PR 본문에서 조건 1~4의 명령과 종료 코드를 확인한다 |
 
 - 조건 4에서 대조하는 수치 필드는 다음과 같다 `[사실: eval/dev/oracle_ABC.json]`.
   - `unit_value`: `U0`·`U1`(기준월·비교월 단가), `r_U`(단가 전년동월 변화율), `within`·`mix`(HS10 구성효과 분해에서 품목 안 단가 변화 효과와 구성비 변화 효과), `residual`(분해 잔차)
   - `share`: `V_country_0`·`V_country_1`(해당국 금액), `V_world_0`·`V_world_1`(전체국가 금액), `s0_pp`·`s1_pp`(점유율, 퍼센트포인트), `d_s_pp`(점유율 변화)
   - C처럼 분해할 수 없는 사례의 `within`·`mix`는 null이다. 0으로 채우지 않고 null 그대로 일치해야 한다. C에는 `residual` 키가 없으므로 C의 `residual`은 대조 대상이 아니다.
-  - `threshold_pp`(oracle에 적힌 점유율 판정 기준값), `triggered`(점유율 신호 발동 여부), `signals`(신호별 발동 여부)는 `metrics.py`가 아니라 MT1(`policy.py`) 시험에서 대조한다. 그 시험의 기준값은 policy_v1이 아니라 oracle에 적힌 개발용 정책 `dev-0.1`의 값(단가 변화율 절댓값 30% 이상, 점유율 변화 절댓값 10pp 이상)이다 `[사실: eval/dev/oracle_ABC.json]`.
+  - `threshold_pp`(oracle에 적힌 점유율 판정 기준값), `triggered`(점유율 신호 발동 여부), `signals`(신호별 발동 여부)는 `metrics/`가 아니라 MT1(`policy/`) 시험에서 대조한다. 그 시험의 기준값은 policy_v1이 아니라 oracle에 적힌 개발용 정책 `dev-0.1`의 값(단가 변화율 절댓값 30% 이상, 점유율 변화 절댓값 10pp 이상)이다 `[사실: eval/dev/oracle_ABC.json]`.
   - `review_status`(판정 상태)는 조사 흐름과 근거에 달려 있다. 그래서 조건 4가 아니라 MVP 합격 체크리스트 1번이 A/B/C를 처음부터 끝까지 돌려 확인한다.
 - 인수할 때마다 다섯 조건을 모두 확인한다.
-- 조건 3·4는 인수물이 자료가 아닐 때도(예: `dal.py`만 고친 PR) 회귀 확인으로 다시 돌린다.
+- 조건 3·4는 인수물이 자료가 아닐 때도(예: `dal/`만 고친 PR) 회귀 확인으로 다시 돌린다.
 
 ### 3.3 확인과 돌려보내기
 
@@ -325,6 +327,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
   - `real_sealed`의 사례 목록과 채점 표본
 - 위치는 저장소 밖 봉인 폴더다. 기본값은 `~/.tradesentry/sealed/`이고, 환경변수 `TRADESENTRY_SEALED_DIR`로 바꿀 수 있다.
 - 봉인 폴더는 저장소 안에도, 에이전트 작업 폴더(git worktree: 한 저장소에서 브랜치마다 따로 여는 작업 폴더) 안에도 두지 않는다. 저장소 안에 두고 `.gitignore`로 숨기는 방식도 쓰지 않는다.
+- 봉인 묶음을 샌드박스에서 실행한 출력은 저장소 안 `outputs/sealed/{실행명}/`(커밋 안 함)에 둔다. 이것은 봉인 자료가 아니라 실행 출력이라 위 규칙과 부딪치지 않고, 정답 대조 채점이 끝나기 전에는 열지 않는다(자료 계약 §10.3 N10). 거꾸로 실행 출력을 봉인 폴더에 두지 않는다. 봉인 폴더에는 격리된 생성 에이전트만 쓰고(§6.3), 해시 재대조는 목록에 없는 파일도 불일치로 보기 때문이다(§6.2, 자료 계약 §12.2).
 
 ### 6.2 해시 목록과 원본 커밋 시점
 
@@ -375,7 +378,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 - ①의 전제: 허용 목록은 경로 앞부분 일치 방식이다(겹치면 더 긴 앞부분이 이긴다) `[사실: 03-openshell-policy-yaml-구조.md §3.6]`. 그래서 입력은 들이고 정답표는 빼려면 둘이 서로 다른 하위 경로에 있어야 한다. D가 입력과 정답표를 다른 하위 경로로 나누고, 그 배치를 결정 기록에 남긴다. `eval/dev/dev20/`과 봉인 폴더 안이 여기에 해당한다. 하위 경로 이름은 이 문서에서 정하지 않는다. 허용 목록에는 입력 하위 경로만 넣고 상위 폴더는 넣지 않는다. 03 문서 §2.2가 적은 파일시스템 필드(`include_workdir`, `read_only`, `read_write`)에는 거부 항목이 없어서, 상위 폴더를 넣으면 그 아래 정답표 경로를 따로 막을 수 없기 때문이다 `[추론: 03-openshell-policy-yaml-구조.md §2.2, §3.6]`.
 - ② 봉인 자료를 저장소 밖에 두어 격리한다. 공식 채점 대상 실행 때에만 봉인 입력을 샌드박스에 읽기 전용으로 넣고, 정답표는 어떤 샌드박스에도 넣지 않는다.
 - ①이 ②를 보장한다고 쓰지 않는다.
-- ①이 실제로 작동하는지는 의도적 위반 시험(일부러 정책 위반을 시도해 막히는지 보는 시험)의 표(`artifacts/openshell/violation_tests.md`)로 확인한다. 표에는 예측과 실측, 종료 코드와 감사 로그(OpenShell이 허용·차단 결정을 남기는 기록. `openshell logs`로 모은다)의 해당 행을 함께 남긴다.
+- ①이 실제로 작동하는지는 의도적 위반 시험(일부러 정책 위반을 시도해 막히는지 보는 시험)의 표(OpenShell 증거 폴더 `artifacts/openshell/openshell_violation_tests-{시각}/`의 시험표 `openshell_violation_tests-{시각}.md`)로 확인한다. 표에는 예측과 실측, 종료 코드와 감사 로그(OpenShell이 허용·차단 결정을 남기는 기록. `openshell logs`로 모은다)의 해당 행을 함께 남긴다.
 
 공식 채점 대상 실행 전용 샌드박스는 다음과 같이 다룬다.
 
@@ -538,7 +541,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
   - D 소유 파일: `data`
   - M 소유 파일: `model`
   - 공동 영역만 고치는 작업, 또는 S0처럼 두 트랙에 걸친 예외 작업: `common`
-- 작업 ID 접두사로 영역을 정하지 않는다. 예를 들어 `AP` 작업은 `src/tradesentry/approval.py`(M 소유)를 고치므로 `model`이다.
+- 작업 ID 접두사로 영역을 정하지 않는다. 예를 들어 `AP` 작업은 `src/tradesentry/approval/`(M 소유)를 고치므로 `model`이다.
 - 짧은 설명은 영문 소문자·숫자·하이픈만 쓴다.
 - 예: `data/DT3-controlled-fixture`, `model/MT2-tool-budget`, `common/S0-scaffold`
 
@@ -599,7 +602,8 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 ### 10.3 비밀값·로컬 경로 검사
 
 - PR마다, 그리고 2026-09-27(일) 공개 준비 때 비밀값·로컬 경로 검사(NVIDIA API 키 접두어, 공공데이터포털 서비스키 요청 파라미터, 로컬 절대경로를 찾는 검사. 실제 패턴 문자열은 검사 스크립트에만 두고 문서에는 적지 않는다)를 돌린다. 명령과 종료 코드를 PR에 남긴다.
-- 커밋하는 평가 결과(`artifacts/eval/<run_id>/`), OpenShell 감사 로그 발췌(`artifacts/openshell/logs/`), trace 발췌도 커밋 전에 같은 검사를 거친다. 실행 기록 `artifacts/runs/<run_id>/`는 커밋하지 않는다 `[사실: .gitignore]`.
+- 커밋하는 증거물, 곧 승격한 실행 폴더(평가 결과 `artifacts/eval/score-{시각}/`, 자기채점 `artifacts/scorecard/scorecard-{시각}/`, OpenShell 증거 `artifacts/openshell/openshell_violation_tests-{시각}/`. 그 안의 감사 로그 발췌와 라이브 정책 조회 본문 포함)와 trace 발췌도 커밋 전에 같은 검사를 거친다. 승격은 실행 폴더를 이름 그대로 `artifacts/{종류}/` 아래로 복사해 커밋하는 일이다(자료 계약 §10.3).
+- 도메인 출력 `outputs/`(실행 폴더 `outputs/{실행명}/`와 봉인 묶음 실행의 `outputs/sealed/{실행명}/`)는 커밋하지 않는다 `[사실: .gitignore]`. 실행명은 `{실행 이름}-{yymmddhhmmss}`다.
 
 ## 용어 설명
 
@@ -608,7 +612,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 | 모델 트랙(M) | 판정 정책·조사 흐름·NVIDIA 연동·유사도 그룹핑을 맡는 구현 트랙 |
 | 데이터 트랙(D) | 수집·지표·합성과 평가 자료·채점기를 맡는 구현 트랙 |
 | 소유 트랙 | 그 파일을 고칠 수 있는 트랙. 다른 트랙은 읽기만 한다. 봉인 폴더는 예외로, 두 트랙 개발 에이전트와 Codex 모두 열지 않는다 |
-| 공동 영역 | 두 트랙이 모두 쓰는 `docs/`와 `tests/` |
+| 공동 영역 | 두 트랙이 모두 쓰는 `docs/`, `tests/`, 패키지 `src/tradesentry/runlog/`·`src/tradesentry/units/`, 도메인 출력 `outputs/` |
 | Claude 보조 에이전트 | 오케스트레이터가 작업 하나를 맡겨 띄우는 Claude 에이전트 |
 | 오케스트레이터 | 작업을 배분하고 PR을 병합하는 주관 에이전트 |
 | 도메인 검토자 | 작업 성격에 맞춰 띄우는 검토 에이전트. 무역통계·관세, 평가 방법론, NVIDIA 스택, 보안 네 종류 |
@@ -626,7 +630,11 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 | `grouping_version` | 그룹핑 방법의 버전 표시. 2026-09-25(금) MVP 시험까지는 `g0`를 쓰고, `g1`이 동결되는 즉시 `g1`이 기본이 된다. 룰북 동결 시한(2026-09-26(토) 12:00)까지 `g1`이 동결되지 않으면 `g0`로 채점하고 제출서에 사실대로 적는다 |
 | `params_hash` | 그룹핑 계산에 쓴 설정값의 해시. 같은 설정으로 계산했는지 확인할 때 쓴다 |
 | `rulebook_version` | 실행 결과 기록에 룰북 버전을 남기는 키 |
-| 자료 접근층 | 스냅샷을 읽기 전용으로 여는 함수 모음(`dal.py`) |
+| 자료 접근층 | 스냅샷을 읽기 전용으로 여는 함수 모음(`dal/` 패키지) |
+| 패키지 / 단위 | 파이썬 모듈 파일을 여럿 담는 폴더 / 혼자 실행하고 시험할 수 있게 파일 하나로 만든 가장 작은 구현 조각. 단위 목록은 `docs/plan/UNITS.md` |
+| 도메인 출력(`outputs/`) | 실행마다 폴더 하나에 쌓는 도메인별 출력물. 커밋하지 않는다 |
+| 실행 이름 / 실행명 | 시각이 붙지 않은 실행의 이름(예: `run_case`) / 거기에 시작 시각을 붙인 `{실행 이름}-{yymmddhhmmss}`. 실행 폴더 이름이자 `run_id`다 |
+| 승격 | 커밋할 증거가 된 실행 폴더를 이름 그대로 `artifacts/{종류}/` 아래로 복사해 커밋하는 일 |
 | 도구 출력 봉투 | 도구 5개가 공통으로 돌려주는 결과 틀 |
 | `compare_partners` | 비교국의 같은 품목·같은 달 값을 조회하는 도구 |
 | 임시 대역(stub) | 진짜 자료 대신 정해진 값을 돌려주는 가짜 함수 |
