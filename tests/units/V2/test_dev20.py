@@ -89,7 +89,11 @@ class CommittedBundleTest(unittest.TestCase):
         self.assertEqual([c["case_id"] for c in cases["cases"]], sorted(c["case_id"] for c in cases["cases"]))
         banned = ("scenario_class", "required_evidence", "review_status", "signal_status", "parent_series_id",
                   "expected", "MAINTAIN", "MONITOR", "HOLD", "ps_")
-        for path in (DEV20 / "input").rglob("*"):
+        # 입력 하위 경로와, 샌드박스에 함께 들어가는 스냅샷 쪽 텍스트(원천·빌드 기록)와 합성 비교국 표
+        paths = [p for p in (DEV20 / "input").rglob("*") if p.is_file()]
+        paths += [SNAPSHOT / name for name in ("manifest.json", "collection_log.json", "snapshot_hash.json",
+                                               "snapshot_build.json")] + [PEER_FILE]
+        for path in paths:
             if path.is_file():
                 text = path.read_text(encoding="utf-8")
                 for word in banned:
@@ -114,6 +118,55 @@ class CommittedBundleTest(unittest.TestCase):
 
     def test_is_deterministic(self):
         self.assertEqual(dev20.run(committed_rules()), self.result)
+
+
+class CommittedRulesNegativeTest(unittest.TestCase):
+    """커밋된 생성 규칙을 한 곳씩 고쳐, 판정 근거 규칙별 자료 불변식과 분류 3·9 검사가 각각 멈추는지 본다.
+
+    규칙 키나 분류 번호를 자료와 맞지 않게 바꾸면(자료는 그대로) 그 규칙의 불변식만 어긋난다. 발동 여부는 그대로라
+    앞 단계(기대 signals 대조)에서 멈추지 않는다."""
+
+    def assert_refused(self, change, fragment: str) -> None:
+        rules = committed_rules()
+        change(rules)
+        with self.assertRaises(ValueError) as caught:
+            dev20.run(rules)
+        self.assertIn(fragment, str(caught.exception))
+
+    @staticmethod
+    def case(rules: dict, scenario_class: int, **rule: str) -> dict:
+        """그 분류에서 규칙 키가 rule과 같은 첫 사례(식별자 순)."""
+        found = [c for c in rules["cases"] if c["scenario_class"] == scenario_class
+                 and all(c["rule"][k] == v for k, v in rule.items())]
+        return sorted(found, key=lambda c: c["case_id"])[0]
+
+    def test_unit_unexplained_needs_decomposable_within(self):  # 분류 5(분해 불가) 자료를 설명 안 됨으로
+        self.assert_refused(lambda r: self.case(r, 5)["rule"].update(unit_value="unexplained"),
+                            "설명 안 됨 사례인데 within+잔차가 기준 미만")
+
+    def test_unit_hold_inconsistent_needs_broken_decomposition(self):  # 분류 2(분해 성립) 자료를 불일치 보류로
+        self.assert_refused(lambda r: self.case(r, 2)["rule"].update(unit_value="hold_inconsistent"),
+                            "불일치 보류 사례인데 부모·하위 대조나 분해가 성립한다")
+
+    def test_unit_hold_inconsistent_data_without_mismatch(self):  # 자료 변이: 분류 5의 부모 덮어쓰기를 뺀다
+        def drop_parent(rules: dict) -> None:
+            for case in rules["cases"]:
+                case["events"] = [e for e in case["events"] if e["type"] != "parent"]
+        self.assert_refused(drop_parent, "불일치 보류 사례인데 부모·하위 대조나 분해가 성립한다")
+
+    def test_share_unexplained_needs_complete_denominator(self):  # 분류 7(분모 < 대상국) 자료를 설명 안 됨으로
+        self.assert_refused(lambda r: self.case(r, 7)["rule"].update(share="unexplained"),
+                            "점유율 설명 안 됨 사례인데 분모가 상대국 합보다 작거나")
+
+    def test_share_hold_inconsistent_needs_short_denominator(self):  # 분류 8(분모 완전) 자료를 분모 불완전 보류로
+        self.assert_refused(lambda r: self.case(r, 8)["rule"].update(share="hold_inconsistent"),
+                            "분모 불완전 보류 사례인데 분모가 대상국 금액보다 작은 달이 없다")
+
+    def test_class3_needs_peer_co_movement(self):  # 비교국이 평소 수준인 분류 2 자료를 분류 3으로
+        self.assert_refused(lambda r: self.case(r, 2).update(scenario_class=3), "비교국 동반 변화")
+
+    def test_class9_needs_small_hs4_change(self):  # 대상 HS6가 그 나라 HS4의 대부분인 분류 10 자료를 분류 9로
+        self.assert_refused(lambda r: self.case(r, 10).update(scenario_class=9), "범위 함정이 아니다")
 
 
 class InstallPathTest(unittest.TestCase):

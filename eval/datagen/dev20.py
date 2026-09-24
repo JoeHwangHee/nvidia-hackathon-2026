@@ -115,6 +115,7 @@ CASE_KEYS = {"case_id", "hs6", "partner", "month", "scenario_class", "events", "
 REQUEST_STATUSES = ("FAILED", "NOT_COLLECTED")
 PEER_METHOD = "import_value_topk"
 PEER_GROUPING = "g0"
+PEER_CSV_NULL = "null"  # 비교국 표 CSV의 빈 값. 단위 G1 to_csv·data/reference/peer_group_g0.csv와 같다
 ID_RULE = ("ps_ + sha256(정규 JSON {\"children\": {HS10 뒤 4자리: [[V, Q] 월별]}, \"parent\": [[V, Q] 월별], "
            "\"period\": {\"start\", \"end\"}})의 16진수 소문자 앞 16자. 정규 JSON은 키 정렬, 구분자 ',' ':', "
            "ensure_ascii=False. 기본 계열은 사례 사건을 얹기 전의 대상 계열(부모 HS6와 HS10 하위품목의 월별 금액·중량)")
@@ -525,8 +526,12 @@ def peer_rows(rules: dict, view: View, raw_sha256: str) -> list[dict]:
     """합성 자료 안에서 g0 규칙(대상국을 뺀 상대국 가운데 기준연도 부모 HS6 수입금액 상위 k개국, 같으면 코드순)."""
     world = rules["world"]
     year, k = str(world["peer_source_year"]), world["peer_k"]
-    params = {"candidates": sorted(view.partners), "k": k, "method": PEER_METHOD, "source_year": year}
-    params_hash = hashlib.sha256(json.dumps(params, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+    # params_hash: 단위 G1(g0 비교국)과 같은 규칙(자료 계약 §2.3.6 "k, 기준연도, 후보국 목록의 해시"). grouping을 import하지
+    # 않고 같은 식을 따로 적었다: {"candidates": 정렬한 후보국, "k": 정수, "source_year": 정수}의 정규 JSON(키 정렬, 구분자
+    # ',' ':', ensure_ascii=True)의 sha256.
+    params = {"candidates": sorted(view.partners), "k": k, "source_year": int(year)}
+    params_hash = hashlib.sha256(json.dumps(params, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+                                 .encode("utf-8")).hexdigest()
     rows = []
     for h in view.hs6:
         for p in view.partners:
@@ -549,7 +554,7 @@ def peer_csv(rows: list[dict]) -> str:
     writer = csv.writer(buffer, lineterminator="\n")
     writer.writerow(types.PEER_GROUP_KEYS)
     for row in rows:
-        writer.writerow(["" if row[k] is None else row[k] for k in types.PEER_GROUP_KEYS])
+        writer.writerow([PEER_CSV_NULL if row[k] is None else row[k] for k in types.PEER_GROUP_KEYS])
     return buffer.getvalue()
 
 
