@@ -71,7 +71,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 | `eval/scorer/`(독립 채점기) | D | 런타임 코드(`src/tradesentry/` 아래 모든 패키지. 등록부 `units/`와 커널 `contract/` 포함)를 import하지 않고 복사하지도 않은 독립 구현이다. 간접 import(런타임 패키지를 부르는 모듈을 거쳐 부르는 경우)도 하지 않고 `eval/datagen/`도 import하지 않는다. `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증한다. 실행은 `python -m eval.scorer --run <run_dir>` |
 | 봉인 폴더(`TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`) | D | 저장소 밖이다. 쓰기는 격리된 생성 에이전트만 한다(§6). 두 트랙 개발 에이전트와 Codex는 열거나 읽지 않는다(§6.3). §1.3 "읽기만" 규칙의 예외다 |
 | `outputs/`(도메인 출력, 커밋 안 함. 실행마다 `outputs/{실행명}/`, 봉인 묶음 실행은 `outputs/sealed/{실행명}/`) | 공동 | 이름 규칙은 자료 계약 §10.3. 봉인 묶음 실행 사슬의 출력(`outputs/sealed/` 아래)은 금지 해제 조건(정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 전에는 열지 않는다 |
-| `artifacts/eval/score-{시각}/`, `artifacts/scorecard/scorecard-{시각}/`(커밋. 실행 폴더의 커밋 증거 파일을 증거 복사한 커밋 사본) | 공동 | 증거 복사는 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 커밋 증거 파일(평가 결과는 채점기 출력 `scorer_*`, 자기채점은 `scorecard-{시각}.md`)만 복사해 커밋하는 일이다. trace는 빼고, 봉인 묶음은 금지 해제 조건이 채워진 뒤에만 한다 |
+| `artifacts/eval/score-{시각}/`, `artifacts/scorecard/scorecard-{시각}/`(커밋. 실행 폴더의 커밋 증거 파일을 증거 복사한 커밋 사본) | 공동 | 증거 복사는 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 커밋 증거 파일(평가 결과는 채점기 출력 `scorer_*` 파일과 재채점용 보고서 원문, 자기채점은 `scorecard-{시각}.md`)만 복사해 커밋하는 일이다. 재채점용 보고서 원문은 `artifacts/eval/score-{시각}/{run_id}/`에 증거 복사한다(조건 다섯은 자료 계약 §10.3 N11). trace는 빼고, 봉인 묶음은 금지 해제 조건이 채워진 뒤에만 한다 |
 | `artifacts/openshell/openshell_violation_tests-{시각}/`(커밋. 위반 시험 실행 폴더의 결과 파일 `.md`·`.txt`·`.yaml`을 증거 복사한 커밋 사본) | M(보안 검토) | X1 임시 시험 기록은 옛 이름 위치에 있다(자료 계약 §10.3) |
 | `spikes/x1/`(X1: 세로형 최소 통합 시험의 임시 시험 코드) | M | 스캐폴딩 결과에 섞지 않는다 |
 | `docs/`, `tests/` | 공동 | 예외 규칙은 §1.3. 단위 골든 시험 `tests/units/{단위 ID}/`도 여기 든다 |
