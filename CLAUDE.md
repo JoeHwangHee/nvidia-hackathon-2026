@@ -40,10 +40,15 @@ nvidia-hackathon-2026/
 ├── skills/
 │   ├── tradesentry-scorecard/SKILL.md ← 평가 스킬 ①: 룰북 Part A로 자기채점
 │   └── tradesentry-eval/SKILL.md      ← 평가 스킬 ②: 룰북 Part B 성능 평가 실행
-├── src/tradesentry/ingest.py          ← 관세청 API 수집기와 스냅샷 검사(표준 라이브러리만 쓴다)
-├── tests/                             ← unittest 시험(네트워크·키 없이 돈다)
+├── pyproject.toml, uv.lock, .python-version ← Python 3.12.13 가상환경(uv)과 lock. 시험은 `uv run --locked python -m unittest discover -s tests -v`
+├── src/tradesentry/                   ← 앱 패키지 15개와 단위 파일(단위 표 docs/plan/UNITS.md). ingest.py는 관세청 API 수집기와 스냅샷 검사(표준 라이브러리만 쓴다)
+├── tests/                             ← unittest 시험(네트워크·키 없이 돈다). 단위 골든 시험은 tests/units/{단위 ID}/
 ├── configs/collection_plan.json       ← 수집 설정. snapshot_id가 v2 스냅샷을 가리킨다
+├── configs/openshell·nat·model/       ← OpenShell 정책, NAT 워크플로, 프롬프트·모델 설정 자리(로드맵 MT4·MT5가 채운다)
 ├── eval/dev/oracle_ABC.json           ← 개발용 기대 판정 사례 A·B·C
+├── eval/scorer/, eval/datagen/        ← 독립 채점기와 평가 자료 도구. 채점기는 tradesentry를 import하지 않는다
+├── artifacts/                         ← 커밋 증거물(증거 복사한 커밋 사본과 X1 증거 artifacts/openshell/)
+├── spikes/x1/                         ← X1 임시 시험 코드. 앱에 섞지 않는다
 ├── data/snapshots/                    ← 스냅샷별 manifest(수집 요청 목록)·검사 결과. 원자료와 SQLite는 커밋하지 않는다
 ├── data/reference/                    ← 품목표와 BACI(CEPII가 정리한 국가 간 연간 무역 자료) 참고 자료
 ├── outputs/                           ← 실행별 출력 폴더(커밋하지 않는다. 이름 규칙은 자료 계약 §10.3). 봉인 묶음 실행 사슬의 출력은 `outputs/sealed/`에 두고, 봉인 묶음마다 금지 해제 조건(그 묶음의 정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 전에는 그 묶음 출력을 열지 않는다

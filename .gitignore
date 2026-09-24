@@ -2,7 +2,7 @@
 .data/
 data/snapshots/*/raw/
 data/snapshots/*/snapshot.sqlite
-# 스냅샷 폴더의 SQLite는 이름과 관계없이 커밋하지 않는다: 최종 스냅샷 빌드 snapshot_build.sqlite(S0 제안)와 SQLite 부속 파일
+# 스냅샷 폴더의 SQLite는 이름과 관계없이 커밋하지 않는다: 최종 스냅샷 빌드 snapshot_build.sqlite(결정 기록 20260924-2212-user-decision-snapshot-build-and-g0.md)와 SQLite 부속 파일
 data/snapshots/*/*.sqlite
 data/snapshots/*/*.sqlite-*
 artifacts/runs/

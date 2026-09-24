@@ -28,10 +28,17 @@
 
 ### 시스템 파이썬으로는 앱 코드를 돌릴 수 없다
 
-- 증상: `import pandas`나 3.10 이후 문법에서 실패한다.
-- 원인: 이 개발 기계의 시스템 `python3`는 3.9.6이고 pandas·openpyxl이 없다. 앱은 Python 3.12 가상환경을 uv(파이썬 패키지·가상환경 관리 도구)로 만들기로 했고, 그 환경은 앱 뼈대(S0)에서 만든다.
-- 대응: S0 전에는 표준 라이브러리 코드와 기존 시험만 시스템 `python3`로 돌린다. `ingest.py`는 계속 표준 라이브러리만 쓴다.
-- 정본: `docs/plan/DEV_PLAN.md` §3.5
+- 증상: 앱 뼈대(S0) 뒤에 `python3 -m unittest discover -s tests`가 종료 코드 1로 끝난다(`tradesentry` import 오류). `import pandas`나 3.10 이후 문법에서도 실패한다.
+- 원인: 이 개발 기계의 시스템 `python3`는 3.9.6이고 pandas·openpyxl이 없다. 앱은 Python 3.12.13 가상환경(uv, 파이썬 패키지·가상환경 관리 도구)에서 돌고, 패키지 `tradesentry`는 그 가상환경에만 설치된다.
+- 대응: 시험은 `uv run --locked python -m unittest discover -s tests -v`로 돌린다(`docs/operations.md` "처음 준비" 4). 시스템 `python3`로는 수집기 시험만 `-p "test_ingest.py"`로 돈다. `ingest.py`는 계속 표준 라이브러리만 쓴다.
+- 정본: `docs/plan/DEV_PLAN.md` §3.5, 결정 기록 `docs/tracking/decisions/20260924-2212-orchestrator-decision-s0-scaffold.md`
+
+### NAT 명령이 저장소의 `.env`를 읽는다
+
+- 증상: 키 변수를 뺀 환경(`env -u`)에서 `nat run`·`nat eval`을 돌려도 키가 프로세스 환경에 들어간다.
+- 원인: NAT(NVIDIA 에이전트 실행 추적·평가 도구 모음) 1.9.0의 `nat` 명령 진입점은 import 때 `load_dotenv()`를 부른다. python-dotenv(`.env` 파일을 환경변수로 읽는 라이브러리)의 `find_dotenv()`는 현재 폴더가 아니라 호출한 파일의 폴더(가상환경 안 `site-packages/nat/cli/`)에서 위로 올라가며 `.env`를 찾는다. 가상환경이 저장소 안(`.venv/`)이면 저장소의 `.env`에 닿는다 `[사실: 2026-09-24(목) S0 NVIDIA 스택 검토에서 가짜 .env로 재현]`. `nat`을 대화형으로 한 번 쓰며 사용 통계 전송에 동의하면 그 뒤 `nat` 명령은 통계를 보낸다 `[사실: 같은 검토, NAT 소스]`.
+- 대응: `nat` 명령 대신 파이썬 API를 쓴다. 명령을 써야 하면 `nat`을 부를 수 있는 모든 프로세스에 `PYTHON_DOTENV_DISABLED=1`(python-dotenv 1.2.0부터)과 `NAT_TELEMETRY_ENABLED=false`를 준다. 단위 E2(샌드박스 밖 실행기)는 `nat`에 닿지 않는다(경계 시험). NAT를 lock에 넣는 작업(로드맵 MT4)에서 확인한다.
+- 정본: 결정 기록 `docs/tracking/decisions/20260924-2212-orchestrator-decision-s0-scaffold.md`
 
 ### macOS 기본 셸에서 검사 스크립트가 엉뚱하게 멈춘다
 
