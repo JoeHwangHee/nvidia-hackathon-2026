@@ -1,6 +1,6 @@
 # 인터페이스 계약
 
-TradeSentry 바깥(운영자, NemoClaw(OpenShell 위에서 에이전트를 돌리는 NVIDIA 참조 스택) 에이전트, 평가 스킬, 독립 채점기)이 기대는 약속이다. 형식의 정본은 `docs/rules/DATA_CONTRACT_V1.md`이고, 바꾸려면 공용 약속(두 트랙이 함께 기대는 약속) 변경 절차(`docs/rules/PARALLEL_DEV_RULES.md` §4)를 거친다.
+TradeSentry 바깥(운영자, NemoClaw(OpenShell, 곧 에이전트를 격리해 돌리는 NVIDIA 샌드박스 런타임 위에서 에이전트를 돌리는 NVIDIA 참조 스택) 에이전트, 평가 스킬(Agent Skills 형식의 평가 작업 절차), 독립 채점기)이 기대는 약속이다. 형식의 정본은 `docs/rules/DATA_CONTRACT_V1.md`이고, 바꾸려면 공용 약속(두 트랙이 함께 기대는 약속) 변경 절차(`docs/rules/PARALLEL_DEV_RULES.md` §4)를 거친다.
 
 | 인터페이스 | 정본 |
 |---|---|
