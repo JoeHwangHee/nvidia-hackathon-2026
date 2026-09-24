@@ -1,0 +1,173 @@
+# X1 2단계 — NemoClaw 시연 샌드박스(x1-demo) 명령 기록, 2026-09-24(목) KST
+# 형식: [ID] 시각 / 명령 / exit=<종료 코드> / 출력 요약. 키 값·자리표시 값은 어디에도 없다.
+# 키가 필요한 명령만 python3 spikes/x1/with_nvidia_key.py --env-file <저장소 .env> [--export-as <이름>] -- 로 감쌌다.
+
+[N1] 17:16:14 NemoClaw 설치(고지 수락: --yes-i-accept-third-party-software). 부트스트랩 스크립트는 15:21에 받아 읽은 파일과 sha256이 같음(738cb073…), 태그 v0.0.124 = 커밋 6f3cced(15:22에 읽은 소스)
+     env -u NVIDIA_API_KEY -u NVIDIA_INFERENCE_API_KEY -u DATA_GO_KR_SERVICE_KEY DOCKER_HOST=<colima Docker 소켓> NEMOCLAW_INSTALL_TAG=v0.0.124 NEMOCLAW_PROVIDER=build bash <검토한 nemoclaw.sh> --yes-i-accept-third-party-software
+     -> exit=1 (17:17:38). [1/3] Node.js v22.23.2 OK, [2/3] NemoClaw CLI 설치, [3/3] 온보딩 [2/8] 게이트웨이 기동 뒤 [3/8]에서 키 없음으로 중단(예상대로)
+     수락 기록: <NemoClaw 설정 폴더>/usage-notice.json (acceptedVersion 2026-04-01b)
+
+[N2] 17:19 게이트웨이 점검: <OpenShell 설정 폴더>/gateway.env를 NemoClaw가 다시 씀(14개 키, 포트 8080, 상태 <NemoClaw 게이트웨이 상태 폴더>), LaunchAgent homebrew.mxcl.openshell.plist 다시 씀, 활성 게이트웨이 openshell(17670) -> nemoclaw(127.0.0.1:8080), openshell status: Connected 0.0.116. 추론 경로·provider·샌드박스 없음
+
+[N3] 17:19:5x python3 spikes/x1/with_nvidia_key.py --env-file <저장소 .env> --export-as NVIDIA_INFERENCE_API_KEY -- env DOCKER_HOST=… NEMOCLAW_PROVIDER=build NEMOCLAW_MODEL=nvidia/nemotron-3-super-120b-a12b NEMOCLAW_POLICY_TIER=restricted NEMOCLAW_POLICY_MODE=skip NEMOCLAW_WEB_SEARCH_PROVIDER=none NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 nemoclaw onboard --non-interactive --fresh --name x1-demo --yes-i-accept-third-party-software
+     -> exit=0 (17:21:37). 출력의 키 접두어 0건, 가림 0건
+  [1/8] Preflight checks
+  [2/8] Starting OpenShell gateway
+  [3/8] Configuring inference provider
+  [non-interactive] Provider: build
+  Provider:      nvidia-prod
+  Model:         nvidia/nemotron-3-super-120b-a12b
+  [4/8] Setting up inference provider
+  Route: inference.local
+  Provider: nvidia-prod
+  Model: nvidia/nemotron-3-super-120b-a12b
+  ✓ Inference smoke passed: nvidia-prod / nvidia/nemotron-3-super-120b-a12b
+  ✓ Inference route set: nvidia-prod / nvidia/nemotron-3-super-120b-a12b
+  [5/8] Messaging channels
+  [6/8] Creating sandbox
+  ✓ Sandbox 'x1-demo' created
+  [7/8] Setting up OpenClaw inside sandbox
+  ✓ OpenClaw gateway launched inside sandbox
+  [8/8] Policy presets
+  [non-interactive] Policy tier: restricted
+  ✓ Deployment verified — gateway, dashboard, and inference route are healthy.
+    OpenClaw version: 2026.7.1
+  Model:    nvidia/nemotron-3-super-120b-a12b (NVIDIA Endpoints)
+    Model:       nemoclaw inference set --model <model> --provider <provider> --sandbox x1-demo
+
+[C1] 17:21:59 openshell policy get x1-demo --full -> exit=0 (1판 hash eae30384…, 블록 7개). provider nvidia-prod(type nvidia, 자격 증명 키 이름 NVIDIA_INFERENCE_API_KEY)가 샌드박스에 첨부됨. 추론 경로 default 작업 공간: nvidia-prod / nvidia/nemotron-3-super-120b-a12b
+
+[K1] 17:22:17 openshell sandbox exec -n x1-demo --timeout 180 -- /usr/bin/python3 /tmp/x1-tools/key_check.py / -> exit=0 (OpenClaw 요청 전)
+{"checker": "x1_key_check", "dotenv_files_found": [], "dotenv_files_with_real_key": {}, "dotenv_roots": ["/"], "env_DATA_GO_KR_SERVICE_KEY": "absent", "env_NVIDIA_API_KEY": "absent", "env_real_key_vars": 0, "env_var_names_with_KEY_or_TOKEN": ["NVIDIA_INFERENCE_API_KEY", "OPENCLAW_GATEWAY_TOKEN"], "harness_paths": {"/etc/openshell": {"files_scanned": 4, "real_key_hits": 0, "unreadable_or_large": 0}, "/home/sandbox": "absent", "/root": {"files_scanned": 0, "real_key_hits": 0, "unreadable_or_large": 0}, "/run/nemoclaw": {"files_scanned": 0, "real_key_hits": 0, "unreadable_or_large": 0}, "/run/openshell": {"files_scanned": 0, "real_key_hits": 0, "unreadable_or_large": 0}, "/sandbox/.config": "absent", "/sandbox/.deepagents": "absent", "/sandbox/.hermes": "absent", "/sandbox/.nemoclaw": {"files_scanned": 53, "real_key_hits": 0, "unreadable_or_large": 0}, "/sandbox/.openclaw": {"files_scanned": 30934, "real_key_hits": 0, "unreadable_or_large": 6}}, "pid": 2527, "ppid": 1, "proc_environ_hit_pids": [], "proc_environ_readable": 1, "proc_environ_real_key_hits": 0, "proc_environ_unreadable": 13, "real_key_total": 0, "uid": 998, "verdict": "NO_REAL_KEY"}
+
+[C2] 17:22 하네스 프로세스와 실행 파일
+    PID    PPID USER     COMMAND
+      1       0 root     /opt/openshell/bin/openshell-sandbox --workdir /sandbox
+    891       1 sandbox  bash /usr/local/bin/nemoclaw-start
+    902     891 sandbox  tee -a /tmp/nemoclaw-start.log
+    903     891 sandbox  tee -a /tmp/nemoclaw-start.log
+   1319     891 sandbox  openclaw-gateway
+   1337     891 sandbox  bash /usr/local/bin/nemoclaw-start
+   1338    1337 sandbox  tail -n +1 -F /tmp/gateway.log
+   1340    1337 sandbox  sed -u s/^/[gateway-log:] /
+   1347     891 sandbox  bash /usr/local/bin/nemoclaw-start
+   1349    1347 sandbox  tail -n +1 -F /tmp/gateway.log
+   1356     891 sandbox  python3 -u -
+   1481     891 sandbox  bash /usr/local/bin/nemoclaw-start
+   2220    1481 sandbox  sleep 30
+   2562       1 sandbox  sh -c ps -eo pid,ppid,user,args | cut -c1-150; echo ---; ls -la /usr/local/bin/openclaw; readlink -f /usr/local/bin/openclaw;
+   2577    2562 sandbox  ps -eo pid,ppid,user,args
+   2578    2562 sandbox  cut -c1-150
+---
+lrwxrwxrwx 1 root root 67 Sep 14 12:40 /usr/local/bin/openclaw -> /usr/local/lib/nemoclaw/openclaw-runtime/node_modules/.bin/openclaw
+/usr/local/lib/nemoclaw/openclaw-runtime/node_modules/openclaw/openclaw.mjs
+0000000   #   !   /   u   s   r   /   b   i   n   /   e   n   v       n
+0000020   o   d   e  \n  \n   i   m   p   o   r   t       {       s   p
+/usr/local/bin/node
+/usr/bin/node
+/usr/bin/python3.13
+
+[C3] 17:22 OpenClaw 모델 provider 설정(값 없이 형태만)
+provider inference baseUrl= https://inference.local/v1 api= openai-completions apiKey= other(len=6) models= ['nvidia/nemotron-3-super-120b-a12b'] keys= ['api', 'apiKey', 'baseUrl', 'models', 'timeoutSeconds']
+primary= {'primary': 'inference/nvidia/nemotron-3-super-120b-a12b'}
+top keys= ['agents', 'channels', 'gateway', 'meta', 'models', 'plugins', 'proxy', 'security', 'tools', 'update']
+owner uid= 998 mode= 0o100600
+env HTTPS_PROXY set: True value host: http://10.200.0.1:3128
+
+[D1] 17:23:36 openshell inference delete -> exit=0 (Inference: Not configured, System inference: Not configured). 로그 300행 CONFIG:UPDATED user_route_count:0
+[D2] 17:23:4x openshell sandbox exec -n x1-demo -- curl --max-time 20 -sS -o /dev/null -w '%{http_code}' https://inference.local/v1/models -> exit=0, HTTP 503
+[D3] 17:23:4x openshell sandbox exec -n x1-demo -- /usr/bin/python3 /tmp/x1-tools/net_probe.py GET https://inference.local/v1/models -> exit=3
+{"method": "GET", "url": "https://inference.local/v1/models", "exe": "/usr/bin/python3", "http_status": 503, "body_head": "{\"error\":\"cluster inference is not configured\",\"hint\":\"run: openshell cluster inference set --help\"}", "exit_code": 3}
+     로그 311·317행: CONNECT는 L4 허용, 라우터가 503(cluster inference is not configured)
+
+[E1] 17:24:31 openclaw.json의 models.providers.inference: baseUrl https://inference.local/v1 -> https://integrate.api.nvidia.com/v1, apiKey(길이 6 더미값) -> 샌드박스 환경변수 NVIDIA_INFERENCE_API_KEY의 자리표시 값(자리표시 형식이 아니면 쓰지 않도록 검사). 원본은 /sandbox/.openclaw/openclaw.json.x1-backup, .config-hash 다시 계산 -> exit=0
+baseUrl= https://integrate.api.nvidia.com/v1 apiKey=placeholder(openshell:resolve:env:*) config_hash_updated=yes
+
+[P1] 17:24:38 openshell policy set x1-demo --policy spikes/x1/policy/x1-demo-narrowed.policy.yaml --wait -> exit=0
+✓ Policy version 2 submitted (hash: fd0d227b8eaa)
+✓ Policy version 2 loaded (active version: 2)
+     로그 328행 CONFIG:DETECTED, 333행 CONFIG:LOADED [policy_hash:4b11db0c…]. 남은 블록: nvidia(POST /v1/chat/completions, /usr/local/bin/openclaw), openclaw_gateway_dialback(10.200.0.2 = 샌드박스 자신의 veth 주소)
+
+[U1] 17:25:00 openshell sandbox upload x1-demo <x1opt.tar.gz(x1-probe:x1 이미지의 /opt/x1: Python 3.12.13 독립 실행형 + nvidia-nat 1.9.0)> /tmp/x1-tools/ 와 앱 파일 5개 -> 모두 exit=0. /sandbox/x1opt로 풀고 nat 1.9.0 import 확인 -> exit=0. 외부 전송 임시 허용 없음
+[S1] 17:25:10 nemoclaw x1-demo skill install spikes/x1/skill/x1-probe/ -> exit=0 (Installed x1-probe -> /sandbox/.openclaw/workspace/skills/x1-probe). nemoclaw x1-demo skill list -> exit=0, x1-probe ready(openclaw-workspace)
+[R1] 17:25:24 nemoclaw x1-demo gateway restart -> exit=0 (17:25:58, health passed)
+[H1] 17:25:58~17:39 그 뒤 openshell sandbox exec 여러 건이 --timeout을 넘겨 멈춤(샌드박스 안 명령은 relay 닫힘까지 끝났으나 호스트 CLI가 돌아오지 않음). 멈춘 exec를 모두 끝낸 뒤 정상화. 원인 [미확인]. key_check.py가 일반 파일만 열도록 고침(FIFO·소켓 파일 열기 방지)
+
+[K2] 17:40:33 openshell sandbox exec -n x1-demo --timeout 240 -- /usr/bin/python3 /tmp/x1-tools/key_check.py / -> exit=0 (설정·정책 변경 뒤, OpenClaw 요청 전)
+{"checker": "x1_key_check", "dotenv_files_found": [], "dotenv_files_with_real_key": {}, "dotenv_roots": ["/"], "env_DATA_GO_KR_SERVICE_KEY": "absent", "env_NVIDIA_API_KEY": "absent", "env_real_key_vars": 0, "env_var_names_with_KEY_or_TOKEN": ["NVIDIA_INFERENCE_API_KEY", "OPENCLAW_GATEWAY_TOKEN"], "harness_paths": {"/etc/openshell": {"files_scanned": 4, "real_key_hits": 0, "unreadable_or_large": 0}, "/home/sandbox": "absent", "/root": {"files_scanned": 0, "real_key_hits": 0, "unreadable_or_large": 0}, "/run/nemoclaw": {"files_scanned": 0, "real_key_hits": 0, "unreadable_or_large": 0}, "/run/openshell": {"files_scanned": 0, "real_key_hits": 0, "unreadable_or_large": 0}, "/sandbox/.config": "absent", "/sandbox/.deepagents": "absent", "/sandbox/.hermes": "absent", "/sandbox/.nemoclaw": {"files_scanned": 53, "real_key_hits": 0, "unreadable_or_large": 0}, "/sandbox/.openclaw": {"files_scanned": 30927, "real_key_hits": 0, "unreadable_or_large": 17}}, "pid": 14856, "ppid": 1, "proc_environ_hit_pids": [], "proc_environ_readable": 1, "proc_environ_real_key_hits": 0, "proc_environ_unreadable": 13, "real_key_total": 0, "uid": 998, "verdict": "NO_REAL_KEY"}
+
+[A1] 17:40:49 nemoclaw x1-demo agent --agent main --json --timeout 240 -m "Run the X1 probe now: use the x1-probe skill with the one-line input 'Reply with exactly: X1 OK', then return the JSON line printed by the command exactly as it is." -> exit=1 (17:40:53)
+✓ Active gateway set to 'nemoclaw'
+GatewayClientRequestError: FailoverError: LLM request failed: network connection error.
+     stdout 0바이트. 로그 528~530행: NET:OPEN [MED] DENIED /usr/local/bin/node(5073) -> integrate.api.nvidia.com:443 [reason:binary '/usr/local/bin/node' not allowed in policy 'nvidia' (ancestors: [/usr/bin/bash], cmdline: [/usr/local/bin/nemoclaw-start]) …]
+     로그 81~88·331·332행: 정책 바이너리 /usr/local/bin/openclaw는 심볼릭 링크를 따라 …/openclaw/openclaw.mjs(첫 줄 #!/usr/bin/env node)로 풀린다. 게이트웨이 프로세스의 실행 파일은 /usr/local/bin/node다
+     -> 지시된 구성(추론 블록 바이너리 openclaw만, POST /v1/chat/completions만)으로는 OpenClaw가 모델을 부르지 못한다. 여기서 멈춤(BLOCKED, 시연 샌드박스 요건 (b))
+
+# ---- 2단계 후반: 오케스트레이터 판단 정정(17:4x) 뒤 ----
+# 정정 요지: 범용 바이너리라도 네트워크 허용을 추론 요청 한 경로로 좁히는 것은 요건 (b) 안이다. 추론 블록에 실제 실행 파일 /usr/local/bin/node를 넣는다.
+
+[P2] 17:46:08 openshell policy set x1-demo --policy spikes/x1/policy/x1-demo-narrowed.policy.yaml --wait (3판: nvidia 블록 바이너리 openclaw + /usr/local/bin/node, 규칙 POST /v1/chat/completions 하나) -> exit=0
+✓ Policy version 3 submitted (hash: bf510d46ea6a)
+✓ Policy version 3 loaded (active version: 3)
+     demo 로그 563행 CONFIG:LOADED [policy_hash:ea1461d4…]
+     (앞서 CLI의 --api-key-env 옵션을 더해 x1_probe.py·run_probe.sh를 다시 올림: 샌드박스의 자리표시 변수 이름이 NVIDIA_INFERENCE_API_KEY)
+
+[K3] 17:46:25 openshell sandbox exec -n x1-demo --timeout 240 -- /usr/bin/python3 /tmp/x1-tools/key_check.py / -> exit=0 (3판 적용 뒤, OpenClaw 요청 전)
+{"checker": "x1_key_check", "dotenv_files_found": [], "dotenv_files_with_real_key": {}, "dotenv_roots": ["/"], "env_DATA_GO_KR_SERVICE_KEY": "absent", "env_NVIDIA_API_KEY": "absent", "env_real_key_vars": 0, "env_var_names_with_KEY_or_TOKEN": ["NVIDIA_INFERENCE_API_KEY", "OPENCLAW_GATEWAY_TOKEN"], "harness_paths": {"/etc/openshell": {"files_scanned": 4, "real_key_hits": 0, "unreadable_or_large": 0}, "/home/sandbox": "absent", "/root": {"files_scanned": 0, "real_key_hits": 0, "unreadable_or_large": 0}, "/run/nemoclaw": {"files_scanned": 0, "real_key_hits": 0, "unreadable_or_large": 0}, "/run/openshell": {"files_scanned": 0, "real_key_hits": 0, "unreadable_or_large": 0}, "/sandbox/.config": "absent", "/sandbox/.deepagents": "absent", "/sandbox/.hermes": "absent", "/sandbox/.nemoclaw": {"files_scanned": 53, "real_key_hits": 0, "unreadable_or_large": 0}, "/sandbox/.openclaw": {"files_scanned": 30932, "real_key_hits": 0, "unreadable_or_large": 17}}, "pid": 18674, "ppid": 1, "proc_environ_hit_pids": [], "proc_environ_readable": 1, "proc_environ_real_key_hits": 0, "proc_environ_unreadable": 13, "real_key_total": 0, "uid": 998, "verdict": "NO_REAL_KEY"}
+
+[A2] 17:46:36 nemoclaw x1-demo agent --agent main --json --timeout 300 -m "Run the X1 probe now: use the x1-probe skill with the one-line input 'Reply with exactly: X1 OK', then return the JSON line printed by the command exactly as it is." -> exit=1 (17:46:55)
+     stderr(래퍼): The agent turn in sandbox 'x1-demo' did not complete: replayInvalid=true.
+     OpenClaw 결과: status=ok summary=completed stopReason=stop toolSummary={"calls": 2, "tools": ["read", "exec"], "failures": 0} replayInvalid=True livenessState=working durationMs=16998
+     payload(CLI가 낸 JSON 그대로): {"run_id": "20260924T084645-x1-0fad7c", "run_dir": "/sandbox/x1-runs/20260924T084645-x1-0fad7c", "exit_code": 0, "http_status": 200, "attempts": 1, "model": "nvidia/nemotron-3-super-120b-a12b", "content": "X1 OK", "usage": {"prompt_tokens": 23, "completion_tokens": 48, "total_tokens": 71}, "key_check": {"verdict": "NO_REAL_KEY", "real_key_total": 0, "env_NVIDIA_API_KEY": "absent", "proc_environ_readable": 16, "proc_environ_unreadable": 3, "proc_environ_real_key_hits": 0, "ppid": 18933}, "violation_probe": {"url": "https://api.github.com/zen", "method": "GET", "http_status": null, "error": "URLError: Tunnel connection failed: 403 Forbidden", "blocked": true}}
+     demo 로그 579~587행: OpenClaw node(5073) POST /v1/chat/completions ALLOWED [policy:nvidia] 3회(579·581·586), CLI python3.12(18934) POST ALLOWED [policy:nvidia](583·584, 바이너리 목록에 없음 -> 조상 node 상속), CLI의 의도적 위반 api.github.com DENIED(585)
+     OpenClaw 게이트웨이 로그(/tmp/gateway.log): [model-fetch] provider=inference url=https://integrate.api.nvi… status=200 3회
+     실행 기록: artifacts/runs/20260924T084645-x1-0fad7c/ (발췌 20260924-x1-demo-nim-run-excerpt.txt)
+
+[T1..T4] 17:48:08~12 시연 샌드박스 위반 시험(openshell sandbox exec, node의 자손이 아닌 프로세스는 DT1·DT2)
+--- DT1_curl_binmiss
+000curl: (22) The requested URL returned error: 403
+
+--- DT2_py_binmiss
+{"method": "POST", "url": "https://integrate.api.nvidia.com/v1/chat/completions", "exe": "/usr/bin/python3", "http_status": null, "error": "URLError: Tunnel connection failed: 403 Forbidden", "exit_code": 4}
+
+--- DT3_l7_models
+403curl: (22) The requested URL returned error: 403
+
+--- DT4_host
+000curl: (22) The requested URL returned error: 403
+
+     exit: DT1=22 DT2=4 DT3=22 DT4=22. demo 로그 624(DT1)·633(DT2)·642·643(DT3: L4 허용 뒤 L7 거부)·652(DT4)행
+
+[B1] 17:47:58~17:48:01 운영자 요청 없이 OpenClaw 턴 1건이 더 돌아 모델 호출 2회(demo 로그 613~616행, 게이트웨이 로그 08:47:58 'via gateway sender'). 원인 [미확인]
+
+# ---- 2단계 마무리: 4판(openclaw_gateway_dialback 제거) ----
+# 3판에 남아 있던 openclaw_gateway_dialback(자기 주소, access: full, rules 없음)이 하네스에 필요한지 확인했다.
+
+[P3] 17:55:17 openshell policy set x1-demo --policy <3판에서 openclaw_gateway_dialback 블록을 뺀 파일 = 커밋한 spikes/x1/policy/x1-demo-narrowed.policy.yaml 최종판> --wait -> exit=0
+✓ Policy version 4 submitted (hash: ba008a25c0c5)
+✓ Policy version 4 loaded (active version: 4)
+     demo 로그 678행 CONFIG:LOADED [policy_hash:721639af…]. 남은 블록: nvidia 하나
+[K4] 17:55:30 key_check.py / -> exit=0 (4판 적용 뒤, 요청 전)
+      {'verdict': 'NO_REAL_KEY', 'real_key_total': 0, 'env_real_key_vars': 0, 'env_var_names_with_KEY_or_TOKEN': ['NVIDIA_INFERENCE_API_KEY', 'OPENCLAW_GATEWAY_TOKEN'], 'proc_environ_readable': 1, 'proc_environ_unreadable': 13, 'proc_environ_real_key_hits': 0}
+
+[A3] 17:55:31 nemoclaw x1-demo agent (같은 요청) -> exit=1, 'FailoverError: The AI service is temporarily overloaded.' demo 로그 694·695행: OpenClaw 모델 호출은 L4·L7 허용, 게이트웨이 로그 [model-fetch] status=200(SSE 안의 과부하 오류). NIM 쪽 일시 오류
+[A4-1] 17:55:56 같은 요청 재시도 -> exit=1, 같은 과부하 오류(demo 로그 712·713행 허용)
+[A4-2] 17:56:19 같은 요청 재시도 -> exit=1 (17:56:46, 래퍼: replayInvalid=true)
+     OpenClaw 결과: status=ok summary=completed stopReason=stop toolSummary={"calls": 2, "tools": ["exec"], "failures": 0} replayInvalid=True
+     payload(CLI가 낸 JSON 그대로): {"run_id": "20260924T085638-x1-b37f25", "run_dir": "/sandbox/x1-runs/20260924T085638-x1-b37f25", "exit_code": 0, "http_status": 200, "attempts": 1, "model": "nvidia/nemotron-3-super-120b-a12b", "content": "X1 OK", "usage": {"prompt_tokens": 23, "completion_tokens": 63, "total_tokens": 86}, "key_check": {"verdict": "NO_REAL_KEY", "real_key_total": 0, "env_NVIDIA_API_KEY": "absent", "proc_environ_readable": 14, "proc_environ_unreadable": 3, "proc_environ_real_key_hits": 0, "ppid": 25461}, "violation_probe": {"url": "https://api.github.com/zen", "method": "GET", "http_status": null, "error": "URLError: Tunnel connection failed: Tunnel connection failed: 403 Forbidden", "blocked": true}}
+     demo 로그 722~736행: OpenClaw node(5073) 모델 호출 ALLOWED 3회(722·727·735), 이 턴에서 OpenClaw가 exec를 두 번 불러 CLI가 두 번 돌았다: python3.12(25303) NIM ALLOWED(724·725)·위반 DENIED(726), python3.12(25462) NIM ALLOWED(732·733)·위반 DENIED(734). 전달한 payload는 두 번째 실행(20260924T085638-x1-b37f25)
+
+[T1'..T4'] 17:57:20~24 4판에서 위반 시험 다시 실행
+--- DT1_curl_binmiss
+000curl: (22) The requested URL returned error: 403
+
+--- DT2_py_binmiss
+{"method": "POST", "url": "https://integrate.api.nvidia.com/v1/chat/completions", "exe": "/usr/bin/python3", "http_status": null, "error": "URLError: Tunnel connection failed: 403 Forbidden", "exit_code": 4}
+
+--- DT3_l7_models
+403curl: (22) The requested URL returned error: 403
+
+--- DT4_host
+000curl: (22) The requested URL returned error: 403
+
+     exit: DT1'=22 DT2'=4 DT3'=22 DT4'=22. demo 로그 798·807·816·817·826행
