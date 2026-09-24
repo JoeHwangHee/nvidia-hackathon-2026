@@ -1,0 +1,37 @@
+{
+ "policy": {
+  "policy_version": "dev-0.1",
+  "thresholds": {"unit_value": 30, "share": 10},
+  "min_amount": null,
+  "min_weight": null
+ },
+ "case": {
+  "case_id": "850450-CN-202401",
+  "hs6": "850450",
+  "partner": "CN",
+  "month": "202401",
+  "baseline_month": "202301",
+  "signals": {"unit_value": "TRIGGERED", "share": "TRIGGERED"},
+  "snapshot_id": "controlled_fixture_v0",
+  "policy_version": "dev-0.1"
+ },
+ "evidence": {
+  "missingness": [
+   {"partner": "ALL", "hs_code": "8504501090", "month": "202301", "observation_status": "UNRESOLVED_ZERO"},
+   {"partner": "JP", "hs_code": "850450", "month": "202401", "observation_status": "NOT_COLLECTED"},
+   {"partner": "CN", "hs_code": "8504501010", "month": "202212", "observation_status": "REQUEST_FAILED"}
+  ],
+  "unit_value": {
+   "comparability_issues": [],
+   "U_baseline": 6.00,
+   "decomposition": {"within_effect": 0.00, "mix_effect": -2.40, "residual": 0.00, "parent_child_match": true},
+   "children": [{"hs10": "8504501010", "r_U": 0.0}, {"hs10": "8504501020", "r_U": 0.0}],
+   "rounding_unstable": false,
+   "resolved_after_correction": false
+  },
+  "share": {
+   "comparability_issues": [],
+   "resolved_after_correction": false
+  }
+ }
+}
