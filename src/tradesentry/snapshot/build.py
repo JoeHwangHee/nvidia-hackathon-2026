@@ -277,6 +277,14 @@ HEX64_RE = re.compile(r"[0-9a-f]{64}")
 KST_ISO_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\+09:00")  # §11.4 KST ISO 8601(초 단위)
 PEER_TEXT_COLUMNS = ("method", "grouping_version", "source_version")  # 비지 않은 문자열이어야 하는 칸
 PEER_GROUP_ORDER = ("grouping_version", "entity_type", "entity_id", "scope_type", "scope_id", "peer_rank", "peer_id")
+# 단위 G3 국가 코드 대응표(관세청 cntyCd → BACI country_code). 모듈을 불러올 때 정하므로 시험이 REPO_ROOT를 바꿔도 그대로다.
+COUNTRY_MAP_FILE = Path(__file__).resolve().parents[3] / "data" / "reference" / "country_map.csv"
+
+
+def load_country_map(path: Path | None = None) -> dict[str, str]:
+    """국가 코드 대응표(단위 G3) → {관세청 cntyCd: BACI country_code}."""
+    with open(COUNTRY_MAP_FILE if path is None else path, encoding="utf-8", newline="") as fh:
+        return {row["cntyCd"]: row["baci_country_code"] for row in csv.DictReader(fh)}
 
 
 def _peer_value(column: str, text: str) -> object:
@@ -303,14 +311,16 @@ def _finite_number_text(value: object) -> bool:
         return False
 
 
-def peer_group_problems(rows: list[dict], plan: dict) -> list[str]:
+def peer_group_problems(rows: list[dict], plan: dict, *, baci_codes: dict[str, str] | None = None) -> list[str]:
     """비교국 표 행(계약 §2.3.6 필드 이름 → 값)의 규칙 위반 목록. 비었으면 맞다. S2 적재와 S3 검증이 함께 쓴다.
 
     plan은 수집 설정(`collection_plan`: `partners`, `hs6`)이다. 행마다: `entity_type`=`exporter_country`,
     `entity_namespace`=`KCS_cntyCd`, 대상국은 수집 상대국, 비교국은 두 글자 대문자 국가코드이고 대상국 자신·`ALL`이 아니다,
     `scope_type`은 소문자 `hs2`·`hs4`·`hs6`이고 `scope_id`는 그 자릿수 숫자이며 수집 HS6 가운데 하나의 앞자리,
     `peer_rank`는 1 이상 정수, `similarity`는 null이나 유한한 수의 글자, `community_id`는 null이나 비지 않은 글자,
-    `baci_country_code`는 null이나 숫자 글자, `params_hash`·`input_sha256`은 16진수 소문자 64자, `generated_at`은 KST ISO
+    `baci_country_code`는 null이나 숫자 글자이고 null이 아니면 국가 코드 대응표(단위 G3, baci_codes가 없으면
+    `data/reference/country_map.csv`)의 대상국 코드와 같다(BACI 고유 코드: 미국 842·프랑스 251·인도 699·대만 490),
+    `params_hash`·`input_sha256`은 16진수 소문자 64자, `generated_at`은 KST ISO
     8601(초 단위, `+09:00`), `source_year`는 네 자리 연도 정수, `method`·`grouping_version`·`source_version`은 비지 않은 글자.
     묶음(`grouping_version`, `entity_type`, `entity_id`, `scope_type`, `scope_id`)마다 순위는 1부터 빈틈없이 이어지고
     비교국이 겹치지 않는다.
@@ -354,6 +364,16 @@ def peer_group_problems(rows: list[dict], plan: dict) -> list[str]:
         code = row["baci_country_code"]
         if code is not None and (not isinstance(code, str) or not re.fullmatch(r"[0-9]+", code)):
             problems.append(f"{where}: baci_country_code가 null이나 숫자 글자가 아니다")
+        elif code is not None:
+            if baci_codes is None:
+                try:
+                    baci_codes = load_country_map()
+                except (OSError, KeyError) as exc:
+                    problems.append(f"국가 코드 대응표(단위 G3)를 읽지 못했다({type(exc).__name__})")
+                    baci_codes = {}
+            if baci_codes.get(row["entity_id"]) != code:
+                problems.append(f"{where}: baci_country_code {code}가 국가 코드 대응표의 {row['entity_id']} 코드"
+                                f"({baci_codes.get(row['entity_id'])})와 다르다")
         for column in ("params_hash", "input_sha256"):
             if not isinstance(row[column], str) or not HEX64_RE.fullmatch(row[column]):
                 problems.append(f"{where}: {column}이 16진수 소문자 64자가 아니다")

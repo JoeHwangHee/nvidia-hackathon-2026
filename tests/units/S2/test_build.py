@@ -241,6 +241,8 @@ class SafetyTest(BuildTestBase):
             "params_hash": fx.PEER_GROUP_CSV.replace("a" * 64, "sha", 1),
             "generated_at": fx.PEER_GROUP_CSV.replace(fx.FIXED_TIME, "2026-09-25 00:00", 1),
             "BACI 코드": fx.PEER_GROUP_CSV.replace("exporter_country,CN,KCS_cntyCd,156,", "exporter_country,CN,KCS_cntyCd,CHN,", 1),
+            "BACI 코드 대응표 불일치": fx.PEER_GROUP_CSV.replace("exporter_country,JP,KCS_cntyCd,392,",
+                                                           "exporter_country,JP,KCS_cntyCd,393,", 1),
         }
         self.assertEqual(len(lines), 5)
         for index, (name, text) in enumerate(bad.items()):
@@ -252,6 +254,18 @@ class SafetyTest(BuildTestBase):
                     build.build_snapshot(fx.SNAPSHOT_ID, out_dir=self.out, stamp=f"2609250002{index:02d}",
                                          source_dir=self.source, peer_group_files=[path])
                 self.assertFalse((self.out / f"snapshot_build-2609250002{index:02d}.sqlite").exists())
+
+    def test_baci_code_must_match_country_map(self):
+        """baci_country_code는 국가 코드 대응표(단위 G3)의 대상국 코드와 같아야 한다. ISO 숫자 코드(미국 840)는 BACI
+        고유 코드(842)와 달라 거부된다(무역통계 검토 권고)."""
+        codes = build.load_country_map()
+        self.assertEqual((codes["US"], codes["FR"], codes["IN"], codes["TW"]), ("842", "251", "699", "490"))
+        row = dict(zip(types.PEER_GROUP_KEYS, build.load_peer_groups([self.csv])[0]))
+        plan = {**fx.CONFIG, "partners": ["US", "CN", "JP"]}
+        us = {**row, "entity_id": "US", "peer_id": "CN", "baci_country_code": "840"}  # ISO 숫자 코드
+        self.assertTrue(any("국가 코드 대응표" in p for p in build.peer_group_problems([us], plan)))
+        self.assertEqual(build.peer_group_problems([{**us, "baci_country_code": "842"}], plan), [])
+        self.assertEqual(build.peer_group_problems([{**us, "baci_country_code": None}], plan), [])
 
     def test_peer_group_problem_function_accepts_fixture_and_null_text(self):
         rows = [dict(zip(types.PEER_GROUP_KEYS, row)) for row in build.load_peer_groups([self.csv])]
