@@ -17,6 +17,10 @@
    __import__·exec·eval·compile 호출, sys.path 쓰기, 문자열 상수 .env·NVIDIA_API_KEY·DATA_GO_KR_SERVICE_KEY,
    subprocess(와 os.system·os.exec*·os.spawn*·asyncio 하위 프로세스) 호출 인자 안의 tradesentry 문자열.
    문서 문자열(모듈·클래스·함수 첫 줄의 설명 문자열)은 보지 않는다. TRADESENTRY_SEALED_DIR는 금지하지 않는다.
+   예외(단위 E2만): 하위 프로세스 인자 목록이 openshell로 시작하면(목록 리터럴이나 위치 인자의 첫 원소가 문자열
+   "openshell") 그 목록 안의 tradesentry를 허용한다. 샌드박스 안에서만 CLI를 부르는 E2의 본래 일이다. 셸 문자열
+   한 줄("openshell ... tradesentry ...")과 그 목록 밖의 인자(예: executable=)는 여전히 위반이다. 채점기와 V2에는
+   이 예외가 없다.
 
 따라가는 모듈은 src/ 아래(src를 뺀 이름)와 eval/·tests/·scripts/·spikes/ 아래(저장소 루트부터의 이름, 예:
 tests.units.golden)다. "간접"은 저장소 안 다른 모듈을 거친 import와, 모듈을 import할 때 먼저 실행되는 상위
@@ -73,11 +77,11 @@ class Closure:
 @dataclass
 class Rules:
     """units: 단위 ID → (모듈 이름, 고정 허용 목록 또는 None(머리 주석에서 읽음)).
-    token_files: (보고용 이름, 모듈 이름) — 금지 토큰 검사를 하는 단위 파일."""
+    token_files: (보고용 이름, 모듈 이름, openshell 예외 여부) — 금지 토큰 검사를 하는 단위 파일."""
 
     units: dict[str, tuple[str, list[str] | None]]
     closures: list[Closure] = field(default_factory=list)
-    token_files: list[tuple[str, str]] = field(default_factory=list)
+    token_files: list[tuple[str, str, bool]] = field(default_factory=list)
 
 
 def under(name: str, prefix: str) -> bool:
@@ -207,8 +211,11 @@ def _writes_sys_path(target: ast.AST) -> bool:
     return _is_sys_path(target) or (isinstance(target, ast.Subscript) and _is_sys_path(target.value))
 
 
-def forbidden_tokens(source: str) -> list[str]:
-    """7번 금지 토큰을 찾아 설명 목록으로 돌려준다."""
+def forbidden_tokens(source: str, allow_openshell_cli: bool = False) -> list[str]:
+    """7번 금지 토큰을 찾아 설명 목록으로 돌려준다.
+
+    allow_openshell_cli가 참이면(단위 E2) 하위 프로세스 인자 목록이 "openshell"로 시작할 때 그 목록 안의
+    tradesentry를 허용한다. 그 목록 밖의 인자는 그대로 본다."""
     tree = ast.parse(source)
     docstrings = _docstring_nodes(tree)
     subprocess_names: set[str] = set()
@@ -234,7 +241,11 @@ def forbidden_tokens(source: str) -> list[str]:
             elif isinstance(func, ast.Attribute) and _is_sys_path(func.value) and func.attr in SYS_PATH_MUTATORS:
                 found.append(f"sys.path.{func.attr}() 쓰기")
             if _is_process_call(func, subprocess_names):
+                elements, holders = _command_list(node)
+                exempt = holders if allow_openshell_cli and _starts_with_openshell(elements) else []
                 for arg in list(node.args) + [k.value for k in node.keywords]:
+                    if any(arg is holder for holder in exempt):
+                        continue
                     for inner in ast.walk(arg):
                         if isinstance(inner, ast.Constant) and isinstance(inner.value, str) \
                                 and "tradesentry" in inner.value:
@@ -248,6 +259,23 @@ def forbidden_tokens(source: str) -> list[str]:
                 found.append(f"문자열 상수 .env({node.value!r})")
             found += [f"문자열 상수 {name}" for name in FORBIDDEN_STRINGS if name in node.value]
     return found
+
+
+def _command_list(call: ast.Call) -> tuple[list[ast.AST], list[ast.AST]]:
+    """하위 프로세스 호출의 인자 목록 원소들과, 그 목록을 담은 인자 노드들.
+
+    첫 위치 인자(없으면 args= 키워드)가 목록·튜플 리터럴이면 그 원소들이고(subprocess.run([...]) 모양), 아니면
+    위치 인자들 자체다(asyncio.create_subprocess_exec("openshell", ...)·os.execl* 모양)."""
+    first = call.args[0] if call.args else next((k.value for k in call.keywords if k.arg == "args"), None)
+    if isinstance(first, (ast.List, ast.Tuple)):
+        return list(first.elts), [first]
+    if call.args:
+        return list(call.args), list(call.args)
+    return [], []
+
+
+def _starts_with_openshell(elements: list[ast.AST]) -> bool:
+    return bool(elements) and isinstance(elements[0], ast.Constant) and elements[0].value == "openshell"
 
 
 def _is_process_call(func: ast.AST, subprocess_names: set[str]) -> bool:
@@ -285,7 +313,7 @@ def check(root: Path, rules: Rules) -> tuple[list[str], dict[str, int]]:
             if not allowed(target, tokens):
                 problems.append(f"1) 단위 {unit_id}({module}): 허용 import 밖을 import한다({target})")
 
-    token_modules: list[tuple[str, str]] = list(rules.token_files)
+    token_modules: list[tuple[str, str, bool]] = list(rules.token_files)
     for closure in rules.closures:
         label = f"{closure.rule}) {closure.name}"
         start_modules = [m for m in modules if any(under(m, s) for s in closure.starts)]
@@ -301,15 +329,15 @@ def check(root: Path, rules: Rules) -> tuple[list[str], dict[str, int]]:
             elif any(under(hit, prefix) for prefix in closure.forbidden):
                 problems.append(f"{label}: 직접이든 간접이든 닿으면 안 되는 모듈에 닿는다({hit})")
         if closure.tokens:
-            token_modules += [(closure.name, m) for m in sorted(reached) if m in modules]
+            token_modules += [(closure.name, m, False) for m in sorted(reached) if m in modules]
 
-    for name, module in token_modules:
+    for name, module, openshell_ok in token_modules:
         path = modules.get(module)
         if path is None:
             problems.append(f"7) {name}: 모듈 파일이 없다({module})")
             continue
         stats["token_files"] += 1
-        for token in forbidden_tokens(path.read_text(encoding="utf-8")):
+        for token in forbidden_tokens(path.read_text(encoding="utf-8"), allow_openshell_cli=openshell_ok):
             problems.append(f"7) {name}({module}): 금지 토큰 {token}")
 
     for module, targets in sorted(graph.items()):
@@ -333,7 +361,7 @@ def repo_rules() -> Rules:
         Closure("3", "단위 V2", [v2], forbidden=["tradesentry.metrics", "tradesentry.policy"]),
         Closure("4", "단위 E2", [e2], forbidden=["tradesentry.ingest", "nat"]),
     ]
-    return Rules(units, closures, token_files=[("단위 V2", v2), ("단위 E2", e2)])
+    return Rules(units, closures, token_files=[("단위 V2", v2, False), ("단위 E2", e2, True)])
 
 
 class RepositoryBoundaryTest(unittest.TestCase):
@@ -411,7 +439,7 @@ TREE_RULES = Rules(
               Closure("3", "단위 V2", ["eval.datagen.dev20"], forbidden=["tradesentry.metrics", "tradesentry.policy"]),
               Closure("4", "단위 E2", ["tradesentry.evaluation.sealed_runner"],
                       forbidden=["tradesentry.ingest", "nat"])],
-    token_files=[("단위 V2", "eval.datagen.dev20"), ("단위 E2", "tradesentry.evaluation.sealed_runner")],
+    token_files=[("단위 V2", "eval.datagen.dev20", False), ("단위 E2", "tradesentry.evaluation.sealed_runner", True)],
 )
 
 
@@ -559,6 +587,25 @@ class NegativeCaseTest(unittest.TestCase):
         self.assert_caught({"src/tradesentry/evaluation/sealed_runner.py": header("E2", "표준 라이브러리")
                             + "import os\nKEY = os.environ[f'DATA_GO_KR_SERVICE_KEY']\n"},
                            "7) 단위 E2", "DATA_GO_KR_SERVICE_KEY")
+
+    def test_e2_may_call_cli_only_through_openshell(self):
+        e2 = "src/tradesentry/evaluation/sealed_runner.py"
+        through_openshell = ('import subprocess\n\n\ndef run(inp):\n    return subprocess.run(["openshell", "sandbox", '
+                             '"exec", "-n", "x", "--", "tradesentry", "run-case"])\n')
+        self.assertEqual(self.problems_with({e2: header("E2", "표준 라이브러리") + through_openshell}), [])
+        for call in ('subprocess.run(["tradesentry", "run-case"])',
+                     'subprocess.run([sys.executable, "-m", "tradesentry.cli"])',
+                     'subprocess.run("openshell sandbox exec -n x -- tradesentry run-case", shell=True)',
+                     'subprocess.run(["openshell", "--version"], executable="tradesentry")'):
+            with self.subTest(call=call):
+                self.assert_caught({e2: header("E2", "표준 라이브러리") + f"import subprocess\nimport sys\n\n{call}\n"},
+                                   "7) 단위 E2", "하위 프로세스 인자 안의 tradesentry")
+
+    def test_openshell_exception_is_for_e2_only(self):
+        call = 'import subprocess\nsubprocess.run(["openshell", "sandbox", "exec", "--", "tradesentry", "run-case"])\n'
+        self.assert_caught({"eval/scorer/__main__.py": call}, "7) 독립 채점기", "하위 프로세스 인자 안의 tradesentry")
+        self.assert_caught({"eval/datagen/dev20.py": header("V2", "표준 라이브러리, eval.datagen") + call},
+                           "7) 단위 V2", "하위 프로세스 인자 안의 tradesentry")
 
     def test_forbidden_token_detector_ignores_harmless_code(self):
         harmless = ('"""문서: .env와 NVIDIA_API_KEY를 읽지 않는다."""\nimport os\nimport re\nimport subprocess\n'
