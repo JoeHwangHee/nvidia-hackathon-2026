@@ -1,0 +1,56 @@
+{
+ "snapshot_id": "controlled_fixture_v0",
+ "schema_version": 1,
+ "source_kind": "controlled",
+ "raw_sha256": "2f8b7f899a1d5fb8b315864c72d12e843cb2e981df9d48e3457337f0e6b9501a",
+ "normalized_sha256": "c56a6dbef3c9710c96528529b05919450ac1fb99b1bdae21551e4c621b433dcd",
+ "row_counts": {
+  "collection_receipt": 131,
+  "observation": 8330,
+  "peer_group": 150,
+  "snapshot_meta": 14
+ },
+ "import_observation_status": {
+  "CONFIRMED_NO_TRADE": 1,
+  "NOT_COLLECTED": 12,
+  "OBSERVED": 4136,
+  "REQUEST_FAILED": 12,
+  "UNRESOLVED_ZERO": 4
+ },
+ "confirmed_no_trade_rule": "ingest_verify_candidates",
+ "confirmed_no_trade_rows": 1,
+ "peer_group_files": [
+  {
+   "file_name": "peer_group_controlled_fixture_v0.csv",
+   "sha256": "b3b7a37a4e7ad0ef9d84445aaca7be7521d9452b867f6f73a465d168bf3e551a"
+  }
+ ],
+ "verify_ok": true,
+ "failed_checks": [],
+ "cases": [
+  {
+   "label": "A",
+   "case_id": "850450-XA-202412",
+   "hs6": "850450",
+   "partner": "XA",
+   "month": "202412",
+   "baseline_month": "202312"
+  },
+  {
+   "label": "B",
+   "case_id": "850431-XB-202412",
+   "hs6": "850431",
+   "partner": "XB",
+   "month": "202412",
+   "baseline_month": "202312"
+  },
+  {
+   "label": "C",
+   "case_id": "850432-XC-202412",
+   "hs6": "850432",
+   "partner": "XC",
+   "month": "202412",
+   "baseline_month": "202312"
+  }
+ ]
+}
