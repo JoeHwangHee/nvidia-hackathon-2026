@@ -1203,7 +1203,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | Landlock | 리눅스 커널의 파일시스템 접근 제한 기능 |
 | seccomp | 리눅스 커널의 시스템 호출 필터 |
 | L7 규칙 | HTTP method·path·query 수준의 허용 규칙 |
-| prefix | 경로의 앞부분. OpenShell 파일시스템 정책은 가장 긴 일치 prefix로 판정한다 |
+| prefix | 경로의 앞부분. 03 문서는 OpenShell 파일시스템 정책을 가장 긴 일치 prefix로 판정한다고 적는다. 이 판정은 DLI 코스 평가 함수의 모형이고, 겹치는 경로의 실제 집행은 자료 계약 §10.3 "읽기 전용 입력"을 따른다(§4.3) |
 | credential placeholder rewrite | 샌드박스 안에는 자리표시 문자열만 두고, 게이트웨이가 요청을 내보낼 때 실제 키로 바꾸는 방식 |
 | `inference.local` | 샌드박스가 보는 추론 주소. 게이트웨이가 설정된 provider 1개·모델 1개로 전달한다 |
 | 게이트웨이 | 샌드박스의 요청을 받아 정책을 적용하고 전달하는 OpenShell 구성요소 |
