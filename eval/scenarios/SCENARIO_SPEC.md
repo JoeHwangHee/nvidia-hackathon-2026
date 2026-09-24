@@ -8,6 +8,7 @@
 | 적지 않는 것 | 사례별 기대 상태와 생성 계열(사례마다 어떤 기본 계열·사건으로 만들었는지). 구 개발계획(`Pasted markdown.md`) §5.2가 숨길 대상으로 정한 것이다 `[사실: 병렬 개발 규칙 docs/rules/PARALLEL_DEV_RULES.md §6.8]` |
 | 값의 정본 | 상태값·필드·ID·경로는 자료 계약 `docs/rules/DATA_CONTRACT_V1.md`, 분류와 배분은 룰북 `docs/eval/RULEBOOK.md` B1(구 개발계획 §8.1 유지). 이 문서는 그 값을 글자 그대로 옮겨 쓴다 |
 | 검사 명령 | `uv run --locked python -m eval.datagen.holdout40_check --cases <사례 목록> --answers <정답표>`(단위 V4, §8) |
+| 사용자 결정 반영(2026-09-25(금) 08:41) | 이 문서가 "사용자 확인 대기"·"잠정"으로 적은 항목 가운데 U1·U2·U4는 이 문서가 전제한 권장안대로 승인됐고(`policy_v1` 승인, 결정 기록 `docs/tracking/decisions/20260925-0846-user-decision-policy-v1-approval.md`), 새 필수 근거 이름(§5.3)은 평가 구성(공용 약속)으로 승인됐으며, `hold_inconsistent`(§5.2)는 이 문서의 규칙대로 확정됐다(결정 기록 `20260925-0847-user-decision-morning-shared-promises.md` 결정 9·14). 본문 문구 정리와 판정 정책·채점기 맞춤은 뒤따르는 D17 PR이 한다 |
 
 TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율이 전년 같은 달보다 크게 바뀐 경우를 경보로 잡고, 조사자와 검수자(Critic)가 제한된 조회 도구로 반증을 시도해 담당자의 다음 업무를 검토 유지(`MAINTAIN`)·모니터링(`MONITOR`)·자료 보류(`HOLD`) 가운데 하나로 제안하는 에이전트 시스템이다. 부정·위법 판정이 아니다. 이 문서의 합성 자료는 정답을 알고 규칙대로 만든 가짜 자료이고 실제 거래가 아니다.
 
