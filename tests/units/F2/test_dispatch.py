@@ -2,9 +2,10 @@
 
 - main은 단위 F1을 한 번만 부르고, 검증된 고칠 수 없는 요청(args.Request)만 처리 함수에 넘긴다.
 - 종료 코드: 아직 잇지 않은 명령(자리표시)만 3, 이은 처리 함수의 예외는 1(예외 이름만 적는다), 허용하지 않는 반환값·
-  SystemExit·배선 계약 위반은 4.
+  SystemExit·배선 계약 위반은 4, 중단(KeyboardInterrupt)은 130. main 밖으로 호출 경로 기록이 나가지 않는다(표준 출력·
+  오류가 한국어를 못 쓰는 인코딩일 때 포함).
 - snapshot-build·snapshot-verify 배선: 단위 S2·S3은 대역으로 바꾼다(로드맵 DT1이 구현한다). 실행 폴더의 부모는 시험마다
-  새 임시 폴더다.
+  새 임시 폴더다. 대역은 불리는 순간 실행 폴더가 이미 하나 있고 비어 있는지 본다(실행명은 단위보다 먼저 확보한다, N8).
 - 실행명 확보(자료 계약 §10.3 N8): 가짜 시계로 이름 형식(KST), 충돌 때 다음 초, 다른 부모 폴더의 같은 이름, 기다리기,
   포기를 본다.
 시험에 쓰는 절대경로 모양 값은 개발 기계에 없는 가짜 경로(/srv/probe 아래)다.
@@ -13,6 +14,7 @@ import contextlib
 import dataclasses
 import io
 import json
+import os
 import re
 import subprocess
 import sys
@@ -156,7 +158,7 @@ class ExitCodeTest(unittest.TestCase):
                 self.assertEqual(call(ARGV["evaluate"])[0], result)
 
     def test_other_handler_results_are_wiring_errors(self):
-        for result in (None, "0", 0.0, True, False, 256, -1, 2, 3, 4, Decimal("0"), Path("x")):
+        for result in (None, "0", 0.0, True, False, 256, -1, 2, 3, 4, 130, Decimal("0"), Path("x")):
             with self.subTest(result=result), mock.patch.dict(dispatch.HANDLERS, {"evaluate": Recorder(result)}):
                 code, _, err = call(ARGV["evaluate"])
                 self.assertEqual(code, dispatch.EXIT_WIRING)
@@ -177,8 +179,46 @@ class ExitCodeTest(unittest.TestCase):
 
     def test_exit_code_table(self):
         self.assertEqual((dispatch.EXIT_OK, dispatch.EXIT_FAILED, dispatch.EXIT_USAGE, dispatch.EXIT_NOT_IMPLEMENTED,
-                          dispatch.EXIT_WIRING), (0, 1, 2, 3, 4))
-        self.assertEqual(dispatch.CLI_EXIT_CODES, {2, 3, 4})
+                          dispatch.EXIT_WIRING, dispatch.EXIT_INTERRUPTED), (0, 1, 2, 3, 4, 130))
+        self.assertEqual(dispatch.CLI_EXIT_CODES, {2, 3, 4, 130})
+
+
+class EntryPointTest(unittest.TestCase):
+    """main 밖으로 호출 경로 기록(traceback)이 나가지 않는다(결정 기록 20260924-2356 ⑤, 보안 검토 1회차 권고 2)."""
+
+    def assert_name_only(self, err: str, name: str) -> None:
+        self.assertIn(name, err)
+        for leak in ("Traceback", 'File "', "/srv", "probe", "secret"):
+            self.assertNotIn(leak, err)
+
+    def test_interrupt_in_a_handler(self):
+        with mock.patch.dict(dispatch.HANDLERS, {"detect": raising(KeyboardInterrupt())}):
+            code, out, err = call(ARGV["detect"])
+        self.assertEqual((code, out), (dispatch.EXIT_INTERRUPTED, ""))
+        self.assert_name_only(err, "KeyboardInterrupt")
+
+    def test_interrupt_while_parsing(self):
+        with mock.patch.object(args, "parse", side_effect=KeyboardInterrupt()):
+            code, _, err = call(ARGV["detect"])
+        self.assertEqual(code, dispatch.EXIT_INTERRUPTED)
+        self.assert_name_only(err, "KeyboardInterrupt")
+
+    def test_unexpected_exception_while_parsing(self):
+        with mock.patch.object(args, "parse", side_effect=RuntimeError("/srv/probe/secret.txt")):
+            code, _, err = call(ARGV["detect"])
+        self.assertEqual(code, dispatch.EXIT_FAILED)
+        self.assert_name_only(err, "RuntimeError")
+
+    def test_ascii_only_standard_streams_keep_the_exit_codes(self):
+        env = dict(os.environ, PYTHONIOENCODING="ascii", PYTHONUTF8="0")
+        cases = ((["--help"], 0), (["detect", "--snapshot", "Bad", "--policy", "dev-0.1"], 2),
+                 (ARGV["detect"], 3))  # 3은 한국어 오류 문장을 쓰고도 1로 바뀌지 않는다
+        for argv, expected in cases:
+            with self.subTest(argv=argv):
+                result = subprocess.run([sys.executable, "-m", "tradesentry.cli", *argv], capture_output=True, env=env)
+                self.assertEqual(result.returncode, expected, result.stderr[-400:])
+                for leak in (b"Traceback", b'File "'):
+                    self.assertNotIn(leak, result.stderr)
 
 
 class TempOutputs(unittest.TestCase):
@@ -208,19 +248,38 @@ class TempOutputs(unittest.TestCase):
 class SnapshotWiringTest(TempOutputs):
     SQLITE = b"SQLite format 3\x00probe"
 
-    def build(self, value: object, argv: list[str]) -> tuple[int, str, str, mock.Mock]:
-        stub = mock.Mock(return_value=value)
-        with mock.patch("tradesentry.snapshot.build.run", stub), \
-                mock.patch.object(dispatch, "OUTPUT_PARENT", self.fresh_outputs()):
+    def call_unit(self, target: str, run_name: str, argv: list[str], result: object,
+                  error: BaseException | None) -> tuple[int, str, str, mock.Mock]:
+        """단위를 대역으로 바꿔 명령을 부른다. 대역은 불리는 순간의 실행 폴더를 적어 두고, 부른 뒤 그 폴더가 정확히 하나이고
+        비어 있었는지 본다. 실행명은 단위를 부르기 전에 확보한다(자료 계약 §10.3 N8, 평가 검토 1회차 권고 4)."""
+        seen: list[list[tuple[str, list[str]]]] = []
+
+        def unit(inp: object) -> object:
+            dirs = self.run_dirs(run_name) if self.outputs.exists() else []
+            seen.append([(p.name, sorted(q.name for q in p.iterdir())) for p in dirs])
+            if error is not None:
+                raise error
+            return result
+
+        stub = mock.Mock(side_effect=unit)
+        with mock.patch(target, stub), mock.patch.object(dispatch, "OUTPUT_PARENT", self.fresh_outputs()):
             code, out, err = call(argv)
+        self.assertEqual(len(seen), 1, "단위를 한 번 불렀다")
+        self.assertEqual(len(seen[0]), 1, f"단위를 부를 때 {run_name} 실행 폴더가 정확히 하나 있다")
+        name, contents = seen[0][0]
+        self.assertRegex(name, rf"^{run_name}-\d{{12}}$")
+        self.assertEqual(contents, [], "단위를 부를 때 실행 폴더는 비어 있다")
         return code, out, err, stub
 
-    def verify(self, value: object) -> tuple[int, str, str, mock.Mock]:
-        stub = mock.Mock(return_value=value)
-        with mock.patch("tradesentry.snapshot.verify.run", stub), \
-                mock.patch.object(dispatch, "OUTPUT_PARENT", self.fresh_outputs()):
-            code, out, err = call(ARGV["snapshot-verify"])
-        return code, out, err, stub
+    def build(self, value: object, argv: list[str] | None = None,
+              error: BaseException | None = None) -> tuple[int, str, str, mock.Mock]:
+        return self.call_unit("tradesentry.snapshot.build.run", "snapshot_build", argv or ARGV["snapshot-build"],
+                              value, error)
+
+    def verify(self, value: object, argv: list[str] | None = None,
+               error: BaseException | None = None) -> tuple[int, str, str, mock.Mock]:
+        return self.call_unit("tradesentry.snapshot.verify.run", "snapshot_verify", argv or ARGV["snapshot-verify"],
+                              value, error)
 
     def test_snapshot_build_writes_the_sqlite_bytes(self):
         code, out, err, stub = self.build(self.SQLITE, ARGV["snapshot-build"] + ["--policy", "dev-0.1"])
@@ -279,12 +338,14 @@ class SnapshotWiringTest(TempOutputs):
         self.assertIn("JSON으로 쓸 수 없다", err)
         self.assertEqual(list(self.outputs.rglob("*.json")), [])
 
-    def test_unit_errors_are_failures_not_3(self):
-        with mock.patch("tradesentry.snapshot.build.run", side_effect=NotImplementedError("뼈대")):
-            code, _, err = call(ARGV["snapshot-build"])
-        self.assertEqual(code, dispatch.EXIT_FAILED)
-        self.assertIn("NotImplementedError", err)
-        self.assertEqual(list(self.outputs.rglob("*.sqlite")), [])
+    def test_unit_errors_are_failures_not_3_and_leave_the_reserved_folder(self):
+        for helper, run_name in ((self.build, "snapshot_build"), (self.verify, "snapshot_verify")):
+            with self.subTest(run_name=run_name):
+                code, out, err, _ = helper(None, error=NotImplementedError("뼈대"))
+                self.assertEqual((code, out), (dispatch.EXIT_FAILED, ""))
+                self.assertIn("NotImplementedError", err)
+                [run_dir] = self.run_dirs(run_name)
+                self.assertEqual(list(run_dir.iterdir()), [])  # 단위보다 먼저 확보한 빈 실행 폴더가 남는다(N8)
 
     def test_unit_inputs(self):
         request = args.parse(ARGV["snapshot-build"] + ["--policy", "policy_v1"])
@@ -297,10 +358,7 @@ class SnapshotWiringTest(TempOutputs):
         code, _, _, stub = self.build(self.SQLITE, ARGV["snapshot-build"] + ["--mode", "agent"])
         self.assertEqual(code, 0)
         stub.assert_called_once_with({"snapshot_id": "controlled_fixture_v0", "policy_version": None})
-        stub = mock.Mock(return_value={"ok": True})
-        with mock.patch("tradesentry.snapshot.verify.run", stub), \
-                mock.patch.object(dispatch, "OUTPUT_PARENT", self.fresh_outputs()):
-            code, _, _ = call(ARGV["snapshot-verify"] + ["--policy", "dev-0.1", "--mode", "full"])
+        code, _, _, stub = self.verify({"ok": True}, ARGV["snapshot-verify"] + ["--policy", "dev-0.1", "--mode", "full"])
         self.assertEqual(code, 0)
         stub.assert_called_once_with({"snapshot_id": "controlled_fixture_v0"})
 

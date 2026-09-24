@@ -17,14 +17,17 @@
    NotImplementedError라도 3이 아니라 실패(1)다. 이은 명령의 3이 "돌리지 않은 실행"으로 읽혀 분모에서 빠지는 일을 막는다.
 
 종료 코드
-- 0 성공(도움말 포함), 1 실패(처리 함수가 알린 실패, 또는 처리 중 예상 밖 예외), 2 인자 오류(단위 F1, argparse),
-  3 아직 잇지 않은 명령, 4 배선 계약 위반.
+- 0 성공(도움말 포함), 1 실패(처리 함수가 알린 실패, 처리 중이나 인자 검증 중의 예상 밖 예외), 2 인자 오류(단위 F1,
+  argparse), 3 아직 잇지 않은 명령, 4 배선 계약 위반, 130 중단(KeyboardInterrupt. Ctrl-C나 SIGINT 신호로 나는 예외.
+  셸이 SIGINT로 끝난 프로그램에 주는 관례 값 128+2이고, 이 처리를 넣기 전에도 같은 값이었다).
 - 배선 계약 위반(4): 처리 함수가 허용하는 종료 코드가 아닌 값을 돌려주거나 SystemExit로 끝난 경우, 조립체 출력이 배선이
-  기대한 형식이 아닌 경우(WiringError). 허용하는 종료 코드는 0~255의 정수(bool 제외) 가운데 CLI 층이 쓰는 2·3·4를 뺀
-  값이다. 256 이상은 프로세스 종료 코드에서 256으로 나눈 나머지가 되어 실패가 0(성공)으로 보일 수 있다. 처리 함수는 보통
-  0(성공)이나 1(실패)을 돌려준다.
-- 예상 밖 예외는 예외 이름만 적는다. 예외 문장과 traceback(호출 경로 기록)에는 로컬 절대경로가 들 수 있다(자료 계약
-  docs/rules/DATA_CONTRACT_V1.md §10.3 N13).
+  기대한 형식이 아닌 경우(WiringError). 허용하는 종료 코드는 0~255의 정수(bool 제외) 가운데 CLI 층이 쓰는 2·3·4·130을
+  뺀 값이다. 256 이상은 프로세스 종료 코드에서 256으로 나눈 나머지가 되어 실패가 0(성공)으로 보일 수 있다. 처리 함수는
+  보통 0(성공)이나 1(실패)을 돌려준다.
+- 예상 밖 예외와 중단은 예외 이름만 적는다. 예외 문장과 traceback(호출 경로 기록)에는 로컬 절대경로가 들 수 있다(자료
+  계약 docs/rules/DATA_CONTRACT_V1.md §10.3 N13). main이 진입점에서 모든 Exception과 KeyboardInterrupt를 받으므로 main
+  밖으로 호출 경로 기록이 나가지 않는다. 오류 문장은 args.write_text로 쓴다(표준 오류가 한국어를 못 쓰는 인코딩이어도
+  새 예외 없이 ASCII 역슬래시 표기로 쓰고, 정한 종료 코드를 지킨다).
 
 출력(자료 계약 §10.3 N5·N6·N8·N13)
 - 실행 폴더의 부모는 OUTPUT_PARENT 하나다. 현재 폴더 기준 outputs이며, 저장소 루트에서 부르면 저장소의 outputs/다.
@@ -61,7 +64,8 @@ EXIT_FAILED = 1
 EXIT_USAGE = 2
 EXIT_NOT_IMPLEMENTED = 3
 EXIT_WIRING = 4
-CLI_EXIT_CODES = frozenset({EXIT_USAGE, EXIT_NOT_IMPLEMENTED, EXIT_WIRING})  # 처리 함수가 돌려줄 수 없는 값
+EXIT_INTERRUPTED = 130
+CLI_EXIT_CODES = frozenset({EXIT_USAGE, EXIT_NOT_IMPLEMENTED, EXIT_WIRING, EXIT_INTERRUPTED})  # 처리 함수가 돌려줄 수 없는 값
 
 KST = timezone(timedelta(hours=9), "KST")
 STAMP_FORMAT = "%y%m%d%H%M%S"
@@ -86,6 +90,16 @@ class WiringError(Exception):
 
 class RunNameError(Exception):
     """실행명을 확보하지 못했다."""
+
+
+def _report(text: str) -> None:
+    """표준 오류에 한 줄을 쓴다. 인코딩이 한국어를 못 쓰거나 흐름이 닫혀도 새 예외를 내지 않는다(args.write_text)."""
+    args.write_text(sys.stderr, text + "\n")
+
+
+def _emit(text: str) -> None:
+    """표준 출력에 한 줄을 쓴다(outputs부터의 상대경로). 새 예외를 내지 않는다(args.write_text)."""
+    args.write_text(sys.stdout, text + "\n")
 
 
 def now_kst() -> datetime:
@@ -182,7 +196,7 @@ def _snapshot_build(request: args.Request) -> int:
 
     run_id, stamp, run_dir = reserve_run_dir("snapshot_build")
     value = build.run(snapshot_build_input(request))
-    print(write_output(run_dir, run_id, "snapshot_build", stamp, "sqlite", value))
+    _emit(write_output(run_dir, run_id, "snapshot_build", stamp, "sqlite", value))
     return EXIT_OK
 
 
@@ -193,12 +207,12 @@ def _snapshot_verify(request: args.Request) -> int:
     run_id, stamp, run_dir = reserve_run_dir("snapshot_verify")
     report = verify.run(snapshot_verify_input(request))
     shown = write_output(run_dir, run_id, "snapshot_verify", stamp, "json", report)
-    print(shown)
+    _emit(shown)
     verdict = report.get("ok") if isinstance(report, dict) else None
     if verdict is True:
         return EXIT_OK
     if verdict is False:
-        print(f"오류: 스냅샷 검증 불합격이다. 검증 보고: {shown}", file=sys.stderr)
+        _report(f"오류: 스냅샷 검증 불합격이다. 검증 보고: {shown}")
         return EXIT_FAILED
     raise WiringError("단위 S3(snapshot_verify)의 출력에 합격 표시 ok(참·거짓)가 없다")
 
@@ -232,34 +246,45 @@ def call_handler(request: args.Request) -> int:
     command = request.command
     handler = HANDLERS[command]
     if handler is _not_wired:
-        print(f"오류: tradesentry {command}는 아직 구현되지 않았다. {ASSEMBLIES[command]}.", file=sys.stderr)
+        _report(f"오류: tradesentry {command}는 아직 구현되지 않았다. {ASSEMBLIES[command]}.")
         return EXIT_NOT_IMPLEMENTED
     try:
         code = handler(request)
     except WiringError as exc:
-        print(f"오류: tradesentry {command}의 배선 계약 위반이다. {exc}.", file=sys.stderr)
+        _report(f"오류: tradesentry {command}의 배선 계약 위반이다. {exc}.")
         return EXIT_WIRING
     except SystemExit:
-        print(f"오류: tradesentry {command}의 처리 함수가 종료 코드를 돌려주지 않고 SystemExit로 끝났다.", file=sys.stderr)
+        _report(f"오류: tradesentry {command}의 처리 함수가 종료 코드를 돌려주지 않고 SystemExit로 끝났다.")
         return EXIT_WIRING
     except Exception as exc:  # 예외 이름만 적는다(N13)
-        print(f"오류: tradesentry {command} 처리 중 예상 밖 오류가 났다({type(exc).__name__}).", file=sys.stderr)
+        _report(f"오류: tradesentry {command} 처리 중 예상 밖 오류가 났다({type(exc).__name__}).")
         return EXIT_FAILED
     if type(code) is not int or not 0 <= code <= 255 or code in CLI_EXIT_CODES:
         shown = str(code) if type(code) is int else type(code).__name__
-        print(f"오류: tradesentry {command}의 처리 함수가 허용하지 않는 종료 코드({shown})를 돌려줬다. "
-              "처리 함수는 0~255의 정수를 돌려주되 CLI 층이 쓰는 2·3·4는 쓰지 않는다.", file=sys.stderr)
+        _report(f"오류: tradesentry {command}의 처리 함수가 허용하지 않는 종료 코드({shown})를 돌려줬다. "
+                "처리 함수는 0~255의 정수를 돌려주되 CLI 층이 쓰는 2·3·4·130은 쓰지 않는다.")
         return EXIT_WIRING
     return code
 
 
 def main(argv: list[str] | None = None) -> int:
-    """tradesentry <명령> 진입점. 종료 코드를 돌려준다(SystemExit를 내지 않는다)."""
+    """tradesentry <명령> 진입점. 종료 코드를 돌려준다(SystemExit를 내지 않는다).
+
+    인자 검증과 처리 중에 난 KeyboardInterrupt(130)와 그 밖의 Exception(1)을 여기서 받아 예외 이름만 적는다. 그래서 main
+    밖으로 호출 경로 기록(traceback)이 나가지 않는다(위 "종료 코드").
+    """
     try:
-        request = args.parse(argv)
-    except SystemExit as exc:  # 도움말과 인자 오류. 알리는 문장은 argparse가 이미 썼다
-        return _parse_exit_code(exc)
-    return call_handler(request)
+        try:
+            request = args.parse(argv)
+        except SystemExit as exc:  # 도움말과 인자 오류. 알리는 문장은 argparse가 이미 썼다
+            return _parse_exit_code(exc)
+        return call_handler(request)
+    except KeyboardInterrupt:
+        _report("오류: tradesentry 실행이 중단됐다(KeyboardInterrupt).")
+        return EXIT_INTERRUPTED
+    except Exception as exc:  # 인자 검증·출력 중의 예상 밖 예외. 예외 이름만 적는다(N13)
+        _report(f"오류: tradesentry 실행 중 예상 밖 오류가 났다({type(exc).__name__}).")
+        return EXIT_FAILED
 
 
 def run(inp: object) -> object:
