@@ -20,6 +20,10 @@ Critic(별도 문맥의 검수자)은 조사자가 받은 근거와 초안만 �
 - 답이 max_tokens에서 잘렸으면(finish_reason length) 문제 목록 맨 앞에 적는다(흐름 조정이 trace에 남긴다). 잘린 답도
   읽을 수 있는 만큼은 위 규칙대로 읽는다.
 - Critic 메시지에는 모드 이름이 없다(사례·근거·초안만). 모드 사이 차이를 만들지 않는다(룰북 B2).
+- Critic이 보는 근거는 조사자의 모델용 보기(단위 I10 compact_envelope)에서 지표마다의 근거 ID 목록을 걷어 봉투마다 한
+  목록(중복 없음)으로 모은 것이다(evidence_view). 근거 ID와 metric_id는 하나도 잃지 않는다. Critic은 근거의 짝을
+  대조하지 않고(그 일은 검증기 R3), 누락·반대 설명·비교조건·근거에 없는 ID를 지적하므로 목록 하나로 충분하다. 조사자의
+  대화보다 짧아 사례 누적 토큰(32,000)을 덜 쓴다. full·freeform이 같은 보기를 받는다.
 """
 import json
 import re
@@ -36,11 +40,31 @@ REVIEW_KEYS = ("findings", "requery", "needs_revision", "problems")
 TRUNCATED = "Critic 답이 max_tokens에서 잘렸다(finish_reason length)"
 
 
+def evidence_view(envelope: object) -> object:
+    """Critic용 근거 보기: 조사자 보기에서 지표의 근거 ID 목록을 걷어 봉투마다 한 목록(나온 순서, 중복 없음)으로 모은다."""
+    view = investigator.compact_envelope(envelope)
+    if not isinstance(view, dict):
+        return view
+    metrics = view.get("metrics") or []
+    ids = [e for m in metrics if isinstance(m, dict) for e in m.get("evidence_ids") or []]
+    ids += view.get("evidence_ids") or []
+    out = {key: value for key, value in view.items() if key not in ("metrics", "evidence_ids", "retryable_error")}
+    if metrics:
+        out["metrics"] = [{k: v for k, v in m.items() if k != "evidence_ids"} if isinstance(m, dict) else m
+                          for m in metrics]
+    unique = list(dict.fromkeys(ids))
+    if unique:
+        out["evidence_ids"] = unique
+    if "retryable_error" in view:
+        out["retryable_error"] = view["retryable_error"]
+    return out
+
+
 def messages(prompts: dict, case: dict, draft: dict | None, evidence: list) -> list[dict]:
     body = "\n".join([
         "[사례]", trace_log.dumps({k: case.get(k) for k in ("case_id", "hs6", "partner", "month", "baseline_month",
                                                            "signals")}),
-        "[조사자가 받은 근거]", trace_log.dumps([investigator.compact_envelope(e) for e in evidence]),
+        "[조사자가 받은 근거]", trace_log.dumps([evidence_view(e) for e in evidence]),
         "[조사자의 초안]", trace_log.dumps(draft),
         "지적과 재조회 요청을 JSON 객체 하나로 답하라."])
     return [{"role": "system", "content": prompts["critic"]}, {"role": "user", "content": body}]

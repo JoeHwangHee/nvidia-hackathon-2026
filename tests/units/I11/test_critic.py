@@ -57,6 +57,27 @@ class CriticRuleTest(unittest.TestCase):
         result, _ = run_review(text[:20], finish_reason="length")
         self.assertEqual(result["problems"], [critic.TRUNCATED, "Critic 답이 JSON 객체가 아니다"])
 
+    def test_evidence_view_keeps_every_id_once_without_per_metric_lists(self):
+        from tradesentry.workflow import investigator
+
+        ids = [f"ev:controlled_fixture_v0:observation:{n}" for n in range(1, 6)]
+        envelope = {"tool": "get_history", "scope": {"partners": ["CN", "ALL"]}, "evidence_ids": ids,
+                    "metrics": [{"metric_id": "r_U-1", "inputs": {"metric": "r_U", "partner": "CN", "period": "202401",
+                                                                  "baseline_period": "202301"},
+                                 "evidence_ids": ids[:2], "value": None, "unit": "%", "comparability_flags": []},
+                                {"metric_id": "d_s-1", "inputs": {"metric": "d_s", "partner": "CN", "period": "202401",
+                                                                  "baseline_period": "202301"},
+                                 "evidence_ids": ids[1:3], "value": None, "unit": "pp", "comparability_flags": []}],
+                    "comparability": {"history": [{"month": "202401", "evidence_ids": [ids[3]]}]},
+                    "missingness": [], "retryable_error": None}
+        view = critic.evidence_view(envelope)
+        self.assertEqual([m["metric_id"] for m in view["metrics"]], ["r_U-1", "d_s-1"])
+        self.assertFalse(any("evidence_ids" in m for m in view["metrics"]))
+        self.assertEqual(view["evidence_ids"], [ids[0], ids[1], ids[2], ids[4]])  # 지표 쪽 먼저, 중복 없음
+        self.assertEqual(investigator._evidence_ids_in(view, set()), set(ids))  # 비교 가능성 안의 ID는 제자리에
+        body = critic.messages(mc.load_model_config().prompts, CASE, {"review_status": "MAINTAIN"}, [envelope])
+        self.assertIn(trace_log.dumps([view]), body[1]["content"])
+
     def test_messages_carry_no_mode(self):
         config = mc.load_model_config()
         case = dict(CASE, mode="full")  # 사례 객체에 모드가 섞여 와도 싣지 않는다
