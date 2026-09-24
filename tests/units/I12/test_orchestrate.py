@@ -652,5 +652,84 @@ class RequiredToolsTest(unittest.TestCase):
         self.assertEqual(len(payloads["agent"]), 1)
 
 
+class RuleReferenceTest(unittest.TestCase):
+    """조립 AS2 6회차: 모델 모드의 규칙 참고값(Ports.reference_status, MT1 결정 ⑬의 "모델 상태와 나란히 적는 참고값").
+    필수 도구 결과를 받은 뒤 첫 조사자 요청 앞에 한 번, 모든 모델 모드에 같은 문구로 싣고 Critic에도 준다."""
+
+    DECIDED = {"signal_status": {"unit_value": "MONITOR", "share": "NOT_TRIGGERED"},
+               "basis": {"unit_value": "composition_explained", "share": "not_triggered"}}
+
+    def run_with(self, mode, script, reference=None):
+        fake = h.FakePorts()
+        ports = fake.ports()
+        ports.required_tools = lambda case: ["decompose_hs"]
+        seen = []
+
+        def decided(evidence):
+            seen.append([e["tool"] for e in evidence])
+            if reference == "fail":
+                raise ValueError("근거 상태를 만들 수 없다")
+            return self.DECIDED
+        ports.reference_status = decided
+        clock = FakeClock()
+        transport = ScriptedTransport(script, clock)
+        sink = orchestrate.trace_log.MemoryTrace(h.RUN_ID)
+        ctx = orchestrate.RunContext(run_id=h.RUN_ID, case=h.CASE_A, mode=mode, dataset="controlled_fixture_v0",
+                                     rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
+        result = orchestrate.orchestrate(ctx, ports, mc.load_model_config(), transport=transport, sink=sink,
+                                         clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)
+        return result, sink.records, transport, seen
+
+    @staticmethod
+    def reference_lines(payload):
+        return [m["content"] for m in payload["messages"] if m["role"] == "user" and "[규칙 계산 결과(참고값)]" in m["content"]]
+
+    def script(self, mode):
+        steps = [h.tools_answer("decompose_hs"), h.draft_answer(claims=[dict(FREEFORM_CLAIM)] if mode == "freeform"
+                                                                else None)]
+        return steps + ([h.critic_answer()] if mode != "agent" else [])
+
+    def test_same_text_at_the_same_turn_for_every_model_mode(self):
+        texts = {}
+        for mode in ("agent", "full", "freeform"):
+            result, records, transport, seen = self.run_with(mode, self.script(mode))
+            self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+            order = [(r["event"], r["data"].get("phase") or r["data"].get("tool")) for r in records
+                     if r["event"] in ("model_request", "state_change", "tool_result")]
+            at = order.index(("state_change", "rule_reference"))
+            self.assertEqual(order[at - 1], ("tool_result", "decompose_hs"))  # 분해를 받은 뒤
+            self.assertEqual([e for e, _ in order[:at]].count("model_request"), 1)  # 두 번째 조사자 요청 앞
+            texts[mode] = self.reference_lines(transport.payloads[1])
+            self.assertEqual(seen, [["check_comparability", "get_history", "decompose_hs"]])  # 한 번만 계산
+            [ref] = [r["data"] for r in h.events(records, "state_change") if r["data"]["phase"] == "rule_reference"]
+            self.assertEqual((ref["available"], ref["signal_status"], ref["basis"]),
+                             (True, self.DECIDED["signal_status"], self.DECIDED["basis"]))
+            self.assertEqual(result["record"]["review_status_final"], "MONITOR")  # 모델 상태 그대로(덮어쓰지 않음)
+            if mode != "agent":  # Critic 요청에도 같은 글
+                critic_body = transport.payloads[2]["messages"][1]["content"]
+                self.assertIn(texts[mode][0], critic_body)
+        self.assertEqual(len({tuple(v) for v in texts.values()}), 1)
+        self.assertEqual(texts["agent"], ["[규칙 계산 결과(참고값)] 공개 판정 규칙을 지금까지 받은 근거에 코드로 적용한 결과다: "
+                                          "단가 신호(unit_value) = MONITOR(구성효과로 설명됨). 이 값과 다르게 판정하려면 "
+                                          "narrative에 그 반대 근거를 적는다."])
+
+    def test_unavailable_text_when_p3_cannot_run(self):
+        result, records, transport, _ = self.run_with("agent", self.script("agent"), reference="fail")
+        self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+        self.assertTrue(self.reference_lines(transport.payloads[1])[0].startswith(
+            "[규칙 계산 결과(참고값)] 규칙 계산 불가"))
+        [ref] = [r["data"] for r in h.events(records, "state_change") if r["data"]["phase"] == "rule_reference"]
+        self.assertEqual((ref["available"], ref["error"]), (False, "ValueError"))
+
+    def test_after_a_refused_draft_the_reference_says_what_is_missing(self):
+        _, records, transport, _ = self.run_with("agent", [h.draft_answer(), h.draft_answer()], reference="fail")
+        self.assertIn("받지 못한 도구: decompose_hs", self.reference_lines(transport.payloads[1])[0])
+
+    def test_checklist_has_no_reference(self):
+        result, records, _, seen = self.run_with("checklist", [])
+        self.assertEqual(seen, [])
+        self.assertFalse([r for r in h.events(records, "state_change") if r["data"]["phase"] == "rule_reference"])
+
+
 if __name__ == "__main__":
     unittest.main()

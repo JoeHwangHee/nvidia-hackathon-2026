@@ -74,7 +74,8 @@ class ModelConfigTest(unittest.TestCase):
         # model-0.4: 판정 규칙을 분해 보기의 판정 보조 값(rule_view, %)으로, 필수 근거 보기 압축(AS2 3회차)
         # model-0.5: 세 상태의 뜻 표·narrative 일치 규칙, Critic 첫 점검(상태 뒤바뀜), freeform 주장 8개 이하(AS2 4회차)
         # model-0.6: 초안 형식 줄·초안 요청 메시지의 상태 값 뜻 풀이를 뺌(모델이 값에 옮겨 적음), 지침 문장 압축(AS2 5회차)
-        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-0.6", "json_object"))
+        # model-0.7: 규칙 참고값(코드가 계산한 P3 판정)을 전제로 판정 절 압축, Critic 참고값 점검(AS2 6회차)
+        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-0.7", "json_object"))
         for value in walk(cfg):
             if isinstance(value, str):
                 self.assertNotRegex(value, r"(?i)bearer|secret")

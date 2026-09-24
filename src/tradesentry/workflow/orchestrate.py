@@ -49,6 +49,9 @@ checklist: 모델 없이 check_comparability → get_history → decompose_hs(�
 - 필수 조회(Ports.required_tools, 조립 AS2가 넘긴다. 없으면 강제하지 않는다): 도구를 주는 조사자 차례에 필수 도구의 결과를
   받지 않고 초안을 쓰면, 그 초안을 받지 않고 차례마다 한 번 필수 조회 메시지(단위 I10 REQUIRED_TOOLS_REQUEST, 모든 모드
   같음)로 돌려보낸다. trace에는 state_change draft_refused(missing_tools)로 남는다.
+- 규칙 참고값(Ports.reference_status, 조립 AS2가 근거 상태 변환을 넘길 때만): 모델 모드에서 필수 도구 결과를 받은 뒤 첫
+  조사자 요청 앞에 코드가 계산한 P3 신호별 판정·판정 근거를 고정 문구로 한 번 싣고 Critic에게도 준다(MT1 결정 ⑬의
+  "모델 상태와 나란히 적는 참고값"). 모델 상태를 덮어쓰지 않는다. trace state_change rule_reference.
 
 다른 작업 단위를 부르는 자리(Ports). unit_ports가 그 단위들의 run을 부르는 얇은 배선을 한곳에 모았다. 보고서·
 검증기(MT3 R1~R4)와 정책(MT1 P3~P5)은 각 작업 브랜치에 커밋된 입출력에 맞췄고(병합 전 대조), 도구 5개·도구 예산(MT2)은
@@ -105,7 +108,9 @@ class Ports:
     build_report({"case","mode","run_id","draft","evidence"}) -> {"report": 보고서, "rejected": 버린 요청 목록} /
     check_report({"case","mode","report","evidence","revision_used"}) -> {"schema_ok", "validator_ok", "findings"} /
     checklist_draft({"case","evidence"}) -> 초안 / required_evidence(사례) -> 필수 근거(단위 P5 출력, 없으면 None) /
-    required_tools(사례) -> 조사자가 초안 전에 받아야 하는 도구 이름 목록(없으면 None: 강제하지 않음. 조립 AS2가 넘긴다)
+    required_tools(사례) -> 조사자가 초안 전에 받아야 하는 도구 이름 목록(없으면 None: 강제하지 않음. 조립 AS2가 넘긴다) /
+    reference_status(봉투 목록) -> 판정 정책 P3 출력(신호별 판정·판정 근거). 모델 모드의 규칙 참고값(없으면 None: 싣지 않음.
+    unit_ports가 근거 상태 변환 evidence_state를 받았을 때만 만든다). 계산할 수 없으면 예외를 낸다
     """
 
     tool: Callable[[str, dict], dict]
@@ -115,6 +120,7 @@ class Ports:
     checklist_draft: Callable[[dict], dict]
     required_evidence: Callable[[dict], object] | None = None
     required_tools: Callable[[dict], list] | None = None
+    reference_status: Callable[[list], dict] | None = None
 
 
 @dataclass(frozen=True)
@@ -362,8 +368,14 @@ def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimit
     def required(case_obj: dict) -> object:
         return policy_required_evidence.run({"signals": case_obj.get("signals")})
 
+    def reference(evidence: list) -> dict:
+        # 모델 모드의 규칙 참고값(MT1 결정 ⑬: 모델 상태와 나란히 적는 참고값). P3을 그대로 부르고 모델 상태를 고치지 않는다.
+        state = evidence_state(case, evidence)
+        return policy_signal_decide.run({"policy": policy, "case": case, "evidence": state})
+
     return Ports(tool=tool, budget=budget, build_report=build_report, check_report=check_report,
-                 checklist_draft=checklist_draft, required_evidence=required)
+                 checklist_draft=checklist_draft, required_evidence=required,
+                 reference_status=reference if evidence_state is not None and policy is not None else None)
 
 
 def _unresolved(signal_status: dict, signals: dict | None = None) -> bool:
@@ -412,6 +424,7 @@ class _Flow:
         self.required = None  # 필수 근거(P5)는 orchestrate의 try 안에서 채운다(실패도 기록으로 남게)
         self.rejected: list = []
         self.verify_skipped = False  # 바로 앞 verify_evidence를 대조할 것이 없어 건너뛰었나(다음 validator_result에 남긴다)
+        self.reference_text: str | None = None  # 모델 모드에 실은 규칙 참고값 문구(한 번만 싣고 Critic에도 준다)
 
     # 한도와 도구 시도 ---------------------------------------------------------------------------------------------
     @property
@@ -508,6 +521,9 @@ class _Flow:
         while True:
             self.check_deadline()
             allow = tools_enabled and tool_turns < max_tool_turns and self._allowance_left(allowance) > 0
+            if self.ports.reference_status is not None and self.reference_text is None \
+                    and (not allow or nudged or not self.missing_required_tools()):
+                messages.append(self.reference_message())
             result = investigator.step(self.client, messages, stage=self.stage, mode=self.mode,
                                        signals=self.signals, allow_tools=allow)
             missing = self.missing_required_tools() if result["kind"] == "draft" and allow and not nudged else []
@@ -539,6 +555,23 @@ class _Flow:
             if refused_turns >= 2:
                 return {"draft": None, "problems": ["도구 없이 초안을 쓰라는 요청에 두 번 도구를 불렀다"],
                         "status_notes": [], "message": result["message"], "was_draft": False}
+
+    def reference_message(self) -> dict:
+        """규칙 참고값 메시지(모든 모델 모드에 같은 문구·같은 시점): 필수 도구 결과를 받은 뒤(또는 도구를 더 줄 수 없는
+        차례, 필수 조회를 한 번 돌려보낸 뒤) 첫 조사자 요청 앞에 한 번 싣는다. P3을 돌릴 수 없으면 계산 불가 문구다.
+        trace에는 state_change rule_reference로 남긴다. 모델 상태를 고치지 않는다(MT1 결정 ⑬)."""
+        try:
+            decided = self.ports.reference_status(list(self.evidence))
+            statuses, basis = decided["signal_status"], decided["basis"]
+        except Exception as exc:  # noqa: BLE001 - 계산할 수 없는 까닭은 예외 이름만 남긴다
+            statuses, basis, reason = None, None, type(exc).__name__
+            self.reference_text = investigator.reference_unavailable_text(self.missing_required_tools())
+        else:
+            reason = None
+            self.reference_text = investigator.reference_text(self.signals, statuses, basis)
+        self.sink.emit("state_change", self.stage, {"phase": "rule_reference", "available": statuses is not None,
+                                                    "signal_status": statuses, "basis": basis, "error": reason})
+        return {"role": "user", "content": self.reference_text}
 
     def missing_required_tools(self) -> list:
         """조사자가 초안 전에 받아야 하는데 아직 결과를 받지 못한 도구(Ports.required_tools, 없으면 강제하지 않는다)."""
@@ -660,7 +693,7 @@ class _Flow:
                 self.sink.emit("stage_start", "critic", {"stage": "critic"})
                 self.critic_used = True  # Critic 단계를 연 때 참(요청 중에 멈춰도 Critic을 쓴 실행으로 센다)
                 review = critic.review(self.client, prompts, self.case, draft, self.evidence,
-                                       self.limits.revision_requeries)
+                                       self.limits.revision_requeries, reference=self.reference_text)
                 self.state("after_critic", draft, needs_revision=review["needs_revision"],
                            findings=len(review["findings"]), requery=len(review["requery"]),
                            problems=review["problems"])

@@ -289,6 +289,17 @@ class ModelModesTest(RunCaseBase):
                    if e["event"] == "state_change" and e["data"]["phase"] == "draft_refused"]
         self.assertEqual(refused, [["compare_partners", "decompose_hs"]])
 
+    def test_rule_reference_is_the_p3_status_of_the_received_evidence(self):
+        """6회차: 모델 모드에 싣는 규칙 참고값은 받은 봉투로 P3을 돌린 신호별 판정이다(사례마다 checklist와 같은 값)."""
+        for label in ("A", "B", "C"):
+            with self.subTest(case=label):
+                files, _, _, transport = self.run_ok(CASES[label], "full", script_for(label, "full"))
+                [ref] = [e["data"] for e in self.trace(files)
+                         if e["event"] == "state_change" and e["data"]["phase"] == "rule_reference"]
+                self.assertEqual((ref["available"], ref["signal_status"]), (True, EXPECTED[label][1]))
+                sent = [m["content"] for m in transport.payloads[1]["messages"] if m["role"] == "user"]
+                self.assertTrue(any(c.startswith("[규칙 계산 결과(참고값)]") for c in sent))
+
     def test_model_mode_keeps_c_type_expansion(self):
         _, _, report, _ = self.run_ok(CASES["C"], "agent", script_for("C", "agent"))
         self.assertEqual([c["metric"] for c in report["claims"] if c["claim_type"] == "data_status"],

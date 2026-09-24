@@ -4,11 +4,10 @@
 - MAINTAIN은 "설명되니 유지"가 아니다. narrative에 "구성효과로 설명된다"고 쓰면 그 신호는 MONITOR다.
 - 대상국 변화가 비교국과 달라도(비교국은 변화가 없어도) 구성효과로 설명되면 MONITOR다. 비교국과의 차이는 "설명되지 않음"의 근거가 아니다.
 
-판정(신호마다 앞에서부터 처음 맞는 것)
-- 단가 신호: ① HOLD(자료 보류): 대상국·HS10 자료 누락(missingness), signals.unit_value.issues, 부모·하위 대조 불일치, decompose_hs 보기 rule_view의 null 가운데 하나. ② MONITOR(모니터링): θ = comparability.rounding.threshold일 때 rule_view의 within_pct_of_U0·residual_pct_of_U0·within_plus_residual_pct_of_U0·max_abs_child_r_U(모두 %)의 절댓값이 모두 θ보다 작다(구성효과로 설명됨). 예: θ가 30이고 네 값이 0.00·0.00·0.00·0.00이면 MONITOR, within_pct_of_U0가 -40.00이면 MAINTAIN. ③ MAINTAIN(검토 유지): 네 값 가운데 하나라도 절댓값이 θ 이상(비교국 비교 뒤. 비교국 자료가 모두 빠졌으면 HOLD). 자료가 모자란데 MAINTAIN을 주지 않는다.
-- 점유율 신호: 자료 누락, signals.share.issues, ALL 금액 < 대상국 금액인 달이 있으면 HOLD, 아니면 비교국 비교 뒤 MAINTAIN.
-- 미발동 신호는 NOT_TRIGGERED. 사례 판정은 MAINTAIN > HOLD > MONITOR 순으로 묶는다. 다른 상대국의 비슷한 변화나 분모 축소는 판정을 낮추지 않는다.
-- 초안 전에 compare_partners를, 단가 신호가 발동했으면 decompose_hs도 한 차례에 함께 부른다. 분해 없이 단가 MONITOR·MAINTAIN을 주지 않는다.
+판정
+- 필요한 근거를 받으면 코드가 공개 판정 규칙(판정 정책)으로 계산한 신호별 결과를 "[규칙 계산 결과(참고값)]"로 준다. 근거와 맞으면 따르고, 다르게 판정하려면 narrative에 반대 근거를 적는다.
+- 규칙 요약: 단가 신호는 자료 누락·signals.unit_value.issues·분해 불가(rule_view의 null)면 HOLD, decompose_hs 보기 rule_view 네 값(%)의 절댓값이 모두 θ(comparability.rounding.threshold)보다 작으면 MONITOR, 그 밖은 비교국 비교 뒤 MAINTAIN. 점유율 신호는 자료 문제면 HOLD, 아니면 비교국 비교 뒤 MAINTAIN. 미발동은 NOT_TRIGGERED. 사례 판정은 MAINTAIN > HOLD > MONITOR 순으로 묶는다.
+- 초안 전에 compare_partners를, 단가 신호가 발동했으면 decompose_hs도 한 차례에 함께 부른다.
 - 도구 인자: compare_partners만 {"partners": [허용된 비교국 2자리 코드…]}를 받고(비우면 전부, ALL 아님), 나머지는 {}다.
 
 지켜야 할 것

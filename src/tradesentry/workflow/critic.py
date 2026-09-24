@@ -60,13 +60,15 @@ def evidence_view(envelope: object) -> object:
     return out
 
 
-def messages(prompts: dict, case: dict, draft: dict | None, evidence: list) -> list[dict]:
-    body = "\n".join([
+def messages(prompts: dict, case: dict, draft: dict | None, evidence: list, reference: str | None = None) -> list[dict]:
+    lines = [
         "[사례]", trace_log.dumps({k: case.get(k) for k in ("case_id", "hs6", "partner", "month", "baseline_month",
                                                            "signals")}),
-        "[조사자가 받은 근거]", trace_log.dumps([evidence_view(e) for e in evidence]),
-        "[조사자의 초안]", trace_log.dumps(draft),
-        "지적과 재조회 요청을 JSON 객체 하나로 답하라."])
+        "[조사자가 받은 근거]", trace_log.dumps([evidence_view(e) for e in evidence])]
+    if reference:
+        lines.append(reference)  # 조사자가 받은 규칙 참고값과 같은 글(AS2 6회차)
+    lines += ["[조사자의 초안]", trace_log.dumps(draft), "지적과 재조회 요청을 JSON 객체 하나로 답하라."]
+    body = "\n".join(lines)
     return [{"role": "system", "content": prompts["critic"]}, {"role": "user", "content": body}]
 
 
@@ -117,9 +119,9 @@ def parse_review(content: str, max_requery: int) -> dict:
 
 
 def review(client: model_client.ModelClient, prompts: dict, case: dict, draft: dict | None, evidence: list,
-           max_requery: int) -> dict:
-    """Critic 한 차례(모델 요청 1회, 도구 없음)."""
-    answer = client.chat(messages(prompts, case, draft, evidence), stage="critic", tools=None)
+           max_requery: int, reference: str | None = None) -> dict:
+    """Critic 한 차례(모델 요청 1회, 도구 없음). reference는 조사자에게 실은 규칙 참고값 문구(있을 때)."""
+    answer = client.chat(messages(prompts, case, draft, evidence, reference), stage="critic", tools=None)
     message = answer["message"]
     result = parse_review(message.get("content") or "", max_requery)
     if answer.get("finish_reason") == "length":

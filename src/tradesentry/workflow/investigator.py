@@ -84,6 +84,27 @@ REQUIRED_TOOLS_REQUEST = ("[필수 조회] 공개 판정 규칙에 필요한 도
                           "이 도구를 한 차례에 함께 부른 뒤 초안을 다시 쓴다.")
 
 
+BASIS_LABELS = {"composition_explained": "구성효과로 설명됨", "unexplained": "설명되지 않음", "data_insufficient": "자료 부족",
+                "comparison_incomplete": "비교 미완료", "rounding_unstable": "반올림 불안정",
+                "resolved_after_correction": "교정 뒤 해소", "not_triggered": "미발동"}
+SIGNAL_LABELS = {"unit_value": "단가 신호(unit_value)", "share": "점유율 신호(share)"}
+REFERENCE_HEAD = "[규칙 계산 결과(참고값)] 공개 판정 규칙을 지금까지 받은 근거에 코드로 적용한 결과다: "
+REFERENCE_TAIL = " 이 값과 다르게 판정하려면 narrative에 그 반대 근거를 적는다."
+REFERENCE_UNAVAILABLE = ("[규칙 계산 결과(참고값)] 규칙 계산 불가: 판정에 필요한 근거가 없다{missing}. 받은 근거로 판정하고, "
+                         "모자라면 HOLD다.")
+
+
+def reference_text(signals: dict, statuses: dict, basis: dict) -> str:
+    """규칙 참고값 문구(모든 모델 모드와 Critic에 같은 글). 발동한 신호만 적는다."""
+    parts = [f"{SIGNAL_LABELS.get(code, code)} = {statuses.get(code)}({BASIS_LABELS.get(basis.get(code), basis.get(code))})"
+             for code in SIGNAL_CODES if (signals or {}).get(code) == "TRIGGERED"]
+    return REFERENCE_HEAD + ", ".join(parts) + "." + REFERENCE_TAIL
+
+
+def reference_unavailable_text(missing: list) -> str:
+    return REFERENCE_UNAVAILABLE.format(missing=f"(받지 못한 도구: {', '.join(missing)})" if missing else "")
+
+
 def required_tools_message(names: list) -> dict:
     """필수 조회 메시지(모든 모드에서 글자까지 같다). 흐름 조정(단위 I12)이 필수 도구 없이 쓴 초안을 돌려보낼 때 붙인다."""
     return {"role": "user", "content": REQUIRED_TOOLS_REQUEST.format(names=", ".join(names))}
