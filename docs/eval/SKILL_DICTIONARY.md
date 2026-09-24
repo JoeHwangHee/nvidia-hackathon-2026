@@ -40,15 +40,15 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 - **채점표 항목**: 채점 규범 §3의 하위 지표 코드다. 그 스킬을 쓴 결과가 해당 지표의 근거가 **될 수 있다**는 뜻이며 점수를 약속하지 않는다. 점수는 `docs/eval/RULEBOOK.md` Part A의 증거 정의로 매긴다.
   - 규범 1b OpenShell 활용 깊이, 1c NemoClaw 활용 깊이, 1d Agent Skills 활용, 3a 정량 지표 제시, 3b 평가 투명성, 3d 관측성, 3e 실패 내성, 4a NVIDIA 자산 확장 기여
 - **단계**: 개발(구현·설치·시험 준비), 평가(룰북에 따른 실행과 채점), 런타임(TradeSentry 실행 사슬 안에서 동작).
-- `NVIDIA/OpenShell` 저장소 스킬을 `--skill`로 하나씩 고르는 동작은 `[미확인]`이다(§5.2).
+- `NVIDIA/OpenShell` 저장소 스킬을 `--skill`로 골라 설치하는 동작을 확인했다. `skills` CLI 1.7.0에서 `--skill`을 여러 번 준 명령 하나로 세 스킬만 설치됐다 `[사실: 2026-09-24(목) X1, 명령은 §5.2]`.
 - `nemo-relay-plugin-observability`는 설계 세션 목록에 출처 저장소가 적혀 있지 않았다. 2026-09-24(목) GitHub 트리 대조에서 `NVIDIA/skills`의 `skills/nemo-relay-plugin-observability/SKILL.md`로 확인했다 `[사실: 2026-09-24(목) GitHub 트리 대조]`.
 
 | 이름 | 출처 저장소 | 설치 명령 | TradeSentry에서의 용도 | 단계(개발·평가·런타임) | 채점표 항목 | 상태 |
 |---|---|---|---|---|---|---|
-| `generate-sandbox-policy` | `NVIDIA/OpenShell` | `npx skills add NVIDIA/OpenShell --skill generate-sandbox-policy` | OpenShell 샌드박스 정책 초안 생성. `configs/openshell/policy.yaml` 작성 보조(§2.2) | 개발 | 규범 1b, 1d | 2026-09-23(수) 저장소 대조 확인 |
-| `openshell-cli` | `NVIDIA/OpenShell` | `npx skills add NVIDIA/OpenShell --skill openshell-cli` | OpenShell CLI 사용 안내. 샌드박스 생성·정책 적용·`openshell logs` 감사 로그 수집·의도적 위반 시험(§2.3) | 개발·평가 | 규범 1b, 1d, 3e | 2026-09-23(수) 저장소 대조 확인 |
-| `debug-inference` | `NVIDIA/OpenShell` | `npx skills add NVIDIA/OpenShell --skill debug-inference` | 샌드박스의 추론 경로 점검. X1에서 NIM 호출이 안 될 때(§2.4) | 개발 | 규범 1d | 2026-09-23(수) 저장소 대조 확인 |
-| `nemoclaw-user-guide` | `NVIDIA/skills` | `npx skills add NVIDIA/skills --skill nemoclaw-user-guide` | NemoClaw 설치·기동과 OpenClaw 에이전트 운용 안내(§2.5) | 개발 | 규범 1c, 1d | 2026-09-23(수) 저장소 대조 확인 |
+| `generate-sandbox-policy` | `NVIDIA/OpenShell` | `npx skills add NVIDIA/OpenShell --skill generate-sandbox-policy` | OpenShell 샌드박스 정책 초안 생성. `configs/openshell/policy.yaml` 작성 보조(§2.2) | 개발 | 규범 1b, 1d | 2026-09-23(수) 저장소 대조 확인. 설치 확인 2026-09-24(목)(X1, `--skill` 지정 설치) |
+| `openshell-cli` | `NVIDIA/OpenShell` | `npx skills add NVIDIA/OpenShell --skill openshell-cli` | OpenShell CLI 사용 안내. 샌드박스 생성·정책 적용·`openshell logs` 감사 로그 수집·의도적 위반 시험(§2.3) | 개발·평가 | 규범 1b, 1d, 3e | 2026-09-23(수) 저장소 대조 확인. 설치 확인 2026-09-24(목)(X1, `--skill` 지정 설치). X1 위반 시험의 provider·`sandbox exec`·`logs` 명령 확인에 참고: `artifacts/openshell/violation_tests.md` |
+| `debug-inference` | `NVIDIA/OpenShell` | `npx skills add NVIDIA/OpenShell --skill debug-inference` | 샌드박스의 추론 경로 점검. X1에서 NIM 호출이 안 될 때(§2.4) | 개발 | 규범 1d | 2026-09-23(수) 저장소 대조 확인. 설치 확인 2026-09-24(목)(X1, `--skill` 지정 설치). X1 키 주입 방식 점검(provider 첨부·헤더 자격 증명 치환·관리형 추론 경로 제거 안내)에 참고: `docs/tracking/decisions/20260924-1556-x1-key-injection.md` |
+| `nemoclaw-user-guide` | `NVIDIA/skills` | `npx skills add NVIDIA/skills --skill nemoclaw-user-guide` | NemoClaw 설치·기동과 OpenClaw 에이전트 운용 안내(§2.5) | 개발 | 규범 1c, 1d | 2026-09-23(수) 저장소 대조 확인. 설치 확인 2026-09-24(목)(X1) |
 | `skill-card-generator` | `NVIDIA/skills` | `npx skills add NVIDIA/skills --skill skill-card-generator` | 우리 스킬 3개의 거버넌스 카드 생성(§3.5) | 개발(제출 준비) | 규범 1d, 4a | 2026-09-23(수) 저장소 대조 확인 |
 | `nvidia-skill-finder` | `NVIDIA/skills` | `npx skills add NVIDIA/skills --skill nvidia-skill-finder` | 필요한 공식 스킬 추가 탐색. 후보 찾기만 하고 채택은 §2.1 기준(§2.7) | 개발 | 규범 1d | 2026-09-23(수) 저장소 대조 확인 |
 | `nemo-relay-plugin-observability`(선택) | `NVIDIA/skills` `[사실: 2026-09-24(목) GitHub 트리 대조]` | `npx skills add NVIDIA/skills --skill nemo-relay-plugin-observability` | 도구·모델 호출 추적 보강 후보. 기본은 넣지 않는다(§2.8) | 개발·평가(선택) | 규범 3d | 2026-09-23(수) 저장소 대조 확인. 선택 |
@@ -292,7 +292,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 ### 5.2 공식 스킬 설치 명령
 
 ```bash
-# NVIDIA/OpenShell 저장소 스킬 (--skill 지정 동작은 [미확인])
+# NVIDIA/OpenShell 저장소 스킬(--skill 지정 동작 확인: 2026-09-24(목) X1, skills CLI 1.7.0)
 npx skills add NVIDIA/OpenShell --skill generate-sandbox-policy
 npx skills add NVIDIA/OpenShell --skill openshell-cli
 npx skills add NVIDIA/OpenShell --skill debug-inference
@@ -306,11 +306,11 @@ npx skills add NVIDIA/skills --skill nvidia-skill-finder
 npx skills add NVIDIA/skills --skill nemo-relay-plugin-observability
 ```
 
-- 명령 형식: `npx skills add NVIDIA/skills --skill <name>`은 조사 문서에 있는 형식이다 `[사실: NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`. `npx skills add NVIDIA/OpenShell --skill <name>`의 `--skill` 지정 동작은 `[미확인]`이다. 조사 문서에는 OpenShell 전용 스킬 전체를 받는 `npx skills add NVIDIA/OpenShell` 형식만 있다.
-- `--skill`이 동작하지 않을 때의 대안 `[DESIGN]`: 조사 문서의 `npx skills add NVIDIA/OpenShell`로 저장소 단위로 받는다. 이때 다음을 주의한다.
+- 명령 형식: `npx skills add NVIDIA/skills --skill <name>`은 조사 문서에 있는 형식이다 `[사실: NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`. `npx skills add NVIDIA/OpenShell --skill <name>`의 `--skill` 지정도 동작한다. X1에서 `npx skills add NVIDIA/OpenShell --skill openshell-cli --skill generate-sandbox-policy --skill debug-inference --agent claude-code -y`(종료 코드 0)로 세 스킬만 설치됐고, `npx skills add NVIDIA/skills --skill nemoclaw-user-guide --agent claude-code -y`(종료 코드 0)도 같았다. 저장소 목록 조회(`npx skills add NVIDIA/OpenShell --list`)에는 `skills/` 아래 4개(`debug-inference`, `debug-openshell-cluster`, `generate-sandbox-policy`, `openshell-cli`)만 나왔다 `[사실: 2026-09-24(목) X1, skills CLI 1.7.0, docs/tracking/decisions/20260924-1556-x1-key-injection.md "확인된 명령"]`. 조사 문서에는 OpenShell 전용 스킬 전체를 받는 `npx skills add NVIDIA/OpenShell` 형식만 있다.
+- `--skill`이 동작하지 않을 때의 대안 `[DESIGN]`(X1에서 `--skill`이 동작해 쓰지 않았다): 조사 문서의 `npx skills add NVIDIA/OpenShell`로 저장소 단위로 받는다. 이때 다음을 주의한다.
   - OpenShell 저장소에는 `skills/` 말고도 `.agents/skills/` 아래에 저장소 개발용 스킬 18개(`create-github-pr`, `fix-security-issue` 등)가 있다 `[사실: 2026-09-24(목) GitHub 트리 대조]`. 저장소 단위로 설치하면 쓰지 않을 이 스킬들과, 같은 `skills/`에 있는 `debug-openshell-cluster`(§4.4)도 함께 들어올 수 있다 `[추론]`.
-  - 설치할 때 세 스킬(`generate-sandbox-policy`, `openshell-cli`, `debug-inference`)과 §2.7로 채택한 후보만 고를 수 있으면 그것만 고른다(고르는 방식은 `[미확인]`). 고를 수 없으면 설치 뒤 `npx skills list`로 확인하고 세 스킬(§2.7로 채택한 후보 포함) 밖의 것은 제거한다(제거 명령은 조사 문서에 없어 `[미확인]`).
-  - `--skill` 지정 동작은 계속 `[미확인]`이다.
+  - 설치할 때 세 스킬(`generate-sandbox-policy`, `openshell-cli`, `debug-inference`)과 §2.7로 채택한 후보만 고를 수 있으면 그것만 고른다(고르는 방식은 `--skill`이며 X1에서 확인했다). 고를 수 없으면 설치 뒤 `npx skills list`로 확인하고 세 스킬(§2.7로 채택한 후보 포함) 밖의 것은 제거한다(제거 명령은 조사 문서에 없어 `[미확인]`).
+  - `--skill` 지정 동작은 X1에서 확인했다(위 명령 형식 항목).
 - 에이전트 지정: `--agent claude-code`, `--agent codex` 옵션이 있다 `[사실: NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`. 개발 보조 에이전트는 Claude Code에서 돌므로 `npx skills add NVIDIA/skills --skill <name> --agent claude-code` 형식을 쓴다 `[DESIGN]`. OpenClaw 에이전트용 지정값이 있는지는 `[미확인]`이다.
 - Claude Code에서는 설치 뒤 `/reload-skills`로 스킬을 다시 읽는다 `[사실: NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`.
 
