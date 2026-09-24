@@ -1,0 +1,27 @@
+{
+ "findings": [
+  {
+   "kind": "missing_evidence",
+   "text": "구성효과로 설명된다고 하려면 하위품목 분해와 부모 대조가 필요한데 아직 없다.",
+   "claim_refs": [
+    "m-rU"
+   ]
+  },
+  {
+   "kind": "status_conflict",
+   "text": "분해 근거 없이 모니터링으로 두었다.",
+   "claim_refs": []
+  }
+ ],
+ "requery": [
+  {
+   "tool": "decompose_hs",
+   "args": {},
+   "reason": "하위품목 분해와 부모 대조를 확인한다."
+  }
+ ],
+ "needs_revision": true,
+ "problems": [
+  "findings[2]의 kind·text 형식이 틀려 버렸다"
+ ]
+}
