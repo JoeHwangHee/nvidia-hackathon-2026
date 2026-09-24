@@ -35,6 +35,16 @@ class ReplayRuleTest(unittest.TestCase):
         sent = replay.ReplayTransport(records).send({"any": "payload"}, 1000)
         self.assertEqual((sent["http_status"], sent["error"], sent["body"]), (None, "connection", b""))
 
+    def test_policy_denial_replays_with_status_and_denial_kind(self):
+        records = [rec(1, "model_request", "basic", {}),
+                   rec(2, "model_error", "basic", {"http_status": 403, "error": "policy_denied", "denial": "connect",
+                                                   "elapsed_ms": 4})]
+        sent = replay.ReplayTransport(records).send({"any": "payload"}, 1000)
+        self.assertEqual((sent["http_status"], sent["error"], sent["denial"], sent["body"]),
+                         (403, "policy_denied", "connect", b""))
+        plain = replay.ReplayTransport([rec(1, "model_error", "basic", {"http_status": None, "error": "connection"})])
+        self.assertNotIn("denial", plain.send({}, 1000))  # 거부가 아닌 오류에는 denial 키가 없다
+
     def test_tools_replay_in_order_and_check_name_and_args(self):
         envelope = {"tool": "get_history", "metrics": []}
         records = [rec(1, "tool_call", "basic", {"tool": "get_history", "args": {"period": "202401"}}),

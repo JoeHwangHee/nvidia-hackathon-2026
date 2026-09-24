@@ -12,8 +12,11 @@
 
 전송 자리(transport) 약속. 단위 I7(모델 호출)의 실제 전송과 ReplayTransport가 같은 모양이다.
 - send(payload: dict, timeout_ms: int) -> dict. payload는 chat completions 요청 본문(Decimal 허용)이다.
-- 돌려주는 키: http_status(int 또는 None), body(bytes, 응답 본문), error(None, "connection", "timeout"),
-  elapsed_ms(int). 연결 실패·제한 시간 초과는 http_status가 None이고 error가 채워진다.
+- 돌려주는 키: http_status(int 또는 None), body(bytes, 응답 본문), error(None, "connection", "timeout",
+  "policy_denied"), elapsed_ms(int). 연결 실패·제한 시간 초과는 http_status가 None이고 error가 채워진다.
+- error가 "policy_denied"(샌드박스 정책 프록시 거부)면 http_status는 프록시가 준 상태(403·407)이고, 키 denial이
+  거부 자리("connect": CONNECT 터널 거부, "l7": HTTP 요청 거부)를 알린다. 재생은 trace model_error의 denial을 그대로
+  돌려준다(그래야 재생한 실행의 원인 분류 detail이 기록과 같다).
 
 재생 규칙
 - 응답: model_response·model_error 레코드를 차례로 하나씩 내준다. 바로 앞 model_request에 request_sha256이 있으면
@@ -79,8 +82,11 @@ def response_items(records: list[dict]) -> list[dict]:
                           "elapsed_ms": int(data.get("elapsed_ms", 0))})
             pending_sha = None
         elif event == "model_error":
-            items.append({"request_sha256": pending_sha, "http_status": data.get("http_status"), "body": b"",
-                          "error": data.get("error"), "elapsed_ms": int(data.get("elapsed_ms", 0))})
+            item = {"request_sha256": pending_sha, "http_status": data.get("http_status"), "body": b"",
+                    "error": data.get("error"), "elapsed_ms": int(data.get("elapsed_ms", 0))}
+            if data.get("denial") is not None:
+                item["denial"] = data["denial"]
+            items.append(item)
             pending_sha = None
     return items
 
@@ -124,8 +130,11 @@ class ReplayTransport:
         self._pos += 1
         if self._clock is not None:
             self._clock.advance(item["elapsed_ms"])
-        return {"http_status": item["http_status"], "body": item["body"], "error": item["error"],
+        sent = {"http_status": item["http_status"], "body": item["body"], "error": item["error"],
                 "elapsed_ms": item["elapsed_ms"]}
+        if "denial" in item:
+            sent["denial"] = item["denial"]
+        return sent
 
 
 class ReplayTools:
