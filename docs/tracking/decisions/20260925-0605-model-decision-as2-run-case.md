@@ -19,7 +19,7 @@
 |---|---|
 | 날짜 | 2026-09-25(금) 06:05(기록 시각). 바탕은 `main` cf9d607 + MT4 브랜치 6dfc489(병합 02ebeb5)이고, 작업 중 AS1(#32)이 병합된 `main` d945792를 받았다(f9e5633). 코드 커밋은 c9085f8(단위 I12)·81b9df9(단위 F2) |
 | 제목 | `run-case` 배선 순서·도구 자리·근거 상태 변환·C형 펼치기·출력 파일, 실자료 스냅샷 거부(잠정), 조립 점검 1·2·5단계 결과와 단위 표 판정 갱신 |
-| 결정 | 아래 "결정 내용" ①~⑫. ⑬은 2회차(실제 NIM 실측 6회 뒤, 같은 날 06:3x), ⑭는 3회차(실측 27회 뒤, 07:0x), ⑮는 4회차(실측 20회 뒤, 07:2x), ⑯은 5회차(07:4x), ⑰은 6회차(08:0x, 오케스트레이터 판단), ⑱은 7회차(08:3x), ⑲는 8회차(09:0x), ⑳은 9회차(검토 반영, 09:3x)에 더했다 |
+| 결정 | 아래 "결정 내용" ①~⑫. ⑬은 2회차(실제 NIM 실측 6회 뒤, 같은 날 06:3x), ⑭는 3회차(실측 27회 뒤, 07:0x), ⑮는 4회차(실측 20회 뒤, 07:2x), ⑯은 5회차(07:4x), ⑰은 6회차(08:0x, 오케스트레이터 판단), ⑱은 7회차(08:3x), ⑲는 8회차(09:0x), ⑳은 9회차(검토 반영, 09:3x), ㉑은 10회차(마지막 조정, 10:0x)에 더했다 |
 | 이유와 근거 | 항목마다 적었다 |
 | 검토한 대안 | 아래 "검토한 대안" |
 | 결정 주체 | 소유 트랙(M). ⑩은 AS1 결정 ⑤와 같은 오케스트레이터 결정(작업 지시)을 따른다 |
@@ -326,6 +326,43 @@
   - `parent_child_match`: 부모 대조의 `V_match`·`Q_match`가 null(대조 불가, 예: C형)이면 거짓으로 옮긴다. 그래서 P3 gaps에 "불일치"가 함께 적히지만 판정(HOLD)은 같다.
   - 도구 I1의 `no_trade`·`zero_weight`·`zero_baseline`·`zero_denominator`를 `comparability_issues`로 넘기는 것은 발동한 계열에서는 생기지 않는다(그 계열의 값이 계산돼 발동했으므로).
 
+㉑ **계산 불가 안내, 도구 차례 `max_tokens`, 막힌 산문 수정 지시(10회차, 마지막 조정. 단위 I7·I10·F1·구성 I9 `model-1.1`)** — 확정. 이 뒤로는 실측 결과를 보고 지침을 더 조정하지 않는다(오케스트레이터)
+
+- 9회차 실측(한도 128K, 18회) `[사실: trace]`
+  - 기대 일치 8/18이었다.
+  - 실패 내역
+    - VALIDATOR_BLOCKED 4회: PROSE_UNBACKED `0.0%`·`0.9%`·`증가`·`하락`. 수정 초안에도 같은 표현이 남았다.
+    - SCHEMA_INVALID 2회
+    - PROVIDER_REQUEST_TIMEOUT 1회
+  - `run_case-260925082849`(B agent)
+    - 조사자가 허용 목록 밖 국가로 `compare_partners`를 불러 거부됐다.
+    - 수정 단계의 `required` 차례 응답이 공백 반복 8,192토큰으로 잘렸다(`finish_reason` `length`, 도구 호출 없음).
+    - 참고값이 끝까지 계산 불가였고, 모델이 "모자라면 HOLD다" 안내대로 HOLD를 내 `COMPLETED`/HOLD로 끝났다(기대 MAINTAIN).
+1. **계산 불가 안내**(무역 재검토 막음)
+   - 필수 조회 결과가 없어서 참고값을 계산하지 못한 경우, 이제 HOLD로 이끌지 않고 빠진 필수 조회를 알린다. 문구: "필수 조회 결과를 아직 받지 않았다(받지 못한 도구: …). 이것은 자료 부족이 아니다. 허용된 인자로 그 도구를 부른다(compare_partners는 인자 없이 부르면 허용 비교국 전부). 자료 부족(HOLD)은 조회한 자료가 비었을 때만이다."
+   - 개발 플랜 §6.3의 HOLD는 "필요한 자료가 없어 검증이 불가능"할 때이고, 결정 ⑦과 P3은 흐름의 누락이 그럴듯한 HOLD로 숨지 않게 정했다.
+   - 오케스트레이터 판단: 끝까지 필수 조회를 하지 못한 모델 모드 실행은 모델의 최종 상태를 그대로 기록한다. 새 상태·키·원인 코드를 만들지 않는다. trace `rule_reference`의 `available`(마지막 값 거짓)로 드러낸다.
+     - 까닭: 채점에서는 기대 상태 불일치와 필수 근거 미충족으로 이미 실패로 세어진다.
+     - 결과 요약에 모드별 "참고값 없이 끝난 실행 수"를 공개 항목으로 넘긴다(아래 "영향과 넘길 곳").
+2. **도구 차례 `max_tokens`**(보 권고 1)
+   - 설정 `request.tool_turn_max_tokens` 1024를 더했다(단위 I7 `ModelSettings.tool_turn_max_tokens`). `tool_choice` `"required"` 차례에만 쓰고, 초안 차례는 `max_tokens` 8192 그대로다. 모든 모드 같다.
+   - 도구 호출 응답은 실측에서 수십 토큰이다.
+   - ⑲의 "`required`는 도구 호출을 냈다"(탐침 2회, 8회차 24/24)의 **반례**: `run_case-260925082849` 수정 단계의 `required` 응답이 도구 호출 없이 공백 반복으로 8,192토큰을 채웠다 `[사실: trace]`. `required`도 도구 호출을 보장하지 않는다. 그런 응답은 초안이 아니므로 ⑱대로 버려지고 다음 차례로 간다.
+3. **막힌 산문 수정 지시**
+   - 수정 차례 요청(단위 I10 `feedback_message`)에 검증기가 막은 산문 표현(`PROSE_UNBACKED`)을 경로와 글자 그대로 나열한다. 예: `narrative: '변동이 없'; hypotheses[0]: '50.0%'`.
+   - 함께 싣는 지시: "이 표현이 든 문장을 지우거나, 같은 값·같은 방향의 지표 주장을 인용하는 문장으로 바꾼다. 같은 표현을 다른 곳에 다시 쓰지 않는다." 모든 모드 같다.
+   - 원래 "[검증기 지적]"은 사유 목록 JSON만 실었다.
+4. **지침 보탬**(무 권고)
+   - 비교 미완료 HOLD는 MAINTAIN 후보일 때만이다. 단가 MONITOR는 비교국 비교가 필요 없다.
+   - "ALL 분모 < 대상국 금액"은 분자가 분모보다 커 점유율을 정의할 수 없는 자료라는 뜻이다. 시간에 따른 분모 축소와 다르다.
+   - narrative 숫자 안내를 검증기와 같게 맞췄다. 연월·기간, HS 코드, 국가 코드, 근거 ID·버전 이름, 조사 횟수는 검증기가 빼므로(룰북 B3-2 EX-1~EX-4) 써도 된다.
+5. CLI 단위 F1의 머리 설명과 `CASE_RULE` 예시를 `850450-XA-202412`로 바꿨다(보 권고 2).
+6. **시험**
+   - F2
+     - 허용되지 않는 상태 조합(단가 MONITOR인데 사례 MAINTAIN): full은 수정 1회 뒤에도 차단돼 INVALID(VALIDATOR_BLOCKED)이고, freeform은 COMPLETED이며 `validator_findings`에 STATUS_INCONSISTENT를 기록한다(평 권고 C).
+     - 도구 차례 1024, 초안 차례 8192.
+   - I10: 막힌 산문 나열, 계산 불가 안내에 "모자라면 HOLD"가 없음.
+
 ## 조립 점검 결과(조립체 3, `docs/plan/UNITS.md` §5의 1·2·5단계)
 
 AS2는 합치거나 버린 단위가 없다. 동결 경로(판정 정책 P3~P5, 검증기 R3·R4) 단위의 코드는 고치지 않았다. 고친 단위는 F2(배선)와 I12(C형 펼치기)다. 3·4·6단계의 확정은 조립 점검 작업 AS4가 한다.
@@ -334,7 +371,7 @@ AS2는 합치거나 버린 단위가 없다. 동결 경로(판정 정책 P3~P5, 
 |---|---|---|
 | 1. 정적 import 그래프 | `cli.dispatch` → `cli.args`, `contract.policy_load`·`types`, `dal.query`, `metrics.unit_value`·`share`·`decompose`, `policy.trigger`·`case_build`, `runlog.cause_codes`·`trace`, `workflow.model_client`·`nat_wrap`·`orchestrate`(+ 기존 `snapshot.build`·`verify`). `workflow.orchestrate` → `policy.signal_decide`·`case_aggregate`·`required_evidence`, `reports.claims`·`render_ko`, `runlog` 셋, `tools` 여섯, `validator.validate`·`gate`, `workflow.investigator`·`critic`·`model_client`·`replay`. 도구 넷 → `tools.check_comparability`(공통 틀)·`dal.query`·`metrics`. `validator.validate` → `reports.render_ko`. 모두 각 단위 머리 주석의 허용 import 안이다. `src/tradesentry` 모듈 그래프에 순환 0 `[사실: 경계 시험 도우미(tests/test_boundaries.py의 repo_modules·import_targets)로 커밋 81b9df9에서 뽑은 그래프]` | `env -u NVIDIA_API_KEY -u DATA_GO_KR_SERVICE_KEY -u TRADESENTRY_SEALED_DIR uv run --locked python -m unittest discover -s tests -p "test_boundaries.py"` → 0 |
 | 2. 실행 커버리지 | `run-case`를 합성 시험자료 A·B·C × 네 모드(모델 모드는 가짜 모델)로 돌려 `sys.setprofile`로 `src/tradesentry` 함수 호출의 파일을 모았다. 네 모드 모두: X1~X4, P4, P5, I1~I7, I12, I13, R1~R4, L1, L2. `checklist`만: P3. 모델 세 모드: I10. `full`·`freeform`: I11. 불리지 않음: G1(비교국 표는 미리 계산된 `peer_group` 행을 K3로 읽는다), I8(기록 재생, 시험·골든 전용. I10~I12는 오류 형식만 import한다), L3(성공 경로에서는 상수만 쓴다. 실패 경로(키 없는 `agent` 실행 → `FAILED`·`CODE_ERROR`)에서는 불린다). I9(구성)는 모델 설정·프롬프트로 읽힌다 `[사실: scratch 스크립트, 12회 모두 종료 코드 0]` | 조립 시험 `tests/units/F2/test_run_case_command.py`(16개)·`test_run_case_evidence.py`(15개) → 0 |
-| 5. 동작 불변 | 합치거나 버린 것이 없다. `detection_row` 추출 뒤 AS1 조립 시험이 그대로 통과하고, I12 골든의 `request_sha256`도 그대로다. 출력 파일 도메인명은 단위 표 글자(`runlog_trace`, `workflow_nat_wrap`, `runlog_run_record`, `reports_render_ko`)와 같다(N4, 시험이 글자로 확인) | 단위별 `env -u … uv run --locked python -m unittest discover -s tests/units/<ID> -t tests`: 조립체 3의 X1~X4·P3~P5·G1·I1~I13·R1~R4·L1~L3과 F2 모두 0, skipped 0(보고 AS2-1 §2). 전체 `env -u … uv run --locked python -m unittest discover -s tests -v` → 0. 1회차 머리 81b9df9에서 Ran 893, 9회차 머리(⑳ 커밋, `origin/main` acd4240 병합 뒤)에서 Ran 997, 모두 skipped 15(조립체 3 밖의 뼈대 단위 골든) |
+| 5. 동작 불변 | 합치거나 버린 것이 없다. `detection_row` 추출 뒤 AS1 조립 시험이 그대로 통과하고, I12 골든의 `request_sha256`도 그대로다. 출력 파일 도메인명은 단위 표 글자(`runlog_trace`, `workflow_nat_wrap`, `runlog_run_record`, `reports_render_ko`)와 같다(N4, 시험이 글자로 확인) | 단위별 `env -u … uv run --locked python -m unittest discover -s tests/units/<ID> -t tests`: 조립체 3의 X1~X4·P3~P5·G1·I1~I13·R1~R4·L1~L3과 F2 모두 0, skipped 0(보고 AS2-1 §2). 전체 `env -u … uv run --locked python -m unittest discover -s tests -v` → 0. 1회차 머리 81b9df9에서 Ran 893, 9회차 머리(⑳ 커밋, `origin/main` acd4240 병합 뒤)에서 Ran 997, 10회차 머리(㉑ 커밋)에서 Ran 1000, 모두 skipped 15(조립체 3 밖의 뼈대 단위 골든) |
 
 **AS4에 넘기는 관찰**(3·4단계의 입력, 판정은 AS4)
 
@@ -370,12 +407,12 @@ AS2는 합치거나 버린 단위가 없다. 동결 경로(판정 정책 P3~P5, 
 
 - 바꾼 파일
   - `src/tradesentry/cli/dispatch.py`: `run-case` 배선, 머리 설명의 "사례 조사 명령 run-case" 절, `detection_row` 추출, `required_tools`·`drafts_only_without_tools` 켜기(⑮·⑱)
-  - `src/tradesentry/cli/args.py`: `--case` 도움말(⑳)
+  - `src/tradesentry/cli/args.py`: `--case` 도움말·머리 설명·`CASE_RULE` 예시(⑳·㉑)
   - `src/tradesentry/workflow/orchestrate.py`: C형 펼치기(⑥), 필수 조회·규칙 참고값·도구 없는 차례의 초안·차례 규칙·코드 지적·참고값 재계산(⑮·⑰~⑳)
   - `src/tradesentry/workflow/investigator.py`: 분해 보기 `rule_view`, 필수 근거 보기 압축, 참고값·필수 조회·코드 지적 문구, `tool_choice`, `compare_partners` 설명(⑭~⑲)
   - `src/tradesentry/workflow/critic.py`: 참고값 문구 전달(⑰)
-  - `src/tradesentry/workflow/model_client.py`: `tool_choice`(⑲)
-  - `configs/model/*`: 지침(`investigator.txt`·`critic.txt`·`claims_freeform.txt`), `model.json`(`max_tokens` 8192, `config_version` `model-1.0`), README(⑬~⑳)
+  - `src/tradesentry/workflow/model_client.py`: `tool_choice`(⑲), `tool_turn_max_tokens`(㉑)
+  - `configs/model/*`: 지침(`investigator.txt`·`critic.txt`·`claims_freeform.txt`), `model.json`(`max_tokens` 8192, `tool_turn_max_tokens` 1024, `config_version` `model-1.1`), README(⑬~㉑)
   - `skills/tradesentry/SKILL.md`: run-case 출력·사례 식별자 맞춤(⑳)
   - `tests/units/F2/`: `run_case_fixture.py`, `test_run_case_command.py`, `test_run_case_evidence.py`
   - `tests/units/I10/test_rule_view.py`, `tests/units/I12/test_orchestrate.py`·`test_token_estimate.py`·`input.json`, `tests/units/I13/input.json`, `tests/units/I7/test_model_client.py`, `tests/test_model_config.py`
@@ -385,9 +422,15 @@ AS2는 합치거나 버린 단위가 없다. 동결 경로(판정 정책 P3~P5, 
   - 실행이 `COMPLETED`가 아니면 종료 코드가 1이고 보고서 파일이 없다(기록은 있다).
   - 사례 실행 폴더를 묶음 폴더와 잇는 방법(자문 명세서 Q9)은 정하지 않았다.
   - `tradesentry evaluate`는 `dispatch.investigate_case` 배선을 그대로 써야 한다. 그래야 세 포트(`required_tools`, `drafts_only_without_tools`, 근거 상태 변환 훅으로 켜지는 `reference_status`)가 켜진다. `orchestrate.unit_ports`를 직접 부르면 개발 실측과 채점 대상 실행의 흐름이 달라진다. 평가 실행에서 세 포트가 켜졌는지 보는 시험을 AS3에 둔다(평 권고 4).
-- 결과 요약(로드맵 R1)·룰북 B2·B4 공개 항목(평 권고 1, 사용자 결정 13 승인 뒤, 룰북은 이 PR에서 고치지 않는다)
-  - 공개할 내용: 모델 모드가 규칙 참고값과 필수 조회를 받는다는 점, 모드별 참고값 가용률과 "최종 = 참고값" 비율, `required` 차례 수, `draft_discarded`·`code_finding` 건수, Critic 생략률, 한도 값, 모델 설정을 합성 A·B·C로 조정한 사실.
-  - B2·B4 초안 문구는 평가 방법론 검토 보고 AS2-review-eval-1(scratchpad, 권고 1)에 있다.
+- 결과 요약(로드맵 R1)·룰북 B2·B4 공개 항목(평 권고 1·A, 사용자 결정 13 승인 뒤, 룰북은 이 PR에서 고치지 않는다)
+  - 공개할 수치
+    - 모델 모드가 규칙 참고값과 필수 조회를 받는다는 점
+    - 모드별 참고값 가용률, "최종 = 참고값" 비율, 참고값 없이 끝난 실행 수(㉑)
+    - `required` 차례 수, `draft_discarded`·`code_finding` 건수, Critic 생략률
+    - 한도 값(누적 토큰, `max_tokens` 8192, 도구 차례 1024)
+    - 모델 설정을 합성 A·B·C로 조정한 사실(`model-0.2`~`1.1`)
+  - B2 "모든 모드에 같은 조건"에 더할 문구(초안): "규칙 참고값과 필수 조회: 모델 모드(`agent`·`full`·`freeform`)의 조사자와 Critic은, 코드가 공개 판정 규칙(판정 정책 P3)을 그 초안을 쓸 때까지 받은 근거에 적용한 신호별 판정을 규칙 참고값으로 받는다(수정 단계에서 새 조회 결과를 받으면 다시 계산한다). 지침은 참고값을 따르게 하고, 규칙이 보지 않는 도구 결과 속 사실이 있을 때만 narrative에 반대 근거를 적고 벗어나게 한다. 코드는 모델의 판정을 덮어쓰지 않는다. 필수 도구(발동 신호가 있으면 `compare_partners`, 단가 신호가 발동했으면 `decompose_hs`)의 결과가 없고 그 단계의 도구 몫이 남은 차례에는 `tool_choice: "required"`와 빠진 도구 이름을 적은 알림을 싣는다(부를 도구를 API로 지정하지는 않는다). Critic 뒤(agent는 첫 검증 뒤)에도 필수 결과가 없으면 코드 지적을 붙여 같은 수정 1회로 보낸다. 문구·시점은 세 모델 모드에 글자까지 같다."
+  - B4(또는 결과 요약 2절)에 더할 문구(초안): "holdout40에서 `agent`·`full`과 `checklist`의 판정 일치는 모델이 규칙을 스스로 적용한 정도가 아니라, 규칙 참고값을 따르거나 반대 근거로 벗어난 정도다. 두 모드가 `checklist`보다 나을 수 있는 길은 정책 규칙과 독립 정답표가 다른 사례에서 반대 근거로 옳게 벗어나는 경우와, 필수 조회·주장 작성·검증 통과의 차이뿐이다. 개선이 없으면 "이 범위에서 LLM 추가 가치 미확인"으로 보고한다."
 - dev20 개발 점수표(평 권고 3): `RB-1` 전에 이 설정(`model-1.0`)으로 dev20을 한 번 돌린다. 결과로 설정을 바꾸면 그 사실과 회차를 기록한다. 지금 `RUN_CASE_DATASETS`에 dev20이 없어 먼저 한 줄을 더해야 한다.
 - 2026-09-25(금) 09:00 사용자 결정
   - U4: 켜기로 하면 `ROUNDING_UNSTABLE_ENABLED`를 참으로 바꾼다(한 줄, 시험 있음).
