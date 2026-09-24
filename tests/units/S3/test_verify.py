@@ -121,8 +121,71 @@ class FailingTest(VerifyTestBase):
         report = verify.verify_snapshot(fx.SNAPSHOT_ID, build_file=target)
         self.assertFalse(check(report, "all_duplicates_consistent"))
 
+    def test_rules_without_raw(self):
+        """raw 대조를 끈 경우(check_raw 거짓)에도 관측 행 규칙 위반을 잡는다(무역통계 검토 재현 5종)."""
+        tampers = {
+            "실패 행의 요청을 모르는 값으로": "UPDATE observation SET request_id = 'ffffffffffffffff' WHERE rowid = 37",
+            "미수집 행을 실패로(수신 기록 없음)":
+                "UPDATE observation SET observation_status = 'REQUEST_FAILED' WHERE observation_status = 'NOT_COLLECTED' "
+                "AND partner_code = 'DE'",
+            "상태 행의 달을 기간 밖으로": "UPDATE observation SET month = '202512' WHERE rowid = 23",
+            "수출 HS10 행을 무거래 확정으로":
+                "UPDATE observation SET observation_status = 'CONFIRMED_NO_TRADE', amount_usd = NULL, "
+                "net_weight_kg = NULL WHERE rowid = 44",
+            "상태 행의 달을 RAW: 원문으로": "UPDATE observation SET month = 'RAW:2023.02' WHERE rowid = 23",
+        }
+        for index, (name, sql) in enumerate(tampers.items()):
+            with self.subTest(name):
+                target = self.dev_copy(f"snapshot_build-2609250004{index:02d}", with_record=False)
+                self.edit(target, sql)
+                report = verify.verify_snapshot(fx.SNAPSHOT_ID, build_file=target, check_raw=False)
+                self.assertFalse(check(report, "observation_rules"), name)
+                self.assertFalse(report["ok"])
+                self.assertIsNone(check(report, "raw_rebuild"))
+
+    def test_peer_group_row_tampering(self):
+        """비교국 표 행 변조 5종(자기 비교·순위 0·코드 체계·범위 대문자·유사도 글자)을 raw 대조와 관계없이 잡는다."""
+        tampers = {
+            "자기 비교": "UPDATE peer_group SET peer_id = entity_id WHERE rowid = 1",
+            "순위 0": "UPDATE peer_group SET peer_rank = 0 WHERE rowid = 1",
+            "코드 체계": "UPDATE peer_group SET entity_namespace = 'ISO2' WHERE rowid = 1",
+            "범위 대문자": "UPDATE peer_group SET scope_type = 'HS6' WHERE rowid = 1",
+            "유사도 글자": "UPDATE peer_group SET similarity = 'high' WHERE rowid = 4",
+        }
+        for index, (name, sql) in enumerate(tampers.items()):
+            for check_raw in (True, False):
+                with self.subTest(name, check_raw=check_raw):
+                    target = self.dev_copy(f"snapshot_build-2609250005{index:01d}{int(check_raw)}", with_record=False)
+                    self.edit(target, sql)
+                    report = verify.verify_snapshot(fx.SNAPSHOT_ID, build_file=target, check_raw=check_raw)
+                    self.assertFalse(check(report, "peer_group_rows"), name)
+                    self.assertFalse(report["ok"])
+
+    def test_peer_group_sources(self):
+        csv_path = self.root / "peer_group.csv"
+        ok = verify.verify_snapshot(fx.SNAPSHOT_ID, peer_group_files=[csv_path])
+        self.assertTrue(check(ok, "peer_group_sources"))
+        self.assertTrue(ok["ok"])
+        changed = self.root / "changed" / "peer_group.csv"
+        changed.parent.mkdir()
+        changed.write_text(fx.PEER_GROUP_CSV.replace(",0.8300,", ",0.8400,"), encoding="utf-8")
+        report = verify.verify_snapshot(fx.SNAPSHOT_ID, peer_group_files=[changed])
+        self.assertFalse(check(report, "peer_group_sources"))  # sha256과 행이 빌드 기록·저장 행과 다르다
+        self.assertFalse(report["ok"])
+        skipped = verify.verify_snapshot(fx.SNAPSHOT_ID)  # data/reference/에 없으면 건너뛴다
+        self.assertIsNone(check(skipped, "peer_group_sources"))
+        self.assertTrue(skipped["ok"])
+
+    def test_hs10_children_place(self):
+        """상대국 키에 HS10 하위 행도 HS6 자릿수 상태 행도 없으면 잡는다(DAL children()이 멈추는 자리)."""
+        target = self.dev_copy(with_record=False)
+        self.edit(target, "UPDATE observation SET hs_code = '8504', hs_level = 4 WHERE rowid IN (37, 38)")
+        report = verify.verify_snapshot(fx.SNAPSHOT_ID, build_file=target, check_raw=False)
+        self.assertFalse(check(report, "coverage_hs10_children"))
+
     def test_input_errors(self):
-        for bad in ({}, {"snapshot_id": "x", "extra": 1}, {"snapshot_id": "x", "check_raw": "no"}, []):
+        for bad in ({}, {"snapshot_id": "x", "extra": 1}, {"snapshot_id": "x", "check_raw": "no"}, [],
+                    {"snapshot_id": "x", "peer_group_files": "a.csv"}):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
                 verify.run(bad)
 

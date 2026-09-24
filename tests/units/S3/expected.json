@@ -59,6 +59,14 @@
    }
   },
   {
+   "name": "collection_receipts",
+   "ok": true,
+   "detail": {
+    "problems": 0,
+    "examples": []
+   }
+  },
+  {
    "name": "coverage",
    "ok": true,
    "detail": {
@@ -68,9 +76,40 @@
    }
   },
   {
-   "name": "collection_receipts",
+   "name": "coverage_hs10_children",
    "ok": true,
    "detail": {
+    "keys": 6,
+    "problems": 0,
+    "examples": []
+   }
+  },
+  {
+   "name": "observation_rules",
+   "ok": true,
+   "detail": {
+    "rows": 68,
+    "confirmed_no_trade_rule": "ingest_verify_candidates",
+    "problems": 0,
+    "examples": []
+   }
+  },
+  {
+   "name": "peer_group_rows",
+   "ok": true,
+   "detail": {
+    "rows": 4,
+    "problems": 0,
+    "examples": []
+   }
+  },
+  {
+   "name": "peer_group_sources",
+   "ok": true,
+   "detail": {
+    "files": [
+     "peer_group.csv"
+    ],
     "problems": 0,
     "examples": []
    }
