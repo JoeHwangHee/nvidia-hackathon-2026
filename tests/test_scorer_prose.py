@@ -1,8 +1,10 @@
 """독립 채점기 단위 C2(산문 채점) 시험: 룰북 docs/eval/RULEBOOK.md B3-2 예시 1~7과 경계 사례 1~22(손계산 예제).
 
 예시의 보고서에는 합성 사례 A의 typed claim(U 기준월 6.0·비교월 3.6 USD/kg, r_U −40.0% DOWN, 점유율 기준월 10.0%·
-비교월 6.0%, d_s −4.0pp DOWN)이 있다. 경계 사례는 사례마다 필요한 claim만 둔 보고서로 본다.
+비교월 6.0%, d_s −4.0pp DOWN)이 있다. 경계 사례는 사례마다 필요한 claim만 둔 보고서로 본다. 믿지 않는 보고서의 긴
+공백·숫자열·많은 표현과 형식이 어긋난 값이 채점을 멈추거나 끝나지 않게 하지 않는지도 본다(보안 검토 1회차 반영).
 """
+import time
 import unittest
 from decimal import Decimal
 from fractions import Fraction
@@ -205,6 +207,75 @@ class ProseDetailsTest(unittest.TestCase):
     def test_pattern_list_fingerprint_is_stable(self):
         self.assertRegex(c2.pattern_list_sha256(), r"^[0-9a-f]{64}$")
         self.assertEqual(c2.pattern_list_sha256(), c2.pattern_list_sha256())
+
+
+class UntrustedProseTest(unittest.TestCase):
+    """믿지 않는 보고서가 산문 채점을 멈추거나 끝나지 않게 하지 않는다(보안 검토 1회차 막는 지적·권고 6)."""
+
+    def timed(self, narrative: str, claims: list[dict] | None = None, limit: float = 3.0) -> list[dict]:
+        started = time.monotonic()
+        records = prose(narrative, claims)
+        self.assertLess(time.monotonic() - started, limit)
+        return records
+
+    def test_long_whitespace_and_digit_runs_take_linear_time(self):
+        n = c2.MAX_PROSE_CHARS
+        texts = ("1" + " " * (n - 2) + "x", " " * (n - 1) + "1", "\n" * (n - 3) + "1. ", "1" * (n - 1) + "류",
+                 "기준" + " " * (n - 10) + "30%", "가격이 내렸" * (n // 6), "1에서 2로 " * (n // 7),
+                 "위법" * (n // 2))
+        for text in texts:
+            with self.subTest(text=repr(text[:8])):
+                self.timed(text[:n])
+
+    def test_many_expressions_against_many_claims(self):
+        n = c2.MAX_PROSE_CHARS
+        claims = [fx.claim(f"k{i}", "change", "r_U", Decimal(i) / 10, "%", "UP", [], baseline="202301")
+                  for i in range(c1.MAX_CLAIMS_PER_REPORT)]
+        for unit in ("1 ", "1%대 ", "1%이상 ", "두 배 ", "두 배 이상 "):
+            with self.subTest(unit=unit):
+                self.timed((unit * (n // len(unit)))[:n], claims)
+
+    def test_indexed_backing_equals_claim_by_claim_check(self):
+        claims = [c2._Claim(fx.claim(f"k{i}", ctype, metric, value, unit, "NA", [],
+                                     baseline="202301" if ctype == "change" else None), i)
+                  for i, (ctype, metric, value, unit) in enumerate([
+                      ("value", "U", Decimal("6.00"), "USD/kg"), ("value", "V", 21_876_681, "USD"),
+                      ("change", "r_U", Decimal("-40.0"), "%"), ("change", "r_U", Decimal("100.0"), "%"),
+                      ("share", "s", Decimal("38.6"), "%"), ("value", "Q", 1_075_490, "kg"),
+                      ("change", "r_U", Decimal("40.04"), "%"), ("value", "U", Decimal("6.04"), "USD/kg")])]
+        backing = c2.Backing(claims)
+        text = ("kg당 6.0달러, 6달러, 40%, △40.0%, 약 40%, 40%대, 30% 이상, 40% 미만, 두 배, 2배 이상, 38.6%, "
+                "2,188만 달러, 1,075톤, 107만 5천kg, 0.5배")
+        exprs = [e for e in c2.extract(text, set(), [], []) if e.kind in ("number", "multiple")]
+        self.assertGreater(len(exprs), 10)
+        for expr in exprs:
+            with self.subTest(expr=expr.text):
+                brute = [(c, exp) for c in backing.candidates(expr) for ok, exp in [c2._number_matches(expr, c)] if ok]
+                first = backing.first(expr)
+                self.assertEqual(first, brute[0] if brute else None)
+                if expr.low is None and expr.op is None:
+                    self.assertEqual(backing.numbers(expr), brute)
+
+    def test_number_beyond_size_limit_is_unbacked(self):
+        records = self.timed("1" * 300 + "%가 줄었다.", limit=1.0)
+        self.assertEqual((records[0]["outcome"], records[1]["outcome"]), (U, C))
+        self.assertIn("상한", records[0]["note"])
+
+    def test_unhashable_claim_fields_and_status_do_not_raise(self):
+        broken = dict(a_claims()[2], direction=[], metric={}, hs6=[], period=[1], unit=["%"])
+        records = prose("단가가 증가했다. 6.0%에서 3.6%로 바뀌었다.", [broken])
+        self.assertEqual([(r["reported_value"], r["outcome"]) for r in records],
+                         [("증가", U), ("6.0%", U), ("6.0%에서 3.6%로", U), ("3.6%", U)])
+        report = fx.report("run_case-260925100000", [broken], narrative="자료 보류", review_status="HOLD")
+        report["review_status"] = []
+        self.assertEqual(c2.korean_quality(report)["missing"], 1)
+
+    def test_prose_and_claim_count_limits(self):
+        with self.assertRaises(c1.ScorerInputError):
+            prose("가" * (c2.MAX_PROSE_CHARS + 1))
+        report = fx.report("run_case-260925100000", a_claims() * (c1.MAX_CLAIMS_PER_REPORT // 6 + 1))
+        with self.assertRaises(c1.ScorerInputError):
+            c2.score_report_prose(report, report["run_id"], HS_CODES, [])
 
 
 if __name__ == "__main__":
