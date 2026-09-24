@@ -4,6 +4,7 @@ data/snapshots/*/raw/
 data/snapshots/*/snapshot.sqlite
 artifacts/runs/
 outputs/
+.venv/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
