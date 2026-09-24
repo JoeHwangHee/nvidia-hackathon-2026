@@ -1681,7 +1681,7 @@ CLI(명령줄 실행 도구)는 `tradesentry <명령>` 하나로 모은다.
   - 국가 코드 대응표(단위 G3): 관세청 2자리 국가코드 ↔ BACI 국가 코드 대응과 대만 주석(BACI 490 "Asia n.e.s."에는 대만 외 기타 아시아 미상분이 섞일 수 있다)을 둘 곳. 분담 D3가 참조 자료 폴더 아래 파일을 제안했지만 계획 경로·명령 표에는 없다.
   - 봉인 원본: 최종 채점(정답 대조 채점까지)이 끝난 뒤 커밋할 위치가 정해지지 않았다.
   - 거버넌스 카드: `skill-card-generator`로 만드는 우리 스킬 3개의 카드 위치가 정해지지 않았다.
-  - 샌드박스 밖 실행기와 추출 명령(실행 기록에서 `execution_status`, 원인 분류 코드, 버전 키만 뽑는 결정적 명령): 로드맵 MT7이 만든다. 위치는 `src/tradesentry/evaluation/sealed_runner.py`, `src/tradesentry/evaluation/extract.py`(단위 E2·E3)로 정했다. 추출 명령이 뽑는 원인 분류 코드의 이름은 Q21에서 묻는다.
+  - 샌드박스 밖 실행기와 추출 명령(실행 기록에서 `execution_status`, 원인 분류 코드, 버전 키(봉인 묶음이면 사전 점검 값과의 일치 여부와 불일치 건수만)만 뽑는 결정적 명령): 로드맵 MT7이 만든다. 위치는 `src/tradesentry/evaluation/sealed_runner.py`, `src/tradesentry/evaluation/extract.py`(단위 E2·E3)로 정했다. 추출 명령이 뽑는 원인 분류 코드의 이름은 Q21에서 묻는다.
   - 위반 시험 스크립트(단위 F7, 실행 이름 `openshell_violation_tests`), 샌드박스 이미지 정의(단위 F5), 키 주입 provider 프로필 파일(단위 F6, `configs/openshell/` 아래 새 파일)의 위치·이름도 정하지 않았다.
 - **묻는 것**
   1. 위 대상들의 위치를 권해 달라. 표에 새 이름을 올리면 표와 참조 문서를 한 PR에서 함께 고치고 사용자 승인을 받는다.
