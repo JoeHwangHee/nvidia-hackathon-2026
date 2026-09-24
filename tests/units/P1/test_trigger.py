@@ -1,6 +1,7 @@
 """단위 P1(policy_trigger) 규칙 시험: 임계값 경계, null, 최소 기준, 입력 검사, 정책 객체 읽기."""
 import unittest
 from decimal import Decimal
+from fractions import Fraction
 
 from tradesentry.policy import trigger as p1
 
@@ -48,6 +49,30 @@ class ThresholdTest(unittest.TestCase):
                                                  row(hs6="850431")]})
         self.assertEqual([(t["hs6"], t["partner"], t["month"]) for t in out["triggers"]],
                          [("850431", "CN", "202401"), ("850450", "CN", "202312"), ("850450", "JP", "202401")])
+
+
+class ExactValueTest(unittest.TestCase):
+    """지표 단위의 반올림 전 값(exact_value, Fraction)을 받아 오차 없이 비교한다."""
+
+    def test_exact_boundary_from_parent_values(self):
+        # 기준월 V 600·Q 100, 비교월 V 420·Q 100 → U 6 → 4.2, r_U = (4.2 / 6 − 1) × 100 = 정확히 −30
+        r_u = (Fraction(420, 100) / Fraction(600, 100) - 1) * 100
+        self.assertEqual(r_u, -30)
+        self.assertEqual(signals(POLICY, row(r_U=r_u))[0]["unit_value"], "TRIGGERED")
+        just_below = (Fraction(421, 100) / Fraction(600, 100) - 1) * 100
+        self.assertEqual(signals(POLICY, row(r_U=just_below))[0]["unit_value"], "NOT_TRIGGERED")
+        self.assertEqual(signals(POLICY, row(d_s=Fraction(10)))[0]["share"], "TRIGGERED")
+        self.assertEqual(signals(POLICY, row(d_s=Fraction(-999, 100)))[0]["share"], "NOT_TRIGGERED")
+
+    def test_decimal_threshold_with_fraction_value(self):
+        policy = {"policy_version": "p", "thresholds": {"unit_value": Decimal("30.5"), "share": 10}}
+        self.assertEqual(signals(policy, row(r_U=Fraction(-61, 2)))[0]["unit_value"], "TRIGGERED")
+        self.assertEqual(signals(policy, row(r_U=Fraction(-6099, 200)))[0]["unit_value"], "NOT_TRIGGERED")
+
+    def test_display_rounded_value_would_flip_the_boundary(self):
+        # 정확값 −29.96%는 발동하지 않는다. 표시 자릿수로 반올림한 −30.0을 넘기면 발동해 버린다(그래서 exact_value를 넘긴다)
+        self.assertEqual(signals(POLICY, row(r_U=Fraction(-2996, 100)))[0]["unit_value"], "NOT_TRIGGERED")
+        self.assertEqual(signals(POLICY, row(r_U=Decimal("-30.0")))[0]["unit_value"], "TRIGGERED")
 
 
 class MinimumTest(unittest.TestCase):

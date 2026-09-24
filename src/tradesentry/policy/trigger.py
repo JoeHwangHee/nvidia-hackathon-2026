@@ -14,7 +14,10 @@
 규칙
 - 단가 신호: `r_U`(%)가 null이 아니고 |r_U| ≥ 정책의 단가 임계값이면 발동한다.
 - 점유율 신호: `d_s`(pp)가 null이 아니고 |d_s| ≥ 정책의 점유율 임계값이면 발동한다.
-- 비교는 표시 자릿수로 반올림하기 전의 값(입력 그대로)으로 한다. 임계값과 같으면 발동한다(개발 제안 "|r_U|≥30%").
+- 비교는 표시 자릿수로 반올림하기 전의 정확값으로 한다. 지표 단위(X1·X2)가 주는 반올림 전 값(`exact_value`,
+  `fractions.Fraction`)이나 int·Decimal을 받는다. 표시 자릿수로 반올림한 metric 객체의 `value`는 넘기지 않는다
+  (경계에서 발동 여부가 뒤집힌다). 비교는 분수로 바꿔 오차 없이 하고, 임계값과 같으면 발동한다(개발 제안
+  "|r_U|≥30%", oracle `>=`).
 - 지표가 null이면(기준월 값이 0이거나 미상, 중량 0 등. 자료 계약 §11.1) 그 신호는 발동하지 않고, 그 행을 숨기지
   않고 데이터 품질 목록(`data_quality`)에 사유 `metric_null`로 남긴다(개발 플랜 §6.2 끝 문단).
 - 정책의 `min_amount`·`min_weight`가 null이 아니면 단가 신호에만 적용한다: 비교월과 기준월의 부모 HS6 행 금액이
@@ -27,7 +30,8 @@
 - `policy`: 정책 객체(단위 K4가 정책 파일에서 읽은 것). 판정 정책 단위가 읽는 키는 policy_values 한 곳에 모았다:
   `policy_version`(문자열), `thresholds`({"unit_value": %, "share": pp}), `min_amount`(USD), `min_weight`(kg).
   나머지 키는 읽지 않는다.
-- `rows`: 행 목록. 행마다 `hs6`, `partner`(대상국, `ALL` 아님), `month`, `baseline_month`, `r_U`, `d_s`. 정책에
+- `rows`: 행 목록. 행마다 `hs6`, `partner`(대상국, `ALL` 아님), `month`, `baseline_month`, `r_U`, `d_s`(반올림 전
+  정확값: int·Decimal·Fraction, 또는 null. float는 받지 않는다). 정책에
   `min_amount`·`min_weight`가 있으면 `amount_usd`·`net_weight_kg`({"month": 정수, "baseline_month": 정수}, 부모 HS6
   행의 값)도 있어야 한다. 그 밖의 키는 읽지 않는다.
 
@@ -39,6 +43,7 @@
 """
 import re
 from decimal import Decimal
+from fractions import Fraction
 
 from tradesentry.policy.required_evidence import ALL_PARTNER, NOT_TRIGGERED, SHARE, SIGNAL_CODES, TRIGGERED, UNIT_VALUE
 
@@ -53,13 +58,18 @@ REASON_BELOW_MIN_AMOUNT = "below_min_amount"
 REASON_BELOW_MIN_WEIGHT = "below_min_weight"
 
 
-def check_number(value: object, what: str) -> int | Decimal:
-    """정수나 유한한 Decimal이면 그대로 돌려준다. float·참거짓·문자열은 받지 않는다(자료 계약 §11.1)."""
-    if isinstance(value, bool) or not isinstance(value, (int, Decimal)):
-        raise ValueError(f"{what}는 정수나 Decimal이어야 한다(float·참거짓·문자열은 받지 않는다)")
+def check_number(value: object, what: str) -> int | Decimal | Fraction:
+    """정수, 유한한 Decimal, Fraction이면 그대로 돌려준다. float·참거짓·문자열은 받지 않는다(자료 계약 §11.1)."""
+    if isinstance(value, bool) or not isinstance(value, (int, Decimal, Fraction)):
+        raise ValueError(f"{what}는 정수·Decimal·Fraction이어야 한다(float·참거짓·문자열은 받지 않는다)")
     if isinstance(value, Decimal) and not value.is_finite():
         raise ValueError(f"{what}가 유한한 수가 아니다")
     return value
+
+
+def exact(value: int | Decimal | Fraction) -> Fraction:
+    """check_number를 거친 수를 오차 없는 분수로 바꾼다. Decimal과 Fraction을 섞어 셈할 때 쓴다."""
+    return Fraction(value)
 
 
 def policy_values(policy: object) -> dict[str, object]:
@@ -162,7 +172,7 @@ def run(inp: object) -> object:
                 signals[code] = NOT_TRIGGERED
                 quality += [{**where, "signal": code, "reason": reason} for reason in reasons]
                 continue
-            signals[code] = TRIGGERED if abs(value) >= policy[code] else NOT_TRIGGERED
+            signals[code] = TRIGGERED if abs(exact(value)) >= exact(policy[code]) else NOT_TRIGGERED
         triggers.append({**where, "signals": signals})
     triggers.sort(key=lambda t: (t["hs6"], t["partner"], t["month"]))
     quality.sort(key=lambda q: (q["hs6"], q["partner"], q["month"], q["signal"], q["reason"]))
