@@ -161,7 +161,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 | 스냅샷 | `kcs_202201_202412_v2` | 지금 동결한다. 추가 수집 없음 | §2.1 |
 | 실자료 분할 | `real_dev`, `real_sealed` | 탐지 임계값 조정 **전**에 고정 난수로 분할 | §9.1 |
 | 정책 수치 | `policy_v1`(`configs/policy_v1.json`) | D가 `real_dev`만으로 제안 → 사용자 승인 | §6.2 |
-| 비교 대상 | `g1`(안 되면 2023년 수입 상위국 고정 목록 `g0`로 대체 선언) | 룰북 동결 전 | §8 |
+| 비교 대상 | `g1`(안 되면 대상국을 뺀 15개국 중 2023년 수입금액 상위 5개국 고정 목록 `g0`로 대체 선언) | 룰북 동결 전 | §8 |
 | 봉인 자료 해시 | `eval/sealed_manifest.json` | 봉인 자료를 만든 직후 해시만 커밋 | §9.8 |
 | 룰북 | `RB-1` | 2026-09-26(토) 12:00(조정값). 정책 승인, `g1` 동결 또는 `g0` 대체 선언, 봉인 해시 커밋이 모두 갖춰져야 한다 | §9.7 |
 
@@ -661,7 +661,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 
 - **무엇을 검사하나**: 보고서의 숫자·단위·원본 행·출처·스냅샷·허용 상태·금지 문구, 그리고 typed claim으로 뒷받침되지 않는 설명 문장 속 숫자·증감 표현(결정적 패턴 검사).
 - **무엇을 못 하나**: 정답표를 읽지 않는다. 모델의 틀린 상태를 조용히 정답으로 고쳐 성공 처리하지 않는다. 자유 문장의 인과적 타당성을 보증하지 않는다.
-- **어떻게 끝나나**: 보고서마다 통과 또는 차단 판정과 사유 목록(`validator_findings`)을 남긴다. 차단되면 예산 안의 수정 단계로 가고, 수정도 차단되면 실행은 `INVALID`로 끝난다.
+- **어떻게 끝나나**: 보고서마다 통과 또는 차단 판정과 사유 목록(`validator_findings`)을 남긴다. 차단되면 예산 안의 수정 단계로 가고, 수정도 차단되면 실행은 `INVALID`로 끝난다. `checklist`는 모델이 없어 수정 단계가 없으므로, 검증기가 막으면 수정 없이 곧바로 `INVALID`다(새 상태값 없음) `[DESIGN: 2026-09-24(목) 사용자 결정, 결정 기록 20260924-2315 D1]`.
 - **왜 필요한가**: 구 개발계획 G4 관문 시험에서 점유율 감소(10→6)를 "6→10 증가"로 뒤집어 쓴 응답이 근거 ID를 언급했다는 이유로 통과로 셈해졌다 `[사실: 실측 메모 §5]`. 숫자는 검증된 값으로만 채우고 검증기로 막아야 한다.
 - MVP 기준(로드맵 체크리스트 3번): 의도적으로 넣은 숫자·단위·근거 ID·스냅샷 변조와 뒷받침 없는 산문 숫자를 막는 시험이 통과한다.
 - NAT 사후 평가와 역할이 다르다(§3.3).
@@ -674,7 +674,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 - 코드가 모델의 틀린 상태를 조용히 정답으로 고치지 않는다.
 - 실행 실패 때문에 화면에 보류로 보이는 것과 평가의 정답 보류를 같게 보지 않는다(구 개발계획 §5.3).
 - 실행 결과 기록 키(run 1건): `run_id, case_id, dataset, mode, policy_version, rulebook_version, snapshot_id, grouping_version, code_version, review_status_final, signal_status, unresolved_evidence, execution_status, required_evidence_ok, numeric_ok, provenance_ok, tool_attempts, model_requests, tokens_in, tokens_out, wall_ms, critic_used, revision_used, errors`
-- 실행 기록(trace JSONL, NAT 프로파일 결과)은 그 실행 폴더 `outputs/{실행명}/`에 두고 커밋하지 않는다. 봉인 묶음 실행은 `outputs/sealed/{실행명}/`이다. 실행 쪽 키는 평가 하네스(단위 `evaluation_batch_run`)가 `evaluation_batch_run-{시각}.jsonl`에 쓰고, 채점기가 세 키를 더한 평가 결과를 채점 실행 폴더에 새로 쓴다. 평가 결과는 채점 실행 폴더의 채점기 출력(`scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`)만 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(증거 복사). trace와 NAT 프로파일 결과는 복사하지 않고, 봉인 묶음은 금지 해제 조건이 채워진 뒤에만 복사한다(자료 계약 §8.2·§10.3).
+- 실행 기록(trace JSONL, NAT 프로파일 결과)은 그 실행 폴더 `outputs/{실행명}/`에 두고 커밋하지 않는다. 봉인 묶음 실행은 `outputs/sealed/{실행명}/`이다. 실행 쪽 키는 평가 하네스(단위 `evaluation_batch_run`)가 `evaluation_batch_run-{시각}.jsonl`에 쓰고, 채점기가 세 키를 더한 평가 결과를 채점 실행 폴더에 새로 쓴다. 평가 결과는 채점 실행 폴더의 채점기 출력(`scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`)을 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(증거 복사). 재채점용 보고서 원문은 `artifacts/eval/score-{시각}/{run_id}/`에 증거 복사한다(조건 다섯은 자료 계약 §10.3 N11). trace와 NAT 프로파일 결과는 복사하지 않고, 봉인 묶음은 금지 해제 조건이 채워진 뒤에만 복사한다(자료 계약 §8.2·§10.3).
 - 키 값은 로그·trace·결과 파일에 남지 않아야 한다.
 
 ### 7.6 승인(모의, 코드 검증만)
@@ -691,7 +691,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 
 - Streamlit(파이썬으로 웹 화면을 만드는 라이브러리) 화면 3개를 2026-09-26(토)~2026-09-27(일)에 만든다. 일정이 밀리면 화면 3번째, 화면 2번째 순으로 줄인다.
 - 화면은 사례별 조회 이유, 실제 실행한 도구, 반대 근거, 판정 전후, 원본 행 링크를 보여 준다(구 개발계획 §10).
-- 화면 파일(`app.py`)의 위치는 §10.1 경로 표에 없으므로 S0에서 정한다.
+- 화면 파일은 `src/tradesentry/app.py`다(§10.1 경로 표).
 
 ### 7.8 한국어 품질
 
@@ -705,7 +705,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 ### 8.1 `g0` — MVP 시험까지의 고정 목록
 
 - 2026-09-25(금) MVP 시험까지는 고정 목록 `g0`를 쓴다.
-- 정의 `[DESIGN]`: 품목(HS6)과 대상국마다, 대상국을 뺀 나머지 15개국에서 v2의 2023년 연간 수입금액 상위 5개국을 고른다(k=5, 조정값). 대상국을 먼저 빼므로 비교국은 항상 5개국이고, `g1`의 "상위 5개국(p 제외)"과 비교 조건이 같다. 이 해석은 사용자 확인 대기다(시한은 2026-09-25(금) MVP 시험 전, 자료 계약 §2.3.6·로드맵 §6.1).
+- 정의 `[DESIGN]`: 품목(HS6)과 대상국마다, 대상국을 뺀 나머지 15개국에서 v2의 2023년 연간 수입금액 상위 5개국을 고른다(k=5, 조정값). 대상국을 먼저 빼므로 비교국은 항상 5개국이고, `g1`의 "상위 5개국(p 제외)"과 비교 조건이 같다. 이 해석은 2026-09-24(목) 사용자 확인으로 정했다(자료 계약 §2.3.6·로드맵 §6.1).
 - 경보 결과를 보고 바꾸지 않는다.
 
 ### 8.2 `g1` — 기본 비교 대상
@@ -879,7 +879,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 
 ### 10.1 계획 경로·명령 표
 
-아래 표는 자료 계약(`docs/rules/DATA_CONTRACT_V1.md`) §10 표의 사본이고 글자까지 같다. 그 표는 2026-09-24(목) 사용자 결정(결정 기록 `docs/tracking/decisions/20260924-1720-user-decision-domain-restructure.md`)으로 고쳤다. 자리표시 `{실행명}`·`{도메인명}`·`{시각}` 등을 채우는 이름·출력 규칙(실행명, 도메인명, 도메인 출력 `outputs/`, 증거 복사)은 자료 계약 §10.3, 단위 목록은 `docs/plan/UNITS.md`에 있다. 두 표가 다르면 자료 계약이 이긴다.
+아래 표는 자료 계약(`docs/rules/DATA_CONTRACT_V1.md`) §10 표의 사본이고 글자까지 같다. 그 표는 2026-09-24(목) 사용자 결정(결정 기록 `docs/tracking/decisions/20260924-1720-user-decision-domain-restructure.md`)으로 고쳤고, 같은 날 구현 계획 승인(결정 기록 `docs/tracking/decisions/20260924-2315-user-decision-impl-plan-approval.md` D2·D3)으로 행을 더했다. 자리표시 `{실행명}`·`{도메인명}`·`{시각}` 등을 채우는 이름·출력 규칙(실행명, 도메인명, 도메인 출력 `outputs/`, 증거 복사)은 자료 계약 §10.3, 단위 목록은 `docs/plan/UNITS.md`에 있다. 두 표가 다르면 자료 계약이 이긴다.
 
 - 모든 문서는 아래 표의 경로와 명령만 쓴다. 이름은 조정값이며, S0 외부 자문으로 바뀌면 이 표와 참조 문서를 **함께** 고친다.
 - 기존 파일(`src/tradesentry/ingest.py`, `eval/dev/oracle_ABC.json`, `configs/collection_plan.json`)의 위치는 바꾸지 않는다.
@@ -889,13 +889,15 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | 앱 패키지 | `src/tradesentry/` — `ingest.py`(기존), 패키지 `contract/`, `snapshot/`, `dal/`, `metrics/`, `policy/`, `grouping/`, `tools/`, `workflow/`, `reports/`, `validator/`, `runlog/`, `evaluation/`, `approval/`, `cli/`. 단위 파일은 `{패키지}/{단위}.py` | D: ingest·contract·snapshot·dal·metrics / M: policy·grouping·tools·workflow·reports·validator·evaluation·approval·cli / 공동: runlog |
 | 단위 등록부·공통 실행기(개발 전용) | `src/tradesentry/units/`, 실행 `python -m tradesentry.units <단위 ID> --in <입력 파일>` | 공동 |
 | CLI | `tradesentry <명령>` — `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate`, 공통 옵션 `--snapshot`, `--policy`, `--mode`(값은 `checklist`, `agent`, `full`, `freeform`) | M |
-| 정책 수치 | `configs/policy_v1.json` | D 제안·사용자 승인 |
+| 화면 | `src/tradesentry/app.py`(Streamlit 화면) | M |
+| 정책 수치 | `configs/policy_v1.json`(사용자 승인 뒤), 개발용 `configs/policy_dev.json`(`policy_version` `dev-0.1`, oracle 기준값, 승인 전 실행용) | D 제안·사용자 승인(개발용은 D) |
 | NAT 설정 | `configs/nat/workflow.yml` | M |
+| 프롬프트·모델 설정 | `configs/model/`(조사자·Critic 프롬프트, 모델 ID, 추론 모드) | M |
 | OpenShell 정책 | `configs/openshell/policy.yaml` | M(보안 검토) |
 | 런타임 스킬 | `skills/tradesentry/SKILL.md` | M |
 | 평가 스킬 | `skills/tradesentry-scorecard/SKILL.md`, `skills/tradesentry-eval/SKILL.md` | 공동 |
 | 합성 시험자료 | `data/snapshots/controlled_fixture_v0/` | D |
-| 그룹핑 결과 | `data/reference/peer_group_g1.csv` | M 계산·D 검수 |
+| 그룹핑 결과 | `data/reference/peer_group_g0.csv`(`g0`, MVP 시험용 고정 비교국 목록), `data/reference/peer_group_g1.csv` | M 계산·D 검수 |
 | 시나리오 명세(공개) | `eval/scenarios/SCENARIO_SPEC.md` | D |
 | dev20 | `eval/dev/dev20/`(입력 + 정답표) | D |
 | 평가 자료 도구 | `eval/datagen/` — `dev20.py`(dev20 생성), `holdout40_check.py`(holdout40 결정적 검사), `split.py`(실자료 분할) | D |
@@ -903,13 +905,13 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | 봉인 폴더 | 환경변수 `TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`(저장소 밖) | D |
 | 독립 채점기 | `eval/scorer/`(런타임 모듈을 import하지 않음), 실행 `python -m eval.scorer --run <run_dir>`, 출력 `outputs/score-{시각}/` | D |
 | 도메인 출력(커밋 안 함) | `outputs/{실행명}/{도메인명}-{시각}.{확장자}`(trace JSONL, NAT 프로파일 결과, 보고서, 실행 결과 기록 등 도메인 출력 전부). 봉인 묶음 실행은 `outputs/sealed/{실행명}/` | 공동 |
-| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력만 복사: `scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`) | 공동 |
+| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력 복사: `scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`), 재채점용 보고서 원문 `artifacts/eval/score-{시각}/{run_id}/`(허용 목록의 보고서 파일만 복사) | 공동 |
 | 자기채점 결과(커밋) | `artifacts/scorecard/scorecard-{시각}/`(자기채점 실행 폴더의 결과 파일만 복사: `scorecard-{시각}.md`) | 공동 |
 | OpenShell 증거(커밋) | `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일만 복사: 예측·실측 대조표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`) | M(보안 검토) |
 | X1 임시 시험 코드 | `spikes/x1/` | M |
 | 시험 | `tests/`(기존 `test_ingest.py` 유지), 단위 골든 시험 `tests/units/{단위 ID}/` | 공동 |
 
-- 표에 없는 M 소유 대상: 화면(`app.py`), 프롬프트, 모델 설정. 위치는 S0에서 정하고, 정해지면 이 표와 참조 문서를 함께 고친다.
+- 화면 `src/tradesentry/app.py`, 프롬프트·모델 설정 `configs/model/`, `g0` 결과 파일, 재채점용 보고서 원문 위치는 2026-09-24(목) 구현 계획 승인으로 이 표에 더했다(결정 기록 `docs/tracking/decisions/20260924-2315-user-decision-impl-plan-approval.md` D3).
 - 실행 이름은 시각이 붙지 않은 실행의 이름(예: `run_case`)이고, 실행명(`run_id`)은 거기에 시작 시각을 붙인 `{실행 이름}-{yymmddhhmmss}`다. 표의 `{시각}`은 그 실행이 시작한 KST 24시간 12자리 시각이다. 증거 복사는 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고, 종류마다 정한 커밋 증거 파일만 복사해 커밋하는 일이고, 그렇게 커밋한 폴더와 파일을 커밋 사본이라 한다. trace는 빼고, 봉인 묶음은 금지 해제 조건이 채워진 뒤에만 한다(자료 계약 §10.3).
 
 ### 10.2 모듈 역할
@@ -921,7 +923,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | `snapshot/` | D | 스냅샷 빌드·검증(`snapshot-build`·`snapshot-verify`의 자료 쪽 구현)과 합성 스냅샷 생성 | 단위 S2~S4 |
 | `dal/` | D | 자료 접근층. 읽기 전용 SQLite 읽기 함수, typed dict(필드와 타입이 정해진 파이썬 사전) 반환 | 단위 K3 |
 | `metrics/` | D | 단가·변화율·점유율·HS10 분해·반올림 검증. `eval/dev/oracle_ABC.json`의 A/B/C를 그대로 재현해야 한다 | 단위 X1~X4 |
-| `policy/` | M | 신호 발동·사례 만들기·신호별 판정·사례 집계·필수 근거. 수치는 `configs/policy_v1.json`에서 읽는다 | 단위 P1~P5 |
+| `policy/` | M | 신호 발동·사례 만들기·신호별 판정·사례 집계·필수 근거. 수치는 `configs/policy_v1.json`(승인 전에는 개발용 `configs/policy_dev.json`)에서 읽는다 | 단위 P1~P5 |
 | `grouping/` | M | 비교 대상 `g0` 고정 목록과 유사도 그룹핑 `g1`(BACI) | 단위 G1·G2 |
 | `tools/` | M | 도구 5개 래퍼와 예산 강제. 공통 봉투는 단위 K5(`contract/envelope.py`, 로드맵 DT1)로 만든다 | 단위 I1~I6 |
 | `workflow/` | M | 조사자 → Critic → 수정 1회, NIM 호출·재전송·한도, 기록 재생, NAT 감싸기 | 단위 I7·I8·I10~I13 |
@@ -1031,7 +1033,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 
 - 일정이 밀릴 때 줄이는 순서(앞에서부터): 승인 불변식 시험 → 같은 사례 반복 실행 → 화면 3번째 → 화면 2번째.
 - 끝까지 지키는 것: 대표 지표(`real_sealed`), holdout40 비교군 3개 실행, OpenShell 증거, 유사도 그룹핑(`g1`). `g1`이 동결 시한까지 안 되면 §8.4대로 간다.
-- MVP 항목이 2026-09-25(금)에 실패하면 2026-09-26(토) 오전으로 이월한다. 범위는 줄이지 않는다.
+- MVP 시험은 조립 점검(AS4) 병합 직후 시작하고, 첫 실행에서 실패한 항목은 2026-09-26(토) 11:00까지 고친다. 범위는 줄이지 않는다(결정 기록 20260924-2315 D7).
 
 ### 12.2 정직한 주장 규칙
 

@@ -1,0 +1,29 @@
+{
+ "snapshot_id": "synthetic_real_v0",
+ "source_kind": "real",
+ "dataset": "real_dev",
+ "series_assignment": [
+  {"hs6": "999901", "partner": "XA", "dataset": "real_dev"},
+  {"hs6": "999901", "partner": "XB", "dataset": "real_sealed"},
+  {"hs6": "999902", "partner": "XA", "dataset": "real_dev"}
+ ],
+ "detection": {
+  "policy_version": "dev-0.1",
+  "triggers": [
+   {"hs6": "999901", "partner": "XA", "month": "202401", "baseline_month": "202301",
+    "signals": {"unit_value": "TRIGGERED", "share": "NOT_TRIGGERED"}},
+   {"hs6": "999901", "partner": "XA", "month": "202402", "baseline_month": "202302",
+    "signals": {"unit_value": "NOT_TRIGGERED", "share": "NOT_TRIGGERED"}},
+   {"hs6": "999901", "partner": "XB", "month": "202401", "baseline_month": "202301",
+    "signals": {"unit_value": "TRIGGERED", "share": "TRIGGERED"}},
+   {"hs6": "999902", "partner": "XA", "month": "202312", "baseline_month": "202212",
+    "signals": {"unit_value": "NOT_TRIGGERED", "share": "TRIGGERED"}}
+  ],
+  "data_quality": [
+   {"hs6": "999901", "partner": "XB", "month": "202402", "baseline_month": "202302", "signal": "share",
+    "reason": "metric_null"},
+   {"hs6": "999902", "partner": "XA", "month": "202312", "baseline_month": "202212", "signal": "unit_value",
+    "reason": "metric_null"}
+  ]
+ }
+}

@@ -1,0 +1,28 @@
+{
+  "values": [
+    {"metric": "U", "unit": "USD/kg", "value": 20.35},
+    {"metric": "U", "unit": "USD/kg", "value": -20.35},
+    {"metric": "U", "unit": "USD/kg", "value": 12.27},
+    {"metric": "s", "unit": "%", "value": 27.5},
+    {"metric": "r_U", "unit": "%", "value": -40.0},
+    {"metric": "r_U", "unit": "%", "value": 0.0},
+    {"metric": "r_U", "unit": "%", "value": 0.0},
+    {"metric": "d_s", "unit": "pp", "value": -4.0},
+    {"metric": "V", "unit": "USD", "value": 4567891},
+    {"metric": "Q", "unit": "kg", "value": 372130},
+    {"metric": "V", "unit": "USD", "value": 601},
+    {"metric": "within_effect", "unit": "USD/kg", "value": 0.00},
+    {"metric": "mix_effect", "unit": "USD/kg", "value": -2.40},
+    {"metric": "residual", "unit": "USD/kg", "value": 0.00},
+    {"metric": "residual", "unit": "USD/kg", "value": -0.01},
+    {"metric": "U@8504501000", "unit": "USD/kg", "value": 10.00},
+    {"metric": "r_U@8504501000", "unit": "%", "value": 12.3},
+    {"metric": "w@8504501000", "unit": "%", "value": 33.4},
+    {"metric": "s", "unit": "%", "value": null}
+  ],
+  "weight_checks": [
+    {"difference": 2, "tolerance": 3.5, "within_tolerance": true},
+    {"difference": 1, "tolerance": 1.0, "within_tolerance": true},
+    {"difference": 2, "tolerance": 1.5, "within_tolerance": false}
+  ]
+}
