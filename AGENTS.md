@@ -46,7 +46,7 @@ nvidia-hackathon-2026/
 ├── eval/dev/oracle_ABC.json           ← 개발용 기대 판정 사례 A·B·C
 ├── data/snapshots/                    ← 스냅샷별 manifest(수집 요청 목록)·검사 결과. 원자료와 SQLite는 커밋하지 않는다
 ├── data/reference/                    ← 품목표와 BACI(CEPII가 정리한 국가 간 연간 무역 자료) 참고 자료
-├── outputs/                           ← 실행별 출력 폴더(커밋하지 않는다. 이름 규칙은 자료 계약 §10.3). 봉인 묶음 실행 사슬의 출력은 `outputs/sealed/`에 두고 금지 해제 조건(정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 전에는 열지 않는다
+├── outputs/                           ← 실행별 출력 폴더(커밋하지 않는다. 이름 규칙은 자료 계약 §10.3). 봉인 묶음 실행 사슬의 출력은 `outputs/sealed/`에 두고, 봉인 묶음마다 금지 해제 조건(그 묶음의 정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 전에는 그 묶음 출력을 열지 않는다
 ├── scripts/g4_nim_toolcall_probe.py   ← NIM tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능) 왕복 확인
 ├── .env.example                       ← `.env` 양식. API 키 칸은 비어 있고 모델 이름 같은 기본값만 있다
 └── *.md(루트의 나머지)                ← 이전 설계·조사 기록. 사실 출처로 인용만 하고 고치지 않는다(목록은 docs/README.md §4)
