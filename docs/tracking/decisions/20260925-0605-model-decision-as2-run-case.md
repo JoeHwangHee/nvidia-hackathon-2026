@@ -19,7 +19,7 @@
 |---|---|
 | 날짜 | 2026-09-25(금) 06:05(기록 시각). 바탕은 `main` cf9d607 + MT4 브랜치 6dfc489(병합 02ebeb5)이고, 작업 중 AS1(#32)이 병합된 `main` d945792를 받았다(f9e5633). 코드 커밋은 c9085f8(단위 I12)·81b9df9(단위 F2) |
 | 제목 | `run-case` 배선 순서·도구 자리·근거 상태 변환·C형 펼치기·출력 파일, 실자료 스냅샷 거부(잠정), 조립 점검 1·2·5단계 결과와 단위 표 판정 갱신 |
-| 결정 | 아래 "결정 내용" ①~⑫. ⑬은 2회차(실제 NIM 실측 6회 뒤, 같은 날 06:3x), ⑭는 3회차(실측 27회 뒤, 07:0x), ⑮는 4회차(실측 20회 뒤, 07:2x), ⑯은 5회차(07:4x), ⑰은 6회차(08:0x, 오케스트레이터 판단), ⑱은 7회차(08:3x), ⑲는 8회차(09:0x)에 더했다 |
+| 결정 | 아래 "결정 내용" ①~⑫. ⑬은 2회차(실제 NIM 실측 6회 뒤, 같은 날 06:3x), ⑭는 3회차(실측 27회 뒤, 07:0x), ⑮는 4회차(실측 20회 뒤, 07:2x), ⑯은 5회차(07:4x), ⑰은 6회차(08:0x, 오케스트레이터 판단), ⑱은 7회차(08:3x), ⑲는 8회차(09:0x), ⑳은 9회차(검토 반영, 09:3x)에 더했다 |
 | 이유와 근거 | 항목마다 적었다 |
 | 검토한 대안 | 아래 "검토한 대안" |
 | 결정 주체 | 소유 트랙(M). ⑩은 AS1 결정 ⑤와 같은 오케스트레이터 결정(작업 지시)을 따른다 |
@@ -263,7 +263,7 @@
   - 참고값이 끝내 있던 13회 가운데 완료 11회는 10회가 참고값과 같았다.
   - 참고값이 없던 5회는 1회만 맞았다. 남은 실패 대부분은 필수 도구 결과 누락이다.
   - 누락 경로: 도구 차례에 초안만 냄(모델 요청 10회 소진 포함), `compare_partners` `{"partners": []}`(`invalid_args`)로 비교 몫 소진, Critic 재조회 요청을 수정 단계에서 부르지 않음.
-- 탐침 사실(오케스트레이터 `scratchpad/mt4/toolchoice_probe_out.txt`) `[사실]`
+- 탐침 사실(커밋하지 않은 오케스트레이터 탐침, 결과 파일 `scratchpad/mt4/toolchoice_probe_out.txt`. 조건: 2026-09-25(금), 모델 `nvidia/nemotron-3-super-120b-a12b`, 엔드포인트 `https://integrate.api.nvidia.com/v1/chat/completions`, 도구 2개(`compare_partners`·`decompose_hs`)를 싣고 `max_tokens` 400, `tool_choice` 값마다 2회) `[사실]`
   - NIM(이 모델·엔드포인트)은 `tool_choice` `"auto"`·`"required"`·이름 지정 함수·`"none"`을 모두 HTTP 200으로 받았다.
   - `"required"`는 두 번 모두 도구 호출(`finish_reason` `tool_calls`, 본문 없음)을 냈다.
 - 고친 것(모든 모드 같음. 조립이 `drafts_only_without_tools`·`required_tools`를 켠 run-case에서만 작동하고, MT4 단위 시험과 I12 골든의 흐름은 그대로다)
@@ -288,6 +288,44 @@
     - A agent에서 required → 초안 차례로 모델 요청 2회이고, 버린 초안이 없다.
     - A full에서 필수 결과가 없는 초안이 Critic을 거쳐 수정 단계에서 도구를 부르고 MONITOR가 된다.
 
+⑳ **검토 반영(9회차, 단위 I10·I12·F1·F3·구성 I9 `model-1.0`)** — 확정. 무역통계 검토 막음 1, 평가 방법론·NVIDIA+보안 권고와 8회차 실측(한도 128K, 참고값 18/18, 일치 12/18, INVALID 3: A agent·full의 narrative "변동이 없"·"늘어"(PT-6)·구성 비중 "50.0%"·"80.0%"(PT-1) 뒷받침 없음, A freeform 수정 초안 `max_tokens` 4096 잘림)
+
+1. **지침이 판정 정책을 틀리게 설명하던 곳**(무역 막음 1). ⑰에서 규칙을 줄이며 빠졌다(조사자·Critic, 모든 모드 같은 글).
+   - MONITOR의 뜻을 "단가 변화가 하위품목 구성효과로 설명됨(단가 신호만)"으로 적었다. "등"을 뺐다.
+   - "다른 상대국의 동반 변화, 분모 축소, 비교국과의 차이는 상태를 바꾸는 근거가 아니다(반대 근거로 쓰지 않는다). 자료가 모자라면 MAINTAIN을 주지 않는다"를 되살렸다(개발 플랜 §6.3).
+   - 참고값에서 벗어나는 조건을 "도구 결과에 있는 사실 가운데 규칙이 보지 않는 것"으로 좁혔다. 위 셋은 반대 근거가 될 수 없다.
+   - 규칙 요약에 두 HOLD 사유를 더했다: 비교 미완료, 점유율 분모(ALL)가 대상국 금액보다 작은 달. θ 경계 근처는 참고값을 따른다(`rule_view` 소수 2자리 표시의 경계 문제, 무 권고 5·6).
+   - Critic 대안 설명 줄에 "분모 변화와 여러 상대국에 공통인 변화, 이 둘은 상태를 낮추는 근거가 아니다"를 덧붙였다.
+2. **산문 금지 표현**: 검증기(단위 R3) 산문 패턴(룰북 B3-2)의 원천 목록을 지침에 옮겼다.
+   - PT-6 증감·무변동 어휘는 `validator/validate.py`의 `UP_WORDS`·`DOWN_WORDS`·`FLAT_WORDS` 글자 그대로 옮겼다. 시험 `ProsePatternListTest`가 대조한다.
+   - PT-1~PT-5 숫자와 PT-8 "X에서 Y로"도 적었다.
+   - narrative·가설에는 쓰지 않는다. 구성 비중 변화는 %로 쓰지 말고 `mix_effect`·`w@` 지표 주장을 인용한다. 검증기는 바꾸지 않았다.
+3. **`max_tokens` 8192**(모든 모드 같음. ⑱의 4096을 대체): `freeform` 수정 초안이 4096에서 잘렸다. 누적 토큰 한도(`limits.tokens`)는 사용자 결정 4를 기다리며 32,000 그대로다.
+4. **참고값 재계산과 예외 범위**
+   - 수정 단계에서 새 조회 봉투(`verify_evidence` 제외)를 받은 뒤 참고값을 다시 계산해 싣는다(평 권고 9, 세 모드 공통). 계산할 때마다 trace `rule_reference`를 남긴다.
+   - 참고값 계산은 P3·근거 상태 변환의 입력 검사 오류(`ValueError`)만 "계산 불가"로 두고, 배선 오류(`WiringError`·`KeyError` 등)는 흐름의 `CODE_ERROR`로 올린다(보 권고 2).
+5. **런타임 스킬 맞춤**(보 권고 1, 무 권고 8). `skills/tradesentry/SKILL.md`(단위 F3, MT5 소유)를 조립 작업의 맞춤으로 고쳤다.
+   - run-case 표준 출력의 네 줄(trace, NAT 폴더, 실행 결과 기록, `COMPLETED`일 때 보고서 `reports_render_ko-{시각}.json`) 가운데 실행 결과 기록과 보고서만 읽는다.
+   - 운영자에게 보일 값을 정했다.
+   - 종료 코드 1일 때는 실행 결과 기록의 `execution_status`와 `errors` 코드를 전한다.
+   - 사례 예시를 `850450-XA-202412`로 바꿨다. 합성 사례도 `{hs6}-{partner}-{month}` 꼴이다. CLI `--case` 도움말(단위 F1)에도 같은 안내를 적었다.
+6. **시험**
+   - F2
+     - 가짜 모델이 참고값과 다른 상태를 내는 경우(agent·full·freeform): 최종 기록이 모델 상태 그대로다(허용 상태 조합이라 검증기가 막지 않는다).
+     - 버린 초안·required 차례가 모델 요청 수(보낸 요청 수)와 토큰 합에 드는지 단언한다.
+     - C형 `hs10_codes`가 비었을 때 checklist HOLD 보고서가 검증기에 막히지 않는다.
+   - I12
+     - directed 흐름에서 full·freeform의 "첫 초안 스키마 실패 + 필수 결과 없음"은 Critic 요청 0, 수정 첫 요청 required다.
+     - `drafts_only`를 켠 세 모드의 이벤트 순서가 같다.
+     - 수정 뒤 참고값을 다시 계산한다.
+     - 참고값 배선 오류는 `CODE_ERROR`다.
+   - I10 `ProsePatternListTest`.
+- 조립을 위해 `origin/main`(acd4240, MT5 두 번째 PR #35)을 병합했다(런타임 스킬 파일이 main에만 있었다).
+- 기록 한 줄씩(무 권고 2·3·4)
+  - 분모 경로: 점유율 `denominator_below_partner`는 MT1 결정 ⑪("빠진 달·분모·하위자료는 missingness·decomposition으로")의 예외다. 결측이 아니라 `missingness`로 표현할 수 없어 `comparability_issues`에 넣는다. P3 머리 설명은 AS4에서 맞춘다. dev20 분류 7의 "국가 집합 변경" 절반은 이 검사로 잡히지 않는다(DT5 확인 요청).
+  - `parent_child_match`: 부모 대조의 `V_match`·`Q_match`가 null(대조 불가, 예: C형)이면 거짓으로 옮긴다. 그래서 P3 gaps에 "불일치"가 함께 적히지만 판정(HOLD)은 같다.
+  - 도구 I1의 `no_trade`·`zero_weight`·`zero_baseline`·`zero_denominator`를 `comparability_issues`로 넘기는 것은 발동한 계열에서는 생기지 않는다(그 계열의 값이 계산돼 발동했으므로).
+
 ## 조립 점검 결과(조립체 3, `docs/plan/UNITS.md` §5의 1·2·5단계)
 
 AS2는 합치거나 버린 단위가 없다. 동결 경로(판정 정책 P3~P5, 검증기 R3·R4) 단위의 코드는 고치지 않았다. 고친 단위는 F2(배선)와 I12(C형 펼치기)다. 3·4·6단계의 확정은 조립 점검 작업 AS4가 한다.
@@ -296,7 +334,7 @@ AS2는 합치거나 버린 단위가 없다. 동결 경로(판정 정책 P3~P5, 
 |---|---|---|
 | 1. 정적 import 그래프 | `cli.dispatch` → `cli.args`, `contract.policy_load`·`types`, `dal.query`, `metrics.unit_value`·`share`·`decompose`, `policy.trigger`·`case_build`, `runlog.cause_codes`·`trace`, `workflow.model_client`·`nat_wrap`·`orchestrate`(+ 기존 `snapshot.build`·`verify`). `workflow.orchestrate` → `policy.signal_decide`·`case_aggregate`·`required_evidence`, `reports.claims`·`render_ko`, `runlog` 셋, `tools` 여섯, `validator.validate`·`gate`, `workflow.investigator`·`critic`·`model_client`·`replay`. 도구 넷 → `tools.check_comparability`(공통 틀)·`dal.query`·`metrics`. `validator.validate` → `reports.render_ko`. 모두 각 단위 머리 주석의 허용 import 안이다. `src/tradesentry` 모듈 그래프에 순환 0 `[사실: 경계 시험 도우미(tests/test_boundaries.py의 repo_modules·import_targets)로 커밋 81b9df9에서 뽑은 그래프]` | `env -u NVIDIA_API_KEY -u DATA_GO_KR_SERVICE_KEY -u TRADESENTRY_SEALED_DIR uv run --locked python -m unittest discover -s tests -p "test_boundaries.py"` → 0 |
 | 2. 실행 커버리지 | `run-case`를 합성 시험자료 A·B·C × 네 모드(모델 모드는 가짜 모델)로 돌려 `sys.setprofile`로 `src/tradesentry` 함수 호출의 파일을 모았다. 네 모드 모두: X1~X4, P4, P5, I1~I7, I12, I13, R1~R4, L1, L2. `checklist`만: P3. 모델 세 모드: I10. `full`·`freeform`: I11. 불리지 않음: G1(비교국 표는 미리 계산된 `peer_group` 행을 K3로 읽는다), I8(기록 재생, 시험·골든 전용. I10~I12는 오류 형식만 import한다), L3(성공 경로에서는 상수만 쓴다. 실패 경로(키 없는 `agent` 실행 → `FAILED`·`CODE_ERROR`)에서는 불린다). I9(구성)는 모델 설정·프롬프트로 읽힌다 `[사실: scratch 스크립트, 12회 모두 종료 코드 0]` | 조립 시험 `tests/units/F2/test_run_case_command.py`(16개)·`test_run_case_evidence.py`(15개) → 0 |
-| 5. 동작 불변 | 합치거나 버린 것이 없다. `detection_row` 추출 뒤 AS1 조립 시험이 그대로 통과하고, I12 골든의 `request_sha256`도 그대로다. 출력 파일 도메인명은 단위 표 글자(`runlog_trace`, `workflow_nat_wrap`, `runlog_run_record`, `reports_render_ko`)와 같다(N4, 시험이 글자로 확인) | 단위별 `env -u … uv run --locked python -m unittest discover -s tests/units/<ID> -t tests`: 조립체 3의 X1~X4·P3~P5·G1·I1~I13·R1~R4·L1~L3과 F2 모두 0, skipped 0(보고 AS2-1 §2). 전체 `env -u … uv run --locked python -m unittest discover -s tests -v` → 0(Ran 893, skipped 15. 건너뛴 것은 조립체 3 밖의 뼈대 단위 골든) |
+| 5. 동작 불변 | 합치거나 버린 것이 없다. `detection_row` 추출 뒤 AS1 조립 시험이 그대로 통과하고, I12 골든의 `request_sha256`도 그대로다. 출력 파일 도메인명은 단위 표 글자(`runlog_trace`, `workflow_nat_wrap`, `runlog_run_record`, `reports_render_ko`)와 같다(N4, 시험이 글자로 확인) | 단위별 `env -u … uv run --locked python -m unittest discover -s tests/units/<ID> -t tests`: 조립체 3의 X1~X4·P3~P5·G1·I1~I13·R1~R4·L1~L3과 F2 모두 0, skipped 0(보고 AS2-1 §2). 전체 `env -u … uv run --locked python -m unittest discover -s tests -v` → 0. 1회차 머리 81b9df9에서 Ran 893, 9회차 머리(⑳ 커밋, `origin/main` acd4240 병합 뒤)에서 Ran 997, 모두 skipped 15(조립체 3 밖의 뼈대 단위 골든) |
 
 **AS4에 넘기는 관찰**(3·4단계의 입력, 판정은 AS4)
 
@@ -331,15 +369,26 @@ AS2는 합치거나 버린 단위가 없다. 동결 경로(판정 정책 P3~P5, 
 ## 영향과 넘길 곳
 
 - 바꾼 파일
-  - `src/tradesentry/cli/dispatch.py`: `run-case` 배선, 머리 설명의 "사례 조사 명령 run-case" 절, `detection_row` 추출
-  - `src/tradesentry/workflow/orchestrate.py`: C형 펼치기(⑥)
+  - `src/tradesentry/cli/dispatch.py`: `run-case` 배선, 머리 설명의 "사례 조사 명령 run-case" 절, `detection_row` 추출, `required_tools`·`drafts_only_without_tools` 켜기(⑮·⑱)
+  - `src/tradesentry/cli/args.py`: `--case` 도움말(⑳)
+  - `src/tradesentry/workflow/orchestrate.py`: C형 펼치기(⑥), 필수 조회·규칙 참고값·도구 없는 차례의 초안·차례 규칙·코드 지적·참고값 재계산(⑮·⑰~⑳)
+  - `src/tradesentry/workflow/investigator.py`: 분해 보기 `rule_view`, 필수 근거 보기 압축, 참고값·필수 조회·코드 지적 문구, `tool_choice`, `compare_partners` 설명(⑭~⑲)
+  - `src/tradesentry/workflow/critic.py`: 참고값 문구 전달(⑰)
+  - `src/tradesentry/workflow/model_client.py`: `tool_choice`(⑲)
+  - `configs/model/*`: 지침(`investigator.txt`·`critic.txt`·`claims_freeform.txt`), `model.json`(`max_tokens` 8192, `config_version` `model-1.0`), README(⑬~⑳)
+  - `skills/tradesentry/SKILL.md`: run-case 출력·사례 식별자 맞춤(⑳)
   - `tests/units/F2/`: `run_case_fixture.py`, `test_run_case_command.py`, `test_run_case_evidence.py`
-  - `tests/units/I12/test_orchestrate.py`: `CTypeStatusTest`
+  - `tests/units/I10/test_rule_view.py`, `tests/units/I12/test_orchestrate.py`·`test_token_estimate.py`·`input.json`, `tests/units/I13/input.json`, `tests/units/I7/test_model_client.py`, `tests/test_model_config.py`
   - `docs/plan/UNITS.md` 판정 칸
 - AS3(평가 실행·채점 연결)
   - 보고서 파일 이름은 작업 지시가 적은 채점기 가정 `reports_render_ko-{시각}.json`과 같다(이 브랜치의 채점기 코드로는 대조하지 못했다). 실행 결과 기록은 `runlog_run_record-{시각}.json`이다.
   - 실행이 `COMPLETED`가 아니면 종료 코드가 1이고 보고서 파일이 없다(기록은 있다).
   - 사례 실행 폴더를 묶음 폴더와 잇는 방법(자문 명세서 Q9)은 정하지 않았다.
+  - `tradesentry evaluate`는 `dispatch.investigate_case` 배선을 그대로 써야 한다. 그래야 세 포트(`required_tools`, `drafts_only_without_tools`, 근거 상태 변환 훅으로 켜지는 `reference_status`)가 켜진다. `orchestrate.unit_ports`를 직접 부르면 개발 실측과 채점 대상 실행의 흐름이 달라진다. 평가 실행에서 세 포트가 켜졌는지 보는 시험을 AS3에 둔다(평 권고 4).
+- 결과 요약(로드맵 R1)·룰북 B2·B4 공개 항목(평 권고 1, 사용자 결정 13 승인 뒤, 룰북은 이 PR에서 고치지 않는다)
+  - 공개할 내용: 모델 모드가 규칙 참고값과 필수 조회를 받는다는 점, 모드별 참고값 가용률과 "최종 = 참고값" 비율, `required` 차례 수, `draft_discarded`·`code_finding` 건수, Critic 생략률, 한도 값, 모델 설정을 합성 A·B·C로 조정한 사실.
+  - B2·B4 초안 문구는 평가 방법론 검토 보고 AS2-review-eval-1(scratchpad, 권고 1)에 있다.
+- dev20 개발 점수표(평 권고 3): `RB-1` 전에 이 설정(`model-1.0`)으로 dev20을 한 번 돌린다. 결과로 설정을 바꾸면 그 사실과 회차를 기록한다. 지금 `RUN_CASE_DATASETS`에 dev20이 없어 먼저 한 줄을 더해야 한다.
 - 2026-09-25(금) 09:00 사용자 결정
   - U4: 켜기로 하면 `ROUNDING_UNSTABLE_ENABLED`를 참으로 바꾼다(한 줄, 시험 있음).
   - 원인 분류 코드 이름·`tool_attempts` 뜻(MT4 ①·③): 이 배선은 이름을 쓰지 않는다. 시험은 `cause_codes` 상수로 단언하고 `tool_attempts`는 막힌 시도가 없는 경로라 두 뜻의 값이 같다.
