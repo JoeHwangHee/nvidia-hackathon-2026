@@ -1,5 +1,17 @@
-# NAT(NVIDIA NeMo Agent Toolkit: 에이전트 실행·추적·프로파일러·사후 평가 도구 모음) 워크플로 설정 자리다(소유 M).
-# S0(앱 뼈대)는 자리만 둔다. 이 파일에는 YAML 키가 없다.
-# 통합 방식(자문 명세서 Q1)과 NAT 버전 고정은 로드맵 MT4(단위 I13 NAT 감싸기)가 정해 채운다.
-# 지킬 조건(docs/plan/SCAFFOLD_BRIEF.md §4.2·§4.8): 예산·조기 종료·같은 인자 재호출 차단은 코드가 강제하고, provider(모델 호출
-# 클라이언트) 자동 재시도는 끄며, NAT 추적은 외부 관측 서비스로 보내지 않고 파일로만 남긴다. 키 값을 이 파일에 적지 않는다.
+# NAT(NVIDIA NeMo Agent Toolkit 1.9.0: 에이전트 실행·추적·프로파일러·사후 평가 도구 모음) 워크플로 설정 틀(소유 M, 로드맵 MT4).
+# 읽는 코드는 단위 I13(src/tradesentry/workflow/nat_wrap.py)이다. PyYAML로 읽어 메모리에서 쓰고, 실행마다 파일로 다시 쓰지 않는다.
+# - 통합 방식(자문 명세서 Q1의 (가)): 사례 조사 흐름 1건을 NAT 함수 tradesentry_case로 등록해 NAT 실행기로 돌린다.
+#   NIM 호출은 우리 클라이언트(단위 I7)가 하고 LLM 구간 기록만 NAT에 남긴다(provider 자동 재시도 없음, 5xx는 코드가 재전송).
+# - 예산·조기 종료·같은 인자 재호출 차단은 코드가 강제한다. 한도 수치는 configs/model/model.json 한 곳에만 둔다(여기에 적지 않는다).
+# - 추적은 파일로만 남긴다(외부 관측 서비스로 보내지 않는다). tradesentry_file은 NAT 파일 내보내기에 "멈추기 전 남은 쓰기
+#   기다리기(wait_for_tasks)"를 더한 형식이다. output_path는 I13이 실행마다 N7 폴더 안 nat_trace.jsonl로 바꾼다.
+# - ${변수} 끼워 넣기를 쓰지 않는다(I13이 거부한다). 키 값을 이 파일에 적지 않는다.
+general:
+  telemetry:
+    tracing:
+      tradesentry_file:
+        _type: tradesentry_file
+        output_path: nat_trace.jsonl
+        project: tradesentry
+workflow:
+  _type: tradesentry_case

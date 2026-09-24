@@ -6,8 +6,15 @@ version = "0.1.0"
 description = "관세청 수입통계 경보를 반증 검수해 담당자의 다음 업무를 제안하는 에이전트 TradeSentry"
 requires-python = "==3.12.*"
 # S0(앱 뼈대)의 코드는 표준 라이브러리만 쓴다. 외부 패키지는 그 패키지를 쓰는 작업이 버전을 고정해 더한다.
-# NAT(nvidia-nat)는 X1(세로형 최소 통합 시험) 판을 앱 lock에 섞지 않고, 통합 방식(자문 명세서 Q1)을 정하는 작업이 더한다.
-dependencies = []
+# NAT(NVIDIA NeMo Agent Toolkit: 에이전트 실행·추적·프로파일러·사후 평가 도구 모음)는 로드맵 MT4(단위 I13 NAT 감싸기)가
+# X1과 같은 1.9.0으로 고정해 더했다. nvidia-nat-profiler는 NAT 프로파일 결과(MVP 체크리스트 7번)를 만든다. 두 패키지를 따라
+# pandas·scikit-learn·scipy·matplotlib가 lock에 들어온다(샌드박스 이미지 크기에 닿는다, 로드맵 MT5 단위 F5).
+# nat은 단위 파일에서 함수 안에서만 import한다. `nat` 명령은 쓰지 않는다(명령 진입점이 import 때 .env를 읽는다).
+dependencies = [
+    "nvidia-nat==1.9.0",
+    "nvidia-nat-profiler==1.9.0",
+    "pyyaml==6.0.3",
+]
 
 # tradesentry <명령>(snapshot-build, snapshot-verify, detect, run-case, evaluate). python -m tradesentry.cli로도 부를 수 있다.
 [project.scripts]

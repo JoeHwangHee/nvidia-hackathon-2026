@@ -1,0 +1,27 @@
+{
+ "run_id": "run_case-260925143015",
+ "case_id": "A-composition",
+ "dataset": "controlled_fixture_v0",
+ "mode": "full",
+ "policy_version": "dev-0.1",
+ "rulebook_version": "RB-1",
+ "snapshot_id": "controlled_fixture_v0",
+ "grouping_version": "g0",
+ "code_version": "0123456789abcdef0123456789abcdef01234567",
+ "review_status_final": null,
+ "signal_status": null,
+ "unresolved_evidence": false,
+ "execution_status": "FAILED",
+ "tool_attempts": 5,
+ "model_requests": 7,
+ "tokens_in": 6120,
+ "tokens_out": 830,
+ "wall_ms": 41250,
+ "critic_used": true,
+ "revision_used": false,
+ "errors": [
+  {"code": "PROVIDER_HTTP_5XX", "stage": "critic", "detail": "HTTP 503(재전송 3회 뒤)",
+   "attempts": {"tool_attempts": 5, "model_requests": 7, "tokens_in": 6120, "tokens_out": 830, "wall_ms": 41250},
+   "last_good_evidence": ["ev:controlled_fixture_v0:observation:1024", "ev:controlled_fixture_v0:observation:1025"]}
+ ]
+}

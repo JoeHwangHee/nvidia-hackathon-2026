@@ -1,0 +1,130 @@
+{
+ "trace": [
+  {
+   "seq": 1,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "workflow_replay-260925143015",
+   "event": "model_request",
+   "stage": "basic",
+   "data": {
+    "request_no": 1,
+    "attempt": 1,
+    "model_requests": 1,
+    "request_sha256": "e4717215076da6b92040890faf1da8d4f423912de72be9a646554b25b073d298",
+    "timeout_ms": 60000
+   }
+  },
+  {
+   "seq": 2,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "workflow_replay-260925143015",
+   "event": "model_error",
+   "stage": "basic",
+   "data": {
+    "request_no": 1,
+    "attempt": 1,
+    "http_status": 503,
+    "error": null,
+    "elapsed_ms": 800,
+    "retrying": true,
+    "backoff_ms": 1000
+   }
+  },
+  {
+   "seq": 3,
+   "ts": "2026-09-25T14:30:16+09:00",
+   "run_id": "workflow_replay-260925143015",
+   "event": "model_request",
+   "stage": "basic",
+   "data": {
+    "request_no": 1,
+    "attempt": 2,
+    "model_requests": 2,
+    "request_sha256": "e4717215076da6b92040890faf1da8d4f423912de72be9a646554b25b073d298",
+    "timeout_ms": 60000
+   }
+  },
+  {
+   "seq": 4,
+   "ts": "2026-09-25T14:30:18+09:00",
+   "run_id": "workflow_replay-260925143015",
+   "event": "model_response",
+   "stage": "basic",
+   "data": {
+    "request_no": 1,
+    "attempt": 2,
+    "http_status": 200,
+    "elapsed_ms": 1200,
+    "usage": {
+     "prompt_tokens": 812,
+     "completion_tokens": 96,
+     "total_tokens": 908
+    },
+    "tokens_total": 908,
+    "response": {
+     "message": {
+      "role": "assistant",
+      "content": "{\"review_status\": \"MONITOR\", \"signal_status\": {\"unit_value\": \"MONITOR\", \"share\": \"NOT_TRIGGERED\"}, \"claims\": [], \"narrative\": \"구성효과 후보\", \"hypotheses\": []}",
+      "tool_calls": null
+     },
+     "finish_reason": "stop"
+    }
+   }
+  },
+  {
+   "seq": 5,
+   "ts": "2026-09-25T14:30:18+09:00",
+   "run_id": "workflow_replay-260925143015",
+   "event": "tool_call",
+   "stage": "basic",
+   "data": {
+    "tool": "get_history",
+    "args": {},
+    "tool_attempts": 2,
+    "source": "code"
+   }
+  }
+ ],
+ "requests": [
+  {
+   "model": "nvidia/nemotron-3-super-120b-a12b",
+   "messages": [
+    {
+     "role": "system",
+     "content": "조사자 지침(시험용)"
+    },
+    {
+     "role": "user",
+     "content": "사례 A-composition"
+    }
+   ],
+   "temperature": 1.0,
+   "top_p": 0.95,
+   "max_tokens": 2048,
+   "stream": false,
+   "chat_template_kwargs": {
+    "enable_thinking": false
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-super-120b-a12b",
+   "messages": [
+    {
+     "role": "system",
+     "content": "조사자 지침(시험용)"
+    },
+    {
+     "role": "user",
+     "content": "사례 A-composition"
+    }
+   ],
+   "temperature": 1.0,
+   "top_p": 0.95,
+   "max_tokens": 2048,
+   "stream": false,
+   "chat_template_kwargs": {
+    "enable_thinking": false
+   }
+  }
+ ]
+}
