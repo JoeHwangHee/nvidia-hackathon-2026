@@ -3,7 +3,7 @@
  "schema_version": 1,
  "source_kind": "controlled",
  "raw_sha256": "2f8b7f899a1d5fb8b315864c72d12e843cb2e981df9d48e3457337f0e6b9501a",
- "normalized_sha256": "c56a6dbef3c9710c96528529b05919450ac1fb99b1bdae21551e4c621b433dcd",
+ "normalized_sha256": "7453bf78c9b7bbab9781aeba316132a2945c6d11fdd61b56007e931c02241cae",
  "row_counts": {
   "collection_receipt": 131,
   "observation": 8330,
@@ -22,7 +22,7 @@
  "peer_group_files": [
   {
    "file_name": "peer_group_controlled_fixture_v0.csv",
-   "sha256": "b3b7a37a4e7ad0ef9d84445aaca7be7521d9452b867f6f73a465d168bf3e551a"
+   "sha256": "b688a74fd5cf1db64ac77c70dfb62f9b56904c73c121a573ab668f44de16f208"
   }
  ],
  "verify_ok": true,

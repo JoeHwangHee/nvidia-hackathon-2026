@@ -1,6 +1,6 @@
 {
  "snapshot_id": "controlled_fixture_v0",
- "generated_at": "2026-09-25T09:00:00+09:00",
+ "generated_at": "2026-09-25T01:30:00+09:00",
  "config": {
   "_status": "합성 시험자료의 수집 설정(합성). 형식은 configs/collection_plan.json과 같다(수집기 build_manifest 입력). 실제로 수집하지 않았다",
   "snapshot_id": "controlled_fixture_v0",
