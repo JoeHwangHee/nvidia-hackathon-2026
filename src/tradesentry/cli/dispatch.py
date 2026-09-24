@@ -92,8 +92,11 @@ evaluate 배선(로드맵 MT7 첫 PR. 최종 연결은 조립 작업 AS3)
   kcs_202201_202412_v2 → real_dev(봉인 묶음은 evaluate가 돌리지 않는다. 샌드박스 밖 실행기 E2의 일). 사례 목록은
   dev20만 정본 자리 eval/dev/dev20/input/cases.json(DT5)에서 읽는다. controlled_fixture_v0·real_dev의 사례 목록 자리는
   아직 없어 분명한 오류로 끝난다(AS3이 정한다. real_dev는 DT7의 경보 목록).
-- 모드 목록은 지금 명령 표 그대로 --mode 한 값이다(MT5 결정 ②의 잠정). 채점기는 dev20·real_dev 묶음의 계획 모드가
-  룰북 B2의 모드 전부가 아니면 채점하지 않으므로, 모드 목록을 받는 방식은 AS3이 룰북 B5·B7과 함께 새 결정으로 정한다.
+- 모드 목록은 지금 명령 표 그대로 --mode 한 값이다(MT5 결정 ②의 잠정). 사용자 결정 12(2026-09-25 08:47)로 AS3이 --mode를
+  선택 옵션으로 바꾼다: 주지 않으면 E1 PLANNED_MODES[자료 묶음]의 모드 전부를 한 묶음으로, 주면 그 모드 하나만(스모크용,
+  점수표로 합치지 않음) 돈다. 채점기는 dev20·real_dev 묶음의 계획 모드가 그 표 전부가 아니면 채점하지 않는다.
+- 실행명은 사용자 결정 10(나)대로 호스트가 먼저 확보하고 샌드박스 안 CLI에 --run-name으로 넘긴다(CLI 쪽과 샌드박스
+  실행기는 AS3).
 - 순서: 단위 E1 execute_batch(순서 seed DEV_ORDER_SEED, 동시성 1) → 단위 E4 summarize_batch(NAT 사후 평가) → 실행 조건
   입력 파일 run_conditions-{시각}.json을 묶음 실행 폴더에 배타 생성(E1 write_run_conditions). 표준 출력에는 묶음 기록과
   실행 조건 입력 파일의 outputs부터의 상대경로만 적는다. 사례 실행이 실패해도 묶음 기록을 끝까지 썼으면 0이다(실패는
