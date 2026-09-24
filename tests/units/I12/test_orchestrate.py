@@ -566,5 +566,41 @@ class MergedUnitsTest(unittest.TestCase):
                          ["pass", "block", "pass"])  # 첫 검사는 스키마만 본다
 
 
+class CTypeStatusTest(unittest.TestCase):
+    """조립 AS2: C형 자료 상태(MT2 missingness 항목의 hs10_codes)를 코드마다 R1 자료 상태 항목으로 펼친다(MT3 결정 ⑨)."""
+
+    C_ITEM = {"evidence_id": "ev:controlled_fixture_v0:observation:7131", "request_id": "r", "partner_code": "XC",
+              "hs_code": "850432", "month": "202412", "flow": "import", "observation_status": "REQUEST_FAILED",
+              "hs10_codes": ["8504321000", "8504322000"], "hs10_codes_source": "other_case_month"}
+
+    def test_codes_become_one_status_each_with_distinct_ids(self):
+        statuses = orchestrate._statuses_of([{"missingness": [self.C_ITEM]}, {"missingness": [self.C_ITEM]}])
+        ev = self.C_ITEM["evidence_id"]
+        self.assertEqual([(s["status_id"], s["hs10"], s["hs6"], s["partner"], s["evidence_ids"]) for s in statuses],
+                         [(f"{ev}@8504321000", "8504321000", "850432", "XC", [ev]),
+                          (f"{ev}@8504322000", "8504322000", "850432", "XC", [ev])])
+
+    def test_empty_code_list_makes_no_status(self):
+        item = dict(self.C_ITEM, hs10_codes=[], hs10_codes_source="none")
+        self.assertEqual(orchestrate._statuses_of([{"missingness": [item]}]), [])
+
+    def test_a_claim_on_the_status_row_expands_to_every_code(self):
+        statuses = orchestrate._statuses_of([{"missingness": [self.C_ITEM]}])
+        draft = {"claims": [{"claim_type": "change", "metric_id": "m-rU"},
+                            {"claim_type": "data_status", "evidence_id": self.C_ITEM["evidence_id"]},
+                            {"claim_type": "data_status", "evidence_id": "ev:controlled_fixture_v0:observation:1"}]}
+        self.assertEqual(orchestrate._requests_of(draft, statuses),
+                         [{"claim_id": "c1", "metric_id": "m-rU"},
+                          {"claim_id": "c2-1", "status_id": statuses[0]["status_id"]},
+                          {"claim_id": "c2-2", "status_id": statuses[1]["status_id"]},
+                          {"claim_id": "c3", "status_id": "ev:controlled_fixture_v0:observation:1"}])
+        self.assertEqual(orchestrate._requests_of(draft)[1], {"claim_id": "c2", "status_id": self.C_ITEM["evidence_id"]})
+
+    def test_checklist_cites_the_real_evidence_id_once(self):
+        case = dict(h.CASE_A, partner="XC", hs6="850432", month="202412", baseline_month="202312")
+        claims = orchestrate.checklist_claims(case, [{"missingness": [self.C_ITEM]}])
+        self.assertEqual(claims, [{"claim_type": "data_status", "evidence_id": self.C_ITEM["evidence_id"]}])
+
+
 if __name__ == "__main__":
     unittest.main()

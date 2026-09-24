@@ -157,21 +157,30 @@ def _statuses_of(evidence: list) -> list:
     """봉투의 missingness 항목을 단위 R1의 자료 상태 항목으로 옮긴다(근거 ID 하나에 항목 하나, status_id = 근거 ID).
 
     항목의 상대국 키는 partner_code, 근거 ID는 evidence_id(하나)다(단위 K3·MT2 도구 공통 틀). 옛 모양(partner·
-    evidence_ids 목록)도 읽는다. hs_code가 10자리면 hs10이다. 부모 HS6 행이 있는 키에서 HS10 하위 자료만 빠진 경우
-    (C형, 빠진 HS10 코드마다 observation_status@<HS10>)를 가려 hs10을 채우는 일은 조립(AS2)의 몫이다 `[미확인]`."""
+    evidence_ids 목록)도 읽는다. hs_code가 10자리면 hs10이다.
+    C형(부모 HS6 행이 있는 달에 HS10 하위 자료만 빠짐. MT2 도구가 항목에 hs10_codes·hs10_codes_source를 붙인다)은
+    hs10_codes의 코드마다 항목 하나로 펼친다(조립 AS2): hs10 = 그 코드, status_id = "{근거 ID}@{코드}"(코드마다 다르다),
+    근거 ID는 그 상태 행 하나다. 그래서 R1이 코드마다 observation_status@<HS10> 주장을 만든다(MT3 결정 ⑨). 코드 목록이
+    비면(출처 none) 쓸 수 있는 주장이 없어 항목을 만들지 않는다(HS6 수준 기호로 쓰면 같은 키의 값 주장과 어긋난다)."""
     statuses, seen = [], set()
     for item in _missing_items(evidence):
         code = str(item.get("hs_code") or item.get("hs6") or "")
         refs = item.get("evidence_ids") if isinstance(item.get("evidence_ids"), list) else [item.get("evidence_id")]
+        codes = item.get("hs10_codes") if isinstance(item.get("hs10_codes"), list) else None
         for ev in refs:
-            if isinstance(ev, str) and ev not in seen:
-                seen.add(ev)
-                statuses.append({"status_id": ev, "hs6": item.get("hs6") or code[:6],
-                                 "partner": item.get("partner_code") or item.get("partner"),
-                                 "period": item.get("month") or item.get("period"),
-                                 "hs10": item.get("hs10") or (code if len(code) == 10 else None),
-                                 "observation_status": item.get("observation_status"), "evidence_ids": [ev],
-                                 "baseline_period": item.get("baseline_period")})
+            if not isinstance(ev, str) or ev in seen:
+                continue
+            seen.add(ev)
+            base = {"hs6": item.get("hs6") or code[:6], "partner": item.get("partner_code") or item.get("partner"),
+                    "period": item.get("month") or item.get("period"),
+                    "observation_status": item.get("observation_status"), "evidence_ids": [ev],
+                    "baseline_period": item.get("baseline_period")}
+            if codes is None:
+                statuses.append({"status_id": ev, **base,
+                                 "hs10": item.get("hs10") or (code if len(code) == 10 else None)})
+            else:
+                statuses += [{"status_id": f"{ev}@{hs10}", **base, "hs10": hs10} for hs10 in codes
+                             if isinstance(hs10, str)]
     return statuses
 
 
@@ -225,8 +234,16 @@ def _unresolved_triggered(signals: dict | None, signal_status: object) -> bool:
     return "MAINTAIN" in judged and "HOLD" in judged
 
 
-def _requests_of(draft: dict) -> list:
-    """틀 채우기 모드 초안의 주장 참조(metric_id·evidence_id)를 단위 R1의 요청({claim_id, metric_id|status_id})으로."""
+def _requests_of(draft: dict, statuses: list | None = None) -> list:
+    """틀 채우기 모드 초안의 주장 참조(metric_id·evidence_id)를 단위 R1의 요청({claim_id, metric_id|status_id})으로.
+
+    evidence_id가 C형 상태 행이면(자료 상태 항목이 코드마다 펼쳐져 있으면) 그 코드마다 요청 하나를 만든다(claim_id
+    c{번호}-{k}). 초안은 실제 근거 ID만 가리키고, 펼친 status_id는 R1 입력 안에서만 쓴다(verify_evidence에는 근거 ID가 간다)."""
+    expanded: dict[str, list[str]] = {}
+    for status in statuses or []:
+        ids = status.get("evidence_ids") if isinstance(status, dict) else None
+        if isinstance(ids, list) and ids and isinstance(ids[0], str) and isinstance(status.get("status_id"), str):
+            expanded.setdefault(ids[0], []).append(status["status_id"])
     requests = []
     for number, claim in enumerate(draft.get("claims") or [], start=1):
         if not isinstance(claim, dict):
@@ -234,7 +251,12 @@ def _requests_of(draft: dict) -> list:
         if isinstance(claim.get("metric_id"), str):
             requests.append({"claim_id": f"c{number}", "metric_id": claim["metric_id"]})
         elif isinstance(claim.get("evidence_id"), str):
-            requests.append({"claim_id": f"c{number}", "status_id": claim["evidence_id"]})
+            targets = expanded.get(claim["evidence_id"]) or [claim["evidence_id"]]
+            if len(targets) == 1:
+                requests.append({"claim_id": f"c{number}", "status_id": targets[0]})
+            else:
+                requests += [{"claim_id": f"c{number}-{k}", "status_id": target}
+                             for k, target in enumerate(targets, start=1)]
     return requests
 
 
@@ -250,7 +272,8 @@ def checklist_claims(case: dict, evidence: list) -> list:
                          for s in triggered)
         if family_hit and inputs.get("period") == case.get("month") and isinstance(metric.get("metric_id"), str):
             claims.append({"claim_type": "value", "metric_id": metric["metric_id"]})
-    claims += [{"claim_type": "data_status", "evidence_id": s["status_id"]} for s in _statuses_of(evidence)]
+    status_evidence = dict.fromkeys(s["evidence_ids"][0] for s in _statuses_of(evidence))  # C형은 근거 ID 하나로(펼치기는 R1 요청)
+    claims += [{"claim_type": "data_status", "evidence_id": ev} for ev in status_evidence]
     return claims
 
 
@@ -285,8 +308,9 @@ def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimit
         if mode == "freeform":
             filled = report_claims.run({"mode": mode, "case": case, "claims": draft.get("claims") or []})
         else:
+            statuses = _statuses_of(evidence)
             filled = report_claims.run({"mode": mode, "case": case, "metrics": _metrics_of(evidence),
-                                        "statuses": _statuses_of(evidence), "requests": _requests_of(draft)})
+                                        "statuses": statuses, "requests": _requests_of(draft, statuses)})
         try:
             unresolved = policy_case_aggregate.run({"signals": case.get("signals"),
                                                     "signal_status": draft.get("signal_status")})["unresolved_evidence"]
