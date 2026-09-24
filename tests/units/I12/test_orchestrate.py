@@ -44,6 +44,11 @@ def blocks(records):
     return [(r["stage"], r["data"]["kind"]) for r in h.events(records, "budget_block")]
 
 
+def attempts(executed, blocked):
+    """기록 tool_attempts의 기대값. 막힌 시도를 셀지는 흐름 조정의 COUNT_BLOCKED_TOOL_ATTEMPTS 한 줄이 정한다."""
+    return executed + (blocked if orchestrate.COUNT_BLOCKED_TOOL_ATTEMPTS else 0)
+
+
 class FlowBudgetTest(unittest.TestCase):
     """체크리스트 2번(흐름 쪽)."""
 
@@ -74,7 +79,7 @@ class FlowBudgetTest(unittest.TestCase):
         revision_calls = [r["data"]["tool"] for r in h.events(records, "tool_result") if r["stage"] == "revision"]
         self.assertEqual(revision_calls, ["decompose_hs", "compare_partners"])
         self.assertEqual(blocks(records), [("revision", "requery_limit")])
-        self.assertEqual(record["tool_attempts"], 7)  # 기본 3 + 재조회 시도 3(1개 막힘) + 최종 검증 1
+        self.assertEqual(record["tool_attempts"], attempts(6, 1))  # 기본 3 + 재조회 시도 3(1개 막힘) + 최종 검증 1
         self.assertEqual(len(fake.tool_calls), 6)
         tools_offered = [p.get("tools") is not None for p in transport.payloads]
         self.assertEqual(tools_offered, [True, True, False])  # 재조회 몫을 다 쓰면 도구를 주지 않는다
@@ -115,7 +120,7 @@ class FlowBudgetTest(unittest.TestCase):
         record = result["record"]
         self.assertEqual(record["execution_status"], "COMPLETED")
         self.assertEqual(len(fake.tool_calls), 8)
-        self.assertEqual(record["tool_attempts"], 10)
+        self.assertEqual(record["tool_attempts"], attempts(8, 2))
         self.assertEqual(blocks(records), [("basic", "comparison_limit"), ("revision", "requery_limit")])
         self.assertLessEqual(max(fake.budget_asks), 7)  # 도구 예산 자리에 8번째까지만 물었다
 
@@ -228,7 +233,7 @@ class ModeRuleTest(unittest.TestCase):
         result, records, fake, _ = h.run_case("agent", script)
         self.assertEqual(blocks(records), [("basic", "invalid_call")])
         self.assertNotIn("run_sql", [n for n, _ in fake.tool_calls])
-        self.assertEqual(result["record"]["tool_attempts"], 4)
+        self.assertEqual(result["record"]["tool_attempts"], attempts(3, 1))
 
     def test_provider_5xx_after_resends_fails_with_rerun_eligible_error(self):
         script = [h.draft_answer()] + [{"status": 503}] * 4
@@ -289,7 +294,7 @@ class ReviewRoundOneTest(unittest.TestCase):
         self.assertEqual([p.get("tools") for p in transport.payloads], [None] * 4)  # 어느 요청에도 도구가 없다
         self.assertEqual([n for n, _ in fake.tool_calls], ["check_comparability", "verify_evidence", "verify_evidence"])
         self.assertEqual(blocks(records), [("revision", "not_comparable"), ("revision", "not_comparable")])
-        self.assertEqual(record["tool_attempts"], 5)  # 실행 3 + 막힌 시도 2
+        self.assertEqual(record["tool_attempts"], attempts(3, 2))  # 실행 3 + 막힌 시도 2
         feedback = [m["content"] for m in transport.payloads[-1]["messages"]
                     if m["role"] == "user" and m["content"].startswith("[수정 단계]")]
         self.assertEqual(len(feedback), 1)
