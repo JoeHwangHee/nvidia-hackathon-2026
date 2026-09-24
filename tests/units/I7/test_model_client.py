@@ -9,10 +9,13 @@
   리디렉션은 따라가지 않으며 Authorization은 리디렉션 요청에 옮겨 가지 않는다
 - 정책 프록시 거부(CONNECT 403·407, L7 403 policy_denied)는 CODE_ERROR로 멈추고 재실행 대상이 아니다
 - 설정은 엔드포인트 호스트와 키 환경변수 이름을 허용 목록으로만 받는다
+- 도구 없는 요청에는 tools·tool_choice 키가 없다. 구조화 출력(response_format·nvext)은 설정이 켜졌고, 도구가 없고,
+  부르는 쪽이 스키마를 줄 때만 실린다(기본은 꺼짐, 결정 기록 ⑯)
 
 전송 시험은 가짜 opener(연결 처리기 묶음)나 가짜 HTTPS 처리기를 넣어 돈다. 겹 보호로 소켓 연결도 막는다
 (NoNetworkMixin).
 """
+import dataclasses
 import email.message
 import io
 import json
@@ -425,6 +428,55 @@ class ConfigTest(NoNetworkMixin, unittest.TestCase):
                             mc.load_model_config(folder)
                     else:
                         self.assertEqual(mc.load_model_config(folder).settings.endpoint, endpoint)
+
+
+class StructuredOutputTest(NoNetworkMixin, unittest.TestCase):
+    SCHEMA = {"type": "object", "properties": {"review_status": {"type": "string"}}}
+    TOOLS = [{"type": "function", "function": {"name": "get_history", "description": "d",
+                                               "parameters": {"type": "object", "properties": {}}}}]
+    EXTRA_KEYS = ("tools", "tool_choice", "response_format", "nvext")
+
+    def payload(self, structured, *, tools=None, json_schema=None):
+        client, _, transport, _ = make_client([{"body": ok_body("{}")}])
+        if structured is not None:
+            client.settings = dataclasses.replace(client.settings, structured_output=structured)
+        client.chat(MESSAGES, stage="basic", tools=tools, json_schema=json_schema)
+        return transport.payloads[0]
+
+    def test_default_is_off_and_no_tool_keys_without_tools(self):
+        self.assertEqual(mc.load_model_config().settings.structured_output, "off")
+        for schema in (None, self.SCHEMA):
+            with self.subTest(schema=schema):
+                payload = self.payload(None, json_schema=schema)
+                self.assertEqual([k for k in self.EXTRA_KEYS if k in payload], [])
+
+    def test_structured_output_rides_only_on_requests_without_tools(self):
+        for mode, key, expected in (("json_object", "response_format", {"type": "json_object"}),
+                                    ("guided_json", "nvext", {"guided_json": self.SCHEMA})):
+            with self.subTest(mode=mode):
+                payload = self.payload(mode, json_schema=self.SCHEMA)
+                self.assertEqual(payload[key], expected)
+                self.assertEqual([k for k in self.EXTRA_KEYS if k in payload], [key])
+                with_tools = self.payload(mode, tools=self.TOOLS, json_schema=self.SCHEMA)
+                self.assertEqual([k for k in self.EXTRA_KEYS if k in with_tools], ["tools", "tool_choice"])
+                no_schema = self.payload(mode)  # 부르는 쪽이 스키마를 주지 않으면(예: Critic) 싣지 않는다
+                self.assertEqual([k for k in self.EXTRA_KEYS if k in no_schema], [])
+
+    def test_config_value_is_limited_to_three_modes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "model"
+            shutil.copytree(mc.DEFAULT_CONFIG_DIR, folder)
+            raw = json.loads((folder / "model.json").read_text(encoding="utf-8"))
+            for value in mc.STRUCTURED_OUTPUT_MODES + ("json_schema", True, None):
+                request = dict(raw["request"], structured_output=value)
+                (folder / "model.json").write_text(json.dumps(dict(raw, request=request)), encoding="utf-8")
+                with self.subTest(value=value):
+                    if value in mc.STRUCTURED_OUTPUT_MODES:
+                        self.assertEqual(mc.load_model_config(folder).settings.structured_output, value)
+                    else:
+                        with self.assertRaises(mc.ConfigError):
+                            mc.load_model_config(folder)
+
 
 
 if __name__ == "__main__":
