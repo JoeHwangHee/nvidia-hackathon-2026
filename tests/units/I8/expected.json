@@ -1,0 +1,33 @@
+{
+ "responses": [
+  {
+   "http_status": 503,
+   "body": null,
+   "error": null,
+   "elapsed_ms": 800
+  },
+  {
+   "http_status": 200,
+   "body": {
+    "choices": [
+     {
+      "message": {
+       "role": "assistant",
+       "content": "{\"review_status\": \"MONITOR\", \"signal_status\": {\"unit_value\": \"MONITOR\", \"share\": \"NOT_TRIGGERED\"}, \"claims\": [], \"narrative\": \"구성효과 후보\", \"hypotheses\": []}",
+       "tool_calls": null
+      },
+      "finish_reason": "stop"
+     }
+    ],
+    "usage": {
+     "prompt_tokens": 812,
+     "completion_tokens": 96,
+     "total_tokens": 908
+    }
+   },
+   "error": null,
+   "elapsed_ms": 1200
+  }
+ ],
+ "remaining": 0
+}
