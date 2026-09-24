@@ -2,11 +2,14 @@
 
 - 흐름 조정(단위 I12)을 NAT로 감싸 돌리면 NIM 요청마다 LLM 구간(토큰 포함)과 도구 시도마다 TOOL 구간이 남고,
   WORKFLOW_END까지 파일에 쓰이며(wait_for_tasks), 프로파일 파일이 N7 폴더에 NAT가 정한 이름으로 생긴다.
-- NAT 추적·프로파일 파일에 로컬 절대경로가 없다(N13). 폴더가 이미 있으면 쓰지 않는다(N8).
-- 흐름이 예외를 내도 NAT 추적을 끝까지 쓰고 예외를 다시 낸다. `nat` 명령 진입점을 불러오지 않는다.
+- NAT 추적·프로파일 파일에 로컬 절대경로가 없다(N13): 임시 폴더, 가상환경(sys.prefix, site-packages), 현재 폴더,
+  홈 폴더(바꾼 HOME과 실제 홈), 일반 절대경로 접두어. 폴더가 이미 있으면 쓰지 않는다(N8).
+- 흐름이 예외를 내도 NAT 추적을 끝까지 쓰고 예외를 다시 낸다. `nat` 명령 진입점과 pymilvus(둘 다 import 때 .env를
+  읽는다)를 불러오지 않고, NAT를 불러오는 함수는 모두 먼저 .env 자동 로드·텔레메트리 끔 환경을 둔다.
 """
 import ast
 import os
+import pwd
 import socket
 import sys
 import tempfile
@@ -23,6 +26,8 @@ from ..I12 import harness as h
 from ..I7.fakes import FakeClock, ScriptedTransport
 
 MODEL = "nvidia/nemotron-3-super-120b-a12b"
+# 일반 절대경로 접두어(시험 파일에만 둔다. 비밀값·경로 검사에 걸리지 않게 이어 붙여 만든다)
+PATH_PREFIXES = tuple("/" + part + "/" for part in ("Users", "home", "private", "tmp")) + ("/" + "var/folders/",)
 
 
 def _refuse_network(*args, **kwargs):
@@ -82,13 +87,17 @@ class NatWrapTest(unittest.TestCase):
         self.assertEqual(sorted(p.name for p in nat_dir.iterdir()),
                          sorted((nat_wrap.NAT_TRACE_NAME,) + nat_wrap.PROFILE_FILES))
         self.assertEqual(outcome["profile_files"], sorted(nat_wrap.PROFILE_FILES))
+        local = {str(nat_dir.parent), tempfile.gettempdir(), sys.prefix, sys.base_prefix, str(Path.cwd()),
+                 os.path.expanduser("~"), pwd.getpwuid(os.getuid()).pw_dir, "site-packages"}
         for path in nat_dir.iterdir():  # 로컬 절대경로가 없다(N13)
             with self.subTest(file=path.name):
                 text = path.read_text(encoding="utf-8")
-                self.assertNotIn(str(nat_dir.parent), text)
-                self.assertNotIn(tempfile.gettempdir(), text)
+                self.assertEqual([p for p in sorted(local) if p in text], [])
+                self.assertEqual([p for p in PATH_PREFIXES if p in text], [])
         self.assertEqual((memory.records[0]["event"], memory.records[-1]["event"]), ("run_start", "run_end"))
         self.assertFalse(self.missing.exists())  # HOME 아래에 아무것도 만들지 않았다
+        self.assertNotIn("pymilvus", sys.modules)  # import 때 .env를 읽는 의존성을 불러오지 않았다
+        self.assertNotIn("nat.cli.entrypoint", sys.modules)
 
     def test_existing_folder_is_not_reused(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -120,6 +129,24 @@ class NatWrapTest(unittest.TestCase):
         top = [n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]
         names = [a.name for n in top for a in n.names] + [n.module or "" for n in top if isinstance(n, ast.ImportFrom)]
         self.assertFalse([n for n in names if n == "nat" or n.startswith("nat.") or n == "yaml"])
+
+    def test_profile_and_trace_readers_prepare_the_environment_themselves(self):
+        # write_profile·read_nat_trace를 nat_api 없이 따로 불러도(결과 정리 쪽) .env 자동 로드·텔레메트리가 꺼진다
+        for name in ("PYTHON_DOTENV_DISABLED", "NAT_TELEMETRY_ENABLED"):
+            os.environ.pop(name, None)
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(nat_wrap.read_nat_trace(None, Path(tmp)), [])  # 추적 파일이 없으면 빈 목록
+        self.assertEqual((os.environ.get("PYTHON_DOTENV_DISABLED"), os.environ.get("NAT_TELEMETRY_ENABLED")),
+                         ("1", "false"))
+        for name in ("PYTHON_DOTENV_DISABLED", "NAT_TELEMETRY_ENABLED"):
+            os.environ.pop(name, None)
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / nat_wrap.PROFILE_FILES[0]).write_text("", encoding="utf-8")
+            with self.assertRaises(FileExistsError):  # 이미 있는 이름이면 쓰지 않지만, 환경은 먼저 둔다
+                nat_wrap.write_profile([], Path(tmp))
+        self.assertEqual((os.environ.get("PYTHON_DOTENV_DISABLED"), os.environ.get("NAT_TELEMETRY_ENABLED")),
+                         ("1", "false"))
+        self.assertNotIn("pymilvus", sys.modules)
 
     def test_template_values_may_not_interpolate_environment_variables(self):
         with tempfile.TemporaryDirectory() as tmp:

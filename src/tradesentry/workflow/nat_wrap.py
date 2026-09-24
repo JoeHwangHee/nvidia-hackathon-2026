@@ -25,8 +25,11 @@ NAT 실행기로 돌리고, 예산·조기 종료는 우리 코드가 강제한�
 쓴다: NAT_TRACE_NAME(NAT 추적), PROFILE_FILES(프로파일). 이 이름들은 단위 표 I13 행에 고정할 값의 제안이다.
 
 지키는 것
-- `nat` 명령(nat.cli.entrypoint)은 쓰지 않는다. 그 진입점은 import 때 load_dotenv()로 .env를 읽는다. NAT를 불러오기 전에
-  이 프로세스에 PYTHON_DOTENV_DISABLED=1(python-dotenv 1.2.0 이상)과 NAT_TELEMETRY_ENABLED=false를 둔다(S0 인계).
+- `nat` 명령(nat.cli.entrypoint)은 쓰지 않는다. 그 진입점은 import 때 load_dotenv()로 .env를 읽는다. 의존성
+  pymilvus도 import 때 load_dotenv()를 부른다(NAT Milvus 검색기를 설정할 때만 불러온다. 이 단위의 경로는 부르지
+  않는다). NAT를 불러오는 함수(nat_api·read_nat_trace·write_profile)는 모두 첫 줄에서 이 프로세스에
+  PYTHON_DOTENV_DISABLED=1(python-dotenv 1.2.0 이상)과 NAT_TELEMETRY_ENABLED=false를 둔다(S0 인계). 그래서
+  write_profile을 따로 불러도(예: 샌드박스 밖 결과 정리) 같다.
 - import nat은 함수 안에서만 한다(단위를 import해도 nat이 올라오지 않는다. 기본 시험 환경 보호).
 - NAT 설정은 파일로 쓰지 않고 메모리에서 만든다. NAT의 설정 파일 읽기는 ${변수}를 환경변수 값으로 바꾸고, 실행마다 쓰는
   설정 사본에는 로컬 절대경로가 들어가기 때문이다(자료 계약 N13).
@@ -196,7 +199,7 @@ class NatSink:
             self._close_llm(_short(message.get("content") or message.get("tool_calls") or ""), data.get("usage") or {})
         elif event == "model_error":
             self._close_llm({"http_status": data.get("http_status"), "error": data.get("error"),
-                             "retrying": data.get("retrying")})
+                             "denial": data.get("denial"), "retrying": data.get("retrying")})
         elif event == "tool_call":
             self._close_tool({"blocked": "unfinished"})
             tool = data.get("tool") or "invalid_call"
@@ -287,6 +290,7 @@ async def _run_workflow(api: SimpleNamespace, config: dict) -> None:
 
 
 def read_nat_trace(api: SimpleNamespace, nat_dir: Path) -> list:
+    _prepare_env()
     path = Path(nat_dir) / NAT_TRACE_NAME
     lines = path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
     return [api.IntermediateStep.model_validate_json(line) for line in lines if line.strip()]
@@ -294,6 +298,7 @@ def read_nat_trace(api: SimpleNamespace, nat_dir: Path) -> list:
 
 def write_profile(steps: list, nat_dir: Path) -> list[str]:
     """NAT 프로파일러로 결과 파일을 nat_dir에 쓴다(이미 있으면 쓰지 않는다, N8). 쓴 파일 이름 목록을 돌려준다."""
+    _prepare_env()
     with _Quiet("nat"):
         from nat.data_models.profiler import ProfilerConfig
         from nat.plugins.profiler.profile_runner import ProfilerRunner
