@@ -5,10 +5,12 @@
 """
 import unittest
 from decimal import Decimal
+from fractions import Fraction
 
 from tradesentry.metrics import decompose as x3
 
-SNAP = "ev:golden_metrics:observation:"
+SNAPSHOT = "golden_metrics"
+SNAP = f"ev:{SNAPSHOT}:observation:"
 A, B, C = "8504501000", "8504502000", "8504509000"
 
 
@@ -30,8 +32,9 @@ def child_status(month, status):
 
 
 def run(parent, children, rounding_kg=Decimal("0.5")):
-    return x3.run({"hs6": "850450", "partner": "CN", "period": "202401", "baseline_period": "202301",
-                   "parent": parent, "children": children, "weight_rounding_kg": rounding_kg})
+    return x3.run({"snapshot_id": SNAPSHOT, "hs6": "850450", "partner": "CN", "period": "202401",
+                   "baseline_period": "202301", "parent": parent, "children": children,
+                   "weight_rounding_kg": rounding_kg})
 
 
 def by_key(out):
@@ -149,15 +152,92 @@ class ConditionTest(unittest.TestCase):
                   [child_status("202301", "CONFIRMED_NO_TRADE")] + ORACLE_A[1][2:])
         self.assertEqual(by_key(out)[("within_effect", "202401")]["comparability_flags"], ["CONFIRMED_NO_TRADE"])
 
-    def test_residual_needs_parent_unit_value(self):
-        # 부모 중량 0: 부모 대조는 허용오차 안(|0 − 1| ≤ 1.0)이라 within·mix는 계산하지만 ΔU는 정의되지 않는다
+    def test_zero_parent_weight_blocks_decomposition(self):
+        # 부모 중량 0: 부모 대조는 허용오차 안(|0 − 1| ≤ 1.0)이지만, 룰북 B3-1 "양 시점 중량 유효"에 부모 중량도
+        # 넣어 세 값 모두 null이다(무역통계 검토 권고 4). 채점기(DT8)도 같은 규칙을 쓴다.
         out = run([parent_row("202301", 5, 0), parent_row("202401", 6, 2)],
                   [child("202301", A, 5, 1), child("202401", A, 6, 2)])
         got = by_key(out)
-        self.assertEqual(shown(got[("within_effect", "202401")]), "-2.00")
-        self.assertEqual(shown(got[("mix_effect", "202401")]), "0.00")
-        self.assertIsNone(got[("residual", "202401")]["value"])
-        self.assertEqual(got[("residual", "202401")]["comparability_flags"], ["zero_weight"])
+        for name in x3.EFFECTS:
+            self.assertIsNone(got[(name, "202401")]["value"])
+            self.assertEqual(got[(name, "202401")]["comparability_flags"], ["zero_weight"])
+        self.assertTrue(out["parent_check"][0]["Q_match"])
+
+    def test_parent_check_null_rules(self):
+        # 부모 대조의 뜻과 null 규칙(Codex 권고 2): 계산됨 / 부모 누락 / 하위 상태 행
+        computed = run(*ORACLE_A)["parent_check"][0]
+        self.assertEqual(computed, {"period": "202301", "row_count": 2, "V_parent": 600, "V_hs10": 600,
+                                    "Q_parent": 100, "Q_hs10": 100, "tolerance": Decimal("1.5"),
+                                    "V_match": True, "Q_match": True})
+        rest = ("V_parent", "V_hs10", "Q_parent", "Q_hs10", "tolerance", "V_match", "Q_match")
+        parent_missing = run([parent_row("202301", status="REQUEST_FAILED"), parent_row("202401", 360, 100)],
+                             ORACLE_A[1])["parent_check"][0]
+        self.assertEqual(parent_missing, {"period": "202301", "row_count": 2, **dict.fromkeys(rest)})
+        children_missing = run([parent_row("202301", 600, 100), parent_row("202401", 360, 100)],
+                               ORACLE_A[1][:2] + [child_status("202401", "REQUEST_FAILED")])["parent_check"][1]
+        self.assertEqual(children_missing, {"period": "202401", "row_count": None, **dict.fromkeys(rest)})
+
+
+class ExactValueTest(unittest.TestCase):
+    """판정 정책(P3)은 반올림 전 분해 값으로 "기준 안"을 판정한다. value는 표시 값이라 inputs로 다시 계산한다."""
+
+    def test_golden_scenario_fractions(self):
+        out = run([parent_row("202301", 1800, 301), parent_row("202401", 1480, 259)],
+                  [child("202301", A, 300, 100), child("202301", B, 600, 100), child("202301", C, 900, 100),
+                   child("202401", A, 330, 110), child("202401", B, 700, 100), child("202401", C, 450, 50)])
+        got = by_key(out)
+        self.assertEqual(x3.exact_value(got[("within_effect", "202401")]), Fraction(14, 39))
+        self.assertEqual(x3.exact_value(got[("mix_effect", "202401")]), Fraction(-2, 3))
+        self.assertEqual(x3.exact_value(got[("residual", "202401")]), Fraction(164, 3913))  # −80/301 − (−4/13)
+        self.assertEqual(x3.exact_value(got[(f"w@{A}", "202301")]), Fraction(100, 3))
+        self.assertEqual(x3.exact_value(got[(f"r_U@{B}", "202401")]), Fraction(50, 3))  # 7/6 − 1
+        self.assertEqual(x3.exact_value(got[(f"U@{C}", "202401")]), Fraction(9))
+
+    def test_rounding_would_flip_the_within_band(self):
+        # 무역통계 검토 탐침 3(합성): 비중 변화 없이 하위품목 A 단가만 10.000 → 15.991. within 정확값 2.9955, 표시 3.00.
+        # P3식 "기준 안"(|within| < 0.3 × U0 = 3.0)은 정확값으로 참, 표시 값으로 거짓이다.
+        out = run([parent_row("202301", 20000, 2000), parent_row("202401", 25991, 2000)],
+                  [child("202301", A, 10000, 1000), child("202301", B, 10000, 1000),
+                   child("202401", A, 15991, 1000), child("202401", B, 10000, 1000)])
+        got = by_key(out)
+        within = got[("within_effect", "202401")]
+        self.assertEqual(shown(within), "3.00")
+        exact = x3.exact_value(within)
+        self.assertEqual(exact, Fraction(29955, 10000))
+        band = Fraction(3)  # 0.3 × U0(부모 20,000 USD ÷ 2,000 kg = 10)
+        self.assertTrue(abs(exact) < band)
+        self.assertFalse(abs(within["value"]) < band)
+        self.assertEqual(x3.exact_value(got[("mix_effect", "202401")]), 0)
+        self.assertEqual(x3.exact_value(got[("residual", "202401")]), 0)
+
+    def test_inputs_pair_with_evidence(self):
+        # 자료 계약 §2.3.4: inputs(계산에 쓴 입력값)와 evidence_ids(그 입력값이 나온 행)가 짝이다
+        within = by_key(run(*ORACLE_A))[("within_effect", "202401")]
+        values = within["inputs"]["hs10_values"]
+        self.assertEqual(values, {A: {"V_0": 500, "Q_0": 50, "V_1": 200, "Q_1": 20},
+                                  B: {"V_0": 100, "Q_0": 50, "V_1": 160, "Q_1": 80}})
+        self.assertEqual({k: within["inputs"][k] for k in ("V_0", "Q_0", "V_1", "Q_1")},
+                         {"V_0": 600, "Q_0": 100, "V_1": 360, "Q_1": 100})
+        for month in ("202301", "202401"):
+            self.assertIn(SNAP + "p" + month, within["evidence_ids"])
+            for code in values:
+                self.assertIn(SNAP + month + code, within["evidence_ids"])
+
+    def test_null_and_mismatched_objects(self):
+        out = run([parent_row("202301", 600, 100), parent_row("202401", 360, 100)],
+                  ORACLE_A[1][:2] + [child_status("202401", "REQUEST_FAILED")])
+        missing = by_key(out)[("within_effect", "202401")]
+        self.assertIsNone(x3.exact_value(missing))
+        self.assertEqual(missing["inputs"]["hs10_values"][A], {"V_0": 500, "Q_0": 50, "V_1": None, "Q_1": None})
+        good = by_key(run(*ORACLE_A))[("mix_effect", "202401")]
+        with self.assertRaises(ValueError):
+            x3.exact_value({**good, "value": Decimal("-2.39")})
+        changed = {**good["inputs"], "hs10_values": {**good["inputs"]["hs10_values"],
+                                                      A: {"V_0": 500, "Q_0": 50, "V_1": 200, "Q_1": 40}}}
+        with self.assertRaises(ValueError):
+            x3.exact_value({**good, "inputs": changed})
+        with self.assertRaises(ValueError):
+            x3.exact_value({**good, "inputs": {**good["inputs"], "metric": "s"}})
 
 
 class RejectTest(unittest.TestCase):
@@ -172,9 +252,12 @@ class RejectTest(unittest.TestCase):
         for name, rows in cases.items():
             with self.subTest(name=name), self.assertRaises(ValueError):
                 run(parent, rows)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # weight_rounding_kg 누락
+            x3.run({"snapshot_id": SNAPSHOT, "hs6": "850450", "partner": "CN", "period": "202401",
+                    "baseline_period": "202301", "parent": parent, "children": children})
+        with self.assertRaises(ValueError):  # snapshot_id 누락
             x3.run({"hs6": "850450", "partner": "CN", "period": "202401", "baseline_period": "202301",
-                    "parent": parent, "children": children})
+                    "parent": parent, "children": children, "weight_rounding_kg": Decimal("0.5")})
         with self.assertRaises(TypeError):
             run(parent, children, rounding_kg=0.5)
         with self.assertRaises(ValueError):
