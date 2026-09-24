@@ -161,7 +161,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 
 인수물(한 트랙이 다른 트랙에 넘기는 자료나 모듈)은 다음과 같다. 괄호 안은 `docs/plan/ROADMAP.md` §2의 구현 작업 ID다.
 
-- 자료 접근층 `src/tradesentry/dal/`와 자료 계약 구현 `src/tradesentry/contract/`·`src/tradesentry/snapshot/`(DT1)
+- 자료 접근층 `src/tradesentry/dal/`과 자료 계약 구현 `src/tradesentry/contract/`·`src/tradesentry/snapshot/`(DT1)
 - 지표 계산 `src/tradesentry/metrics/`(DT2)
 - 합성 시험자료 `controlled_fixture_v0`(DT3)
 - dev20(`eval/dev/dev20/`의 입력과 정답표, DT5)
@@ -602,7 +602,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 ### 10.3 비밀값·로컬 경로 검사
 
 - PR마다, 그리고 2026-09-27(일) 공개 준비 때 비밀값·로컬 경로 검사(NVIDIA API 키 접두어, 공공데이터포털 서비스키 요청 파라미터, 로컬 절대경로를 찾는 검사. 실제 패턴 문자열은 검사 스크립트에만 두고 문서에는 적지 않는다)를 돌린다. 명령과 종료 코드를 PR에 남긴다.
-- 커밋하는 증거물, 곧 승격한 실행 폴더(평가 결과 `artifacts/eval/score-{시각}/`, 자기채점 `artifacts/scorecard/scorecard-{시각}/`, OpenShell 증거 `artifacts/openshell/openshell_violation_tests-{시각}/`. 그 안의 감사 로그 발췌와 라이브 정책 조회 본문 포함)와 trace 발췌도 커밋 전에 같은 검사를 거친다. 승격은 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 종류마다 정한 커밋 증거 파일만 복사해 커밋하는 일이다. trace는 복사하지 않고, 봉인 묶음은 정답 대조 채점이 끝난 뒤에만 복사한다(자료 계약 §10.3).
+- 커밋하는 증거물, 곧 승격한 증거 폴더(평가 결과 `artifacts/eval/score-{시각}/`, 자기채점 `artifacts/scorecard/scorecard-{시각}/`, OpenShell 증거 `artifacts/openshell/openshell_violation_tests-{시각}/`. 그 안의 감사 로그 발췌와 라이브 정책 조회 본문 포함)와 trace 발췌도 커밋 전에 같은 검사를 거친다. 승격은 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 종류마다 정한 커밋 증거 파일만 복사해 커밋하는 일이다. trace는 복사하지 않고, 봉인 묶음은 정답 대조 채점이 끝난 뒤에만 복사한다(자료 계약 §10.3).
 - 도메인 출력 `outputs/`(실행 폴더 `outputs/{실행명}/`와 봉인 묶음 실행의 `outputs/sealed/{실행명}/`)는 커밋하지 않는다 `[사실: .gitignore]`. 실행명은 `{실행 이름}-{yymmddhhmmss}`다.
 
 ## 용어 설명
