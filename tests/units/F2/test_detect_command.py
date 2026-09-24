@@ -5,7 +5,8 @@
   configs/policy_dev.json, dev-0.1) → 단위 K3(정본 빌드를 읽기 전용으로 연다) → 어댑터 → 단위 X1·X2(X4) → 단위 P1 → 단위 P2
   → 출력 파일.
 - 자료: tests/units/F2/detect_fixture.py가 수집기 코드와 단위 S2로 만든 합성 스냅샷(source_kind controlled). 실제 통계가
-  아니다. 실자료 거부 시험은 단위 S2 시험 도우미의 원천(source_kind real)을 쓴다. 실자료 스냅샷 v1·v2로는 돌리지 않는다.
+  아니다. 실자료 거부 시험은 같은 본 스냅샷을 source_kind real로 만든 것(값은 합성, 출처 종류만 real)을 쓴다. 실자료 스냅샷
+  v1·v2로는 돌리지 않는다.
 - 바꾸는 것은 위치 셋뿐이다: 스냅샷들의 뿌리(dal.query.SNAPSHOTS_ROOT), CLI 실행 폴더의 부모(dispatch.OUTPUT_PARENT, detect를
   부를 때마다 새 폴더), 최소 기준 시험의 정책 폴더(contract.policy_load.CONFIGS_DIR). 모두 임시 폴더다. 저장소의 data/·
   outputs/·configs/는 건드리지 않는다.
@@ -28,7 +29,6 @@ from tradesentry.dal import query
 from tradesentry.metrics import rounding, share, unit_value
 from tradesentry.policy import case_build, trigger
 
-from ..S2 import fixture_snapshot as s2_fixture
 from . import detect_fixture as df
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -36,6 +36,7 @@ T, N = "TRIGGERED", "NOT_TRIGGERED"
 BASELINE = {"202401": "202301", "202402": "202302"}
 MAIN_ID = df.MAIN["config"]["snapshot_id"]
 GAP_ID = df.WORLD_GAP["config"]["snapshot_id"]
+DETECT_FILE_DOMAIN = "policy_case_build"  # 출력 파일 도메인명: docs/plan/UNITS.md §3.4 P2 행 글자 그대로(코드 상수를 쓰지 않는다)
 ORACLE_OF = {"CN": "A-composition", "JP": "B-residual", "DE": "C-missing-hs10"}  # 합성 계열 ↔ oracle 사례
 
 
@@ -96,6 +97,7 @@ class DetectCase(unittest.TestCase):
     SPEC = df.MAIN
     BUILD_POLICY: dict | None = df.PROMOTION_POLICY
     SOURCE_KIND = "controlled"
+    PEER_ROWS: list[dict] | None = None
     snapshots: Path
 
     @classmethod
@@ -104,7 +106,7 @@ class DetectCase(unittest.TestCase):
         folder = tempfile.TemporaryDirectory()
         cls.addClassCleanup(folder.cleanup)
         cls.snapshots = df.install(Path(folder.name), cls.SPEC, source_kind=cls.SOURCE_KIND,
-                                   build_policy=cls.BUILD_POLICY)
+                                   build_policy=cls.BUILD_POLICY, peer_rows=cls.PEER_ROWS)
 
     def setUp(self):
         super().setUp()
@@ -130,7 +132,7 @@ class DetectCase(unittest.TestCase):
     def output(self, run_dir: Path, out: str) -> dict:
         """실행 폴더의 출력 파일 하나(policy_case_build-{시각}.json)를 읽는다. 표준 출력은 그 상대경로 한 줄이다."""
         stamp = run_dir.name.split("-", 1)[1]
-        name = f"{dispatch.DETECT_DOMAIN}-{stamp}.json"
+        name = f"{DETECT_FILE_DOMAIN}-{stamp}.json"
         self.assertEqual(sorted(p.name for p in run_dir.iterdir()), [name])
         self.assertEqual(out, f"outputs/{run_dir.name}/{name}\n")
         text = (run_dir / name).read_text(encoding="utf-8")
@@ -233,6 +235,51 @@ class DetectAssemblyTest(DetectCase):
         self.assertIn("배선 계약 위반", err)
         self.assertEqual(list(run_dir.iterdir()), [])
 
+    def test_world_rebuild_mismatch_is_a_wiring_error(self):
+        """ALL 근거 행으로 다시 만든 HS10 행의 금액 합이 K3 world 값과 다르면 배선 계약 위반(4)이고 출력 파일을 쓰지 않는다.
+        K3 world_series의 OBSERVED 금액만 두 배로 바꾸고 근거 ID·코드 목록은 그대로 둔다."""
+        real_world_series = query.Snapshot.world_series  # 대역을 걸기 전의 진짜(대역 안에서 부른다)
+
+        def doubled(snap, *args, **kwargs):
+            values = real_world_series(snap, *args, **kwargs)
+            return [{**v, "amount_usd": v["amount_usd"] * 2} if v["observation_status"] == "OBSERVED" else v
+                    for v in values]
+
+        with mock.patch.object(query.Snapshot, "world_series", autospec=True, side_effect=doubled) as world, \
+                mock.patch.object(trigger, "run", wraps=trigger.run) as p1:
+            code, out, err, run_dir = self.detect()
+        self.assertGreater(world.call_count, 0)
+        self.assertEqual((code, out), (dispatch.EXIT_WIRING, ""))
+        self.assertIn("배선 계약 위반", err)
+        self.assertIn("K3 world", err)
+        self.assertEqual(p1.call_count, 0)  # 지표·판정 전에 멈춘다
+        self.assertEqual(list(run_dir.iterdir()), [])
+
+    def test_metric_symbol_must_appear_exactly_once(self):
+        """지표 단위 출력에 P1에 넘길 기호(r_U)가 없거나 둘이면 배선 계약 위반(4)이고 출력 파일을 쓰지 않는다."""
+        real_x1 = unit_value.run  # 대역을 걸기 전의 진짜(대역 안에서 부른다)
+
+        def without_r_u(inp):
+            output = real_x1(inp)
+            return {**output, "metrics": [m for m in output["metrics"] if m["inputs"].get("metric") != "r_U"]}
+
+        def twice_r_u(inp):
+            output = real_x1(inp)
+            return {**output, "metrics": output["metrics"] + [m for m in output["metrics"]
+                                                             if m["inputs"].get("metric") == "r_U"]}
+
+        for name, fake in (("missing", without_r_u), ("duplicated", twice_r_u)):
+            with self.subTest(r_U=name):
+                with mock.patch.object(unit_value, "run", side_effect=fake) as x1, \
+                        mock.patch.object(trigger, "run", wraps=trigger.run) as p1:
+                    code, out, err, run_dir = self.detect()
+                self.assertGreater(x1.call_count, 0)
+                self.assertEqual((code, out), (dispatch.EXIT_WIRING, ""))
+                self.assertIn("배선 계약 위반", err)
+                self.assertIn("r_U 지표가 하나가 아니다", err)
+                self.assertEqual(p1.call_count, 0)
+                self.assertEqual(list(run_dir.iterdir()), [])
+
     def test_policy_error_stops_before_the_snapshot(self):
         """정책을 읽지 못하면 스냅샷을 열지 않고 1로 끝난다. 오류 문장에는 받은 값을 넣지 않는다."""
         empty = self.root / "no_configs"
@@ -269,53 +316,61 @@ class WorldGapTest(DetectCase):
             "data_quality": [quality("CN", "202401", "share"), quality("CN", "202402", "share")]})
 
 
-class RealSnapshotRefusalTest(unittest.TestCase):
-    """실자료 스냅샷(source_kind가 controlled가 아님)은 K3로 값을 읽거나 지표를 계산하기 전에 거부하고 1로 끝난다.
+class OtherPartnerTest(DetectCase):
+    """비교국 표가 가리키는 계획 밖 국가(K3 scope의 other_partners)는 탐지 계열에 넣지 않는다. 계열은 수집 설정의 HS6 × 상대국."""
 
-    자료는 단위 S2 시험 도우미의 합성 원천이다. 값은 합성이지만 수집기 메타의 source_kind가 real이라 실자료로 다룬다.
+    SPEC = df.OTHER_PARTNER
+    BUILD_POLICY = None
+    PEER_ROWS = df.OTHER_PEER_ROWS
+
+    def test_out_of_plan_peer_is_not_a_detection_series(self):
+        with query.open_snapshot(df.OTHER_PARTNER["config"]["snapshot_id"]) as snap:
+            # 시험이 공허하지 않다: 계획 밖 국가가 스냅샷에 있고, K3가 그 국가의 부모 값을 조회할 수 있다
+            self.assertEqual(snap.scope()["other_partners"], [df.OTHER_PEER])
+            self.assertEqual(len(snap.parent_series(df.HS6, df.OTHER_PEER)), len(snap.months))
+        with mock.patch.object(trigger, "run", wraps=trigger.run) as p1:
+            code, out, err, run_dir = self.detect()
+        self.assertEqual((code, err), (0, ""))
+        [p1_call] = p1.call_args_list
+        self.assertEqual(sorted((row["partner"], row["month"]) for row in p1_call.args[0]["rows"]),
+                         [("CN", "202401"), ("CN", "202402")])
+        result = self.output(run_dir, out)
+        self.assertEqual({c["partner"] for c in result["cases"]} | {q["partner"] for q in result["data_quality"]},
+                         {"CN"})
+
+
+class RealSnapshotRefusalTest(DetectCase):
+    """실자료 스냅샷(source_kind가 controlled가 아님)은 K3로 관측 값을 읽거나 지표를 계산하기 전에 거부하고 1로 끝난다.
+
+    자료는 본 스냅샷(13개월 이상, 비교월 쌍이 있다)을 source_kind real로 만든 것이다. 값은 합성이고 수집기 메타의 출처
+    종류만 real이다. 거부가 없었다면 탐지할 계열·비교월 쌍이 있음을 먼저 단언해 "호출 0"이 공허하지 않게 한다.
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        folder = tempfile.TemporaryDirectory()
-        cls.addClassCleanup(folder.cleanup)
-        cls.snapshots = Path(folder.name) / "snapshots"
-        s2_fixture.install_fixture_build(cls.snapshots)
-
-    def setUp(self):
-        super().setUp()
-        folder = tempfile.TemporaryDirectory()
-        self.addCleanup(folder.cleanup)
-        self.outputs = Path(folder.name) / "outputs"
-        for target, name, value in ((query, "SNAPSHOTS_ROOT", self.snapshots), (dispatch, "OUTPUT_PARENT", self.outputs)):
-            patcher = mock.patch.object(target, name, value)
-            patcher.start()
-            self.addCleanup(patcher.stop)
+    SOURCE_KIND = "real"
 
     def test_real_snapshot_is_refused_before_any_value_is_read(self):
-        with query.open_snapshot(s2_fixture.SNAPSHOT_ID) as snap:
+        with query.open_snapshot(MAIN_ID) as snap:
             self.assertEqual(snap.source_kind, "real")
-        never = {
-            "K3 parent_series": mock.patch.object(query.Snapshot, "parent_series", autospec=True),
-            "K3 world_series": mock.patch.object(query.Snapshot, "world_series", autospec=True),
-            "K3 children": mock.patch.object(query.Snapshot, "children", autospec=True),
-            "K3 resolve": mock.patch.object(query.Snapshot, "resolve", autospec=True),
-            "X1 run": mock.patch.object(unit_value, "run"),
-            "X2 run": mock.patch.object(share, "run"),
-            "P1 run": mock.patch.object(trigger, "run"),
-            "P2 run": mock.patch.object(case_build, "run"),
-        }
+            pairs, series = dispatch.detect_pairs(snap.months), dispatch.detect_series(snap)
+        self.assertEqual(pairs, [("202401", "202301"), ("202402", "202302")])  # 거부가 없으면 탐지할 비교월 쌍
+        self.assertEqual(len(series), 10)  # 거부가 없으면 탐지할 계열(계열 10 × 비교월 2 = P1 행 20)
+        # 진짜를 부르면서 호출만 센다(spy). 거부 순서가 틀리면 실제 호출 횟수가 0이 아니게 나온다.
+        spies = {f"K3 {name}": mock.patch.object(query.Snapshot, name, autospec=True,
+                                                 side_effect=getattr(query.Snapshot, name))
+                 for name in ("_rows", "row", "parent_series", "parent", "world_series", "world", "children", "peers",
+                              "resolve")}
+        spies.update({"X1 run": mock.patch.object(unit_value, "run", wraps=unit_value.run),
+                      "X2 run": mock.patch.object(share, "run", wraps=share.run),
+                      "P1 run": mock.patch.object(trigger, "run", wraps=trigger.run),
+                      "P2 run": mock.patch.object(case_build, "run", wraps=case_build.run)})
         with contextlib.ExitStack() as stack:
-            mocks = {name: stack.enter_context(patcher) for name, patcher in never.items()}
-            code, out, err = call(["detect", "--snapshot", s2_fixture.SNAPSHOT_ID, "--policy", "dev-0.1"])
+            mocks = {name: stack.enter_context(patcher) for name, patcher in spies.items()}
+            code, out, err, run_dir = self.detect()
         self.assertEqual((code, out), (dispatch.EXIT_FAILED, ""))
         self.assertEqual(err, dispatch.DETECT_REFUSAL + "\n")
-        self.assertNotIn(s2_fixture.SNAPSHOT_ID, err)  # 받은 값을 되풀이하지 않는다
-        self.assertEqual({name: m.call_count for name, m in mocks.items()}, dict.fromkeys(never, 0))
-        [run_dir] = list(self.outputs.iterdir())
+        self.assertNotIn(MAIN_ID, err)  # 받은 값을 되풀이하지 않는다
+        self.assertEqual({name: m.call_count for name, m in mocks.items()}, dict.fromkeys(spies, 0))
         self.assertEqual(list(run_dir.iterdir()), [])  # 확보한 빈 실행 폴더만 남는다
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -4,7 +4,8 @@
 - 수집기 코드(src/tradesentry/ingest.py의 build_manifest·open_snapshot·store_result)로 수집기 형식 원천(manifest·raw·
   수집기 SQLite)을 만들고, 단위 S2(build_snapshot·install_build)로 빌드해 정본 자리(스냅샷 폴더의 snapshot_build.sqlite)에
   둔다. 수집기가 쓰는 폴더(ingest.SNAP_DIR)와 시각(ingest.now_iso)은 만드는 동안만 바꾼다. 네트워크는 부르지 않는다.
-- 출처 종류(source_kind)는 controlled(합성)다. S2 도우미의 원천은 real로 만들어져 실자료 거부 시험에 쓴다.
+- 출처 종류(source_kind)는 기본이 controlled(합성)다. 실자료 거부 시험은 같은 본 스냅샷을 source_kind real로 만들어
+  쓴다(값은 합성이고 수집기 메타의 출처 종류만 real이다).
 - 기간이 13개월 이상이면 수집기가 요청을 연도 구간으로 나누므로 응답은 (엔드포인트, hsSgn, 상대국, 구간 시작 달)마다 정한다.
   응답에는 그 요청 구간의 달만 넣는다.
 
@@ -28,8 +29,13 @@
 
 작은 스냅샷 as1_detect_world_gap(상대국 CN 하나): 2024 구간의 품목별 API 두 요청이 실패해 ALL 분모가 202401·202402에
 빠진다(REQUEST_FAILED). 부모 값은 CN과 같다.
+
+작은 스냅샷 as1_detect_other_partner(상대국 CN 하나): 합성 비교국 표(OTHER_PEER_ROWS)가 CN의 비교국으로 계획 밖 국가
+GB를 가리킨다. 빌드가 GB의 NOT_COLLECTED 상태 행을 넣고 K3 scope의 other_partners가 ["GB"]가 된다. 탐지 계열은
+수집 설정의 상대국(CN)뿐이어야 한다.
 """
 import copy
+import csv
 import json
 from decimal import Decimal
 from pathlib import Path
@@ -107,6 +113,26 @@ WORLD_GAP = {
 }
 
 
+OTHER_PARTNER = {**WORLD_GAP, "config": _config("as1_detect_other_partner", ["CN"]), "world": MAIN["world"], "failed": set()}
+OTHER_PEER = "GB"  # 수집 계획 밖 비교국(합성 비교국 표에만 있다)
+OTHER_PEER_ROWS = [{  # 계약 §2.3.6 필드 17개. 값은 합성이다
+    "entity_type": "exporter_country", "entity_id": "CN", "entity_namespace": "KCS_cntyCd", "baci_country_code": "null",
+    "scope_type": "hs6", "scope_id": HS6, "peer_rank": "1", "peer_id": OTHER_PEER, "similarity": "null",
+    "community_id": "null", "method": "import_value_topk", "grouping_version": "g0", "params_hash": "a" * 64,
+    "source_version": "as1_detect_other_partner", "source_year": "2023", "input_sha256": "b" * 64,
+    "generated_at": "2026-09-25T00:00:00+09:00"}]
+
+
+def write_peer_group(path: Path, rows: list[dict]) -> Path:
+    """합성 비교국 표 CSV(열 = 계약 §2.3.6 필드 17개)를 쓰고 그 경로를 돌려준다."""
+    from tradesentry.contract import types
+
+    with open(path, "w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=list(types.PEER_GROUP_KEYS))
+        writer.writeheader()
+        writer.writerows(rows)
+    return Path(path)
+
 def _item(month: str, code: str, amount: int, weight: int, partner: str | None) -> dict:
     item = {"year": f"{month[:4]}.{month[4:]}", "impDlr": str(amount), "impWgt": str(weight), "expDlr": "0",
             "expWgt": "0", "statKor": "시험 품목"}
@@ -177,8 +203,10 @@ def make_source(root: Path, spec: dict, *, source_kind: str = "controlled") -> P
     return folder
 
 
-def install(root: Path, spec: dict, *, source_kind: str = "controlled", build_policy: dict | None = None) -> Path:
+def install(root: Path, spec: dict, *, source_kind: str = "controlled", build_policy: dict | None = None,
+            peer_rows: list[dict] | None = None) -> Path:
     """원천을 만들고 단위 S2로 빌드해 정본 자리(root/snapshots/{snapshot_id}/snapshot_build.sqlite)에 둔다.
+    peer_rows가 있으면 그 합성 비교국 표를 빌드에 넣는다.
 
     스냅샷들의 뿌리(dal.query.SNAPSHOTS_ROOT로 쓸 폴더) root/snapshots를 돌려준다.
     """
@@ -186,7 +214,8 @@ def install(root: Path, spec: dict, *, source_kind: str = "controlled", build_po
     folder = make_source(snapshots, spec, source_kind=source_kind)
     out = Path(root) / f"build-{spec['config']['snapshot_id']}"
     out.mkdir(parents=True)
+    peer_files = [write_peer_group(Path(root) / "peer_group.csv", peer_rows)] if peer_rows else []
     build.build_snapshot(spec["config"]["snapshot_id"], out_dir=out, stamp=STAMP, source_dir=folder,
-                         policy=None if build_policy is None else parse_policy(build_policy))
+                         policy=None if build_policy is None else parse_policy(build_policy), peer_group_files=peer_files)
     build.install_build(out / f"snapshot_build-{STAMP}.sqlite", folder)
     return snapshots
