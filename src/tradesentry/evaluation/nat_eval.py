@@ -12,7 +12,10 @@
 
 평가 묶음 하나의 사례 실행 폴더에 남은 NAT 프로파일 결과와 실행 기록에서, 정답 없이 계산할 수 있는 지표만 묶음 요약으로
 낸다. 정답 대조(채점기와 겹치는 항목)는 하지 않는다. 이 요약이 실행 조건 입력 파일의 nat_profile_summary로 간다.
-- 실행 기록에서: 실행 수, 모드별 모델 요청 수·토큰(입력 + 출력)·경과 시간(wall_ms)의 중앙값과 범위.
+- 실행 기록에서: 모드별 실행 수와 실행 상태별 건수, COMPLETED 줄의 모델 요청 수·토큰(입력 + 출력)·경과 시간(wall_ms)의
+  중앙값과 범위(참고값. 비용의 정본은 채점기 요약의 비용 칸이다. 하네스 실패 줄의 0이 섞이지 않게 COMPLETED만 쓴다).
+- NAT 실행 추적 파일(nat_trace.jsonl)이 있는 실행 수와 WORKFLOW_END까지 남은 실행 수(MVP 체크리스트 7번 "추적과 프로파일").
+- "사후 평가"는 NAT 프로파일러 산출물을 끝난 뒤 모으는 일이다. NAT 평가 기능(nat eval)은 쓰지 않는다.
 - NAT 프로파일에서(사례 실행 폴더 안 workflow_nat_wrap-{시각}/, 단위 I13이 NAT가 정한 이름 그대로 쓴 파일 5개):
   모델 요청 구간 수(LLM_END)와 그 시간 합, NAT가 센 토큰, 도구 구간 수(TOOL_END), 흐름 전체 시간(WORKFLOW_START →
   WORKFLOW_END), 단계별 구간 수(SPAN_START의 이름: basic·critic·revision·final, 그 밖은 other). 이 값들은
@@ -39,6 +42,7 @@ NAT_DIR_DOMAIN = "workflow_nat_wrap"  # 단위 I13의 도메인명(N7 폴더)
 PROFILE_FILES = ("all_requests_profiler_traces.json", "inference_optimization.json", "standardized_data_all.csv",
                  "workflow_profiling_metrics.json", "workflow_profiling_report.txt")  # 단위 I13 PROFILE_FILES
 TRACES_FILE = PROFILE_FILES[0]
+NAT_TRACE_NAME = "nat_trace.jsonl"  # 단위 I13 NAT_TRACE_NAME(NAT 실행 추적)
 BATCH_DOMAINS = {"evaluate": "evaluation_batch_run"}
 STAGES = ("basic", "critic", "revision", "final")  # 단위 L1 단계 이름
 OTHER_STAGE = "other"
@@ -81,7 +85,9 @@ def profile_facts(nat_dir: Path) -> dict | None:
     if nat_dir.is_symlink() or not nat_dir.is_dir():
         return None
     files = sum(1 for name in PROFILE_FILES if (nat_dir / name).is_file() and not (nat_dir / name).is_symlink())
-    facts: dict = {"files": files, **{k: None for k in FACT_KEYS}, "stage_spans": {s: 0 for s in STAGES + (OTHER_STAGE,)}}
+    nat_trace = (nat_dir / NAT_TRACE_NAME).is_file() and not (nat_dir / NAT_TRACE_NAME).is_symlink()
+    facts: dict = {"files": files, "nat_trace": nat_trace, "workflow_end": False, **{k: None for k in FACT_KEYS},
+                   "stage_spans": {s: 0 for s in STAGES + (OTHER_STAGE,)}}
     doc = _load(nat_dir / TRACES_FILE)
     if not isinstance(doc, list):
         return facts
@@ -110,7 +116,7 @@ def profile_facts(nat_dir: Path) -> dict | None:
                 start = stamp
             elif kind == "WORKFLOW_END":
                 end = stamp
-    facts.update(llm_calls=llm_calls, llm_ms=llm_ms, nat_tokens=tokens, tool_calls=tools,
+    facts.update(llm_calls=llm_calls, llm_ms=llm_ms, nat_tokens=tokens, tool_calls=tools, workflow_end=end is not None,
                  workflow_ms=_ms(start, end) if start is not None and end is not None else None)
     return facts
 
@@ -146,16 +152,19 @@ def summarize(runs: list) -> dict:
         if not mine:
             continue
         profiled = [r["profile"] for r in mine if isinstance(r["profile"], dict)]
+        done = [r for r in mine if r["execution_status"] == "COMPLETED"]  # 실행 기록 비용은 COMPLETED 줄만(참고값)
+        statuses = {s: sum(1 for r in mine if r["execution_status"] == s) for s in types.EXECUTION_STATUSES}
         spans = {s: sum(_count(p.get("stage_spans", {}).get(s)) for p in profiled) for s in STAGES + (OTHER_STAGE,)}
         tokens = [r["tokens_in"] + r["tokens_out"] if all(isinstance(r[k], int) and not isinstance(r[k], bool)
                                                          for k in ("tokens_in", "tokens_out")) else None
-                  for r in mine]
+                  for r in done]
         by_mode[mode] = {
             "runs": len(mine),
             "runs_with_profile": len(profiled),
-            "model_requests": _stat([r["model_requests"] for r in mine]),
+            "execution_status": statuses,
+            "model_requests": _stat([r["model_requests"] for r in done]),
             "tokens": _stat(tokens),
-            "wall_ms": _stat([r["wall_ms"] for r in mine]),
+            "wall_ms": _stat([r["wall_ms"] for r in done]),
             "nat_llm_calls": _stat([p.get("llm_calls") for p in profiled]),
             "nat_llm_ms": _stat([p.get("llm_ms") for p in profiled]),
             "nat_tokens": _stat([p.get("nat_tokens") for p in profiled]),
@@ -166,6 +175,8 @@ def summarize(runs: list) -> dict:
     profiled_all = [r["profile"] for r in runs if isinstance(r["profile"], dict)]
     return {"runs": len(runs), "runs_with_profile": len(profiled_all),
             "profile_files_complete": sum(1 for p in profiled_all if p.get("files") == len(PROFILE_FILES)),
+            "runs_with_nat_trace": sum(1 for p in profiled_all if p.get("nat_trace") is True),
+            "runs_workflow_end": sum(1 for p in profiled_all if p.get("workflow_end") is True),
             "by_mode": by_mode}
 
 
@@ -184,13 +195,25 @@ def _batch_lines(batch_dir: Path) -> list:
     return lines
 
 
+def sealed_place(run_dir: Path) -> bool:
+    """실행 폴더가 봉인 자리(outputs/sealed/ 아래)인가. 단위 E1 batch_run.sealed_place와 같은 규칙(옮겨 적음)."""
+    try:
+        paths = (run_dir.absolute(), run_dir.resolve())
+    except (OSError, RuntimeError):
+        return True
+    for path in paths:
+        for ancestor in path.parents:
+            name = ancestor.name.lower()
+            if name == "sealed":
+                return True
+            if name == "outputs":
+                break
+    return False
+
+
 def summarize_batch(batch_dir: Path) -> dict:
     """평가 묶음 실행 폴더 하나의 NAT 사후 평가 요약. 사례 실행 폴더는 묶음 폴더의 형제(run_id 이름)다."""
-    try:
-        resolved = batch_dir.resolve()
-    except (OSError, RuntimeError):
-        raise NatEvalError("묶음 실행 폴더를 풀 수 없다") from None
-    if "sealed" in (batch_dir.parent.name.lower(), resolved.parent.name.lower()):
+    if sealed_place(batch_dir):
         raise NatEvalError("봉인 묶음의 NAT 프로파일은 금지 해제 조건 전에 읽지 않는다(자료 계약 §10.3 N10)")
     runs = []
     for line in _batch_lines(batch_dir):

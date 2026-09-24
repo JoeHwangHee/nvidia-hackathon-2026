@@ -25,22 +25,28 @@ class ProfileFactsTest(unittest.TestCase):
         hf.write_profile(nat_dir, llm=[(1200, 2800, 80), (2400, 3000, 150)], spans=["basic", "critic", "Revision"],
                          workflow_ms=6000, tools=3)
         facts = nat_eval.profile_facts(nat_dir)
-        self.assertEqual(facts, {"files": 5, "llm_calls": 2, "llm_ms": 3600, "nat_tokens": 6030, "tool_calls": 3,
+        self.assertEqual(facts, {"files": 5, "nat_trace": True, "workflow_end": True, "llm_calls": 2, "llm_ms": 3600, "nat_tokens": 6030, "tool_calls": 3,
                                  "workflow_ms": 6000,
                                  "stage_spans": {"basic": 1, "critic": 1, "revision": 0, "final": 0, "other": 1}})
 
     def test_missing_or_broken_files(self):
         self.assertIsNone(nat_eval.profile_facts(self.root / "none"))
         nat_dir = self.root / "workflow_nat_wrap-260925100000"
-        hf.write_profile(nat_dir, llm=[], spans=[], workflow_ms=10, files=hf.PROFILE_FILES[1:])
+        hf.write_profile(nat_dir, llm=[], spans=[], workflow_ms=10, files=hf.PROFILE_FILES[1:], nat_trace=False)
         facts = nat_eval.profile_facts(nat_dir)
-        self.assertEqual((facts["files"], facts["llm_calls"], facts["workflow_ms"]), (4, None, None))
+        self.assertEqual((facts["files"], facts["llm_calls"], facts["workflow_ms"], facts["nat_trace"],
+                          facts["workflow_end"]), (4, None, None, False, False))
+        other = self.root / "workflow_nat_wrap-260925100001"
+        hf.write_profile(other, llm=[(10, 1, 1)], spans=["basic"], workflow_ms=10, workflow_end=False)
+        self.assertEqual((nat_eval.profile_facts(other)["workflow_end"], nat_eval.profile_facts(other)["workflow_ms"]),
+                         (False, None))  # 끝 이벤트가 빠진 실행(NAT stop()이 남은 쓰기를 기다리지 않은 경우)
         (nat_dir / "all_requests_profiler_traces.json").write_text("{not json", encoding="utf-8")
         self.assertEqual(nat_eval.profile_facts(nat_dir)["llm_calls"], None)
 
     def test_names_match_unit_i13(self):
         self.assertEqual(nat_eval.NAT_DIR_DOMAIN, nat_wrap.DOMAIN)
         self.assertEqual(nat_eval.PROFILE_FILES, nat_wrap.PROFILE_FILES)
+        self.assertEqual(nat_eval.NAT_TRACE_NAME, nat_wrap.NAT_TRACE_NAME)
         self.assertEqual(hf.PROFILE_FILES, nat_wrap.PROFILE_FILES)
 
 
@@ -63,6 +69,7 @@ class BatchSummaryTest(unittest.TestCase):
         # 프로파일: checklist 밖 모드의 ok·infra 사례(raise 사례 2줄은 프로파일을 쓰지 않았다)
         self.assertEqual(summary["runs_with_profile"], 38)
         self.assertEqual(summary["profile_files_complete"], 38)
+        self.assertEqual((summary["runs_with_nat_trace"], summary["runs_workflow_end"]), (38, 38))
         self.assertEqual(list(summary["by_mode"]), ["checklist", "agent", "full"])
         full = summary["by_mode"]["full"]
         self.assertEqual((full["runs"], full["runs_with_profile"]), (20, 19))
@@ -71,6 +78,10 @@ class BatchSummaryTest(unittest.TestCase):
         self.assertEqual(full["stage_spans"], {"basic": 19, "critic": 19, "revision": 0, "final": 0, "other": 0})
         self.assertEqual(summary["by_mode"]["checklist"]["model_requests"], {"median": 0, "min": 0, "max": 0})
         self.assertEqual(summary["by_mode"]["agent"]["wall_ms"]["max"], 40000)
+        # 비용 칸은 COMPLETED 줄만 센다(하네스 실패 줄의 0이 섞이지 않는다). full: infra 1줄·raise 1줄은 빠진다
+        self.assertEqual(full["execution_status"]["COMPLETED"], 18)
+        self.assertEqual(full["model_requests"], {"median": 4, "min": 4, "max": 4})
+        self.assertEqual(full["wall_ms"]["min"], 40000)
 
     def test_summary_is_safe_for_the_run_conditions_file(self):
         summary = nat_eval.summarize_batch(self.result.run_dir)
@@ -94,6 +105,11 @@ class BatchSummaryTest(unittest.TestCase):
         alias.symlink_to(sealed, target_is_directory=True)
         with self.assertRaises(nat_eval.NatEvalError):  # 심볼릭 링크로 봉인 자리에 닿아도 읽지 않는다
             nat_eval.summarize_batch(alias / moved.name)
+        nested = sealed / "holdout40"
+        nested.mkdir()
+        os.rename(moved, nested / moved.name)
+        with self.assertRaises(nat_eval.NatEvalError):  # outputs/sealed/ 아래 한 단계 더 들어가도 읽지 않는다
+            nat_eval.summarize_batch(nested / moved.name)
 
     def test_bad_input(self):
         for bad in ({"runs": [{"mode": "fast"}]}, {"runs": "x"}, {"lines": []}):

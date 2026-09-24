@@ -133,7 +133,8 @@ def failed_record(call: batch_run.CaseCall, code: str = cause_codes.PROVIDER_HTT
 
 
 def write_profile(nat_dir: Path, *, llm: list[tuple[int, int, int]], spans: list[str], workflow_ms: int,
-                  tools: int = 1, files: tuple[str, ...] = PROFILE_FILES) -> None:
+                  tools: int = 1, files: tuple[str, ...] = PROFILE_FILES, nat_trace: bool = True,
+                  workflow_end: bool = True) -> None:
     """NAT 프로파일 폴더를 흉내 낸다(실측 모양: all_requests_profiler_traces.json의 intermediate_steps payload).
     llm은 (지속 ms, 입력 토큰, 출력 토큰) 목록, spans는 단계 이름 목록이다. data·metadata는 넣지 않는다."""
     nat_dir.mkdir()
@@ -156,8 +157,11 @@ def write_profile(nat_dir: Path, *, llm: list[tuple[int, int, int]], spans: list
         steps.append({"payload": {"event_type": "TOOL_START", "event_timestamp": t, "name": "get_history"}})
         steps.append({"payload": {"event_type": "TOOL_END", "event_timestamp": t, "span_event_timestamp": t,
                                   "name": "get_history"}})
-    steps.append({"payload": {"event_type": "WORKFLOW_END", "event_timestamp": t0 + Decimal(workflow_ms) / 1000,
-                              "name": "tradesentry_case"}})
+    if workflow_end:
+        steps.append({"payload": {"event_type": "WORKFLOW_END", "event_timestamp": t0 + Decimal(workflow_ms) / 1000,
+                                  "name": "tradesentry_case"}})
+    if nat_trace:
+        (nat_dir / "nat_trace.jsonl").write_text("{}\n", encoding="utf-8")
     for name in files:
         path = nat_dir / name
         if name == "all_requests_profiler_traces.json":
