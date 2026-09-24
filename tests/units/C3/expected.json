@@ -105,7 +105,7 @@
   "execution_status": "COMPLETED",
   "required_evidence_ok": false,
   "numeric_ok": false,
-  "provenance_ok": true,
+  "provenance_ok": false,
   "tool_attempts": 5,
   "model_requests": 4,
   "tokens_in": 3000,

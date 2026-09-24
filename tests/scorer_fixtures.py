@@ -217,6 +217,12 @@ def rulebook_snapshot() -> tuple[Rows, dict[str, object]]:
 
 
 ORACLE_PARTNERS = {"A-composition": "CN", "B-residual": "JP", "C-missing-hs10": "DE"}
+
+
+def oracle_context(case_id: str, grouping_version: str = "g0") -> dict:
+    """oracle 사례의 문맥(단위 C1·C3이 쓰는 대상국·품목·비교월·grouping_version)."""
+    return {"hs6": "850450", "partner": ORACLE_PARTNERS[case_id], "month": "202401",
+            "grouping_version": grouping_version}
 ORACLE_HS10 = {"X1": "8504501010", "X2": "8504501020"}
 ORACLE_MONTHS = {"baseline": "202301", "comparison": "202401"}
 
