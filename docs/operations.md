@@ -21,7 +21,7 @@
 | NIM(NVIDIA 클라우드 추론 API) tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능) 왕복 확인 스크립트 | `docs/plan/DEV_PLAN.md` §3.5 |
 | X1(구현 첫날의 세로형 최소 통합 시험: 설치·기동, 키 주입, NAT(NVIDIA 에이전트 실행 추적·평가 도구 모음) 추적, 차단 로그) | `docs/plan/DEV_PLAN.md` §5.3, `docs/plan/ROADMAP.md` §2.2 |
 | NemoClaw(OpenShell 위에서 에이전트를 돌리는 NVIDIA 참조 스택)가 안 될 때의 대체 경로와 시한 | `docs/plan/DEV_PLAN.md` §5.4, `docs/plan/ROADMAP.md` §7.1 |
-| 공식 스킬과 우리 스킬의 설치·이름 확인 | `docs/eval/SKILL_DICTIONARY.md` §5 |
+| 공식 스킬과 우리 스킬(스킬은 Agent Skills 형식의 에이전트용 작업 절차)의 설치·이름 확인 | `docs/eval/SKILL_DICTIONARY.md` §5 |
 | 성능 평가(사전 점검 → 실행 → 채점 → 결과 보고) | `skills/tradesentry-eval/SKILL.md` |
 | 자기채점 | `skills/tradesentry-scorecard/SKILL.md` |
 | Codex(OpenAI의 코딩 에이전트 CLI) 실행(권한 모드, 환경변수 제거, 제한 시간) | `docs/rules/AGENT_OPS.md` §2.2·§2.4 |

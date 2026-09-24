@@ -24,4 +24,4 @@
 | 모듈 역할과 소유 트랙 | 같은 문서 §10.2·§10.3, `docs/rules/PARALLEL_DEV_RULES.md` §1.2 |
 | 계획된 경로·명령 표 | `docs/rules/DATA_CONTRACT_V1.md` §10 |
 | 앱 폴더 구조처럼 앱 뼈대(S0)에서 정할 설계 | `docs/plan/SCAFFOLD_BRIEF.md` §2.6·§5.2·§5.3 |
-| 평가 흐름(사전 점검 → 실행 → 채점 → 결과 보고)과 봉인 묶음(개발 중 보지 않도록 봉인한 평가 자료 묶음)의 샌드박스 밖 실행기(샌드박스 밖에서 봉인 해시를 대조하고 사례를 샌드박스 안 CLI에 넘기는 프로그램) | `skills/tradesentry-eval/SKILL.md`, `docs/eval/RULEBOOK.md` Part B, `docs/plan/ROADMAP.md` §2.4(MT7) |
+| 평가 흐름(사전 점검 → 실행 → 채점 → 결과 보고)과 봉인 묶음(개발 중 보지 않도록 봉인한 평가 자료 묶음)의 샌드박스 밖 실행기(샌드박스 밖에서 봉인 해시를 대조하고 사례 식별자를 샌드박스 안 CLI에 넘기는 프로그램) | `skills/tradesentry-eval/SKILL.md`, `docs/eval/RULEBOOK.md` Part B, `docs/plan/ROADMAP.md` §2.4(MT7) |
