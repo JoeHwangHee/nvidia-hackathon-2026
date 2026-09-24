@@ -73,13 +73,14 @@ def tools_answer(*names, args=None):
 class FakePorts:
     """Ports에 넣는 가짜 자리. 부른 순서를 남기고, 검사 결과는 정해 둔 차례대로 돌려준다."""
 
-    def __init__(self, checks=None, checklist_status="HOLD", budget_limit=8):
+    def __init__(self, checks=None, checklist_status="HOLD", budget_limit=8, rejected=()):
         self.tool_calls = []
         self.budget_asks = []
         self.checks = list(checks or [])
         self.check_calls = 0
         self.checklist_status = checklist_status
         self.budget_limit = budget_limit
+        self.rejected = list(rejected)
 
     def tool(self, name, args):
         self.tool_calls.append((name, args))
@@ -93,12 +94,13 @@ class FakePorts:
 
     def build_report(self, inp):
         d = inp["draft"]
-        return {"report_id": f"r-{inp['run_id']}", "run_id": inp["run_id"], "case_id": inp["case"]["case_id"],
-                "mode": inp["mode"], "claims": d["claims"], "narrative": d["narrative"], "hypotheses": d["hypotheses"],
-                "review_status": d["review_status"], "signal_status": d["signal_status"],
-                "unresolved_evidence": False, "evidence_ids": EV[:2], "validator_findings": [],
-                "report_hash": "0" * 64, "created_at": "2026-09-25T14:30:15+09:00",
-                "policy_version": inp["case"]["policy_version"], "snapshot_id": SNAP, "grouping_version": "g0"}
+        report = {"report_id": f"r-{inp['run_id']}", "run_id": inp["run_id"], "case_id": inp["case"]["case_id"],
+                  "mode": inp["mode"], "claims": d["claims"], "narrative": d["narrative"], "hypotheses": d["hypotheses"],
+                  "review_status": d["review_status"], "signal_status": d["signal_status"],
+                  "unresolved_evidence": False, "evidence_ids": EV[:2], "validator_findings": [],
+                  "report_hash": "0" * 64, "created_at": "2026-09-25T14:30:15+09:00",
+                  "policy_version": inp["case"]["policy_version"], "snapshot_id": SNAP, "grouping_version": "g0"}
+        return {"report": report, "rejected": list(self.rejected)}
 
     def check_report(self, inp):
         self.check_calls += 1
@@ -125,14 +127,16 @@ BLOCK = {"schema_ok": True, "validator_ok": False, "findings": [{"rule": "unback
 SCHEMA_FAIL = {"schema_ok": False, "validator_ok": False, "findings": [{"rule": "series_claim_missing"}]}
 
 
-def run_case(mode, script, fake=None, *, case=None, elapsed_ms=700, clock=None):
+def run_case(mode, script, fake=None, *, case=None, elapsed_ms=700, clock=None, dataset="controlled_fixture_v0",
+             transport=None):
     """모델 답 목록(script)과 가짜 자리로 사례 1건을 돌린다. (결과, trace 레코드, 가짜 자리, 전송)을 돌려준다."""
     config = mc.load_model_config()
     clock = clock or FakeClock()
     fake = fake or FakePorts()
-    transport = ScriptedTransport(script, clock, elapsed_ms=elapsed_ms) if mode != "checklist" else None
+    if transport is None and mode != "checklist":
+        transport = ScriptedTransport(script, clock, elapsed_ms=elapsed_ms)
     sink = trace_log.MemoryTrace(RUN_ID, clock=trace_log.now_kst)
-    ctx = orchestrate.RunContext(run_id=RUN_ID, case=case or CASE_A, mode=mode, dataset="controlled_fixture_v0",
+    ctx = orchestrate.RunContext(run_id=RUN_ID, case=case or CASE_A, mode=mode, dataset=dataset,
                                  rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
     result = orchestrate.orchestrate(ctx, fake.ports(), config, transport=transport, sink=sink,
                                      clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)

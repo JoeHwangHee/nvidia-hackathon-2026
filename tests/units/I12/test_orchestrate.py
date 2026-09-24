@@ -3,12 +3,40 @@
 체크리스트 2번의 흐름 쪽: 두 번째 수정 단계 차단, 수정 단계의 세 번째 재조회 차단, 전체 deadline 우선 종료.
 도구 8회 몫(기본 5 + 재조회 2 + 최종 검증 1)은 흐름 조정이 단계별로 강제하므로 9번째 도구 실행이 생기지 않는다.
 모델 답과 다른 단위 자리는 대역이다(harness.py). 흐름 조정의 한도 판단은 대역이 아니라 실제 코드가 한다.
+검토 1회차 뒤: 허용 상태 조합은 검증기 부류(freeform 기록만), 비교 불가 사례는 수정 단계에서도 도구 없음, 잘린 초안,
+critic_used 기준, 기록 없이 끝나던 두 경로, 배선(unit_ports)의 P4 감싸기·I6 한도·자료 상태·P3 근거 상태.
 """
+import json
 import unittest
+from unittest import mock
 
 from tradesentry.runlog import cause_codes
+from tradesentry.workflow import investigator
+from tradesentry.workflow import model_client as mc
+from tradesentry.workflow import orchestrate
 
+from ..I7.fakes import ok_body
 from . import harness as h
+
+FREEFORM_CLAIM = {"claim_id": "c1", "claim_type": "change", "hs6": "850450", "partner": "CN", "period": "202401",
+                  "baseline_period": "202301", "metric": "r_U", "value": "-40.0", "unit": "%", "direction": "DOWN",
+                  "evidence_ids": [h.EV[0]], "text": "단가가 낮다."}
+STATUS_FINDING = {"check": "validator", "code": "STATUS_INCONSISTENT", "path": "review_status", "claim_id": None,
+                  "detail": "신호별 판정의 집계는 HOLD다"}
+STATUS_BLOCK = {"schema_ok": True, "validator_ok": False, "findings": [STATUS_FINDING]}
+
+
+def mismatched(**over):
+    """집계가 어긋난 초안: 단가 신호 판정은 HOLD인데 사례 판정은 MONITOR(허용 상태 밖, 형식은 맞음)."""
+    body = h.draft(status="MONITOR", **over)
+    body["signal_status"] = {"unit_value": "HOLD", "share": "NOT_TRIGGERED"}
+    return {"body": ok_body(json.dumps(body, ensure_ascii=False), prompt_tokens=1500, completion_tokens=150)}
+
+
+def not_comparable(test):
+    original = h.ENVELOPES["check_comparability"]
+    h.ENVELOPES["check_comparability"] = h.envelope("check_comparability", "q-cc", comparable=False)
+    test.addCleanup(h.ENVELOPES.__setitem__, "check_comparability", original)
 
 
 def blocks(records):
@@ -203,6 +231,193 @@ class ModeRuleTest(unittest.TestCase):
         result, _, _, _ = h.run_case("agent", [h.draft_answer()], fake)
         error = result["record"]["errors"][0]
         self.assertEqual((error["code"], error["detail"]), (cause_codes.CODE_ERROR, "KeyError"))
+
+
+
+class ReviewRoundOneTest(unittest.TestCase):
+    """검토 1회차의 막는 지적 1·4와 권고 6·8·10, NVIDIA 권고 3."""
+
+    def test_freeform_status_mismatch_is_recorded_not_blocked_and_critic_runs(self):
+        fake = h.FakePorts(checks=[h.PASS, STATUS_BLOCK])
+        result, records, fake, _ = h.run_case("freeform", [mismatched(claims=[FREEFORM_CLAIM]), h.critic_answer()],
+                                              fake)
+        record = result["record"]
+        self.assertEqual((record["execution_status"], record["critic_used"], record["revision_used"]),
+                         ("COMPLETED", True, False))
+        self.assertEqual(result["report"]["validator_findings"], [STATUS_FINDING])
+        draft_state = h.events(records, "state_change")[0]["data"]
+        self.assertEqual((draft_state["phase"], draft_state["problems"], draft_state["problem_list"]),
+                         ("draft", 0, []))
+        self.assertTrue(draft_state["status_notes"])  # 관찰은 trace에 남는다
+        self.assertEqual(fake.check_calls, 2)  # 검증기 경로를 탔다(스키마 검사 + 검증)
+
+    def test_full_status_mismatch_goes_through_critic_then_validator_block_opens_revision(self):
+        fake = h.FakePorts(checks=[h.PASS, STATUS_BLOCK, h.PASS])
+        script = [mismatched(), h.critic_answer(), h.draft_answer(status="HOLD")]
+        result, records, _, transport = h.run_case("full", script, fake)
+        record = result["record"]
+        self.assertEqual((record["execution_status"], record["critic_used"], record["revision_used"]),
+                         ("COMPLETED", True, True))
+        self.assertEqual(record["review_status_final"], "HOLD")
+        self.assertIn("[검증기 지적]", transport.payloads[2]["messages"][-1]["content"])
+        self.assertIn("STATUS_INCONSISTENT", transport.payloads[2]["messages"][-1]["content"])
+
+    def test_not_comparable_revision_offers_no_tools_and_refuses_model_calls(self):
+        not_comparable(self)
+        requery = [{"tool": "get_history", "args": {}, "reason": "이력"}]
+        script = [h.draft_answer(status="HOLD"), h.critic_answer(needs_revision=True, requery=requery),
+                  h.tools_answer("get_history", "decompose_hs"), h.draft_answer(status="HOLD")]
+        result, records, fake, transport = h.run_case("full", script)
+        record = result["record"]
+        self.assertEqual(record["execution_status"], "COMPLETED")
+        self.assertEqual([p.get("tools") for p in transport.payloads], [None] * 4)  # 어느 요청에도 도구가 없다
+        self.assertEqual([n for n, _ in fake.tool_calls], ["check_comparability", "verify_evidence", "verify_evidence"])
+        self.assertEqual(blocks(records), [("revision", "not_comparable"), ("revision", "not_comparable")])
+        self.assertEqual(record["tool_attempts"], 5)  # 실행 3 + 막힌 시도 2
+        feedback = [m["content"] for m in transport.payloads[-1]["messages"]
+                    if m["role"] == "user" and m["content"].startswith("[수정 단계]")]
+        self.assertEqual(len(feedback), 1)
+        self.assertIn("재조회 0회", feedback[0])  # 도구를 주지 않는 차례에는 0회로 알린다
+
+    def test_missing_comparable_key_stops_as_code_error(self):
+        original = h.ENVELOPES["check_comparability"]
+        h.ENVELOPES["check_comparability"] = dict(original, comparability={})
+        self.addCleanup(h.ENVELOPES.__setitem__, "check_comparability", original)
+        for mode in ("full", "checklist"):
+            with self.subTest(mode=mode):
+                result, _, fake, _ = h.run_case(mode, [])
+                error = result["record"]["errors"][0]
+                self.assertEqual((error["code"], result["record"]["execution_status"]), (cause_codes.CODE_ERROR, "FAILED"))
+                self.assertIn("comparable", error["detail"])
+                self.assertEqual([n for n, _ in fake.tool_calls], ["check_comparability"])
+
+    def test_truncated_draft_is_a_format_problem_that_opens_revision(self):
+        cut = {"body": ok_body(json.dumps(h.draft(), ensure_ascii=False), prompt_tokens=1500, completion_tokens=2048,
+                               finish_reason="length")}
+        result, records, _, _ = h.run_case("full", [cut, h.draft_answer()])
+        record = result["record"]
+        self.assertEqual((record["execution_status"], record["critic_used"], record["revision_used"]),
+                         ("COMPLETED", False, True))
+        draft_state = h.events(records, "state_change")[0]["data"]
+        self.assertEqual(draft_state["problem_list"][0], investigator.TRUNCATED)
+
+    def test_critic_used_is_true_once_the_critic_stage_opens(self):
+        result, _, _, _ = h.run_case("full", [h.draft_answer()] + [{"status": 503}] * 4)
+        record = result["record"]
+        self.assertEqual((record["errors"][0]["stage"], record["critic_used"]), ("critic", True))
+
+    def test_required_evidence_failure_is_recorded_as_code_error(self):
+        fake = h.FakePorts()
+        fake.required_evidence = lambda case: (_ for _ in ()).throw(KeyError("정책"))
+        result, records, _, transport = h.run_case("full", [], fake)
+        error = result["record"]["errors"][0]
+        self.assertEqual((error["code"], error["detail"]), (cause_codes.CODE_ERROR, "KeyError"))
+        self.assertEqual([r["event"] for r in records], ["run_start", "run_end"])
+        self.assertEqual(transport.payloads, [])
+
+    def test_bad_run_context_fails_before_any_request_or_tool(self):
+        fake = h.FakePorts()
+        transport = h.ScriptedTransport([h.draft_answer()])
+        with self.assertRaises(ValueError):
+            h.run_case("full", [], fake, dataset="dev21", transport=transport)
+        self.assertEqual((transport.payloads, fake.tool_calls), ([], []))
+
+    def test_template_fill_rejections_are_recorded(self):
+        rejected = [{"claim_id": "c2", "reason": "없는 metric_id"}]
+        result, records, _, _ = h.run_case("full", [h.draft_answer(), h.critic_answer()],
+                                           h.FakePorts(rejected=rejected))
+        self.assertEqual(result["record"]["execution_status"], "COMPLETED")
+        self.assertEqual([r["data"]["rejected_requests"] for r in h.events(records, "validator_result")],
+                         [rejected, rejected])
+
+
+class UnitPortsTest(unittest.TestCase):
+    """unit_ports 배선: 이 브랜치에서 뼈대인 다른 트랙 단위의 run을 대역으로 바꿔, 넘기는 입력 모양을 본다."""
+
+    def ports(self, **kw):
+        limits = mc.load_model_config().limits
+        return orchestrate.unit_ports(h.CASE_A, "full", h.RUN_ID, limits, grouping_version="g0", **kw)
+
+    def patch(self, target, stub):
+        patcher = mock.patch(target, stub)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def render_stub(self):
+        seen = {}
+
+        def render(inp):
+            seen.update(inp)
+            return {"report": {"unresolved_evidence": inp["unresolved_evidence"]}, "body_ko": ""}
+        self.patch("tradesentry.reports.render_ko.run", render)
+        self.patch("tradesentry.reports.claims.run", lambda inp: {"claims": [], "rejected": [{"claim_id": "c1",
+                                                                                            "reason": "r"}]})
+        return seen
+
+    def test_build_report_keeps_going_when_the_aggregate_rejects_the_statuses(self):
+        seen = self.render_stub()
+
+        def aggregate(inp):
+            raise ValueError("발동하지 않은 신호 share의 상태는 NOT_TRIGGERED여야 한다")
+        self.patch("tradesentry.policy.case_aggregate.run", aggregate)
+        draft = {"review_status": "MAINTAIN", "signal_status": {"unit_value": "MAINTAIN", "share": "HOLD"},
+                 "claims": [], "narrative": "", "hypotheses": []}
+        built = self.ports().build_report({"draft": draft, "evidence": []})
+        # 상태를 고치지 않는다. unresolved_evidence는 발동 신호만 보고 센다(share는 미발동이라 섞임 없음)
+        self.assertEqual((seen["signal_status"], seen["review_status"]), (draft["signal_status"], "MAINTAIN"))
+        self.assertIs(built["report"]["unresolved_evidence"], False)
+        self.assertEqual(built["rejected"], [{"claim_id": "c1", "reason": "r"}])
+
+    def test_build_report_does_not_hide_other_errors(self):
+        self.render_stub()
+
+        def skeleton(inp):
+            raise NotImplementedError
+        self.patch("tradesentry.policy.case_aggregate.run", skeleton)
+        draft = {"review_status": "MONITOR", "signal_status": {"unit_value": "MONITOR", "share": "NOT_TRIGGERED"}}
+        with self.assertRaises(NotImplementedError):
+            self.ports().build_report({"draft": draft, "evidence": []})
+
+    def test_budget_gets_every_limit_key_and_the_stage(self):
+        seen = {}
+        self.patch("tradesentry.tools.budget.run", lambda inp: seen.update(inp) or {"allowed": True, "reason": None})
+        self.ports().budget([{"tool": "check_comparability", "args": {}, "stage": "basic"}],
+                            {"tool": "get_history", "args": {}, "stage": "revision"})
+        self.assertEqual(seen["limits"], {"tool_attempts": 8, "basic_tool_attempts": 5, "revision_stages": 1,
+                                          "revision_requeries": 2, "final_verify": 1})
+        self.assertEqual(seen["candidate"]["stage"], "revision")
+
+    def test_statuses_read_partner_code_and_single_evidence_id(self):
+        item = {"evidence_id": "ev:controlled_fixture_v0:status:7", "request_id": "r7", "partner_code": "CN",
+                "hs_code": "850450", "month": "202401", "flow": "import", "observation_status": "NOT_COLLECTED"}
+        child = dict(item, evidence_id="ev:controlled_fixture_v0:status:8", hs_code="8504501000")
+        envelopes = [{"missingness": [item, child]}, {"missingness": [item]}]  # 같은 항목이 두 봉투에 나온다
+        statuses = orchestrate._statuses_of(envelopes)
+        self.assertEqual([(s["status_id"], s["partner"], s["period"], s["hs6"], s["hs10"]) for s in statuses],
+                         [(item["evidence_id"], "CN", "202401", "850450", None),
+                          (child["evidence_id"], "CN", "202401", "850450", "8504501000")])
+
+    def test_checklist_evidence_state_carries_comparison_marks_or_the_assembly_hook(self):
+        seen = {}
+
+        def decide(inp):
+            seen.update(inp)
+            return {"signal_status": {"unit_value": "HOLD", "share": "NOT_TRIGGERED"}}
+        self.patch("tradesentry.policy.signal_decide.run", decide)
+        self.patch("tradesentry.policy.case_aggregate.run",
+                   lambda inp: {"review_status": "HOLD", "unresolved_evidence": False})
+        missing = {"evidence_id": "ev:controlled_fixture_v0:status:7", "partner_code": "CN", "hs_code": "850450",
+                   "month": "202401", "observation_status": "NOT_COLLECTED"}
+        envelopes = [dict(h.ENVELOPES["check_comparability"], missingness=[missing]), h.ENVELOPES["get_history"]]
+        draft = self.ports(policy={"policy_version": "dev-0.1"}).checklist_draft({"evidence": envelopes})
+        self.assertEqual(draft["review_status"], "HOLD")
+        self.assertEqual(seen["evidence"], {"missingness": [missing], "unit_value": {"comparisons": {
+            "comparability": "done", "partners": "not_performed"}}})  # 미발동 점유율 블록은 없다
+        hook = lambda case, evidence: {"from": "AS2", "n": len(evidence)}  # noqa: E731
+        self.ports(evidence_state=hook).checklist_draft({"evidence": envelopes})
+        self.assertEqual(seen["evidence"], {"from": "AS2", "n": 2})
+        failed = dict(h.ENVELOPES["compare_partners"], retryable_error={"code": "bad_args"})
+        self.assertEqual(orchestrate.comparison_marks([failed])["partners"], "not_performed")
 
 
 if __name__ == "__main__":
