@@ -1,0 +1,122 @@
+{
+ "case": {
+  "case_id": "A-composition",
+  "hs6": "850450",
+  "partner": "CN",
+  "month": "202401",
+  "baseline_month": "202301",
+  "signals": {
+   "unit_value": "TRIGGERED",
+   "share": "NOT_TRIGGERED"
+  },
+  "snapshot_id": "controlled_fixture_v0",
+  "policy_version": "dev-0.1"
+ },
+ "mode": "full",
+ "evidence": [
+  {
+   "query_id": "q1",
+   "tool": "check_comparability",
+   "scope": {
+    "hs6": "850450",
+    "partner": "CN"
+   },
+   "snapshot_id": "controlled_fixture_v0",
+   "source_kind": "controlled",
+   "evidence_ids": [],
+   "metrics": [],
+   "comparability": {
+    "comparable": true,
+    "hs10": "OBSERVED"
+   },
+   "missingness": [],
+   "retryable_error": null,
+   "elapsed_ms": 4
+  },
+  {
+   "query_id": "q2",
+   "tool": "get_history",
+   "scope": {
+    "hs6": "850450",
+    "partner": "CN"
+   },
+   "snapshot_id": "controlled_fixture_v0",
+   "source_kind": "controlled",
+   "evidence_ids": [
+    "ev:controlled_fixture_v0:observation:1024",
+    "ev:controlled_fixture_v0:observation:1025"
+   ],
+   "metrics": [
+    {
+     "metric_id": "m-rU",
+     "formula_version": "f1",
+     "inputs": {
+      "metric": "r_U",
+      "hs6": "850450",
+      "partner": "CN",
+      "period": "202401",
+      "baseline_period": "202301"
+     },
+     "evidence_ids": [
+      "ev:controlled_fixture_v0:observation:1024",
+      "ev:controlled_fixture_v0:observation:1025"
+     ],
+     "value": -40.0,
+     "unit": "%",
+     "comparability_flags": [],
+     "tolerance": null
+    }
+   ],
+   "comparability": {},
+   "missingness": [],
+   "retryable_error": null,
+   "elapsed_ms": 6
+  }
+ ],
+ "remaining": {
+  "comparisons": 2,
+  "model_requests": 10
+ },
+ "allow_tools": true,
+ "stage": "basic",
+ "replay": [
+  {
+   "seq": 1,
+   "ts": "2026-09-25T14:30:15+09:00",
+   "run_id": "workflow_investigator-260925143015",
+   "event": "model_request",
+   "stage": "basic",
+   "data": {
+    "request_no": 1,
+    "attempt": 1
+   }
+  },
+  {
+   "seq": 2,
+   "ts": "2026-09-25T14:30:17+09:00",
+   "run_id": "workflow_investigator-260925143015",
+   "event": "model_response",
+   "stage": "basic",
+   "data": {
+    "request_no": 1,
+    "attempt": 1,
+    "http_status": 200,
+    "elapsed_ms": 2100,
+    "usage": {
+     "prompt_tokens": 1650,
+     "completion_tokens": 140,
+     "total_tokens": 1790
+    },
+    "tokens_total": 1790,
+    "response": {
+     "message": {
+      "role": "assistant",
+      "content": "{\"review_status\": \"MONITOR\", \"signal_status\": {\"unit_value\": \"MONITOR\", \"share\": \"NOT_TRIGGERED\"}, \"claims\": [{\"claim_type\": \"change\", \"metric_id\": \"m-rU\"}], \"narrative\": \"단가 신호는 하위품목 구성 변화로 설명될 가능성이 있다. 하위품목 분해를 더 확인하면 판단이 단단해진다.\", \"hypotheses\": [\"하위품목 중량 비중이 저가 품목 쪽으로 옮겨 갔을 수 있다.\"]}",
+      "tool_calls": null
+     },
+     "finish_reason": "stop"
+    }
+   }
+  }
+ ]
+}
