@@ -277,7 +277,7 @@ echo "$CODEX_EXIT" > <종료 코드 파일>
 | 유사도 그룹핑 `g1`(`src/tradesentry/grouping/`, `data/reference/peer_group_g1.csv`) | ○ | ○ | | | — |
 | OpenShell 정책·위반 시험표, 런타임 스킬·NemoClaw 경로(`configs/openshell/policy.yaml`, OpenShell 증거 `artifacts/openshell/openshell_violation_tests-{시각}/`(`{시각}`은 위반 시험 실행이 시작한 KST 24시간 12자리 시각 `yymmddhhmmss`), `skills/tradesentry/SKILL.md`) | | | ○ | ○ | — |
 | 평가 하네스와 평가 스킬(`src/tradesentry/evaluation/`, `skills/tradesentry-scorecard/SKILL.md`, `skills/tradesentry-eval/SKILL.md`) | | ○ | ○ | ○ | — |
-| 승인(모의)과 화면(`src/tradesentry/approval/`, `app.py`(위치는 S0에서 정한다)) | ○(화면 문구) | | | ○ | — |
+| 승인(모의)과 화면(`src/tradesentry/approval/`, `src/tradesentry/app.py`) | ○(화면 문구) | | | ○ | — |
 | 탐지 조립 AS1(`tradesentry detect`: 지표·판정 정책 단위와 CLI 배선, `docs/plan/UNITS.md` §7) | ○ | ○ | | | 판정 정책 단위의 코드를 고치면 ○ 판정 정책 |
 | 사례 조사 조립 AS2(`tradesentry run-case`: 도구·조사 흐름·보고서·검증기·실행 기록 단위) | 도구·보고서·검증기·판정 정책·`g0` 단위의 코드를 고치면 ○ | ○ | ○ | ○ | 검증기·판정 정책 단위의 코드를 고치면 ○ 검증기·판정 정책 |
 | 평가 실행·채점 연결 AS3(`tradesentry evaluate`와 채점기 입력·출력 형식) | 채점기 코드를 고치면 ○ | ○ | ○ | ○ | 채점기 코드를 고치면 ○ 채점기 |

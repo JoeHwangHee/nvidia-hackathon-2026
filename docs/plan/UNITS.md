@@ -100,7 +100,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| G1 | g0 고정 목록 | `grouping_g0` | `src/tradesentry/grouping/g0.py` | 앱 | M | v2 2023 수입액 → 대상국 뺀 상위 5개국 | 유지 | 3 | — | **고정 규칙과 충돌**: `g1`이 동결되지 않으면 채점의 대체 기본값이 `g0`이다(자료 계약 §4.2). 그래서 버릴 수 없다. HS6별 목록이다. 해석은 사용자 확인 대기(로드맵 §6.1) |
+| G1 | g0 고정 목록 | `grouping_g0` | `src/tradesentry/grouping/g0.py` | 앱 | M | v2 2023 수입액 → 대상국 뺀 상위 5개국(`data/reference/peer_group_g0.csv`) | 유지 | 3 | — | **고정 규칙과 충돌**: `g1`이 동결되지 않으면 채점의 대체 기본값이 `g0`이다(자료 계약 §4.2). 그래서 버릴 수 없다. HS6별 목록이다. 해석은 사용자 확인 대기(로드맵 §6.1) |
 | G2 | g1 유사도 | `grouping_g1` | `src/tradesentry/grouping/g1.py` | 앱 | M | BACI + 국가 코드 대응 → `peer_group_g1.csv` | 유지 | 1 | — | 결과는 D가 검수한다 |
 | G3 | 국가 코드 대응 | 없음(구성) | `data/reference/` 아래 국가 코드 대응표(파일 이름은 S0 자문 Q20) | 구성 | D | 관세청 2자리 ↔ BACI 코드, 대만 주석 | 유지 | 1 | — | 단위 G2의 입력 자료. D 소유 파일(`data/reference/`)이라 M 소유 단위 G2와 합치면 트랙 경계를 넘는다(병렬 개발 규칙 §1). 맡는 작업은 로드맵 DT1이다 |
 
@@ -116,7 +116,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | I6 | 예산 집행 | `tools_budget` | `src/tradesentry/tools/budget.py` | 앱 | M | 시도 기록 → 허용·거부(8회, 재조사 1회·그 안의 조회 2회, 같은 인자, deadline) | 유지 | 3 | — | — |
 | I7 | NIM 호출 | `workflow_model_client` | `src/tradesentry/workflow/model_client.py` | 앱 | M | 메시지 → 응답(5xx 재전송 3회, 제한 시간, 토큰) | 유지 | 3 | — | — |
 | I8 | 기록 재생 | `workflow_replay` | `src/tradesentry/workflow/replay.py` | 앱 | M | 기록된 trace → 같은 응답(키 없는 스모크 시험) | 합침 후보(→ I7) | 3 | — | 같은 자리의 교체 구현 |
-| I9 | 프롬프트·모델 설정 | 없음(구성) | 프롬프트·모델 설정 파일(위치는 S0 자문 Q14) | 구성 | M | 텍스트·설정 → 조사자·Critic 프롬프트, 모델 ID, 추론 모드 | 유지 | 3 | — | — |
+| I9 | 프롬프트·모델 설정 | 없음(구성) | `configs/model/` 아래 프롬프트·모델 설정 파일 | 구성 | M | 텍스트·설정 → 조사자·Critic 프롬프트, 모델 ID, 추론 모드 | 유지 | 3 | — | — |
 | I10 | 조사자 | `workflow_investigator` | `src/tradesentry/workflow/investigator.py` | 앱 | M | 상태 → 다음 비교·초안 | 유지 | 3 | — | — |
 | I11 | Critic | `workflow_critic` | `src/tradesentry/workflow/critic.py` | 앱 | M | 초안 + 근거 → 구조화된 지적·재조회 요청 | 유지 | 3 | — | — |
 | I12 | 흐름 조정 | `workflow_orchestrate` | `src/tradesentry/workflow/orchestrate.py` | 앱 | M | 사례·모드 → 조사자 → Critic → 수정 1회 상태 기계 | 유지 | 3 | — | — |
@@ -148,7 +148,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | A1 | 모의 승인 | `approval_record` | `src/tradesentry/approval/record.py` | 앱 | M | 보고서·근거 digest → 승인 기록·`REVIEW_REQUIRED` | 유지 | 7 | — | — |
-| A2 | 화면 | `app` | `app.py`(위치는 S0 자문 Q14) | 앱 | M | 실행 기록·조회 → Streamlit 화면 3개 | 버림 후보(로드맵 §5 줄이는 순서가 발동할 때만) | 7 | — | **고정 규칙과 충돌**: 화면 3개는 개발 플랜 §7.7의 계획이다. 줄이는 순서(화면 3번째 → 2번째)가 발동할 때만 버린다 |
+| A2 | 화면 | `app` | `src/tradesentry/app.py` | 앱 | M | 실행 기록·조회 → Streamlit 화면 3개 | 버림 후보(로드맵 §5 줄이는 순서가 발동할 때만) | 7 | — | **고정 규칙과 충돌**: 화면 3개는 개발 플랜 §7.7의 계획이다. 줄이는 순서(화면 3번째 → 2번째)가 발동할 때만 버린다 |
 
 ### 3.10 E — 평가 실행(4개)
 

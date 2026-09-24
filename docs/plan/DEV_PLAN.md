@@ -691,7 +691,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 
 - Streamlit(파이썬으로 웹 화면을 만드는 라이브러리) 화면 3개를 2026-09-26(토)~2026-09-27(일)에 만든다. 일정이 밀리면 화면 3번째, 화면 2번째 순으로 줄인다.
 - 화면은 사례별 조회 이유, 실제 실행한 도구, 반대 근거, 판정 전후, 원본 행 링크를 보여 준다(구 개발계획 §10).
-- 화면 파일(`app.py`)의 위치는 §10.1 경로 표에 없으므로 S0에서 정한다.
+- 화면 파일은 `src/tradesentry/app.py`다(§10.1 경로 표).
 
 ### 7.8 한국어 품질
 
@@ -879,7 +879,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 
 ### 10.1 계획 경로·명령 표
 
-아래 표는 자료 계약(`docs/rules/DATA_CONTRACT_V1.md`) §10 표의 사본이고 글자까지 같다. 그 표는 2026-09-24(목) 사용자 결정(결정 기록 `docs/tracking/decisions/20260924-1720-user-decision-domain-restructure.md`)으로 고쳤다. 자리표시 `{실행명}`·`{도메인명}`·`{시각}` 등을 채우는 이름·출력 규칙(실행명, 도메인명, 도메인 출력 `outputs/`, 증거 복사)은 자료 계약 §10.3, 단위 목록은 `docs/plan/UNITS.md`에 있다. 두 표가 다르면 자료 계약이 이긴다.
+아래 표는 자료 계약(`docs/rules/DATA_CONTRACT_V1.md`) §10 표의 사본이고 글자까지 같다. 그 표는 2026-09-24(목) 사용자 결정(결정 기록 `docs/tracking/decisions/20260924-1720-user-decision-domain-restructure.md`)으로 고쳤고, 같은 날 구현 계획 승인(결정 기록 `docs/tracking/decisions/20260924-2315-user-decision-impl-plan-approval.md` D2·D3)으로 행을 더했다. 자리표시 `{실행명}`·`{도메인명}`·`{시각}` 등을 채우는 이름·출력 규칙(실행명, 도메인명, 도메인 출력 `outputs/`, 증거 복사)은 자료 계약 §10.3, 단위 목록은 `docs/plan/UNITS.md`에 있다. 두 표가 다르면 자료 계약이 이긴다.
 
 - 모든 문서는 아래 표의 경로와 명령만 쓴다. 이름은 조정값이며, S0 외부 자문으로 바뀌면 이 표와 참조 문서를 **함께** 고친다.
 - 기존 파일(`src/tradesentry/ingest.py`, `eval/dev/oracle_ABC.json`, `configs/collection_plan.json`)의 위치는 바꾸지 않는다.
@@ -889,13 +889,15 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | 앱 패키지 | `src/tradesentry/` — `ingest.py`(기존), 패키지 `contract/`, `snapshot/`, `dal/`, `metrics/`, `policy/`, `grouping/`, `tools/`, `workflow/`, `reports/`, `validator/`, `runlog/`, `evaluation/`, `approval/`, `cli/`. 단위 파일은 `{패키지}/{단위}.py` | D: ingest·contract·snapshot·dal·metrics / M: policy·grouping·tools·workflow·reports·validator·evaluation·approval·cli / 공동: runlog |
 | 단위 등록부·공통 실행기(개발 전용) | `src/tradesentry/units/`, 실행 `python -m tradesentry.units <단위 ID> --in <입력 파일>` | 공동 |
 | CLI | `tradesentry <명령>` — `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate`, 공통 옵션 `--snapshot`, `--policy`, `--mode`(값은 `checklist`, `agent`, `full`, `freeform`) | M |
+| 화면 | `src/tradesentry/app.py`(Streamlit 화면) | M |
 | 정책 수치 | `configs/policy_v1.json`(사용자 승인 뒤), 개발용 `configs/policy_dev.json`(`policy_version` `dev-0.1`, oracle 기준값, 승인 전 실행용) | D 제안·사용자 승인(개발용은 D) |
 | NAT 설정 | `configs/nat/workflow.yml` | M |
+| 프롬프트·모델 설정 | `configs/model/`(조사자·Critic 프롬프트, 모델 ID, 추론 모드) | M |
 | OpenShell 정책 | `configs/openshell/policy.yaml` | M(보안 검토) |
 | 런타임 스킬 | `skills/tradesentry/SKILL.md` | M |
 | 평가 스킬 | `skills/tradesentry-scorecard/SKILL.md`, `skills/tradesentry-eval/SKILL.md` | 공동 |
 | 합성 시험자료 | `data/snapshots/controlled_fixture_v0/` | D |
-| 그룹핑 결과 | `data/reference/peer_group_g1.csv` | M 계산·D 검수 |
+| 그룹핑 결과 | `data/reference/peer_group_g0.csv`(`g0`, MVP 시험용 고정 비교국 목록), `data/reference/peer_group_g1.csv` | M 계산·D 검수 |
 | 시나리오 명세(공개) | `eval/scenarios/SCENARIO_SPEC.md` | D |
 | dev20 | `eval/dev/dev20/`(입력 + 정답표) | D |
 | 평가 자료 도구 | `eval/datagen/` — `dev20.py`(dev20 생성), `holdout40_check.py`(holdout40 결정적 검사), `split.py`(실자료 분할) | D |
@@ -903,13 +905,13 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | 봉인 폴더 | 환경변수 `TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`(저장소 밖) | D |
 | 독립 채점기 | `eval/scorer/`(런타임 모듈을 import하지 않음), 실행 `python -m eval.scorer --run <run_dir>`, 출력 `outputs/score-{시각}/` | D |
 | 도메인 출력(커밋 안 함) | `outputs/{실행명}/{도메인명}-{시각}.{확장자}`(trace JSONL, NAT 프로파일 결과, 보고서, 실행 결과 기록 등 도메인 출력 전부). 봉인 묶음 실행은 `outputs/sealed/{실행명}/` | 공동 |
-| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력만 복사: `scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`) | 공동 |
+| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력 복사: `scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`), 재채점용 보고서 원문 `artifacts/eval/score-{시각}/{run_id}/`(허용 목록의 보고서 파일만 복사) | 공동 |
 | 자기채점 결과(커밋) | `artifacts/scorecard/scorecard-{시각}/`(자기채점 실행 폴더의 결과 파일만 복사: `scorecard-{시각}.md`) | 공동 |
 | OpenShell 증거(커밋) | `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일만 복사: 예측·실측 대조표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`) | M(보안 검토) |
 | X1 임시 시험 코드 | `spikes/x1/` | M |
 | 시험 | `tests/`(기존 `test_ingest.py` 유지), 단위 골든 시험 `tests/units/{단위 ID}/` | 공동 |
 
-- 표에 없는 M 소유 대상: 화면(`app.py`), 프롬프트, 모델 설정. 위치는 S0에서 정하고, 정해지면 이 표와 참조 문서를 함께 고친다.
+- 화면 `src/tradesentry/app.py`, 프롬프트·모델 설정 `configs/model/`, `g0` 결과 파일, 재채점용 보고서 원문 위치는 2026-09-24(목) 구현 계획 승인으로 이 표에 더했다(결정 기록 `docs/tracking/decisions/20260924-2315-user-decision-impl-plan-approval.md` D3).
 - 실행 이름은 시각이 붙지 않은 실행의 이름(예: `run_case`)이고, 실행명(`run_id`)은 거기에 시작 시각을 붙인 `{실행 이름}-{yymmddhhmmss}`다. 표의 `{시각}`은 그 실행이 시작한 KST 24시간 12자리 시각이다. 증거 복사는 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고, 종류마다 정한 커밋 증거 파일만 복사해 커밋하는 일이고, 그렇게 커밋한 폴더와 파일을 커밋 사본이라 한다. trace는 빼고, 봉인 묶음은 금지 해제 조건이 채워진 뒤에만 한다(자료 계약 §10.3).
 
 ### 10.2 모듈 역할

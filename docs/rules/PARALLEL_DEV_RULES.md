@@ -52,7 +52,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 | `src/tradesentry/`의 M 패키지: `policy/`, `grouping/`, `tools/`, `workflow/`, `reports/`, `validator/`, `evaluation/`, `approval/`, `cli/` | M | `evaluation/`은 평가 하네스(묶음 실행과 실행 결과 기록의 실행 쪽 키), 샌드박스 밖 실행기, 추출 명령, NAT 사후 평가를 담는다(분담 §2의 평가 하네스). 정답 대조 채점을 하는 독립 채점기와 다르다 |
 | `src/tradesentry/runlog/`(trace·실행 결과 기록·원인 분류 코드) | 공동 | 두 트랙의 실행 기록이 같은 형식을 쓰게 한다 |
 | `src/tradesentry/units/`(단위 등록부와 공통 실행기, 개발 전용) | 공동 | 물리 단위(USD·kg)와 관계없다. CLI·런타임 스킬에서 부르지 않는다 |
-| `app.py`(화면) | M | 위치는 계획 경로·명령 표에 아직 없다 |
+| `src/tradesentry/app.py`(화면), `configs/model/`(프롬프트·모델 설정) | M | 계획 경로·명령 표(자료 계약 §10)에 있다 |
 | CLI `tradesentry <명령>` | M | `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate` |
 | `data/` 전체(스냅샷·참조 자료) | D | 예외: `data/reference/peer_group_g1.csv`는 M이 계산하고 D가 검수한다(§3.4) |
 | `data/snapshots/controlled_fixture_v0/` | D | 합성 시험자료(§2) |
@@ -91,7 +91,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 
 ### 1.4 표에 없는 경로
 
-- 표에 없는 경로를 만들거나 고쳐야 하면 먼저 소유 트랙을 정해 결정 기록에 남긴다. 예: 기존 `scripts/g4_nim_toolcall_probe.py`, 프롬프트·모델 설정·`app.py`의 위치.
+- 표에 없는 경로를 만들거나 고쳐야 하면 먼저 소유 트랙을 정해 결정 기록에 남긴다. 예: 기존 `scripts/g4_nim_toolcall_probe.py`.
 - 계획 경로·명령 표에 새 이름을 올려야 하면, 그 표와 그 이름을 쓰는 문서를 한 PR에서 함께 고친다. 문서마다 새 경로를 지어내지 않는다.
 
 ### 1.5 분담 문서에서 옮기며 바뀐 것
