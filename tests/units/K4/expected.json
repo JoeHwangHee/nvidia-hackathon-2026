@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "policy_version": "dev-0.1",
+  "thresholds": {"unit_value": 30, "share": 10},
+  "min_amount": null,
+  "min_weight": null,
+  "tolerance": {"amount_usd": 0, "weight_rounding_kg": 0.5},
+  "confirmed_no_trade": null
+}

@@ -1,0 +1,21 @@
+[
+  {"evidence_id": "ev:controlled_fixture_v0:observation:1024"},
+  {"evidence_id": "ev:kcs_202201_202412_v2:collection_receipt:1"},
+  {"evidence_id": "ev:controlled_fixture_v0:observation:1024", "snapshot_id": "controlled_fixture_v0", "table": "observation", "rowid": 1024, "failed_rule": null},
+  {"evidence_id": "ev:kcs_202201_202412_v2:observation:519", "snapshot_id": "kcs_202201_202412_v2", "table": "observation", "rowid": 519, "failed_rule": null},
+  {"evidence_id": "ev:kcs_202201_202412_v2:observation:0519", "failed_rule": 4},
+  {"evidence_id": "ev:kcs_202201_202412_v2:observation", "failed_rule": 1},
+  {"evidence_id": "EV:kcs_202201_202412_v2:observation:519", "failed_rule": 1},
+  {"evidence_id": "ev:kcs:202201:observation:519", "failed_rule": 1},
+  {"evidence_id": "ev::observation:519", "failed_rule": 2},
+  {"evidence_id": "ev:kcs_202201_202412_v2::519", "failed_rule": 3},
+  {"evidence_id": "ev:kcs_202201_202412_v2:observation:-5", "failed_rule": 4},
+  {"evidence_id": "ev:kcs_202201_202412_v2:observation:9223372036854775808", "failed_rule": 4},
+  {"evidence_id": "ev:s1:observation:3", "resolved": true, "failed_rule": null},
+  {"evidence_id": "ev:s1:observation:3", "resolved": false, "failed_rule": 2},
+  {"evidence_id": "ev:s1:peer_group:1", "resolved": false, "failed_rule": 3},
+  {"evidence_id": "ev:s1:observation:4", "resolved": false, "failed_rule": 4},
+  {"evidence_id": "ev:s1:observation:03", "resolved": false, "failed_rule": 4},
+  {"evidence_id": "ev:s1:observation", "resolved": false, "failed_rule": 1},
+  {"evidence_id": 3, "resolved": false, "failed_rule": 1}
+]

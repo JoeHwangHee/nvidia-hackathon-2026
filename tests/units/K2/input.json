@@ -1,0 +1,21 @@
+[
+  {"snapshot_id": "controlled_fixture_v0", "table": "observation", "rowid": 1024},
+  {"snapshot_id": "kcs_202201_202412_v2", "table": "collection_receipt", "rowid": 1},
+  "ev:controlled_fixture_v0:observation:1024",
+  "ev:kcs_202201_202412_v2:observation:519",
+  "ev:kcs_202201_202412_v2:observation:0519",
+  "ev:kcs_202201_202412_v2:observation",
+  "EV:kcs_202201_202412_v2:observation:519",
+  "ev:kcs:202201:observation:519",
+  "ev::observation:519",
+  "ev:kcs_202201_202412_v2::519",
+  "ev:kcs_202201_202412_v2:observation:-5",
+  "ev:kcs_202201_202412_v2:observation:9223372036854775808",
+  {"evidence_id": "ev:s1:observation:3", "snapshot_id": "s1", "rows": {"observation": [1, 2, 3], "collection_receipt": [1]}},
+  {"evidence_id": "ev:s1:observation:3", "snapshot_id": "s2", "rows": {"observation": [1, 2, 3]}},
+  {"evidence_id": "ev:s1:peer_group:1", "snapshot_id": "s1", "rows": {"observation": [1, 2, 3]}},
+  {"evidence_id": "ev:s1:observation:4", "snapshot_id": "s1", "rows": {"observation": [1, 2, 3]}},
+  {"evidence_id": "ev:s1:observation:03", "snapshot_id": "s1", "rows": {"observation": [1, 2, 3]}},
+  {"evidence_id": "ev:s1:observation", "snapshot_id": "s1", "rows": {"observation": [1, 2, 3]}},
+  {"evidence_id": 3, "snapshot_id": "s1", "rows": {"observation": [1, 2, 3]}}
+]
