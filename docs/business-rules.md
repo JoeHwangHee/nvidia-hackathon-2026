@@ -14,7 +14,7 @@ TradeSentry의 도메인 규칙은 아래 정본에만 있다. 같은 규칙이 
 | 조사 흐름(조사자 → 검수자 → 수정 1회 → 최종 검증) | `docs/plan/DEV_PLAN.md` §6.7 |
 | typed claim(정해진 필드로 쓰는 사실 주장), 보고서, 검증기, 실행 상태, 모의 승인 | 같은 문서 §7, `docs/rules/DATA_CONTRACT_V1.md` §6·§8·§9 |
 | 단위, 표시 자릿수, 반올림 | `docs/rules/DATA_CONTRACT_V1.md` §11 |
-| 비교 대상 집합: `g0`(대상국을 뺀 수입 상위 5개국, 해석은 사용자 확인 대기)와 `g1`(BACI(CEPII가 정리한 국가 간 연간 무역 자료)의 수출 바구니 유사도 상위 5개국) | `docs/plan/DEV_PLAN.md` §8, `docs/rules/DATA_CONTRACT_V1.md` §2.3.6 |
+| 비교 대상 집합: `g0`(대상국을 뺀 수입 상위 5개국, 해석은 2026-09-24(목) 사용자 확인)와 `g1`(BACI(CEPII가 정리한 국가 간 연간 무역 자료)의 수출 바구니 유사도 상위 5개국) | `docs/plan/DEV_PLAN.md` §8, `docs/rules/DATA_CONTRACT_V1.md` §2.3.6 |
 | 탐지 임계값과 승격 규칙(빈 응답 달을 무거래 확정 `CONFIRMED_NO_TRADE`로 바꾸는 규칙) 같은 정책 수치(사용자 승인 뒤 동결 판정 정책 `configs/policy_v1.json`) | `docs/plan/DEV_PLAN.md` §6.2, `docs/plan/ROADMAP.md` §6.3 |
 | 평가 자료 묶음, 비교 모드, 대표 지표, 숫자 등급 | `docs/plan/DEV_PLAN.md` §9, `docs/eval/RULEBOOK.md` Part B |
 | 쓰면 안 되는 표현(위법·원인 단정 등)과 정직한 주장 규칙 | `docs/plan/DEV_PLAN.md` §7.2·§12.2 |
