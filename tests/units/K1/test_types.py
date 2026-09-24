@@ -142,6 +142,10 @@ class ObjectKeyTest(unittest.TestCase):
                          set(types.COLLECTION_RECEIPT_KEYS) | set(types.COLLECTION_RECEIPT_EXTRA_COLUMNS))
         self.assertIn("(`" + "`, `".join(types.OBSERVATION_PRIMARY_KEY) + "`)", line_starting("1. 관측 단위:"))
         self.assertIn(f"`{types.PARTNER_NAMESPACE}`", CONTRACT)
+        month_row = line_starting("| month | `month` |")
+        self.assertIn(f"월 행은 `YYYYMM`, 총계 행(", month_row)
+        self.assertIn(f"은 `{types.TOTAL_ROW_MONTH}`", month_row)
+        self.assertTrue(types.TOTAL_ROW_MONTH.startswith(types.RAW_MONTH_PREFIX))
         self.assertEqual(types.RECEIPT_STATUSES, tuple(ticked(line_starting("| 성공·오류·미수집 |"))[1:3]))
         self.assertIn("| `OK` 또는 `FAILED` |", line_starting("| 성공·오류·미수집 |"))
 

@@ -1,0 +1,18 @@
+{
+ "policy": {
+  "policy_version": "dev-0.1",
+  "thresholds": {
+   "unit_value": 30,
+   "share": 10
+  },
+  "min_amount": null,
+  "min_weight": null
+ },
+ "rows": [
+  {"hs6": "850450", "partner": "CN", "month": "202401", "baseline_month": "202301", "r_U": -40.0, "d_s": -4.0},
+  {"hs6": "850450", "partner": "JP", "month": "202401", "baseline_month": "202301", "r_U": 30.0, "d_s": -10.0},
+  {"hs6": "850450", "partner": "DE", "month": "202401", "baseline_month": "202301", "r_U": 29.9, "d_s": 9.9},
+  {"hs6": "850431", "partner": "CN", "month": "202312", "baseline_month": "202212", "r_U": null, "d_s": 12.5},
+  {"hs6": "850432", "partner": "KH", "month": "202402", "baseline_month": "202302", "r_U": null, "d_s": null}
+ ]
+}

@@ -23,7 +23,8 @@
   HS10 하위 자리, 관측 행 규칙(HS 코드·월·수신 기록과 상태·raw 위치 칸·`NOT_COLLECTED` 집합·승격 집합), 비교국 표 행 규칙
   (단위 S2와 같은 `peer_group_problems`), 비교국 표 원본 대조.
 - 비교국 표 원본 대조: peer_group_files(경로 목록)를 주면 그 파일로, 없으면 빌드 기록의 `peer_group_files` 이름을
-  `data/reference/`에서 찾아 sha256을 빌드 기록과 대조하고 행을 다시 읽어 저장된 행과 비교한다. 찾지 못하면 건너뛴다.
+  `data/reference/`에서 찾아 sha256을 빌드 기록과 대조하고 행을 다시 읽어 저장된 행과 비교한다. 빌드 기록에 적힌 파일을
+  찾지 못하거나 기록에 파일이 없는데 행이 있으면 실패다. 빌드 기록이 없는 개발 빌드만 건너뛴다.
 
 출력: {"snapshot_id", "schema_version", "build_file"(파일 이름만), "ok", "normalized_sha256",
 "recorded_normalized_sha256", "checks": [{"name", "ok", "detail"}…], "counts"}. `ok`는 건너뛰지 않은 검사가 모두 통과했는지다.
@@ -118,8 +119,8 @@ def _check_observation_values(con: sqlite3.Connection, meta: dict, report: _Repo
             problems.append(f"{where}: hs_level이 hs_code 자릿수와 다르다")
         if row[at["hs_version"]] != meta.get("hs_version"):
             problems.append(f"{where}: hs_version이 메타와 다르다")
-        if not (types.MONTH_RE.fullmatch(month or "") or (month or "").startswith(types.RAW_MONTH_PREFIX)):
-            problems.append(f"{where}: month가 YYYYMM이나 RAW: 원문이 아니다")
+        if not (types.MONTH_RE.fullmatch(month or "") or month == types.TOTAL_ROW_MONTH):
+            problems.append(f"{where}: month가 YYYYMM이나 총계 행 {types.TOTAL_ROW_MONTH}가 아니다(§2.3.2)")
         if status == types.OBSERVED and kinds != ("integer", "integer"):
             problems.append(f"{where}: OBSERVED 행의 금액·중량이 정수가 아니다")
         if status != types.OBSERVED and kinds != ("null", "null"):
@@ -203,7 +204,8 @@ def _check_observation_rules(con: sqlite3.Connection, meta: dict, snapshot_id: s
                              record: dict | None, report: _Report) -> bool:
     """raw 없이 볼 수 있는 관측 행 규칙(`check_raw`와 관계없이 늘 돈다, 자료 계약 §2.3.2·§3.4).
 
-    HS 코드는 숫자이고 자릿수는 2·4·6·10, 월은 수집 기간 안이거나 `RAW:` 원문(값이 있는 `OBSERVED` 행만), 행의 요청과 수신
+    HS 코드는 숫자이고 자릿수는 2·4·6·10, 월은 수집 기간 안이거나 총계 행 `RAW:총계`(`OBSERVED`이고 HS 코드가 요청 코드인
+    행만. 그 밖의 `RAW:` 글자는 자료 계약 §2.3.2 형식이 아니라 거부), 행의 요청과 수신
     기록·상태가 맞는다(`OBSERVED`·`UNRESOLVED_ZERO`·`CONFIRMED_NO_TRADE`는 OK, `REQUEST_FAILED`는 FAILED, `NOT_COLLECTED`는
     수신 기록 없음), 행의 상대국·코드·월이 그 요청의 조회 조건 안, raw 위치 칸의 모양, `NOT_COLLECTED` 행 집합이 수집 계획과
     비교국 표에서 다시 계산한 집합과 같다, `CONFIRMED_NO_TRADE`는 수입·HS6 자릿수 행에만 있고 승격 규칙을 다시 적용한
@@ -232,8 +234,11 @@ def _check_observation_rules(con: sqlite3.Connection, meta: dict, snapshot_id: s
         if types.MONTH_RE.fullmatch(month):
             if month not in months:
                 problems.append(f"{where}: month가 수집 기간 밖이다")
-        elif month.startswith(types.RAW_MONTH_PREFIX) and status != types.OBSERVED:
-            problems.append(f"{where}: RAW: 월 행은 OBSERVED(응답의 총계 행)만 있다")
+        elif month == types.TOTAL_ROW_MONTH:
+            if status != types.OBSERVED:
+                problems.append(f"{where}: 총계 행 {types.TOTAL_ROW_MONTH}는 OBSERVED(응답의 총계 행)만 있다")
+        else:
+            problems.append(f"{where}: month가 YYYYMM이나 총계 행 {types.TOTAL_ROW_MONTH}가 아니다(§2.3.2)")
         receipt = receipts.get(rid)
         expected = _expected_status(status)
         if expected is None and receipt is not None:
@@ -248,7 +253,8 @@ def _check_observation_rules(con: sqlite3.Connection, meta: dict, snapshot_id: s
                 if {"strtYymm", "endYymm"} <= set(params) else set()
             if partner != request_partner:
                 problems.append(f"{where}: 상대국이 요청 조건과 다르다")
-            if (status == types.OBSERVED and not hs.startswith(code)) or (status != types.OBSERVED and hs != code):
+            exact = status != types.OBSERVED or month == types.TOTAL_ROW_MONTH  # 상태 행·총계 행은 요청 코드 그대로
+            if (exact and hs != code) or (not exact and not hs.startswith(code)):
                 problems.append(f"{where}: HS 코드가 요청 코드와 맞지 않다")
             if types.MONTH_RE.fullmatch(month) and month not in request_months:
                 problems.append(f"{where}: 달이 요청 조회 구간 밖이다")
@@ -312,13 +318,18 @@ def _check_peer_groups(con: sqlite3.Connection, meta: dict, record: dict | None,
     if peer_files is None:
         candidates = [build.REPO_ROOT.joinpath(*REFERENCE_DIR, entry.get("file_name", "")) for entry in entries]
         if not entries:
-            if stored:
+            if stored and record is not None:
+                return report.add("peer_group_sources", False,
+                                  {"error": "빌드 기록에 비교국 표 파일이 없는데 peer_group 행이 있다"}) and ok
+            if stored:  # 빌드 기록이 없는 개발 빌드: 원본을 알 수 없어 건너뛴다(행 규칙은 peer_group_rows가 봤다)
                 return report.add("peer_group_sources", None,
-                                  {"skipped": "빌드 기록에 비교국 표 파일이 없어 원본 CSV와 대조하지 못했다"}) or ok
+                                  {"skipped": "빌드 기록이 없어 원본 비교국 표와 대조하지 못했다"}) or ok
             return report.add("peer_group_sources", True, {"files": 0}) and ok
-        if not all(path.is_file() for path in candidates):
-            return report.add("peer_group_sources", None,
-                              {"skipped": "빌드 기록의 비교국 표 파일을 data/reference/에서 찾지 못했다"}) or ok
+        missing = [path.name for path in candidates if not path.is_file()]
+        if missing:  # 원본 대조가 필요한 빌드인데 원본을 찾지 못했다(Codex 권고: 건너뛰지 않고 실패)
+            return report.add("peer_group_sources", False,
+                              {"error": "빌드 기록의 비교국 표 파일을 data/reference/에서 찾지 못했다",
+                               "missing": missing}) and ok
         peer_files = candidates
     source_problems = []
     names = sorted(Path(path).name for path in peer_files)

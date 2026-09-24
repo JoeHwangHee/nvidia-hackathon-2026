@@ -27,9 +27,13 @@ class VerifyTestBase(unittest.TestCase):
         self.root = Path(tmp.name)
         self.build_file = fx.install_fixture_build(self.root)
         self.source = self.build_file.parent
-        patcher = mock.patch.object(build, "SNAPSHOTS_ROOT", self.root)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        self.reference = self.root / "data" / "reference" / "peer_group.csv"  # 빌드 기록 파일 이름의 정본 자리
+        self.reference.parent.mkdir(parents=True)
+        shutil.copyfile(self.root / "peer_group.csv", self.reference)
+        for name in ("SNAPSHOTS_ROOT", "REPO_ROOT"):
+            patcher = mock.patch.object(build, name, self.root)
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
     def dev_copy(self, name: str = "snapshot_build-260925000005", with_record: bool = True) -> Path:
         folder = self.root / "outputs" / name
@@ -143,6 +147,23 @@ class FailingTest(VerifyTestBase):
                 self.assertFalse(report["ok"])
                 self.assertIsNone(check(report, "raw_rebuild"))
 
+    def test_raw_month_values(self):
+        """월 값은 YYYYMM이나 총계 행 RAW:총계뿐이다. 그 밖의 RAW: 글자와 요청 코드가 아닌 총계 행은 raw 대조 없이도
+        거부한다(Codex 2회차 지적)."""
+        tampers = {
+            "RAW:garbage": "UPDATE observation SET month = 'RAW:garbage' WHERE rowid = 1",
+            "RAW: 빈 원문": "UPDATE observation SET month = 'RAW:' WHERE rowid = 1",
+            "RAW:2023": "UPDATE observation SET month = 'RAW:2023' WHERE rowid = 2",
+            "총계 행 코드가 하위 코드": "UPDATE observation SET hs_code = '850450', hs_level = 6 WHERE rowid = 25",
+        }
+        for index, (name, sql) in enumerate(tampers.items()):
+            with self.subTest(name):
+                target = self.dev_copy(f"snapshot_build-2609250006{index:02d}", with_record=False)
+                self.edit(target, sql)
+                report = verify.verify_snapshot(fx.SNAPSHOT_ID, build_file=target, check_raw=False)
+                self.assertFalse(check(report, "observation_rules"), name)
+                self.assertFalse(report["ok"])
+
     def test_peer_group_row_tampering(self):
         """비교국 표 행 변조 5종(자기 비교·순위 0·코드 체계·범위 대문자·유사도 글자)을 raw 대조와 관계없이 잡는다."""
         tampers = {
@@ -151,6 +172,7 @@ class FailingTest(VerifyTestBase):
             "코드 체계": "UPDATE peer_group SET entity_namespace = 'ISO2' WHERE rowid = 1",
             "범위 대문자": "UPDATE peer_group SET scope_type = 'HS6' WHERE rowid = 1",
             "유사도 글자": "UPDATE peer_group SET similarity = 'high' WHERE rowid = 4",
+            "BACI 코드 대응표 불일치": "UPDATE peer_group SET baci_country_code = '157' WHERE rowid = 1",
         }
         for index, (name, sql) in enumerate(tampers.items()):
             for check_raw in (True, False):
@@ -172,9 +194,18 @@ class FailingTest(VerifyTestBase):
         report = verify.verify_snapshot(fx.SNAPSHOT_ID, peer_group_files=[changed])
         self.assertFalse(check(report, "peer_group_sources"))  # sha256과 행이 빌드 기록·저장 행과 다르다
         self.assertFalse(report["ok"])
-        skipped = verify.verify_snapshot(fx.SNAPSHOT_ID)  # data/reference/에 없으면 건너뛴다
-        self.assertIsNone(check(skipped, "peer_group_sources"))
-        self.assertTrue(skipped["ok"])
+        default = verify.verify_snapshot(fx.SNAPSHOT_ID)  # 입력이 없으면 빌드 기록의 파일 이름을 data/reference/에서 찾는다
+        self.assertTrue(check(default, "peer_group_sources"))
+        self.assertTrue(default["ok"])
+
+    def test_peer_group_source_missing_fails(self):
+        """빌드 기록에 적힌 비교국 표를 찾지 못하면 원본 대조를 건너뛰지 않고 실패한다(Codex 권고)."""
+        self.reference.unlink()
+        report = verify.verify_snapshot(fx.SNAPSHOT_ID)
+        self.assertFalse(check(report, "peer_group_sources"))
+        self.assertFalse(report["ok"])
+        no_record = self.dev_copy(with_record=False)  # 빌드 기록이 없는 개발 빌드만 건너뛴다
+        self.assertIsNone(check(verify.verify_snapshot(fx.SNAPSHOT_ID, build_file=no_record), "peer_group_sources"))
 
     def test_hs10_children_place(self):
         """상대국 키에 HS10 하위 행도 HS6 자릿수 상태 행도 없으면 잡는다(DAL children()이 멈추는 자리)."""
