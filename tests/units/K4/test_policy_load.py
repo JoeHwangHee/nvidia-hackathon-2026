@@ -74,6 +74,17 @@ class DevPolicyFileTest(unittest.TestCase):
                 k4.load_policy("policy_v1", configs_dir=folder)  # JSON 아님
 
 
+class PolicyV1FileTest(unittest.TestCase):
+    """configs/policy_v1.json(DT4 ② 제안. 사용자 승인 뒤 동결 판정 정책의 정본)이 K4로 읽히는지만 본다. 수치는 사용자
+    승인으로 정하므로 여기서 고정하지 않는다."""
+
+    def test_policy_v1_file_loads_in_contract_units(self):
+        policy = k4.load_policy("policy_v1")
+        self.assertEqual(policy["policy_version"], "policy_v1")
+        for signal in ("unit_value", "share"):  # 자료 계약 §11.2 단위(%·pp). 비율 표기(0.3·0.1)면 1보다 작다
+            self.assertGreater(policy["thresholds"][signal], 1)
+
+
 class ParseTest(unittest.TestCase):
     def mutated(self, change) -> dict:
         doc = copy.deepcopy(DEV_DOC)

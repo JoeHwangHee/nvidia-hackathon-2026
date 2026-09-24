@@ -1,0 +1,10 @@
+{
+  "_status": "DT4 ②의 policy_v1 제안이다(사용자 승인 전). 사용자가 승인하면 오케스트레이터가 승인 기록에 맞게 이 설명을 고쳐 병합하고, 그때부터 동결 판정 정책 policy_v1의 정본이다(자료 계약 §10 계획 경로 표). 수치는 real_dev 21개 계열(결정 기록 20260924-2340-dt4-real-split-and-sample-seed.md)의 통계로만 정했다. 기준값 단위는 자료 계약 §11.2다(30%는 30, 10pp는 10). 발동 비교는 반올림 전 정확값의 절댓값 이상(>=)이다. min_amount(USD)·min_weight(kg)는 단가 신호에만 걸고, 비교월·기준월 두 달의 부모 HS6 행 가운데 하나라도 미달이면 그 단가 신호를 평가하지 않고 사례가 아니라 데이터 품질 목록에 둔다(단위 P1). tolerance는 금액 정확 일치, 중량 0.5kg×(대조한 하위 행 수+1)이다(자료 계약 §11.1). confirmed_no_trade의 규칙 ingest_verify_candidates는 수입 흐름의 HS6 자릿수 UNRESOLVED_ZERO 행 가운데 같은 상대국·HS6·월의 OBSERVED HS6 행이 없고, 같은 상대국·월에 같은 HS4 아래 다른 HS6의 OBSERVED 행이 있는 행을 CONFIRMED_NO_TRADE로 바꾼다(단위 S2). 승격된 달의 V·Q 칸은 null로 두고 지표·채점에서 0으로 다루며, 수입 0이 명시된 달은 OBSERVED(값 0)다(자료 계약 §3.4. 이 두 처리는 파일 키가 아니다). 형식은 src/tradesentry/contract/policy_load.py 머리 설명을 따른다.",
+  "schema_version": 1,
+  "policy_version": "policy_v1",
+  "thresholds": {"unit_value": 30, "share": 10},
+  "min_amount": 100,
+  "min_weight": 10,
+  "tolerance": {"amount_usd": 0, "weight_rounding_kg": 0.5},
+  "confirmed_no_trade": {"rule": "ingest_verify_candidates"}
+}
