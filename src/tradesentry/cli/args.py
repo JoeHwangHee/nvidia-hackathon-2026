@@ -11,8 +11,10 @@
 docs/plan/SCAFFOLD_BRIEF.md §4.7). 여기서는 값의 형식만 본다. 그 값이 가리키는 스냅샷·정책·사례가 실제로 있는지는 명령을
 잇는 조립체가 본다.
 
-- 명령마다 받는 옵션과 꼭 있어야 하는 옵션은 표 COMMAND_OPTIONS 하나로 정한다. 표에 없는 옵션은 그 명령의 파서에 없으므로
-  인자 오류다. 명령을 잇는 작업(AS1~AS3)은 자기 명령의 행만 고친다.
+- 공통 옵션 셋(--snapshot, --policy, --mode)은 자료 계약 §10 CLI 행대로 다섯 명령이 모두 받는다. 명령마다 옵션의 역할
+  (꼭 있어야 함, 없어도 됨, 받지만 쓰지 않음)은 표 COMMAND_OPTIONS 하나로 정한다. 쓰지 않는 옵션도 값 형식은 검사하고, 받은
+  값은 요청에 그대로 남긴다. 도움말에는 "이 명령은 이 값을 쓰지 않는다"를 적는다. --case는 공통 옵션이 아니라 run-case만
+  받는다. 표에 없는 옵션은 그 명령의 파서에 없으므로 인자 오류다. 명령을 잇는 작업(AS1~AS3)은 자기 명령의 행만 고친다.
 - 형식(모두 ASCII 문자만, 값 전체가 맞아야 하고, 64자 이하)
   - 스냅샷 ID(--snapshot): 영문 소문자로 시작하고 영문 소문자·숫자·밑줄만 쓴다. 예: kcs_202201_202412_v2.
   - 정책 버전 이름(--policy): 영문 소문자로 시작하고 영문 소문자·숫자·밑줄을 쓴다. 하이픈은 조각 사이에만, 점은 숫자
@@ -47,16 +49,26 @@ COMMANDS = {
     "evaluate": "자료 묶음의 사례를 모드별로 실행하고 실행 쪽 키를 기록한다(조립체 4)",
 }
 
-# 명령 → {옵션: 꼭 있어야 하면 True, 없어도 되면 False}. 표에 없는 옵션은 그 명령이 받지 않는다.
+# 옵션의 역할. REQUIRED: 꼭 있어야 하고 명령이 쓴다. OPTIONAL: 없어도 되고, 있으면 명령이 쓴다.
+# UNUSED: 받지만 이 명령은 쓰지 않는다(값 형식은 검사하고 요청에 그대로 남긴다).
+REQUIRED, OPTIONAL, UNUSED = "required", "optional", "unused"
+UNUSED_NOTE = "이 명령은 이 값을 쓰지 않는다(값 형식만 검사한다)"
+
+# 공통 옵션 셋. 계획 경로·명령 표(자료 계약 §10 CLI 행)의 "공통 옵션"이라 다섯 명령이 모두 받는다. 명령마다 쓰지 않는
+# 공통 옵션을 받지 않게 좁히는 일은 그 표의 읽기를 바꾸는 일이라 사용자 확인 전에는 하지 않는다(오케스트레이터 결정,
+# 병렬 개발 규칙 §4.3·§4.5).
+COMMON_OPTIONS = ("snapshot", "policy", "mode")
+
+# 명령 → {옵션: 역할}. 표에 없는 옵션(run-case 밖의 --case)은 그 명령이 받지 않는다.
 # snapshot-verify는 평가 스킬 ② 사전 점검과 룰북 B3·B7이 --snapshot 하나로 부른다. evaluate는 룰북 B7의 재현 명령 형식
 # (--snapshot, --policy, --mode와 나머지 인자)을 따른다. snapshot-build의 --policy는 승격 규칙에 쓸 정책이며, 없을 때의
 # 뜻은 단위 S2(로드맵 DT1)가 정한다.
 COMMAND_OPTIONS = {
-    "snapshot-build": {"snapshot": True, "policy": False},
-    "snapshot-verify": {"snapshot": True},
-    "detect": {"snapshot": True, "policy": True},
-    "run-case": {"snapshot": True, "policy": True, "mode": True, "case": True},
-    "evaluate": {"snapshot": True, "policy": True, "mode": True},
+    "snapshot-build": {"snapshot": REQUIRED, "policy": OPTIONAL, "mode": UNUSED},
+    "snapshot-verify": {"snapshot": REQUIRED, "policy": UNUSED, "mode": UNUSED},
+    "detect": {"snapshot": REQUIRED, "policy": REQUIRED, "mode": UNUSED},
+    "run-case": {"snapshot": REQUIRED, "policy": REQUIRED, "mode": REQUIRED, "case": REQUIRED},
+    "evaluate": {"snapshot": REQUIRED, "policy": REQUIRED, "mode": REQUIRED},
 }
 
 MAX_LENGTH = 64
@@ -127,8 +139,9 @@ class _Once(argparse.Action):
 class Request:
     """단위 F1 검증을 거친 요청. 처리 함수(tradesentry.cli.dispatch.HANDLERS)는 이것만 받는다.
 
-    필드 이름은 자료 계약의 키 이름(snapshot_id, policy_version, mode)을 따른다. 명령이 받지 않는 옵션과 적지 않은 선택
-    옵션은 None이다. case는 --case 값 그대로다(뜻은 run-case 배선이 정한다).
+    필드 이름은 자료 계약의 키 이름(snapshot_id, policy_version, mode)을 따른다. 적지 않은 옵션은 None이다. 명령이 쓰지
+    않는 공통 옵션(예: detect의 --mode)도 받은 값을 그대로 둔다. 쓸지 말지는 처리 함수가 COMMAND_OPTIONS대로 정한다.
+    case는 --case 값 그대로이고 run-case만 받는다(뜻은 run-case 배선이 정한다).
     """
 
     command: str
@@ -138,8 +151,14 @@ class Request:
     case: str | None = None
 
 
+def option_help(command: str, option: str) -> str:
+    """명령의 옵션 도움말. 그 명령이 쓰지 않는 옵션이면 UNUSED_NOTE를 덧붙인다."""
+    text = OPTIONS[option]["help"]
+    return f"{text}. {UNUSED_NOTE}" if COMMAND_OPTIONS[command][option] == UNUSED else text
+
+
 def build_parser() -> argparse.ArgumentParser:
-    """tradesentry 명령의 인자 틀. 명령마다 COMMAND_OPTIONS의 옵션만 둔다. 도움말(-h, --help)은 종료 코드 0이다.
+    """tradesentry 명령의 인자 틀. 명령마다 COMMAND_OPTIONS의 옵션을 둔다. 도움말(-h, --help)은 종료 코드 0이다.
 
     옵션 줄임(예: --snap)은 받지 않는다(allow_abbrev=False). 시연 경로에서는 하네스 모델이 명령을 조립하므로 적힌 그대로의
     옵션 이름만 받는다.
@@ -152,8 +171,9 @@ def build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", metavar="<명령>", required=True)
     for name, help_text in COMMANDS.items():
         command = commands.add_parser(name, help=help_text, description=help_text, allow_abbrev=False)
-        for option, required in COMMAND_OPTIONS[name].items():
-            command.add_argument(f"--{option}", dest=option, action=_Once, required=required, **OPTIONS[option])
+        for option, role in COMMAND_OPTIONS[name].items():
+            spec = dict(OPTIONS[option], help=option_help(name, option))
+            command.add_argument(f"--{option}", dest=option, action=_Once, required=role == REQUIRED, **spec)
     return parser
 
 

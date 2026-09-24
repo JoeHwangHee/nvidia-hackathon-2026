@@ -1,13 +1,16 @@
 """단위 F1(cli_args) 인자 검증 시험. 네트워크와 키 없이 돈다.
 
-골든 쌍(test_golden.py)은 올바른 run-case 요청 하나다. 여기서는 명령별 옵션 표, 값 형식(스냅샷 ID·정책 버전 이름·모드·사례
-인자), 경로 거부, 같은 옵션 반복 거부, 옵션 줄임 거부, 오류 문장이 받은 값을 되풀이하지 않는 것을 본다.
+골든 쌍(test_golden.py)은 올바른 run-case 요청 하나다. 여기서는 명령별 옵션 표(공통 옵션 셋은 다섯 명령이 모두 받고,
+명령이 쓰지 않는 옵션은 값 형식만 검사해 요청에 그대로 남긴다), 값 형식(스냅샷 ID·정책 버전 이름·모드·사례 인자), 경로 거부,
+같은 옵션 반복 거부, 옵션 줄임 거부, 오류 문장이 받은 값을 되풀이하지 않는 것을 본다.
 시험에 쓰는 절대경로 모양 값은 개발 기계에 없는 가짜 경로(/srv/probe 아래)다.
 """
 import contextlib
 import dataclasses
 import io
+import os
 import unittest
+from unittest import mock
 
 from tradesentry.cli import args
 
@@ -36,21 +39,30 @@ def parse_error(argv: list[str]) -> tuple[int, str]:
 
 
 class CommandOptionTableTest(unittest.TestCase):
-    def test_table_covers_every_command_and_known_options(self):
+    def test_every_command_takes_the_three_common_options(self):
+        self.assertEqual(args.COMMON_OPTIONS, ("snapshot", "policy", "mode"))  # 자료 계약 §10 CLI 행의 공통 옵션
         self.assertEqual(list(args.COMMAND_OPTIONS), list(args.COMMANDS))
         for command, options in args.COMMAND_OPTIONS.items():
             with self.subTest(command=command):
+                self.assertLessEqual(set(args.COMMON_OPTIONS), set(options))
                 self.assertLessEqual(set(options), set(args.OPTIONS))
-                self.assertIs(options.get("snapshot"), True)  # 모든 명령은 스냅샷 하나를 대상으로 한다
+                self.assertLessEqual(set(options.values()), {args.REQUIRED, args.OPTIONAL, args.UNUSED})
+                self.assertEqual(options["snapshot"], args.REQUIRED)  # 모든 명령은 스냅샷 하나를 대상으로 한다
+        self.assertEqual([command for command, options in args.COMMAND_OPTIONS.items() if "case" in options],
+                         ["run-case"])  # --case는 공통 옵션이 아니다
 
-    def test_documented_calls(self):
-        # 평가 스킬 ② 사전 점검·룰북 B3의 스냅샷 검증, 룰북 B7의 평가 재현 명령 형식
-        self.assertEqual(args.COMMAND_OPTIONS["snapshot-verify"], {"snapshot": True})
-        self.assertEqual(args.COMMAND_OPTIONS["evaluate"], {"snapshot": True, "policy": True, "mode": True})
-        self.assertEqual(args.COMMAND_OPTIONS["run-case"],
-                         {"snapshot": True, "policy": True, "mode": True, "case": True})
+    def test_roles(self):
+        # snapshot-verify: 평가 스킬 ② 사전 점검·룰북 B3이 --snapshot 하나로 부른다. evaluate: 룰북 B7의 재현 명령 형식
+        R, O, U = args.REQUIRED, args.OPTIONAL, args.UNUSED
+        self.assertEqual(args.COMMAND_OPTIONS, {
+            "snapshot-build": {"snapshot": R, "policy": O, "mode": U},
+            "snapshot-verify": {"snapshot": R, "policy": U, "mode": U},
+            "detect": {"snapshot": R, "policy": R, "mode": U},
+            "run-case": {"snapshot": R, "policy": R, "mode": R, "case": R},
+            "evaluate": {"snapshot": R, "policy": R, "mode": R},
+        })
 
-    def test_each_command_parses_with_its_options(self):
+    def test_each_command_keeps_every_value_it_was_given(self):
         for command, options in args.COMMAND_OPTIONS.items():
             with self.subTest(command=command):
                 request = args.parse(argv_for(command))
@@ -60,14 +72,26 @@ class CommandOptionTableTest(unittest.TestCase):
                     expected = SAMPLE[option] if option in options else None
                     self.assertEqual(getattr(request, field), expected, field)
 
+    def test_only_required_options_are_needed(self):
+        for command, options in args.COMMAND_OPTIONS.items():
+            argv = [command]
+            for option, role in options.items():
+                if role == args.REQUIRED:
+                    argv += [f"--{option}", SAMPLE[option]]
+            with self.subTest(command=command):
+                request = args.parse(argv)
+                for option, field in FIELD.items():
+                    expected = SAMPLE[option] if options.get(option) == args.REQUIRED else None
+                    self.assertEqual(getattr(request, field), expected, field)
+
     def test_optional_policy_of_snapshot_build(self):
         request = args.parse(["snapshot-build", "--snapshot", "kcs_202201_202412_v2"])
         self.assertEqual((request.snapshot_id, request.policy_version), ("kcs_202201_202412_v2", None))
 
     def test_required_options(self):
         for command, options in args.COMMAND_OPTIONS.items():
-            for option, required in options.items():
-                if not required:
+            for option, role in options.items():
+                if role != args.REQUIRED:
                     continue
                 argv = argv_for(command)
                 index = argv.index(f"--{option}")
@@ -77,19 +101,36 @@ class CommandOptionTableTest(unittest.TestCase):
                     self.assertEqual(code, 2)
                     self.assertIn(f"--{option}", err)
 
-    def test_options_not_taken_by_a_command_are_refused(self):
+    def test_unused_options_are_format_checked(self):
+        bad = {"policy": ["policy_v1.json", "/srv/probe/policy_v1.json"], "mode": ["fast", "/srv/probe/mode"]}
         for command, options in args.COMMAND_OPTIONS.items():
-            for option in set(args.OPTIONS) - set(options):
-                with self.subTest(command=command, option=option):
-                    code, err = parse_error(argv_for(command) + [f"--{option}", SAMPLE[option]])
-                    self.assertEqual(code, 2)
-                    self.assertIn(f"--{option}", err)
+            for option, role in options.items():
+                if role != args.UNUSED:
+                    continue
+                for value in bad[option]:
+                    with self.subTest(command=command, option=option, value=value):
+                        code, err = parse_error(argv_for(command, **{option: value}))
+                        self.assertEqual(code, 2)
+                        self.assertIn(f"--{option}", err)
+                        self.assertNotIn("/srv", err)
 
-    def test_help_lists_exactly_the_options_of_the_command(self):
+    def test_case_is_refused_outside_run_case(self):
+        for command, options in args.COMMAND_OPTIONS.items():
+            if "case" in options:
+                continue
+            with self.subTest(command=command):
+                code, err = parse_error(argv_for(command) + ["--case", SAMPLE["case"]])
+                self.assertEqual(code, 2)
+                self.assertIn("unrecognized arguments: --case", err)
+
+    def test_help_shows_every_option_and_marks_unused_ones(self):
         for command, options in args.COMMAND_OPTIONS.items():
             with self.subTest(command=command):
+                for option, role in options.items():
+                    self.assertEqual(args.option_help(command, option).endswith(args.UNUSED_NOTE), role == args.UNUSED)
                 out = io.StringIO()
-                with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as caught:
+                with mock.patch.dict(os.environ, {"COLUMNS": "1000"}), contextlib.redirect_stdout(out), \
+                        self.assertRaises(SystemExit) as caught:  # 넓은 폭: 도움말 줄바꿈이 문장을 자르지 않게
                     args.parse([command, "--help"])
                 self.assertEqual(caught.exception.code, 0)
                 for option in args.OPTIONS:
@@ -97,6 +138,8 @@ class CommandOptionTableTest(unittest.TestCase):
                         self.assertIn(f"--{option}", out.getvalue())
                     else:
                         self.assertNotIn(f"--{option}", out.getvalue())
+                unused = sum(role == args.UNUSED for role in options.values())
+                self.assertEqual(out.getvalue().count(args.UNUSED_NOTE), unused)
 
 
 class ValueFormatTest(unittest.TestCase):
@@ -213,9 +256,11 @@ class ErrorMessageTest(unittest.TestCase):
 
 class RunTest(unittest.TestCase):
     def test_run_returns_the_request_fields(self):
-        self.assertEqual(args.run(argv_for("detect")),
+        detect = ["detect", "--snapshot", "controlled_fixture_v0", "--policy", "dev-0.1"]
+        self.assertEqual(args.run(detect),
                          {"command": "detect", "snapshot_id": "controlled_fixture_v0", "policy_version": "dev-0.1",
                           "mode": None, "case": None})
+        self.assertEqual(args.run(detect + ["--mode", "agent"])["mode"], "agent")  # 쓰지 않는 옵션도 받은 값 그대로
 
     def test_run_takes_only_a_list_of_strings(self):
         for bad in (None, "detect", ("detect",), ["detect", 1], {"argv": []}):

@@ -6,9 +6,9 @@
   오류 문장과 종료 코드 3"은 명령마다 따로 시험해, 한 명령을 잇는 PR이 다른 명령의 시험을 건드리지 않게 한다.
   이은 처리 함수 안에서 난 NotImplementedError는 3이 아니다(tests/units/F2/test_dispatch.py).
 - 처리 함수는 단위 F1이 검증한 요청(args.Request)을 받는다.
-- 명령마다 받는 옵션과 꼭 있어야 하는 옵션은 단위 F1의 표(args.COMMAND_OPTIONS)가 정한다. VALID_ARGV는 그 표와 따로
-  적은, 문서에 있는 호출 모양이다(평가 스킬 ② 사전 점검의 snapshot-verify, 룰북 B7의 evaluate). 값 형식의 세부 시험은
-  tests/units/F1/test_args.py에 있다.
+- 다섯 명령은 모두 공통 옵션 셋(--snapshot, --policy, --mode)을 받는다(자료 계약 §10 CLI 행). 꼭 있어야 하는 옵션은 단위
+  F1의 표(args.COMMAND_OPTIONS)가 정한다. VALID_ARGV는 그 표와 따로 적은, 문서에 있는 호출 모양이다(평가 스킬 ② 사전
+  점검의 snapshot-verify, 룰북 B7의 evaluate). 값 형식과 옵션 역할의 세부 시험은 tests/units/F1/test_args.py에 있다.
 """
 import io
 import subprocess
@@ -29,7 +29,6 @@ VALID_ARGV = {
                  "--case", "A-composition"],
     "evaluate": ["evaluate", "--snapshot", "controlled_fixture_v0", "--policy", "dev-0.1", "--mode", "full"],
 }
-OPTIONS_OF = {command: [a for a in argv if a.startswith("--")] for command, argv in VALID_ARGV.items()}
 
 
 def call(argv: list[str]) -> tuple[int, str, str]:
@@ -70,16 +69,13 @@ class CliTest(unittest.TestCase):
             with self.subTest(command=command):
                 code, out, _ = call([command, "--help"])
                 self.assertEqual(code, 0)
-                for option in OPTIONS_OF[command]:
+                for option in ("--snapshot", "--policy", "--mode"):
                     self.assertIn(option, out)
-        for command in ("run-case", "evaluate"):  # 공통 옵션 셋을 모두 받는 명령(룰북 B7)
-            self.assertLessEqual({"--snapshot", "--policy", "--mode"}, set(OPTIONS_OF[command]))
 
     def test_every_documented_call_parses(self):
         for command, argv in VALID_ARGV.items():
             with self.subTest(command=command):
                 self.assertEqual(args.parse(argv).command, command)
-        self.assertEqual(OPTIONS_OF["snapshot-verify"], ["--snapshot"])
 
     def test_handler_gets_parsed_options_and_its_exit_code_is_returned(self):
         handler = FakeHandler(code=5)

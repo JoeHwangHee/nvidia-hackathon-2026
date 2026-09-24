@@ -39,6 +39,8 @@
 - snapshot-verify: 단위 S3 run({"snapshot_id"})의 출력(JSON 객체)을 outputs/snapshot_verify-{시각}/snapshot_verify-{시각}.json에
   쓴다. 그 객체의 합격 표시 ok가 참이면 0, 거짓이면 1이다. ok가 없거나 참·거짓 값이 아니면 합격으로 보지 않고 4로 끝난다.
 - 단위 입력은 snapshot_build_input·snapshot_verify_input 두 함수에서만 만든다. 단위 S2·S3의 입력 모양이 바뀌면 여기만 고친다.
+  명령이 쓰지 않는 공통 옵션(snapshot-build의 --mode, snapshot-verify의 --policy·--mode. args.COMMAND_OPTIONS의 UNUSED)은
+  요청에는 남지만 단위 입력에는 넣지 않는다.
 
 평가 하네스는 모듈 단위로만 허용한다. 호스트 전용 샌드박스 밖 실행기(단위 E2, tradesentry.evaluation.sealed_runner)는
 CLI가 부르지 않는다.

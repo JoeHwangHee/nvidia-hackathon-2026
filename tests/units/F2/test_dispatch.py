@@ -79,7 +79,8 @@ class MainTest(unittest.TestCase):
                      ["detect", "--snapshot", "Controlled", "--policy", "dev-0.1"],
                      ["detect", "--snapshot", "controlled_fixture_v0"],
                      ARGV["detect"] + ["--policy", "dev-0.1"],
-                     ARGV["detect"] + ["--mode", "full"])
+                     ARGV["detect"] + ["--mode", "fast"],  # 쓰지 않는 공통 옵션도 값 형식은 검사한다
+                     ARGV["detect"] + ["--case", "A-composition"])  # --case는 run-case만 받는다
         with mock.patch.dict(dispatch.HANDLERS, {"detect": recorder}):
             for argv in bad_calls:
                 with self.subTest(argv=argv):
@@ -291,6 +292,17 @@ class SnapshotWiringTest(TempOutputs):
                          {"snapshot_id": "controlled_fixture_v0", "policy_version": "policy_v1"})
         self.assertEqual(dispatch.snapshot_verify_input(args.parse(ARGV["snapshot-verify"])),
                          {"snapshot_id": "controlled_fixture_v0"})
+
+    def test_unused_common_options_are_not_passed_to_the_units(self):
+        code, _, _, stub = self.build(self.SQLITE, ARGV["snapshot-build"] + ["--mode", "agent"])
+        self.assertEqual(code, 0)
+        stub.assert_called_once_with({"snapshot_id": "controlled_fixture_v0", "policy_version": None})
+        stub = mock.Mock(return_value={"ok": True})
+        with mock.patch("tradesentry.snapshot.verify.run", stub), \
+                mock.patch.object(dispatch, "OUTPUT_PARENT", self.fresh_outputs()):
+            code, _, _ = call(ARGV["snapshot-verify"] + ["--policy", "dev-0.1", "--mode", "full"])
+        self.assertEqual(code, 0)
+        stub.assert_called_once_with({"snapshot_id": "controlled_fixture_v0"})
 
 
 class FakeClock:
