@@ -683,5 +683,5 @@ env -u NVIDIA_API_KEY -u DATA_GO_KR_SERVICE_KEY python -m eval.scorer --run <run
 - **`{시각}`**: 그 실행이 시작한 KST 24시간 12자리 시각 `yymmddhhmmss`. 한 실행의 모든 출력이 같은 시각을 쓴다.
 - **단위 / 도메인명**: 혼자 실행하고 시험할 수 있게 파일 하나로 만든 가장 작은 구현 조각(`docs/plan/UNITS.md`) / 단위마다 붙인 출력용 이름 `{패키지}_{단위}`. 출력 파일 이름은 `{도메인명}-{시각}.{확장자}`다.
 - **도메인 출력(`outputs/`)**: 실행마다 폴더 하나에 쌓는 출력물. 커밋하지 않는다. 봉인 묶음 실행의 출력은 `outputs/sealed/{실행명}/`에 둔다.
-- **증거 복사 / 커밋 사본**: 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 종류마다 정한 커밋 증거 파일만 복사해 커밋하는 일 / 그렇게 커밋한 폴더와 파일. "승격"은 이 일에 쓰지 않는다(자료 계약 용어 설명). 평가 결과는 채점기 출력(`scorer_*`)만 `artifacts/eval/score-{시각}/`로, OpenShell 증거는 결과 파일(`.md`·`.txt`·`.yaml`)만 `artifacts/openshell/openshell_violation_tests-{시각}/`로 복사한다. trace 같은 실행 기록 원본은 복사하지 않는다.
+- **증거 복사 / 커밋 사본**: 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 종류마다 정한 커밋 증거 파일만 복사해 커밋하는 일 / 그렇게 커밋한 폴더와 파일. "승격"은 이 일에 쓰지 않는다(자료 계약 용어 설명). 평가 결과는 채점기 출력(`scorer_*` 파일)과 재채점용 보고서 원문(`{run_id}/` 아래, 허용 목록의 보고서 파일만)을 `artifacts/eval/score-{시각}/`로, OpenShell 증거는 결과 파일(`.md`·`.txt`·`.yaml`)만 `artifacts/openshell/openshell_violation_tests-{시각}/`로 복사한다. trace 같은 실행 기록 원본은 복사하지 않는다.
 - **평가 하네스 단위 `evaluation_batch_run`**: 평가 묶음 실행에서 사례 실행을 교차 배치로 돌리고 실행 쪽 키를 `evaluation_batch_run-{시각}.jsonl`로 쓰는 단위.
