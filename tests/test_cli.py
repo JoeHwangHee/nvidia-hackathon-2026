@@ -113,7 +113,7 @@ class CliTest(unittest.TestCase):
             with self.subTest(argv=argv):
                 code, _, err = call(argv)
                 self.assertEqual(code, 2)
-                self.assertIn(f"unrecognized arguments: {argv[-2]} {argv[-1]}", err)
+                self.assertIn(f"unrecognized arguments: {argv[-2]} <값 생략>", err)  # 값은 되풀이하지 않는다
         handler = FakeHandler()
         with mock.patch.dict(dispatch.HANDLERS, {"detect": handler}):
             self.assertEqual(call(["detect", "--snapshot", "x", "--policy", "dev-0.1"])[0], 0)  # 온전한 이름은 받는다

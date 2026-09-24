@@ -214,7 +214,7 @@ class RepeatAndAbbreviationTest(unittest.TestCase):
             with self.subTest(abbreviation=abbreviation):
                 code, err = parse_error(argv_for("run-case") + [abbreviation, "x"])
                 self.assertEqual(code, 2)
-                self.assertIn(f"unrecognized arguments: {abbreviation} x", err)
+                self.assertIn(f"unrecognized arguments: {abbreviation} <값 생략>", err)  # 값은 되풀이하지 않는다
 
     def test_file_arguments_are_not_expanded(self):
         self.assertIsNone(args.build_parser().fromfile_prefix_chars)
@@ -247,11 +247,91 @@ class ErrorMessageTest(unittest.TestCase):
                 self.assertIn("정책 버전 이름에는 경로를 쓰지 않는다", err)
 
     def test_redact(self):
-        self.assertEqual(args.redact("unrecognized arguments: /srv/probe/x y"), "unrecognized arguments: <경로 생략> y")
-        self.assertEqual(args.redact("invalid choice: 'a\\b' (choose from x)"), "invalid choice: '<경로 생략>' (choose from x)")
-        self.assertEqual(args.redact("--case 옵션을 두 번 적었다"), "--case 옵션을 두 번 적었다")
+        omitted, hidden = args.VALUE_OMITTED, args.PATH_OMITTED
+        cases = {
+            "unrecognized arguments: /srv/probe/x y": f"unrecognized arguments: {omitted} {omitted}",
+            "unrecognized arguments: --snap=v --weird-option x":
+                f"unrecognized arguments: --snap={omitted} --weird-option {omitted}",
+            "unrecognized arguments: --" + "a" * 31 + " --Snap --snap\nx":
+                f"unrecognized arguments: {omitted} {omitted} {omitted}",  # 32자 넘는 이름, 대문자, 줄바꿈 붙은 이름
+            "invalid choice: 'a\\b' (choose from x)": f"invalid choice: {omitted} (choose from x)",
+            "invalid choice: \"it's\" (choose from x)": f"invalid choice: {omitted} (choose from x)",
+            "argument -h/--help: ignored explicit argument 'x'":
+                f"argument -h/--help: ignored explicit argument {omitted}",  # 옵션 별칭은 경로로 보지 않는다
+            "argument --mode: expected one argument /srv/probe/x": f"argument --mode: expected one argument {hidden}",
+            "a\x1bb\u202ec\nd\u2028e": "a\\x1bb\\u202ec\\x0ad\\u2028e",
+            "--case 옵션을 두 번 적었다": "--case 옵션을 두 번 적었다",
+        }
+        for message, expected in cases.items():
+            with self.subTest(message=message):
+                self.assertEqual(args.redact(message), expected)
         for rule in (args.SNAPSHOT_RULE, args.POLICY_RULE, args.CASE_RULE):
             self.assertEqual(args.redact(rule), rule)  # 규칙 문장 자체는 가려지지 않는다
+
+    def test_values_are_never_repeated(self):
+        fake = "FAKE_SECRET_TOKEN_123"  # 경로가 아닌 가짜 값
+        calls = {
+            "모르는 인자": argv_for("detect") + [fake],
+            "모르는 옵션의 값": argv_for("detect") + [f"--snap={fake}"],
+            "선택지 밖 모드": argv_for("run-case", mode=fake),
+            "모르는 명령": [fake],
+            "받지 않는 명시 값": argv_for("detect") + [f"--help={fake}"],
+            "공백 든 경로": argv_for("detect") + ["/srv/probe dir/secret name.txt"],
+            "구분자 없는 홈 모양": argv_for("detect") + ["~probe_user"],
+        }
+        for name, argv in calls.items():
+            with self.subTest(name):
+                code, err = parse_error(argv)
+                self.assertEqual(code, 2)
+                for leak in (fake, "srv", "probe", "secret", "name.txt"):
+                    self.assertNotIn(leak, err)
+                self.assertIn(args.VALUE_OMITTED, err)
+
+    def test_control_characters_cannot_forge_lines(self):
+        for value in ("x\nFAKE_LOG_LINE exit=0", "\x1b[31mRED", "\u202eRLO", "a\rb", "a\u2028b"):
+            for argv in (argv_for("detect") + [value], argv_for("run-case", mode=value)):
+                with self.subTest(value=value, argv=argv[0]):
+                    code, err = parse_error(argv)
+                    self.assertEqual(code, 2)
+                    self.assertNotIn("FAKE_LOG_LINE", err)
+                    for control in ("\x1b", "\u202e", "\r", "\u2028"):
+                        self.assertNotIn(control, err)
+                    self.assertTrue(err.splitlines()[-1].startswith("tradesentry"))  # 마지막 줄은 오류 문장이다
+
+
+class OutputEncodingTest(unittest.TestCase):
+    """표준 출력·오류가 한국어를 못 쓰는 인코딩이어도 호출 경로 기록 없이 argparse 방식으로 끝난다."""
+
+    def ascii_stream(self) -> io.TextIOWrapper:
+        return io.TextIOWrapper(io.BytesIO(), encoding="ascii")
+
+    def test_argument_error_on_an_ascii_stream(self):
+        stream = self.ascii_stream()
+        with contextlib.redirect_stderr(stream), self.assertRaises(SystemExit) as caught:
+            args.parse(argv_for("detect", snapshot="Bad"))
+        self.assertEqual(caught.exception.code, 2)
+        stream.flush()
+        text = stream.buffer.getvalue().decode("ascii")
+        self.assertIn("argument --snapshot:", text)
+        self.assertIn("\\u", text)  # 한국어는 역슬래시 표기로 남는다
+
+    def test_help_on_an_ascii_stream(self):
+        stream = self.ascii_stream()
+        with contextlib.redirect_stdout(stream), self.assertRaises(SystemExit) as caught:
+            args.parse(["run-case", "--help"])
+        self.assertEqual(caught.exception.code, 0)
+        stream.flush()
+        self.assertIn("--case CASE", stream.buffer.getvalue().decode("ascii"))
+
+    def test_write_text(self):
+        stream = self.ascii_stream()
+        args.write_text(stream, "가a\n")
+        stream.flush()
+        self.assertEqual(stream.buffer.getvalue(), b"\\uac00a\n")
+        closed = self.ascii_stream()
+        closed.close()
+        args.write_text(closed, "가")  # 닫힌 흐름(ValueError)은 조용히 넘어간다
+        args.write_text(None, "가")  # 흐름이 없으면(AttributeError) 조용히 넘어간다
 
 
 class RunTest(unittest.TestCase):
