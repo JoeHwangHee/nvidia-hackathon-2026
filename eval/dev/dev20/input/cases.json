@@ -1,0 +1,129 @@
+{
+ "schema_version": 1,
+ "dataset": "dev20",
+ "snapshot_id": "dev20",
+ "policy_version": "dev-0.1",
+ "snapshot_normalized_sha256": "3b45fdd26400f86146a1ee764dedcd365d77249120c0aa406c7f4be379bc714f",
+ "cases": [
+  {
+   "case_id": "850431-CN-202406",
+   "hs6": "850431",
+   "partner": "CN",
+   "month": "202406"
+  },
+  {
+   "case_id": "850431-DE-202408",
+   "hs6": "850431",
+   "partner": "DE",
+   "month": "202408"
+  },
+  {
+   "case_id": "850431-JP-202404",
+   "hs6": "850431",
+   "partner": "JP",
+   "month": "202404"
+  },
+  {
+   "case_id": "850431-MY-202401",
+   "hs6": "850431",
+   "partner": "MY",
+   "month": "202401"
+  },
+  {
+   "case_id": "850431-US-202412",
+   "hs6": "850431",
+   "partner": "US",
+   "month": "202412"
+  },
+  {
+   "case_id": "850431-VN-202410",
+   "hs6": "850431",
+   "partner": "VN",
+   "month": "202410"
+  },
+  {
+   "case_id": "850432-CN-202406",
+   "hs6": "850432",
+   "partner": "CN",
+   "month": "202406"
+  },
+  {
+   "case_id": "850432-JP-202402",
+   "hs6": "850432",
+   "partner": "JP",
+   "month": "202402"
+  },
+  {
+   "case_id": "850432-MY-202410",
+   "hs6": "850432",
+   "partner": "MY",
+   "month": "202410"
+  },
+  {
+   "case_id": "850432-US-202408",
+   "hs6": "850432",
+   "partner": "US",
+   "month": "202408"
+  },
+  {
+   "case_id": "850432-VN-202404",
+   "hs6": "850432",
+   "partner": "VN",
+   "month": "202404"
+  },
+  {
+   "case_id": "850450-CN-202403",
+   "hs6": "850450",
+   "partner": "CN",
+   "month": "202403"
+  },
+  {
+   "case_id": "850450-DE-202407",
+   "hs6": "850450",
+   "partner": "DE",
+   "month": "202407"
+  },
+  {
+   "case_id": "850450-JP-202405",
+   "hs6": "850450",
+   "partner": "JP",
+   "month": "202405"
+  },
+  {
+   "case_id": "850450-MY-202402",
+   "hs6": "850450",
+   "partner": "MY",
+   "month": "202402"
+  },
+  {
+   "case_id": "850450-US-202411",
+   "hs6": "850450",
+   "partner": "US",
+   "month": "202411"
+  },
+  {
+   "case_id": "850450-VN-202409",
+   "hs6": "850450",
+   "partner": "VN",
+   "month": "202409"
+  },
+  {
+   "case_id": "850490-DE-202305",
+   "hs6": "850490",
+   "partner": "DE",
+   "month": "202305"
+  },
+  {
+   "case_id": "850490-JP-202403",
+   "hs6": "850490",
+   "partner": "JP",
+   "month": "202403"
+  },
+  {
+   "case_id": "850490-US-202309",
+   "hs6": "850490",
+   "partner": "US",
+   "month": "202309"
+  }
+ ]
+}
