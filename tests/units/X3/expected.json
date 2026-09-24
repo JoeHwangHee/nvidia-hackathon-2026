@@ -1,0 +1,367 @@
+{
+  "metrics": [
+    {
+      "metric_id": "within_effect-4051b3118cdec388",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "within_effect",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202401",
+        "baseline_period": "202301",
+        "V_0": 1800,
+        "Q_0": 301,
+        "V_1": 1480,
+        "Q_1": 259,
+        "hs10": ["8504501000", "8504502000", "8504509000"]
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:301", "ev:golden_metrics:observation:302", "ev:golden_metrics:observation:311", "ev:golden_metrics:observation:312", "ev:golden_metrics:observation:313", "ev:golden_metrics:observation:321", "ev:golden_metrics:observation:322", "ev:golden_metrics:observation:323"],
+      "value": 0.36,
+      "unit": "USD/kg",
+      "comparability_flags": [],
+      "tolerance": 2.0
+    },
+    {
+      "metric_id": "mix_effect-0630e0c3bb108a98",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "mix_effect",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202401",
+        "baseline_period": "202301",
+        "V_0": 1800,
+        "Q_0": 301,
+        "V_1": 1480,
+        "Q_1": 259,
+        "hs10": ["8504501000", "8504502000", "8504509000"]
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:301", "ev:golden_metrics:observation:302", "ev:golden_metrics:observation:311", "ev:golden_metrics:observation:312", "ev:golden_metrics:observation:313", "ev:golden_metrics:observation:321", "ev:golden_metrics:observation:322", "ev:golden_metrics:observation:323"],
+      "value": -0.67,
+      "unit": "USD/kg",
+      "comparability_flags": [],
+      "tolerance": 2.0
+    },
+    {
+      "metric_id": "residual-070f1fa7c4e35dfc",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "residual",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202401",
+        "baseline_period": "202301",
+        "V_0": 1800,
+        "Q_0": 301,
+        "V_1": 1480,
+        "Q_1": 259,
+        "hs10": ["8504501000", "8504502000", "8504509000"]
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:301", "ev:golden_metrics:observation:302", "ev:golden_metrics:observation:311", "ev:golden_metrics:observation:312", "ev:golden_metrics:observation:313", "ev:golden_metrics:observation:321", "ev:golden_metrics:observation:322", "ev:golden_metrics:observation:323"],
+      "value": 0.04,
+      "unit": "USD/kg",
+      "comparability_flags": [],
+      "tolerance": 2.0
+    },
+    {
+      "metric_id": "U@8504501000-b1d386145c3dd2fb",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "U@8504501000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202301",
+        "baseline_period": null,
+        "V": 300,
+        "Q": 100
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:311"],
+      "value": 3.00,
+      "unit": "USD/kg",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "U@8504501000-5fe3cb313046747d",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "U@8504501000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202401",
+        "baseline_period": null,
+        "V": 330,
+        "Q": 110
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:321"],
+      "value": 3.00,
+      "unit": "USD/kg",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "r_U@8504501000-30b5bd3fe5698385",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "r_U@8504501000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202401",
+        "baseline_period": "202301",
+        "V_0": 300,
+        "Q_0": 100,
+        "V_1": 330,
+        "Q_1": 110
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:311", "ev:golden_metrics:observation:321"],
+      "value": 0.0,
+      "unit": "%",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "w@8504501000-24f27a91e3abf6fd",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "w@8504501000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202301",
+        "baseline_period": null,
+        "Q": 100,
+        "Q_total": 300
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:311", "ev:golden_metrics:observation:312", "ev:golden_metrics:observation:313"],
+      "value": 33.3,
+      "unit": "%",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "w@8504501000-c9a0b8be855c037d",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "w@8504501000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202401",
+        "baseline_period": null,
+        "Q": 110,
+        "Q_total": 260
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:321", "ev:golden_metrics:observation:322", "ev:golden_metrics:observation:323"],
+      "value": 42.3,
+      "unit": "%",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "U@8504502000-1b1c1d19c0caad36",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "U@8504502000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202301",
+        "baseline_period": null,
+        "V": 600,
+        "Q": 100
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:312"],
+      "value": 6.00,
+      "unit": "USD/kg",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "U@8504502000-622623f9fd4bd21f",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "U@8504502000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202401",
+        "baseline_period": null,
+        "V": 700,
+        "Q": 100
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:322"],
+      "value": 7.00,
+      "unit": "USD/kg",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "r_U@8504502000-72c918e9c4e1be23",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "r_U@8504502000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202401",
+        "baseline_period": "202301",
+        "V_0": 600,
+        "Q_0": 100,
+        "V_1": 700,
+        "Q_1": 100
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:312", "ev:golden_metrics:observation:322"],
+      "value": 16.7,
+      "unit": "%",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "w@8504502000-e082ae7f5734e757",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "w@8504502000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202301",
+        "baseline_period": null,
+        "Q": 100,
+        "Q_total": 300
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:312", "ev:golden_metrics:observation:311", "ev:golden_metrics:observation:313"],
+      "value": 33.3,
+      "unit": "%",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "w@8504502000-4397aac9df9ee9d1",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "w@8504502000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202401",
+        "baseline_period": null,
+        "Q": 100,
+        "Q_total": 260
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:322", "ev:golden_metrics:observation:321", "ev:golden_metrics:observation:323"],
+      "value": 38.5,
+      "unit": "%",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "U@8504509000-a2287401a18b4d82",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "U@8504509000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202301",
+        "baseline_period": null,
+        "V": 900,
+        "Q": 100
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:313"],
+      "value": 9.00,
+      "unit": "USD/kg",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "U@8504509000-78b3f9a324bea1d6",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "U@8504509000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202401",
+        "baseline_period": null,
+        "V": 450,
+        "Q": 50
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:323"],
+      "value": 9.00,
+      "unit": "USD/kg",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "r_U@8504509000-c60fea1fcccab650",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "r_U@8504509000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202401",
+        "baseline_period": "202301",
+        "V_0": 900,
+        "Q_0": 100,
+        "V_1": 450,
+        "Q_1": 50
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:313", "ev:golden_metrics:observation:323"],
+      "value": 0.0,
+      "unit": "%",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "w@8504509000-60ccb65dca05e1ba",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "w@8504509000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202301",
+        "baseline_period": null,
+        "Q": 100,
+        "Q_total": 300
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:313", "ev:golden_metrics:observation:311", "ev:golden_metrics:observation:312"],
+      "value": 33.3,
+      "unit": "%",
+      "comparability_flags": [],
+      "tolerance": null
+    },
+    {
+      "metric_id": "w@8504509000-6f50d78fba596f41",
+      "formula_version": "1",
+      "inputs": {
+        "metric": "w@8504509000",
+        "hs6": "850450",
+        "partner": "CN",
+        "period": "202401",
+        "baseline_period": null,
+        "Q": 50,
+        "Q_total": 260
+      },
+      "evidence_ids": ["ev:golden_metrics:observation:323", "ev:golden_metrics:observation:321", "ev:golden_metrics:observation:322"],
+      "value": 19.2,
+      "unit": "%",
+      "comparability_flags": [],
+      "tolerance": null
+    }
+  ],
+  "parent_check": [
+    {
+      "period": "202301",
+      "row_count": 3,
+      "V_parent": 1800,
+      "V_hs10": 1800,
+      "Q_parent": 301,
+      "Q_hs10": 300,
+      "tolerance": 2.0,
+      "V_match": true,
+      "Q_match": true
+    },
+    {
+      "period": "202401",
+      "row_count": 3,
+      "V_parent": 1480,
+      "V_hs10": 1480,
+      "Q_parent": 259,
+      "Q_hs10": 260,
+      "tolerance": 2.0,
+      "V_match": true,
+      "Q_match": true
+    }
+  ]
+}
