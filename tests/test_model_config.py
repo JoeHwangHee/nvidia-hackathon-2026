@@ -79,7 +79,8 @@ class ModelConfigTest(unittest.TestCase):
         # model-0.9: 증감 어휘는 지표 주장에만(narrative·가설 금지), compare_partners 설명(AS2 8회차, 결정 기록 ⑲)
         # model-1.0: 판정 정책 설명 바로잡음(무역 검토 막음 1), 검증기 산문 패턴 목록, max_tokens 8192(AS2 9회차, ⑳)
         # model-1.1: 도구 차례 max_tokens 1024(tool_turn_max_tokens), 계산 불가 안내·산문 수정 지시(AS2 10회차, ㉑)
-        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-1.1", "json_object"))
+        # model-1.2: limits.tokens 128,000(사용자 결정 4), 지침 규칙 요약에 U4 반올림 불안정 → HOLD(사용자 결정 1, ㉒)
+        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-1.2", "json_object"))
         self.assertEqual((cfg["request"]["max_tokens"], cfg["request"]["tool_turn_max_tokens"]), (8192, 1024))
         for value in walk(cfg):
             if isinstance(value, str):
@@ -88,7 +89,7 @@ class ModelConfigTest(unittest.TestCase):
     def test_limits_match_the_documented_adjustable_values(self):
         cfg = load()
         limits = cfg["limits"]
-        self.assertEqual(limits, {"model_requests": 10, "tokens": 32000, "wall_ms": 300000, "tool_attempts": 8,
+        self.assertEqual(limits, {"model_requests": 10, "tokens": 128000, "wall_ms": 300000, "tool_attempts": 8,
                                   "basic_tool_attempts": 5, "investigator_comparisons": 2, "revision_stages": 1,
                                   "revision_requeries": 2, "final_verify": 1})
         self.assertEqual(limits["basic_tool_attempts"] + limits["revision_requeries"] + limits["final_verify"],

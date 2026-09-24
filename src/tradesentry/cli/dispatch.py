@@ -469,8 +469,9 @@ REPORT_DOMAIN = "reports_render_ko"  # 최종 보고서를 만드는 단위 R2�
 NAT_DOMAIN = "workflow_nat_wrap"  # NAT 추적·프로파일 N7 폴더(단위 I13)
 UNKNOWN_CODE_VERSION = "unknown"  # git 메타를 읽을 수 없을 때의 code_version(샌드박스·휠 설치)
 PEER_ROW_SCAN_MAX = 100_000  # 비교국 표의 grouping_version을 읽을 때 훑는 rowid 상한
-# 반올림 불안정(U4 후보, 2026-09-25(금) 09:00 사용자 결정 대기). 켜는 스위치는 이 한 줄이다(규칙은 rounding_unstable).
-ROUNDING_UNSTABLE_ENABLED = False
+# 반올림 불안정(U4). 2026-09-25(금) 08:41 사용자 결정(policy_v1 승인, U4 → HOLD 채택)으로 켰다. 규칙은 rounding_unstable,
+# 결정 기록 docs/tracking/decisions/20260925-0846-user-decision-policy-v1-approval.md. 끄는 곳도 이 한 줄이다.
+ROUNDING_UNSTABLE_ENABLED = True
 # 자료 교정 뒤 동결 정책으로 경보 해소(MT2 결정 ⑪). 동결 스냅샷 하나로 도는 v1 실행에서는 만드는 쪽이 없어 늘 거짓이다.
 RESOLVED_AFTER_CORRECTION = False
 # 점유율 comparability_issues 값(이 조립이 정했다, 잠정): 전체국가(ALL) 분모 금액이 대상국 금액보다 작은 달. "{이름}:{달}".
@@ -622,7 +623,7 @@ def resolve_rows(snap, ids: list) -> dict:
 
 
 def rounding_unstable(v0: int, q0: int, v1: int, q1: int, delta, threshold) -> bool:
-    """반올림 불안정(U4 후보 규칙, 사용자 결정 대기). 발동한 단가 신호에만 쓴다.
+    """반올림 불안정(U4, 2026-09-25(금) 사용자 결정으로 채택). 발동한 단가 신호에만 쓴다.
 
     금액은 그대로 두고 두 달의 부모 중량을 Q ± δ(δ = 정책 tolerance.weight_rounding_kg, 0.5 kg)로 움직인 r_U(%) 구간
     [하한, 상한]을 구한다. r_U ≥ 0이면 하한 < θ, r_U < 0이면 상한 > −θ일 때 불안정이다(θ = 정책 단가 탐지 임계값).

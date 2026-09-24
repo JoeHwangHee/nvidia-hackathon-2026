@@ -141,16 +141,17 @@ class RetransmitTest(NoNetworkMixin, unittest.TestCase):
         self.assertEqual(caught.exception.code, cause_codes.DEADLINE)  # 제한 시간이 곧 deadline이었다
 
     def test_tokens_are_counted_and_the_limit_is_strict(self):
-        client, _, transport, _ = make_client([{"body": ok_body("{}", prompt_tokens=31_000, completion_tokens=500)}],
-                                              used_tokens=1_000)
+        limit = mc.load_model_config().limits.tokens  # 설정 값(model-1.2부터 128,000, 사용자 결정 4)
+        client, _, transport, _ = make_client([{"body": ok_body("{}", prompt_tokens=limit - 1_000,
+                                                                 completion_tokens=500)}], used_tokens=1_000)
         with self.assertRaises(mc.RunStop) as caught:
             client.chat(MESSAGES, stage="basic")
         self.assertEqual(caught.exception.code, cause_codes.BUDGET_TOKENS)
-        self.assertEqual(transport.payloads[0]["max_tokens"], mc.load_model_config().settings.max_tokens)  # 설정 값(model-0.8 4096)
-        client, _, transport, _ = make_client([{"body": ok_body("{}")}], used_tokens=31_000)
+        self.assertEqual(transport.payloads[0]["max_tokens"], mc.load_model_config().settings.max_tokens)  # 설정 값
+        client, _, transport, _ = make_client([{"body": ok_body("{}")}], used_tokens=limit - 1_000)
         client.chat(MESSAGES, stage="basic")
         self.assertEqual(transport.payloads[0]["max_tokens"], 1000)  # 남은 토큰으로 줄인다
-        client, _, transport, _ = make_client([], used_tokens=32_000)
+        client, _, transport, _ = make_client([], used_tokens=limit)
         with self.assertRaises(mc.RunStop) as caught:
             client.chat(MESSAGES, stage="basic")
         self.assertEqual((caught.exception.code, transport.payloads), (cause_codes.BUDGET_TOKENS, []))

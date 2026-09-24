@@ -206,15 +206,27 @@ class RoundingUnstableTest(unittest.TestCase):
         self.assertFalse(rule(100, Fraction(19, 2), 70, Fraction(21, 2), Decimal("0.5"), 30))
         self.assertTrue(rule(100, Fraction(19, 2), 71, Fraction(21, 2), Decimal("0.5"), 30))
 
-    def test_switch_is_off_and_turning_it_on_holds_the_unit_value_signal(self):
-        self.assertIs(dispatch.ROUNDING_UNSTABLE_ENABLED, False)
+    def test_switch_is_on_since_the_user_decision_and_holds_the_unit_value_signal(self):
+        """U4는 2026-09-25(금) 사용자 결정(policy_v1 승인)으로 채택돼 스위치가 켜져 있다. 불안정하면 단가 신호가 HOLD
+        (rounding_unstable)이고, 끄면 계산하지 않는다."""
+        self.assertIs(dispatch.ROUNDING_UNSTABLE_ENABLED, True)
         # 분해 봉투 없이 단가 블록을 만들 수 있게 단가 계열 사유 하나(시험용 문자열)를 둔다. 규칙만 보는 시험이다.
         envs = [checked(unit_issues=["test_reason"]), history(country=(120, 162), world=(100000, 100000), q=(12, 12))]
-        self.assertFalse(dispatch.evidence_state(unit_case(), envs, POLICY)["unit_value"]["rounding_unstable"])
-        with mock.patch.object(dispatch, "ROUNDING_UNSTABLE_ENABLED", True):
-            self.assertTrue(dispatch.evidence_state(unit_case(), envs, POLICY)["unit_value"]["rounding_unstable"])
-            stable = [envs[0], history()]  # 사례 A 값(−40%, 상한 약 −39.4%)
-            self.assertFalse(dispatch.evidence_state(unit_case(), stable, POLICY)["unit_value"]["rounding_unstable"])
+        state = dispatch.evidence_state(unit_case(), envs, POLICY)
+        self.assertTrue(state["unit_value"]["rounding_unstable"])
+        stable = [envs[0], history()]  # 사례 A 값(−40%, 상한 약 −39.4%)
+        self.assertFalse(dispatch.evidence_state(unit_case(), stable, POLICY)["unit_value"]["rounding_unstable"])
+        with mock.patch.object(dispatch, "ROUNDING_UNSTABLE_ENABLED", False):
+            self.assertFalse(dispatch.evidence_state(unit_case(), envs, POLICY)["unit_value"]["rounding_unstable"])
+        # 다른 자료 부족 사유가 없고 구성효과로 설명되는 분해여도, 불안정하면 P3은 HOLD(rounding_unstable)다
+        block = dict(state["unit_value"], comparability_issues=[], U_baseline=Fraction(10),
+                     decomposition={"within_effect": Fraction(0), "mix_effect": Fraction(7, 2), "residual": Fraction(0),
+                                    "parent_child_match": True},
+                     children=[{"hs10": "8504501000", "r_U": Fraction(0)}],
+                     comparisons={"comparability": "done", "partners": "done"})
+        out = signal_decide.run({"policy": POLICY, "case": unit_case(),
+                                 "evidence": {"missingness": [], "unit_value": block}})
+        self.assertEqual((out["signal_status"]["unit_value"], out["basis"]["unit_value"]), ("HOLD", "rounding_unstable"))
 
 
 class CodeVersionTest(unittest.TestCase):

@@ -6,7 +6,7 @@
 
 판정
 - 필요한 근거를 받으면 코드가 공개 판정 규칙(판정 정책)으로 계산한 신호별 결과를 "[규칙 계산 결과(참고값)]"로 준다. 따른다. 벗어나려면 도구 결과에 있는 사실 가운데 규칙이 보지 않는 것을 narrative에 반대 근거로 적는다(위의 동반 변화·분모 축소·비교국 차이는 반대 근거가 될 수 없다). θ 경계 근처는 참고값을 따른다.
-- 규칙 요약: 단가 신호는 자료 누락·signals.unit_value.issues·분해 불가(rule_view의 null)면 HOLD, decompose_hs 보기 rule_view 네 값(%)의 절댓값이 모두 θ(comparability.rounding.threshold)보다 작으면 MONITOR, 그 밖은 비교국 비교 뒤 MAINTAIN. MAINTAIN 후보일 때 비교국 자료가 모두 빠져 비교를 마치지 못하면(비교 미완료) HOLD(MONITOR는 비교국 비교가 필요 없다). 점유율 신호는 자료 문제나 전체국가(ALL) 분모가 대상국 금액보다 작은 달(분자가 분모보다 커 점유율을 정의할 수 없는 자료)이 있으면 HOLD, 아니면 비교국 비교 뒤 MAINTAIN. 미발동은 NOT_TRIGGERED. 사례 판정은 MAINTAIN > HOLD > MONITOR 순으로 묶는다.
+- 규칙 요약: 단가 신호는 자료 누락·signals.unit_value.issues·분해 불가(rule_view의 null)·반올림 불안정(두 달 중량을 ±0.5kg 움직인 r_U 구간이 θ 쪽 경계를 넘나듦)이면 HOLD, decompose_hs 보기 rule_view 네 값(%)의 절댓값이 모두 θ(comparability.rounding.threshold)보다 작으면 MONITOR, 그 밖은 비교국 비교 뒤 MAINTAIN. MAINTAIN 후보일 때 비교국 자료가 모두 빠져 비교를 마치지 못하면(비교 미완료) HOLD(MONITOR는 비교국 비교가 필요 없다). 점유율 신호는 자료 문제나 전체국가(ALL) 분모가 대상국 금액보다 작은 달(분자가 분모보다 커 점유율을 정의할 수 없는 자료)이 있으면 HOLD, 아니면 비교국 비교 뒤 MAINTAIN. 미발동은 NOT_TRIGGERED. 사례 판정은 MAINTAIN > HOLD > MONITOR 순으로 묶는다.
 - 초안 전에 compare_partners를, 단가 신호가 발동했으면 decompose_hs도 한 차례에 함께 부른다.
 - 도구 인자: compare_partners만 {"partners": [허용된 비교국 2자리 코드…]}를 받고(비우면 전부, ALL 아님), 나머지는 {}다.
 
