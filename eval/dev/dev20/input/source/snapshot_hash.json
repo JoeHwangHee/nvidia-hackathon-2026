@@ -1,6 +1,0 @@
-{
- "snapshot_id": "dev20",
- "raw_files": 102,
- "raw_combined_sha256": "395734be8207152ffc4331ea1918294d7df91099a6c0420a109d5493c9374599",
- "method": "스냅샷 원천 폴더에서 `shasum -a 256 raw/*.xml | shasum -a 256`"
-}

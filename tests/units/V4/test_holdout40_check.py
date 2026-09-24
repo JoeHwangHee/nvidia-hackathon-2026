@@ -144,8 +144,10 @@ class DocumentCheckTest(unittest.TestCase):
         signals, status, review, unresolved, evidence = v4.rule_outcome(
             {"unit_value": "hold_missing", "share": "unexplained"})
         self.assertEqual((review, unresolved), ("MAINTAIN", True))
-        self.assertEqual(evidence, list(v4.RULES["unit_value"]["hold_missing"][1])
-                         + list(v4.RULES["share"]["unexplained"][1]))
+        self.assertEqual(evidence, {"unit_value": list(v4.RULES["unit_value"]["hold_missing"][1]),
+                                    "share": list(v4.RULES["share"]["unexplained"][1])})  # 두 신호가 발동하면 신호별 목록
+        self.assertEqual(v4.rule_outcome({"unit_value": "unexplained", "share": None})[4],
+                         list(v4.RULES["unit_value"]["unexplained"][1]))  # 한 신호만 발동하면 목록
         self.assertEqual(status, {"unit_value": "HOLD", "share": "MAINTAIN"})
         self.assertEqual(signals, {"unit_value": "TRIGGERED", "share": "TRIGGERED"})
         self.assertEqual(v4.rule_outcome({"unit_value": "composition_explained", "share": "hold_missing"})[2:4],

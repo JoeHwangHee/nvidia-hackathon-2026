@@ -156,11 +156,13 @@ def aggregate(signal_status: dict) -> tuple[str, bool]:
     raise ValueError("발동한 신호가 없다")
 
 
-def rule_outcome(rule: dict) -> tuple[dict, dict, str, bool, list]:
+def rule_outcome(rule: dict) -> tuple[dict, dict, str, bool, list | dict]:
     """신호별 판정 근거 규칙 키 → (signals, signal_status, review_status, unresolved_evidence, required_evidence).
 
-    required_evidence는 단가 계열 규칙의 근거, 그다음 점유율 계열 규칙의 근거에서 아직 없는 것을 순서대로 이어 붙인다."""
-    signals, status, evidence = {}, {}, []
+    required_evidence는 발동한 신호가 하나면 그 규칙의 근거 목록이고, 두 신호가 모두 발동하면 신호별 목록 객체
+    {"unit_value": [...], "share": [...]}다(두 신호에 함께 쓰이는 코드가 어느 신호의 근거인지 드러나게. 독립 채점기의
+    정답표 형식과 같다)."""
+    signals, status, by_signal = {}, {}, {}
     for family in types.SIGNALS:
         key = rule.get(family)
         if key is None:
@@ -168,8 +170,9 @@ def rule_outcome(rule: dict) -> tuple[dict, dict, str, bool, list]:
             continue
         signal_state, codes = RULES[family][key]
         signals[family], status[family] = TRIGGERED, signal_state
-        evidence += [code for code in codes if code not in evidence]
+        by_signal[family] = list(codes)
     review, unresolved = aggregate(status)
+    evidence = next(iter(by_signal.values())) if len(by_signal) == 1 else by_signal
     return signals, status, review, unresolved, evidence
 
 
@@ -232,8 +235,9 @@ def _expected_problems(entry: dict) -> list[str]:
         return ["expected의 키가 signals·signal_status·review_status·unresolved_evidence·required_evidence가 아니다"]
     problems: list[str] = []
     evidence = expected["required_evidence"]
-    if not isinstance(evidence, list) or any(code not in EVIDENCE_VOCABULARY for code in evidence) \
-            or len(set(evidence)) != len(evidence):
+    lists = list(evidence.values()) if isinstance(evidence, dict) else [evidence]
+    if not lists or any(not isinstance(codes, list) or any(code not in EVIDENCE_VOCABULARY for code in codes)
+                        or len(set(codes)) != len(codes) for codes in lists):
         problems.append("required_evidence에 어휘 13개 밖의 이름이나 겹친 이름이 있다")
     if not isinstance(expected["unresolved_evidence"], bool):
         problems.append("unresolved_evidence가 참·거짓이 아니다")

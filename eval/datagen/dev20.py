@@ -19,30 +19,40 @@ tradesentry.ingest를 허용 import에 더했다: 합성 원천을 수집기 형
   required_evidence)은 생성 규칙에 손으로 적은 값이고, 이 코드는 사례별 기대 상태를 담지 않는다.
 - 자료를 수집기 형식 원천으로 쓴다: `manifest.json`(수집기 build_manifest의 요청 목록), 응답 XML(`raw/<request_id>.xml`),
   요청 결과 기록(`collection_log.json`: 실패·미수집 요청 ID), raw 결합 해시(`snapshot_hash.json`), 합성 비교국 표
-  (`peer_group_dev20_g0.csv`: 합성 자료 안에서 g0 규칙으로 고른 비교국, grouping_version `g0`).
+  (`peer_group_{snapshot_id}.csv`: 합성 자료 안에서 g0 규칙으로 고른 비교국, grouping_version `g0`). 상대국은 어느 나라에도
+  배정되지 않은 합성 코드다(생성 규칙이 정한다. dev20은 XL~XQ).
 - 자체 검산(구 개발계획 §8.1 "생성 자료를 독립 검사"): 응답 XML을 다시 읽어 모든 계열·달의 단가 변화율과 점유율 변화를
   계산하고, 발동한 (HS6, 상대국, 달)의 집합이 사례 집합과 정확히 같은지(사례 밖 경보 0건), 사례마다 발동 여부가 기대값과
   같은지, 모든 값이 탐지 기준에서 0.05 이상 떨어졌는지, 판정 근거 규칙마다 자료 불변식(구성효과 사례는 하위 단가 변화 0,
-  설명 안 됨 사례는 구성효과를 뺀 within+잔차가 기준 이상 등)이 맞는지 본다. 하나라도 어긋나면 ValueError다.
+  설명 안 됨 사례는 구성효과를 뺀 within+잔차가 기준 이상 등)이 맞는지 본다. 단가 발동 사례는 policy_v1 제안 최소 기준
+  (두 달 부모 행 100 USD·10 kg 이상, U2)을 넘고, 반올림 불안정 규칙 후보(U4)로 `rounding_unstable` 사례만 불안정이며,
+  그 구간 끝도 기준에서 0.05 이상 떨어져야 한다. 하나라도 어긋나면 ValueError다.
 - 임시 폴더에 수집기 SQLite를 재현하고(수집기 store_result로 응답을 적재, 시각은 생성 규칙의 고정 시각) 단위 S2로 빌드해
   `normalized_sha256`을 구하고, 단위 S3로 검증한다. 사례 목록·정답표는 단위 V4의 형식·분류 규칙 검사를 통과해야 한다.
 
-출력(`run`): {"files": {묶음 기준 상대경로: 텍스트}, "summary": {...}}. 묶음의 파일 배치(결정 기록에 남긴다):
-- `input/cases.json`: 사례 목록(`case_id`·`hs6`·`partner`·`month`만). 채점 대상 실행 샌드박스가 읽는 입력 하위 경로다.
-- `input/source/`: 수집기 형식 원천(위 다섯 종류). 빌드한 SQLite는 커밋하지 않고 명령 `install`이 다시 만든다.
-- `answers/answers.json`: 정답표. `answers/parent_series_ids.json`: dev20 부모 원본 계열 ID 목록(holdout40 제외 목록).
-  `answers/generation_rules.json`: 생성 규칙 그대로(정본 직렬화). 정답 하위 경로는 어떤 샌드박스에도 넣지 않는다.
+출력(`run`): {"files": {저장소 루트 기준 상대경로: 텍스트}, "build_record": {...}, "summary": {...}}. 파일 배치(결정 기록에 남긴다):
+- `eval/dev/{dataset}/input/cases.json`: 사례 목록(`case_id`·`hs6`·`partner`·`month`만). 채점 대상 실행 샌드박스가 읽는
+  입력 하위 경로다.
+- `eval/dev/{dataset}/input/source/raw/<request_id>.xml`: 응답 XML. 스냅샷 폴더의 `raw/`는 `.gitignore`가 빼므로 여기에
+  커밋하고, `install`이 스냅샷 폴더로 복사한다.
+- `data/snapshots/{snapshot_id}/`: `manifest.json`·`collection_log.json`·`snapshot_hash.json`(텍스트 원천). 빌드 기록
+  `snapshot_build.json`은 `install`이 처음 쓰고 커밋한다(시각 키를 뺀 기록 키가 `build_record`와 같아야 한다).
+- `data/reference/peer_group_{snapshot_id}.csv`: 합성 비교국 표(단위 S3가 빌드 기록의 파일 이름을 `data/reference/`에서 찾는다).
+- `eval/dev/{dataset}/answers/answers.json`: 정답표. `answers/parent_series_ids.json`: dev20 부모 원본 계열 ID 목록
+  (holdout40 제외 목록). `answers/generation_rules.json`: 생성 규칙 그대로(정본 직렬화). 정답 하위 경로는 어떤 샌드박스에도
+  넣지 않는다.
 
 명령(저장소 루트에서, 키 없이)
 - `uv run --locked python -m eval.datagen.dev20 generate [--rules <생성 규칙>] [--place]`: 실행 폴더
-  `outputs/datagen_dev20-{시각}/`(실행명 확보 N8)의 `datagen_dev20-{시각}/` 폴더(N7)에 묶음을 쓰고 요약을
-  `datagen_dev20-{시각}.json`에 쓴다. `--place`면 묶음을 `eval/dev/dev20/`로 옮긴다(이미 있는 파일은 덮지 않는다, N12).
-- `uv run --locked python -m eval.datagen.dev20 check`: 커밋된 생성 규칙으로 다시 만들어 `eval/dev/dev20/`의 파일과 바이트
-  단위로 대조한다(파일을 쓰지 않는다). 같으면 0, 다르면 1.
-- `uv run --locked python -m eval.datagen.dev20 install`: 커밋된 원천으로 수집기 SQLite를 재현하고 단위 S2로 빌드해 실행
-  폴더에 두고, 단위 S3 검증과 `normalized_sha256` 대조(사례 목록의 기록값)를 통과하면 정본 자리
-  `data/snapshots/dev20/snapshot_build.sqlite`(git이 추적하지 않는 자리)로 옮긴다(S2 install_build). 이미 설치돼 있으면
-  옮기지 않고 해시만 대조한다.
+  `outputs/datagen_dev20-{시각}/`(실행명 확보 N8)의 `datagen_dev20-{시각}/` 폴더(N7)에 파일을 저장소 상대경로 그대로 쓰고
+  요약을 `datagen_dev20-{시각}.json`에 쓴다. `--place`면 파일을 저장소 자리로 옮긴다(이미 있는 파일은 덮지 않는다, N12).
+- `uv run --locked python -m eval.datagen.dev20 check`: 커밋된 생성 규칙으로 다시 만들어 저장소의 파일과 바이트 단위로
+  대조하고(파일을 쓰지 않는다), 커밋된 빌드 기록의 시각 키를 뺀 기록 키도 대조한다. 같으면 0, 다르면 1.
+- `uv run --locked python -m eval.datagen.dev20 install`: 커밋된 원천으로 수집기 SQLite를 재현하고 단위 S2로 실행 폴더에
+  빌드해 단위 S3 검증과 `normalized_sha256` 대조(사례 목록의 기록값)를 한 뒤, 스냅샷 폴더 `data/snapshots/{snapshot_id}/`에
+  없는 것(`raw/`, 수집기 `snapshot.sqlite`, `snapshot_build.sqlite`, 없을 때만 `snapshot_build.json`)만 만든다. 이미 있는
+  것은 먼저 모두 대조하고 하나라도 다르면 아무것도 쓰지 않고 1이다(덮지 않는다). 끝에 CLI `tradesentry snapshot-verify`와
+  같은 기본 경로로 단위 S3를 돌려(raw 대조 켬) `ok`가 거짓이면 1이다. 만드는 파일은 모두 `.gitignore`가 빼는 자리다.
 """
 import argparse
 import csv
@@ -72,19 +82,32 @@ DOMAIN = "datagen_dev20"
 DEV20_DIR = "eval/dev/dev20"
 RULES_FILE = DEV20_DIR + "/answers/generation_rules.json"
 INSTALL_DIR = "data/snapshots"
+REFERENCE_DIR = "data/reference"
 
+# 묶음(eval/dev/{dataset}) 기준 상대경로
 CASES_FILE = "input/cases.json"
-SOURCE = "input/source"
-MANIFEST_FILE = "manifest.json"
-LOG_FILE = "collection_log.json"
-HASH_FILE = "snapshot_hash.json"
+RAW_SOURCE = "input/source/raw"  # 스냅샷 폴더의 raw/는 .gitignore가 빼므로 응답 XML은 여기에 커밋한다
 ANSWERS_FILE = "answers/answers.json"
 IDS_FILE = "answers/parent_series_ids.json"
 RULES_OUT = "answers/generation_rules.json"
+# 스냅샷 폴더(data/snapshots/{snapshot_id}) 안의 커밋하는 텍스트 원천
+MANIFEST_FILE = s2.MANIFEST_FILE
+LOG_FILE = "collection_log.json"
+HASH_FILE = s2.HASH_FILE
+SNAPSHOT_TEXTS = (LOG_FILE, MANIFEST_FILE, HASH_FILE)
+RECORD_TIME_KEYS = ("build_file", "built_at", "installed_at", "installed_from")  # 빌드 기록에서 실행마다 달라지는 키
 
 UNIT_VALUE, SHARE = types.SIGNALS
 TRIGGERED, NOT_TRIGGERED = types.SIGNAL_TRIGGERS
 MARGIN = Fraction(5, 100)  # 탐지 기준에서 떨어져야 하는 거리(MT1 결정 기록: 탐지 경계 ±0.05 안의 값을 피한다)
+# policy_v1 제안값(사용자 승인 전, 판정 정책 결정 기록 U2): 단가 신호는 두 달 모두 부모 HS6 행이 이 금액·중량 이상일 때만
+# 사례가 되고, 미달이면 데이터 품질 목록으로 간다. dev20의 단가 발동 사례는 dev-0.1과 이 제안 어느 쪽에서도 같은 결과가
+# 나오게 두 달 모두 이 기준 이상으로 만든다(자체 검산이 본다).
+PROPOSED_MIN_AMOUNT = 100  # USD
+PROPOSED_MIN_WEIGHT = 10  # kg
+# 반올림 불안정 규칙 후보(사용자 승인 전, U4): 발동한 단가 신호에만, 금액은 그대로 두고 두 달 부모 중량을 Q ± 0.5 kg로
+# 움직일 때의 r_U 구간이 r_U ≥ 0이면 하한 < θ, r_U < 0이면 상한 > −θ일 때 불안정(경계와 같으면 안정).
+ROUNDING_KG = Fraction(1, 2)
 ROW = "ROW"  # 나머지 세계(수집하지 않은 나라들). 전체국가 분모에만 들어간다
 RULES_KEYS = {"schema_version", "dataset", "snapshot_id", "policy_version", "fixed_time", "world", "cases"}
 WORLD_KEYS = {"period", "hs4", "hs6", "partners", "noise", "series", "rest_of_world", "peer_k", "peer_source_year"}
@@ -530,15 +553,16 @@ def peer_csv(rows: list[dict]) -> str:
     return buffer.getvalue()
 
 
-def peer_file_name(rules: dict) -> str:
-    return f"peer_group_{rules['dataset']}_{PEER_GROUPING}.csv"
+def peer_file_name(snapshot_id: str) -> str:
+    """합성 비교국 표 파일 이름. 단위 S3가 빌드 기록의 이 이름을 data/reference/에서 찾는다(DT3 결정 기록 ⑧과 같은 방식)."""
+    return f"peer_group_{snapshot_id}.csv"
 
 
 # ----------------------------------------------------------------------------- 자체 검산
 def self_check(rules: dict, view: View, peers: list[dict], policy: dict) -> dict:
     """발동 집합·기대 발동·기준 거리·판정 근거 규칙별 자료 불변식을 본다. 어긋나면 ValueError."""
     theta_u, theta_s = Fraction(policy["thresholds"]["unit_value"]), Fraction(policy["thresholds"]["share"])
-    weight_tol = Fraction(str(policy["tolerance"]["weight_rounding_kg"]))
+    weight_tol = Fraction(str(policy["tolerance"]["weight_rounding_kg"]))  # 부모·하위 중량 대조 허용오차
     cases = {(c["hs6"], c["partner"], c["month"]): c for c in rules["cases"]}
     problems: list[str] = []
     triggered: dict[tuple, dict] = {}
@@ -588,8 +612,18 @@ def self_check(rules: dict, view: View, peers: list[dict], policy: dict) -> dict
                                                       ("code_set_changed", "parent_amount_mismatch",
                                                        "parent_weight_mismatch", "zero_weight_child")):
                 problems.append(f"{case['case_id']}: 불일치 보류 사례인데 부모·하위 대조나 분해가 성립한다")
-            if u_rule == "rounding_unstable" and not _rounding_unstable(view, h, p, t, theta_u, weight_tol):
-                problems.append(f"{case['case_id']}: 반올림 불안정 사례인데 중량 반올림 범위가 0과 ±기준을 모두 넘지 않는다")
+        if case["expected"]["signals"][UNIT_VALUE] == TRIGGERED:
+            (v0, q0), (v1, q1) = view.parent[(h, p, b)], view.parent[(h, p, t)]
+            if min(v0, v1) < PROPOSED_MIN_AMOUNT or min(q0, q1) < PROPOSED_MIN_WEIGHT:
+                problems.append(f"{case['case_id']}: 단가 발동 사례인데 두 달 부모 행이 policy_v1 제안 최소 기준"
+                                f"({PROPOSED_MIN_AMOUNT} USD·{PROPOSED_MIN_WEIGHT} kg)에 못 미친다")
+            unstable, gap = rounding_unstable(view, h, p, t, theta_u)
+            if unstable != (u_rule == "rounding_unstable"):
+                problems.append(f"{case['case_id']}: 반올림 불안정 규칙 후보(U4)의 판정이 판정 근거 규칙과 다르다"
+                                f"({'불안정' if unstable else '안정'})")
+            if gap is not None and gap < MARGIN:
+                problems.append(f"{case['case_id']}: 중량 ±{_dec(ROUNDING_KG, 1)} kg 구간의 끝이 탐지 기준에서 "
+                                f"{_dec(gap)}만 떨어졌다")
         if s_rule is not None:
             totals = [view.world_value(h, m) for m in (b, t)]
             covered = [sum(view.parent.get((h, q, m), (0, 0))[0] for q in view.partners) for m in (b, t)]
@@ -616,15 +650,19 @@ def self_check(rules: dict, view: View, peers: list[dict], policy: dict) -> dict
             "nearest_to_threshold": {UNIT_VALUE: _dec(nearest[UNIT_VALUE]), SHARE: _dec(nearest[SHARE])}}
 
 
-def _rounding_unstable(view: View, h: str, p: str, t: str, theta: Fraction, tol: Fraction) -> bool:
-    """부모 HS6 중량을 ±tol 안에서 움직였을 때 단가 변화율 범위가 0과 +θ·−θ를 모두 가로지르는가(MT1 결정 기록 ⑤ 제안)."""
+def rounding_unstable(view: View, h: str, p: str, t: str, theta: Fraction) -> tuple[bool, Fraction | None]:
+    """반올림 불안정 규칙 후보(U4, 사용자 승인 전): 금액은 그대로 두고 두 달 부모 HS6 중량을 Q ± 0.5 kg로 움직일 때의
+    r_U 구간이 r_U ≥ 0이면 하한 < θ, r_U < 0이면 상한 > −θ일 때 불안정이다(경계와 같으면 안정).
+    (불안정 여부, 그 구간 끝과 탐지 기준의 거리(%p))를 돌려준다. 중량이 0.5 kg 이하라 구간을 만들 수 없으면 (참, None)."""
     (v0, q0), (v1, q1) = view.parent[(h, p, _shift(t, -12))], view.parent[(h, p, t)]
-    if q0 - tol <= 0 or q1 - tol <= 0:
-        return True
-    low = (Fraction(v1) / (q1 + tol)) / (Fraction(v0) / (q0 - tol)) - 1
-    high = (Fraction(v1) / (q1 - tol)) / (Fraction(v0) / (q0 + tol)) - 1
-    bound = theta / 100
-    return low < 0 < high and low < bound < high and low < -bound < high
+    if q0 - ROUNDING_KG <= 0 or q1 - ROUNDING_KG <= 0:
+        return True, None
+    r_u = view.r_u(h, p, t)
+    if r_u >= 0:
+        low = ((Fraction(v1) / (q1 + ROUNDING_KG)) / (Fraction(v0) / (q0 - ROUNDING_KG)) - 1) * 100
+        return low < theta, abs(low - theta)
+    high = ((Fraction(v1) / (q1 - ROUNDING_KG)) / (Fraction(v0) / (q0 + ROUNDING_KG)) - 1) * 100
+    return high > -theta, abs(high + theta)
 
 
 # ----------------------------------------------------------------------------- 부모 원본 계열 ID
@@ -641,22 +679,23 @@ def parent_series_id(rules: dict, base: dict, h: str, p: str) -> str:
 
 
 # ----------------------------------------------------------------------------- 수집기 SQLite 재현과 빌드
-def materialize_collector(source_dir: Path, target_dir: Path) -> Path:
-    """커밋된 원천(manifest·raw·collection_log·snapshot_hash)으로 수집기 형식 스냅샷 폴더를 target_dir에 새로 만든다.
+def materialize_collector(text_dir: Path, raw_dir: Path, target_dir: Path) -> Path:
+    """커밋된 원천(text_dir의 manifest·collection_log·snapshot_hash와 raw_dir의 응답 XML)으로 수집기 형식 스냅샷 폴더를
+    target_dir에 새로 만든다.
 
     응답마다 수집기 store_result를 불러 수집기 SQLite(`snapshot.sqlite`)와 raw 파일을 쓰고, 시각은 기록의 고정 시각으로
     바꾼다. target_dir는 없어야 한다."""
-    source_dir, target_dir = Path(source_dir), Path(target_dir)
-    manifest = json.loads((source_dir / MANIFEST_FILE).read_text(encoding="utf-8"))
-    log = json.loads((source_dir / LOG_FILE).read_text(encoding="utf-8"))
+    text_dir, raw_dir, target_dir = Path(text_dir), Path(raw_dir), Path(target_dir)
+    manifest = json.loads((text_dir / MANIFEST_FILE).read_text(encoding="utf-8"))
+    log = json.loads((text_dir / LOG_FILE).read_text(encoding="utf-8"))
     snapshot_id, fixed = manifest["snapshot_id"], log["collected_at"]
     failed, not_collected = set(log["FAILED"]), set(log["NOT_COLLECTED"])
     target_dir.mkdir(parents=False, exist_ok=False)
-    (target_dir / "raw").mkdir()
-    for name in (MANIFEST_FILE, HASH_FILE):
-        (target_dir / name).write_bytes((source_dir / name).read_bytes())
+    (target_dir / s2.RAW_DIR).mkdir()
+    for name in SNAPSHOT_TEXTS:
+        (target_dir / name).write_bytes((text_dir / name).read_bytes())
     ok_files = set()
-    con = sqlite3.connect(target_dir / "snapshot.sqlite")
+    con = sqlite3.connect(target_dir / s2.COLLECTOR_DB)
     try:
         con.executescript(COLLECTOR_DDL)
         for request in manifest["requests"]:
@@ -669,7 +708,7 @@ def materialize_collector(source_dir: Path, target_dir: Path) -> Path:
             else:
                 ok_files.add(f"{rid}.xml")
                 result = {"ok": True, "http_status": 200, "attempts": 1, "error": None, "attempt_errors": [],
-                          "raw": (source_dir / "raw" / f"{rid}.xml").read_bytes(), "elapsed_ms": 0}
+                          "raw": (raw_dir / f"{rid}.xml").read_bytes(), "elapsed_ms": 0}
             ingest.store_result(target_dir, con, snapshot_id, request["endpoint"], request["params"], result,
                                 request["months"])
         con.execute("UPDATE collection_receipt SET timestamp = ?", (fixed,))
@@ -687,26 +726,37 @@ def materialize_collector(source_dir: Path, target_dir: Path) -> Path:
         con.commit()
     finally:
         con.close()
-    present = {p.name for p in (source_dir / "raw").glob("*.xml")}
+    present = {p.name for p in raw_dir.glob("*.xml")}
     if present != ok_files:
         raise ValueError(f"원천 raw 파일({len(present)})이 OK 요청({len(ok_files)})과 다르다")
     return target_dir
 
 
+def record_keys(record: dict) -> dict:
+    """빌드 기록에서 실행마다 달라지는 키(시각·빌드 파일 이름)를 뺀 것. 커밋된 기록과 다시 만든 기록을 이것으로 대조한다."""
+    return {k: v for k, v in record.items() if k not in RECORD_TIME_KEYS}
+
+
 def build_and_verify(collector_dir: Path, peer_file: Path, snapshot_id: str, policy: dict, db_path: Path) -> dict:
-    """단위 S2로 db_path에 빌드하고 단위 S3로 검증한다. 검증이 실패하면 ValueError."""
+    """단위 S2로 db_path에 빌드하고 단위 S3로 검증한다. 검증이 실패하면 ValueError. 빌드 기록 dict를 돌려준다."""
     record = s2.build_to(db_path, snapshot_id, source_dir=collector_dir, policy=policy, peer_group_files=[peer_file])
     report = s3.verify_snapshot(snapshot_id, build_file=db_path, source_dir=collector_dir, peer_group_files=[peer_file])
     if not report["ok"]:
         failed = [c["name"] for c in report["checks"] if c["ok"] is False]
         raise ValueError(f"단위 S3 검증 실패: {failed}")
-    return {"normalized_sha256": record["normalized_sha256"], "row_counts": record["row_counts"],
-            "verify_ok": True, "import_observation_status": report["counts"].get("import_observation_status")}
+    return {**record, "import_observation_status": report["counts"].get("import_observation_status")}
 
 
 # ----------------------------------------------------------------------------- 진입 함수
+def paths_for(dataset: str, snapshot_id: str) -> dict:
+    """저장소 루트 기준 자리: 묶음, 스냅샷 폴더, 비교국 표."""
+    return {"bundle": f"eval/dev/{dataset}", "snapshot": f"{INSTALL_DIR}/{snapshot_id}",
+            "peer": f"{REFERENCE_DIR}/{peer_file_name(snapshot_id)}"}
+
+
 def run(inp: object) -> object:
-    """진입 함수. 입력: 생성 규칙(JSON 객체). 출력: {"files": {묶음 기준 상대경로: 텍스트}, "summary": {...}}."""
+    """진입 함수. 입력: 생성 규칙(JSON 객체).
+    출력: {"files": {저장소 루트 기준 상대경로: 텍스트}, "build_record": 시각 키를 뺀 빌드 기록, "summary": {...}}."""
     rules = _check_rules(inp)
     policy = load_policy(rules["policy_version"])
     world = rules["world"]
@@ -716,20 +766,24 @@ def run(inp: object) -> object:
         if case["hs6"] not in world["hs6"] or case["partner"] not in world["partners"] \
                 or case["case_id"] != f"{case['hs6']}-{case['partner']}-{case['month']}":
             raise ValueError(f"사례 {case['case_id']}: case_id는 {{hs6}}-{{partner}}-{{month}}이고 세계 안의 계열이다")
+    where = paths_for(rules["dataset"], rules["snapshot_id"])
     source, status, requests = source_files(rules)
     view = View(rules, source, status, requests)
     raw_sha256 = json.loads(source[HASH_FILE])["raw_combined_sha256"]
     peers = peer_rows(rules, view, raw_sha256)
-    peer_name = peer_file_name(rules)
-    source[peer_name] = peer_csv(peers)
+    peer_text = peer_csv(peers)
     checked = self_check(rules, view, peers, policy)
     with tempfile.TemporaryDirectory() as tmp:
-        src = Path(tmp) / "source"
-        (src / "raw").mkdir(parents=True)
+        texts, raw = Path(tmp) / "texts", Path(tmp) / "raw"
+        raw.mkdir()
+        texts.mkdir()
         for name, text in source.items():
-            (src / name).write_text(text, encoding="utf-8")
-        collector = materialize_collector(src, Path(tmp) / rules["snapshot_id"])
-        built = build_and_verify(collector, src / peer_name, rules["snapshot_id"], policy, Path(tmp) / "build.sqlite")
+            target = raw / name[len("raw/"):] if name.startswith("raw/") else texts / name
+            target.write_text(text, encoding="utf-8")
+        peer_file = Path(tmp) / peer_file_name(rules["snapshot_id"])  # 빌드 기록에 이 파일 이름이 남는다
+        peer_file.write_text(peer_text, encoding="utf-8")
+        collector = materialize_collector(texts, raw, Path(tmp) / rules["snapshot_id"])
+        built = build_and_verify(collector, peer_file, rules["snapshot_id"], policy, Path(tmp) / "build.sqlite")
     base = base_children(rules)
     ordered = sorted(rules["cases"], key=lambda c: c["case_id"])  # 순서가 분류를 드러내지 않게 식별자 순으로 적는다
     cases_doc = {"schema_version": types.SCHEMA_VERSION, "dataset": rules["dataset"],
@@ -750,12 +804,16 @@ def run(inp: object) -> object:
     if failed:
         raise ValueError(f"사례 목록·정답표가 단위 V4 검사를 통과하지 못했다: {failed}")
     ids = sorted({c["parent_series_id"] for c in answers_doc["cases"]})
-    files = {f"{SOURCE}/{name}": text for name, text in sorted(source.items())}
-    files[CASES_FILE] = _json_text(cases_doc)
-    files[ANSWERS_FILE] = _json_text(answers_doc)
-    files[IDS_FILE] = _json_text({"schema_version": types.SCHEMA_VERSION, "dataset": rules["dataset"],
-                                  "id_rule": ID_RULE, "parent_series_ids": ids})
-    files[RULES_OUT] = _json_text(rules)
+    bundle = where["bundle"]
+    files = {f"{bundle}/{RAW_SOURCE}/{name[len('raw/'):]}": text for name, text in source.items()
+             if name.startswith("raw/")}
+    files.update({f"{where['snapshot']}/{name}": source[name] for name in SNAPSHOT_TEXTS})
+    files[where["peer"]] = peer_text
+    files[f"{bundle}/{CASES_FILE}"] = _json_text(cases_doc)
+    files[f"{bundle}/{ANSWERS_FILE}"] = _json_text(answers_doc)
+    files[f"{bundle}/{IDS_FILE}"] = _json_text({"schema_version": types.SCHEMA_VERSION, "dataset": rules["dataset"],
+                                                "id_rule": ID_RULE, "parent_series_ids": ids})
+    files[f"{bundle}/{RULES_OUT}"] = _json_text(rules)
     by_status: dict[str, int] = {}
     for value in status.values():
         by_status[value] = by_status.get(value, 0) + 1
@@ -765,7 +823,8 @@ def run(inp: object) -> object:
                "normalized_sha256": built["normalized_sha256"], "row_counts": built["row_counts"],
                "import_observation_status": built["import_observation_status"], "snapshot_verify_ok": True,
                "self_check": checked, "parent_series_ids": len(ids), "files": len(files)}
-    return {"files": dict(sorted(files.items())), "summary": summary}
+    build_record = record_keys({k: v for k, v in built.items() if k != "import_observation_status"})
+    return {"files": dict(sorted(files.items())), "build_record": build_record, "summary": summary}
 
 
 # ----------------------------------------------------------------------------- 명령
@@ -794,15 +853,15 @@ def acquire_run_dir(parent: Path) -> tuple[Path, str]:
     raise RuntimeError("실행명을 확보하지 못했다")
 
 
-def _rel(path: Path) -> str:
+def _rel(path: Path, root: Path = REPO_ROOT) -> str:
     try:
-        return str(Path(path).resolve().relative_to(REPO_ROOT))
+        return str(Path(path).resolve().relative_to(Path(root).resolve()))
     except ValueError:
         return Path(path).name
 
 
 def write_files(files: dict, root: Path) -> None:
-    """묶음 텍스트 파일을 root 아래에 쓴다. 이미 있는 파일은 덮지 않는다(N8·N12)."""
+    """텍스트 파일을 root 아래에 쓴다. 이미 있는 파일은 덮지 않는다(N8·N12)."""
     for name, text in files.items():
         path = Path(root) / name
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -810,12 +869,20 @@ def write_files(files: dict, root: Path) -> None:
             fh.write(text)
 
 
-def compare_committed(files: dict, root: Path) -> list[str]:
-    """다시 만든 파일과 커밋된 파일을 바이트로 대조한다. 다른 파일·없는 파일·남는 파일 목록(상대경로)."""
-    root = Path(root)
+def compare_committed(result: dict, root: Path) -> list[str]:
+    """다시 만든 결과와 저장소(root)의 파일을 대조한다. 다른 파일·없는 파일, 묶음 폴더에 남는 파일, 시각 키를 뺀 기록 키가
+    다른 빌드 기록의 목록(저장소 상대경로). 스냅샷 폴더에는 install이 만든 파일(.gitignore 대상)이 있으므로 남는 파일을
+    보지 않는다."""
+    root, files = Path(root), result["files"]
     wrong = [name for name, text in files.items()
              if not (root / name).is_file() or (root / name).read_bytes() != text.encode("utf-8")]
-    present = {str(p.relative_to(root)) for p in root.rglob("*") if p.is_file() and p.name != ".gitkeep"}
+    bundle = root / paths_for(result["summary"]["dataset"], result["summary"]["snapshot_id"])["bundle"]
+    present = {str(p.relative_to(root)) for p in bundle.rglob("*") if p.is_file() and p.name != ".gitkeep"}
+    record_path = root / paths_for(result["summary"]["dataset"], result["summary"]["snapshot_id"])["snapshot"] \
+        / s2.BUILD_RECORD
+    if not record_path.is_file() or record_keys(json.loads(record_path.read_text(encoding="utf-8"))) \
+            != result["build_record"]:
+        wrong.append(str(record_path.relative_to(root)))
     return sorted(set(wrong) | (present - set(files)))
 
 
@@ -828,50 +895,108 @@ def cmd_generate(args: argparse.Namespace) -> int:
     run_dir, stamp = acquire_run_dir(REPO_ROOT / "outputs")
     write_files(result["files"], run_dir / f"{DOMAIN}-{stamp}")
     with open(run_dir / f"{DOMAIN}-{stamp}.json", "x", encoding="utf-8") as fh:
-        fh.write(_json_text(result["summary"]))
+        fh.write(_json_text({**result["summary"], "build_record": result["build_record"]}))
     print(_rel(run_dir))
     if args.place:
-        write_files(result["files"], REPO_ROOT / DEV20_DIR)
-        print(f"{DEV20_DIR}로 옮겼다({len(result['files'])}개 파일)")
+        write_files(result["files"], REPO_ROOT)
+        print(f"저장소 자리로 옮겼다({len(result['files'])}개 파일). 빌드 기록은 install이 쓴다")
     print(_json_text(result["summary"]), end="")
     return 0
 
 
 def cmd_check(args: argparse.Namespace) -> int:
     result = run(_load_rules(RULES_FILE))
-    wrong = compare_committed(result["files"], REPO_ROOT / DEV20_DIR)
-    print(json.dumps({"ok": not wrong, "files": len(result["files"]), "different": wrong}, ensure_ascii=False))
+    wrong = compare_committed(result, REPO_ROOT)
+    print(json.dumps({"ok": not wrong, "files": len(result["files"]) + 1, "different": wrong}, ensure_ascii=False))
     return 0 if not wrong else 1
 
 
-def cmd_install(args: argparse.Namespace) -> int:
-    cases = json.loads((REPO_ROOT / DEV20_DIR / CASES_FILE).read_text(encoding="utf-8"))
+def _collector_rows(path: Path) -> dict:
+    """수집기 SQLite의 표별 행(정렬). 이미 있는 수집기 SQLite가 다시 만든 것과 같은지 볼 때 쓴다."""
+    con = s2.open_read_only(path)
+    try:
+        return {table: sorted(con.execute(f'SELECT * FROM "{table}"').fetchall(), key=repr)
+                for table in ("collection_receipt", "collection_attempt", "observation", "snapshot_meta")}
+    finally:
+        con.close()
+
+
+def _copy_new(source: Path, target: Path) -> None:
+    with open(source, "rb") as src, open(target, "xb") as dst:
+        while chunk := src.read(1 << 20):
+            dst.write(chunk)
+
+
+def install(root: Path = REPO_ROOT) -> dict:
+    """커밋된 원천으로 스냅샷을 빌드·검증하고 스냅샷 폴더에 없는 것만 만든다(모듈 머리 설명의 install). 요약을 돌려준다.
+
+    실패하면 {"ok": False, ...}이고 아무것도 덮지 않는다. root는 저장소 뿌리(시험은 임시 사본을 준다)."""
+    root = Path(root)
+    bundle = root / DEV20_DIR
+    cases = json.loads((bundle / CASES_FILE).read_text(encoding="utf-8"))
     snapshot_id, expected = cases["snapshot_id"], cases["snapshot_normalized_sha256"]
+    where = paths_for(cases["dataset"], snapshot_id)
+    target, peer = root / where["snapshot"], root / where["peer"]
     policy = load_policy(cases["policy_version"])
-    source = REPO_ROOT / DEV20_DIR / SOURCE
-    peer = source / f"peer_group_{cases['dataset']}_{PEER_GROUPING}.csv"
-    target = REPO_ROOT / INSTALL_DIR / snapshot_id
-    installed = target / s2.BUILD_FILE
-    if installed.exists():
-        same = s2.file_normalized_sha256(installed) == expected
-        print(json.dumps({"installed": _rel(installed), "already_installed": True, "normalized_sha256_matches": same},
-                         ensure_ascii=False))
-        return 0 if same else 1
-    run_dir, stamp = acquire_run_dir(REPO_ROOT / "outputs")
-    collector = materialize_collector(source, run_dir / f"{DOMAIN}-{stamp}")
+    run_dir, stamp = acquire_run_dir(root / "outputs")
+    collector = materialize_collector(target, bundle / RAW_SOURCE, run_dir / f"{DOMAIN}-{stamp}")
     record = s2.build_snapshot(snapshot_id, out_dir=run_dir, stamp=stamp, source_dir=collector, policy=policy,
                                peer_group_files=[peer])
     build_file = run_dir / f"{s2.DOMAIN}-{stamp}.sqlite"
     report = s3.verify_snapshot(snapshot_id, build_file=build_file, source_dir=collector, peer_group_files=[peer])
     if not report["ok"] or record["normalized_sha256"] != expected:
-        print(json.dumps({"ok": False, "snapshot_verify_ok": report["ok"],
-                          "normalized_sha256_matches": record["normalized_sha256"] == expected}, ensure_ascii=False))
-        return 1
-    target.mkdir(parents=True, exist_ok=True)
-    s2.install_build(build_file, target)
-    print(json.dumps({"ok": True, "run_dir": _rel(run_dir), "installed": _rel(installed),
-                      "normalized_sha256": expected, "snapshot_verify_ok": True}, ensure_ascii=False))
-    return 0
+        return {"ok": False, "run_dir": _rel(run_dir, root), "snapshot_verify_ok": report["ok"],
+                "normalized_sha256_matches": record["normalized_sha256"] == expected}
+    # 1단계: 이미 있는 것을 모두 대조한다(쓰기 전에 멈출 곳을 다 찾는다)
+    raws = sorted(p.name for p in (collector / s2.RAW_DIR).glob("*.xml"))
+    problems = [f"raw/{name}" for name in raws if (target / s2.RAW_DIR / name).exists()
+                and (target / s2.RAW_DIR / name).read_bytes() != (collector / s2.RAW_DIR / name).read_bytes()]
+    if (target / s2.RAW_DIR).exists() and {p.name for p in (target / s2.RAW_DIR).glob("*.xml")} - set(raws):
+        problems.append("raw/ 남는 파일")
+    if (target / s2.COLLECTOR_DB).exists() and \
+            _collector_rows(target / s2.COLLECTOR_DB) != _collector_rows(collector / s2.COLLECTOR_DB):
+        problems.append(s2.COLLECTOR_DB)
+    if (target / s2.BUILD_FILE).exists() and s2.file_normalized_sha256(target / s2.BUILD_FILE) != expected:
+        problems.append(s2.BUILD_FILE)
+    record_path = target / s2.BUILD_RECORD
+    if record_path.exists() and record_keys(json.loads(record_path.read_text(encoding="utf-8"))) != record_keys(record):
+        problems.append(s2.BUILD_RECORD)
+    if problems:
+        return {"ok": False, "run_dir": _rel(run_dir, root), "different_in_place": problems}
+    # 2단계: 없는 것만 만든다(이미 있으면 실패하는 방식)
+    created = []
+    (target / s2.RAW_DIR).mkdir(exist_ok=True)
+    missing = [name for name in raws if not (target / s2.RAW_DIR / name).exists()]
+    for name in missing:
+        _copy_new(collector / s2.RAW_DIR / name, target / s2.RAW_DIR / name)
+    if missing:
+        created.append(f"raw/*.xml({len(missing)})")
+    for source_file, name in ((collector / s2.COLLECTOR_DB, s2.COLLECTOR_DB), (build_file, s2.BUILD_FILE)):
+        if not (target / name).exists():
+            _copy_new(source_file, target / name)
+            created.append(name)
+    if not record_path.exists():
+        installed = {**record, "build_file": s2.BUILD_FILE, "installed_from": build_file.name,
+                     "installed_at": datetime.now(types.KST).isoformat(timespec="seconds")}
+        with open(record_path, "x", encoding="utf-8") as fh:
+            fh.write(_json_text(installed))
+        created.append(s2.BUILD_RECORD)
+    # 3단계: CLI snapshot-verify와 같은 기본 경로로 단위 S3를 돌린다(raw 대조 켬, 비교국 표는 data/reference/에서 찾음)
+    if root.resolve() == REPO_ROOT.resolve():
+        final = s3.verify_snapshot(snapshot_id)  # CLI `tradesentry snapshot-verify --snapshot <id>`와 같은 입력
+    else:  # 임시 사본(시험): 단위 S3의 기본 경로가 이 저장소를 가리키므로 자리를 명시한다
+        final = s3.verify_snapshot(snapshot_id, build_file=target / s2.BUILD_FILE, source_dir=target, check_raw=True,
+                                   peer_group_files=[peer])
+    ok = bool(final["ok"]) and final["recorded_normalized_sha256"] == expected
+    return {"ok": ok, "run_dir": _rel(run_dir, root), "snapshot_id": snapshot_id, "normalized_sha256": expected,
+            "snapshot_verify_ok": bool(final["ok"]), "created": created,
+            "failed_checks": [c["name"] for c in final["checks"] if c["ok"] is False]}
+
+
+def cmd_install(args: argparse.Namespace) -> int:
+    result = install(REPO_ROOT)
+    print(json.dumps(result, ensure_ascii=False))
+    return 0 if result["ok"] else 1
 
 
 def main(argv: list[str] | None = None) -> int:

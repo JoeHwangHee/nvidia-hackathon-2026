@@ -17,12 +17,12 @@
    "850490"
   ],
   "partners": [
-   "CN",
-   "JP",
-   "DE",
-   "VN",
-   "US",
-   "MY"
+   "XL",
+   "XM",
+   "XN",
+   "XO",
+   "XP",
+   "XQ"
   ],
   "noise": {
    "seed": 20260925,
@@ -31,7 +31,7 @@
   },
   "series": {
    "850450": {
-    "CN": {
+    "XL": {
      "1000": [
       900,
       75
@@ -41,7 +41,7 @@
       75
      ]
     },
-    "JP": {
+    "XM": {
      "1000": [
       1000,
       100
@@ -51,7 +51,7 @@
       100
      ]
     },
-    "DE": {
+    "XN": {
      "1000": [
       1400,
       100
@@ -61,7 +61,7 @@
       100
      ]
     },
-    "VN": {
+    "XO": {
      "1000": [
       800,
       80
@@ -71,7 +71,7 @@
       80
      ]
     },
-    "US": {
+    "XP": {
      "1000": [
       900,
       90
@@ -81,7 +81,7 @@
       60
      ]
     },
-    "MY": {
+    "XQ": {
      "1000": [
       700,
       70
@@ -93,7 +93,7 @@
     }
    },
    "850431": {
-    "CN": {
+    "XL": {
      "1000": [
       1800,
       90
@@ -103,7 +103,7 @@
       210
      ]
     },
-    "JP": {
+    "XM": {
      "1000": [
       250,
       50
@@ -117,7 +117,7 @@
       50
      ]
     },
-    "DE": {
+    "XN": {
      "1000": [
       900,
       90
@@ -127,7 +127,7 @@
       120
      ]
     },
-    "VN": {
+    "XO": {
      "1000": [
       1250,
       125
@@ -137,7 +137,7 @@
       25
      ]
     },
-    "US": {
+    "XP": {
      "1000": [
       2800,
       280
@@ -147,7 +147,7 @@
       240
      ]
     },
-    "MY": {
+    "XQ": {
      "1000": [
       300,
       30
@@ -159,7 +159,7 @@
     }
    },
    "850432": {
-    "CN": {
+    "XL": {
      "1000": [
       6000,
       600
@@ -169,7 +169,7 @@
       400
      ]
     },
-    "JP": {
+    "XM": {
      "1000": [
       240,
       20
@@ -179,7 +179,7 @@
       30
      ]
     },
-    "DE": {
+    "XN": {
      "1000": [
       200,
       20
@@ -189,7 +189,7 @@
       20
      ]
     },
-    "VN": {
+    "XO": {
      "1000": [
       200,
       20
@@ -199,7 +199,7 @@
       30
      ]
     },
-    "US": {
+    "XP": {
      "1000": [
       200,
       20
@@ -209,7 +209,7 @@
       20
      ]
     },
-    "MY": {
+    "XQ": {
      "1000": [
       210,
       30
@@ -221,7 +221,7 @@
     }
    },
    "850490": {
-    "CN": {
+    "XL": {
      "1000": [
       200,
       20
@@ -231,7 +231,7 @@
       20
      ]
     },
-    "JP": {
+    "XM": {
      "1000": [
       300,
       30
@@ -241,7 +241,7 @@
       50
      ]
     },
-    "DE": {
+    "XN": {
      "1000": [
       5000,
       500
@@ -251,7 +251,7 @@
       600
      ]
     },
-    "VN": {
+    "XO": {
      "1000": [
       200,
       20
@@ -261,13 +261,13 @@
       20
      ]
     },
-    "US": {
+    "XP": {
      "1000": [
       300,
       20
      ]
     },
-    "MY": {
+    "XQ": {
      "1000": [
       200,
       20
@@ -334,9 +334,9 @@
  },
  "cases": [
   {
-   "case_id": "850450-CN-202403",
+   "case_id": "850450-XL-202403",
    "hs6": "850450",
-   "partner": "CN",
+   "partner": "XL",
    "month": "202403",
    "scenario_class": 1,
    "events": [
@@ -384,9 +384,9 @@
    "note": "하위 단가(12·4 USD/kg)는 그대로이고 중량 비중이 50:50에서 10:90으로 싼 품목 쪽으로 옮겨 단가 -40%. within 0, 잔차 0"
   },
   {
-   "case_id": "850431-JP-202404",
+   "case_id": "850431-XM-202404",
    "hs6": "850431",
-   "partner": "JP",
+   "partner": "XM",
    "month": "202404",
    "scenario_class": 1,
    "events": [
@@ -438,9 +438,9 @@
    "note": "하위품목 셋의 단가(5·10·20)는 그대로이고 비싼 품목 비중이 1/3에서 80%로 늘어 단가 +51.4%. within 0, 잔차 0"
   },
   {
-   "case_id": "850432-JP-202402",
+   "case_id": "850432-XM-202402",
    "hs6": "850432",
-   "partner": "JP",
+   "partner": "XM",
    "month": "202402",
    "scenario_class": 1,
    "events": [
@@ -485,12 +485,12 @@
      "comparability_ok"
     ]
    },
-   "note": "작은 계열(점유율 약 3.6%). 하위 단가(12·4)는 그대로이고 비싼 품목 비중이 40%에서 8%로 줄어 단가 -35.6%"
+   "note": "작은 계열(점유율 약 3.5%). 하위 단가(12·4)는 그대로이고 비싼 품목 비중이 40%에서 8%로 줄어 단가 -35.6%"
   },
   {
-   "case_id": "850450-JP-202405",
+   "case_id": "850450-XM-202405",
    "hs6": "850450",
-   "partner": "JP",
+   "partner": "XM",
    "month": "202405",
    "scenario_class": 2,
    "events": [
@@ -538,9 +538,9 @@
    "note": "두 하위품목 단가가 모두 -40%, 비중은 그대로(mix 0). within/U0 = -40%. 비교국은 평소 수준"
   },
   {
-   "case_id": "850431-CN-202406",
+   "case_id": "850431-XL-202406",
    "hs6": "850431",
-   "partner": "CN",
+   "partner": "XL",
    "month": "202406",
    "scenario_class": 2,
    "events": [
@@ -588,9 +588,9 @@
    "note": "비싼 하위품목 단가 -70%, 싼 품목 +10%, 비중 그대로. 단가 -40.5%가 모두 within"
   },
   {
-   "case_id": "850432-VN-202404",
+   "case_id": "850432-XO-202404",
    "hs6": "850432",
-   "partner": "VN",
+   "partner": "XO",
    "month": "202404",
    "scenario_class": 2,
    "events": [
@@ -638,9 +638,9 @@
    "note": "두 하위품목 단가 +50%에 비중이 조금 옮음. 단가 +54.3% 가운데 within +50.7%p(U0 대비), mix는 작다"
   },
   {
-   "case_id": "850450-DE-202407",
+   "case_id": "850450-XN-202407",
    "hs6": "850450",
-   "partner": "DE",
+   "partner": "XN",
    "month": "202407",
    "scenario_class": 3,
    "events": [
@@ -666,11 +666,11 @@
      "type": "scale",
      "month": "202407",
      "who": [
-      "CN",
-      "JP",
-      "VN",
-      "US",
-      "MY"
+      "XL",
+      "XM",
+      "XO",
+      "XP",
+      "XQ"
      ],
      "volume": "1",
      "price": "0.75"
@@ -701,9 +701,9 @@
    "note": "대상국 하위 단가 모두 -40%(within). 같은 달 비교국 다섯 나라 단가도 약 -25%(탐지 기준 아래)로 함께 내림"
   },
   {
-   "case_id": "850490-JP-202403",
+   "case_id": "850490-XM-202403",
    "hs6": "850490",
-   "partner": "JP",
+   "partner": "XM",
    "month": "202403",
    "scenario_class": 3,
    "events": [
@@ -729,11 +729,11 @@
      "type": "scale",
      "month": "202403",
      "who": [
-      "CN",
-      "DE",
-      "VN",
-      "US",
-      "MY"
+      "XL",
+      "XN",
+      "XO",
+      "XP",
+      "XQ"
      ],
      "volume": "1",
      "price": "0.8"
@@ -764,9 +764,9 @@
    "note": "대상국 하위 단가 모두 -45%(within). 비교국 다섯 나라(지배적 공급국 포함) 단가도 약 -20%로 함께 내림"
   },
   {
-   "case_id": "850450-VN-202409",
+   "case_id": "850450-XO-202409",
    "hs6": "850450",
-   "partner": "VN",
+   "partner": "XO",
    "month": "202409",
    "scenario_class": 4,
    "events": [
@@ -792,7 +792,7 @@
      "type": "request",
      "endpoint": "nitemtrade",
      "hsSgn": "850450",
-     "cntyCd": "VN",
+     "cntyCd": "XO",
      "strtYymm": "202401",
      "status": "NOT_COLLECTED"
     }
@@ -821,9 +821,9 @@
    "note": "부모 HS6 단가 -40%. 비교월 연도의 대상국 HS10 조회(HS6 요청)가 수집되지 않음(NOT_COLLECTED) → 분해 불가"
   },
   {
-   "case_id": "850432-US-202408",
+   "case_id": "850432-XP-202408",
    "hs6": "850432",
-   "partner": "US",
+   "partner": "XP",
    "month": "202408",
    "scenario_class": 4,
    "events": [
@@ -849,7 +849,7 @@
      "type": "request",
      "endpoint": "nitemtrade",
      "hsSgn": "850432",
-     "cntyCd": "US",
+     "cntyCd": "XP",
      "strtYymm": "202301",
      "status": "FAILED"
     }
@@ -878,9 +878,9 @@
    "note": "부모 HS6 단가 -40%. 기준월 연도의 대상국 HS10 조회가 실패(REQUEST_FAILED) → 분해 불가"
   },
   {
-   "case_id": "850431-DE-202408",
+   "case_id": "850431-XN-202408",
    "hs6": "850431",
-   "partner": "DE",
+   "partner": "XN",
    "month": "202408",
    "scenario_class": 5,
    "events": [
@@ -935,9 +935,9 @@
    "note": "비교월 부모 HS6 금액 900 USD와 HS10 하위 합 1,000 USD가 다름(금액 정확 일치 위반). 부모 단가 -40%"
   },
   {
-   "case_id": "850432-MY-202410",
+   "case_id": "850432-XQ-202410",
    "hs6": "850432",
-   "partner": "MY",
+   "partner": "XQ",
    "month": "202410",
    "scenario_class": 5,
    "events": [
@@ -984,9 +984,9 @@
    "note": "기준월과 비교월의 HS10 코드 집합이 다름(2000이 사라지고 3000이 새로 나옴: 코드 개정 흔적). 부모 단가 -40%"
   },
   {
-   "case_id": "850490-US-202309",
+   "case_id": "850490-XP-202309",
    "hs6": "850490",
-   "partner": "US",
+   "partner": "XP",
    "month": "202309",
    "scenario_class": 6,
    "events": [
@@ -995,8 +995,8 @@
      "month": "202209",
      "values": {
       "1000": [
-       12,
-       1
+       120,
+       12
       ]
      }
     },
@@ -1005,8 +1005,8 @@
      "month": "202309",
      "values": {
       "1000": [
-       20,
-       1
+       162,
+       12
       ]
      }
     }
@@ -1030,12 +1030,12 @@
      "precision_sensitivity_shown"
     ]
    },
-   "note": "기준월 12 USD·1 kg, 비교월 20 USD·1 kg(단가 +66.7%). 중량 ±0.5 kg 반올림 범위에서 변화율이 -44%~+400%"
+   "note": "기준월 120 USD·12 kg, 비교월 162 USD·12 kg(단가 +35.0%). 두 달 모두 policy_v1 제안 최소 기준(100 USD·10 kg) 이상. 금액은 그대로 두고 두 달 부모 중량을 ±0.5 kg 움직이면 단가 변화율 구간이 약 +24.2%~+46.7%라 하한이 기준 30% 아래(반올림 불안정)"
   },
   {
-   "case_id": "850431-VN-202410",
+   "case_id": "850431-XO-202410",
    "hs6": "850431",
-   "partner": "VN",
+   "partner": "XO",
    "month": "202410",
    "scenario_class": 6,
    "events": [
@@ -1082,9 +1082,9 @@
    "note": "비교월 하위품목 하나가 금액 200 USD·중량 0 kg이라 그 품목 단가를 계산할 수 없음 → 분해 불가. 부모 단가 -40%"
   },
   {
-   "case_id": "850432-CN-202406",
+   "case_id": "850432-XL-202406",
    "hs6": "850432",
-   "partner": "CN",
+   "partner": "XL",
    "month": "202406",
    "scenario_class": 7,
    "events": [
@@ -1135,9 +1135,9 @@
    "note": "비교월 전체국가 분모 5,600 USD가 대상국 금액 8,000 USD보다 작음(점유율 142.9%). 대상국 금액·단가는 그대로"
   },
   {
-   "case_id": "850490-DE-202305",
+   "case_id": "850490-XN-202305",
    "hs6": "850490",
-   "partner": "DE",
+   "partner": "XN",
    "month": "202305",
    "scenario_class": 7,
    "events": [
@@ -1188,9 +1188,9 @@
    "note": "기준월 전체국가 분모 5,600 USD가 대상국 금액 8,000 USD보다 작음(기준월 점유율 142.9%). 비교월은 정상"
   },
   {
-   "case_id": "850450-MY-202402",
+   "case_id": "850450-XQ-202402",
    "hs6": "850450",
-   "partner": "MY",
+   "partner": "XQ",
    "month": "202402",
    "scenario_class": 8,
    "events": [
@@ -1206,11 +1206,11 @@
      "type": "scale",
      "month": "202402",
      "who": [
-      "CN",
-      "JP",
-      "DE",
-      "VN",
-      "US",
+      "XL",
+      "XM",
+      "XN",
+      "XO",
+      "XP",
       "ROW"
      ],
      "volume": "0.4",
@@ -1241,9 +1241,9 @@
    "note": "대상국 금액은 그대로인데 다른 나라 물량이 60% 줄어 전체국가 분모가 작아짐(점유율 약 +14.8pp). 분모 축소는 산술 설명일 뿐"
   },
   {
-   "case_id": "850450-US-202411",
+   "case_id": "850450-XP-202411",
    "hs6": "850450",
-   "partner": "US",
+   "partner": "XP",
    "month": "202411",
    "scenario_class": 8,
    "events": [
@@ -1287,12 +1287,12 @@
      "comparability_ok"
     ]
    },
-   "note": "대상국 물량이 크게 줄어(금액 1,500→200 USD, 단가 그대로) 점유율 약 -11.7pp. 분모는 완전함"
+   "note": "대상국 물량이 크게 줄어(금액 1,500→200 USD, 단가 그대로) 점유율 약 -11.6pp. 분모는 완전함"
   },
   {
-   "case_id": "850431-MY-202401",
+   "case_id": "850431-XQ-202401",
    "hs6": "850431",
-   "partner": "MY",
+   "partner": "XQ",
    "month": "202401",
    "scenario_class": 9,
    "events": [
@@ -1337,12 +1337,12 @@
      "comparability_ok"
     ]
    },
-   "note": "대상국의 이 HS6는 그 나라 8504 수입의 약 16%뿐이라 HS4 합계로 보면 단가 변화가 약 -6%로 작아 보임(범위 함정). 사례 범위(HS6)에서는 하위 단가 모두 -40%(within)"
+   "note": "대상국의 이 HS6는 그 나라 8504 수입의 약 16%뿐이라 HS4 합계로 보면 단가 변화가 약 -7%로 작아 보임(범위 함정). 사례 범위(HS6)에서는 하위 단가 모두 -40%(within)"
   },
   {
-   "case_id": "850431-US-202412",
+   "case_id": "850431-XP-202412",
    "hs6": "850431",
-   "partner": "US",
+   "partner": "XP",
    "month": "202412",
    "scenario_class": 10,
    "events": [
@@ -1368,7 +1368,7 @@
      "type": "request",
      "endpoint": "nitemtrade",
      "hsSgn": "850431",
-     "cntyCd": "US",
+     "cntyCd": "XP",
      "strtYymm": "202401",
      "status": "FAILED"
     }
@@ -1388,14 +1388,18 @@
     },
     "review_status": "MAINTAIN",
     "unresolved_evidence": true,
-    "required_evidence": [
-     "missingness_listed",
-     "failure_vs_not_collected_distinguished",
-     "no_zero_fill",
-     "country_and_world_change_shown",
-     "partner_comparison_done",
-     "comparability_ok"
-    ]
+    "required_evidence": {
+     "unit_value": [
+      "missingness_listed",
+      "failure_vs_not_collected_distinguished",
+      "no_zero_fill"
+     ],
+     "share": [
+      "country_and_world_change_shown",
+      "partner_comparison_done",
+      "comparability_ok"
+     ]
+    }
    },
    "note": "단가 -50%(비교월 연도 HS10 조회 실패로 분해 불가 → HOLD)와 점유율 약 -11.9pp(분모 완전, 설명 안 됨 → MAINTAIN)"
   }

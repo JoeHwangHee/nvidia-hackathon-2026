@@ -76,14 +76,18 @@
     },
     "review_status": "MAINTAIN",
     "unresolved_evidence": true,
-    "required_evidence": [
-     "missingness_listed",
-     "failure_vs_not_collected_distinguished",
-     "no_zero_fill",
-     "country_and_world_change_shown",
-     "partner_comparison_done",
-     "comparability_ok"
-    ]
+    "required_evidence": {
+     "unit_value": [
+      "missingness_listed",
+      "failure_vs_not_collected_distinguished",
+      "no_zero_fill"
+     ],
+     "share": [
+      "country_and_world_change_shown",
+      "partner_comparison_done",
+      "comparability_ok"
+     ]
+    }
    }
   }
  ]
