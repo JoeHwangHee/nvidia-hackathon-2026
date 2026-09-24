@@ -11,9 +11,11 @@
 # 배치(/opt/tradesentry, 읽기 전용. 작업 폴더 /sandbox와 쓰기 경로 밖)
 #   /opt/tradesentry/{pyproject.toml,uv.lock,.python-version,src,configs,data,image_manifest.json}  저장소와 같은 배치
 #   /opt/tradesentry/python/     uv 관리 Python 3.12.13(current는 그 폴더를 가리키는 링크). 정책의 실행 파일 허용 범위
-#   /opt/tradesentry/.venv/      uv.lock 그대로(--locked --no-dev). NAT·프로파일러 때문에 pandas·scikit-learn·scipy·
-#                                matplotlib가 들어오고, 소스 배포본만 있는 docopt·extratools·prefixspan은 이 빌드
-#                                단계에서만 빌드된다(샌드박스 안에서는 설치·빌드하지 않는다)
+#   /opt/tradesentry/.venv/      uv.lock 그대로(--locked --no-dev). 지금 lock에는 런타임 의존성이 없다. 로드맵 MT4가
+#                                NAT(nvidia-nat)를 [project].dependencies로 lock에 넣은 뒤에는 NAT·프로파일러 때문에
+#                                pandas·scikit-learn·scipy·matplotlib가 들어오고, 소스 배포본만 있는 docopt·extratools·
+#                                prefixspan은 이 빌드 단계에서만 빌드된다(샌드박스 안에서는 설치·빌드하지 않는다). NAT가 dev
+#                                그룹에 들어가면 --no-dev가 조용히 빼므로 MT4 병합 뒤 이미지를 다시 빌드해 확인한다
 #   /opt/tradesentry/bin/tradesentry  CLI 실행기(image/tradesentry.sh)
 #   /opt/tradesentry/write_probe/     위반 시험용 빈 폴더(파일 권한은 쓰기 허용, 정책 read_only가 막는지 본다)
 #   /srv/tradesentry_decoy/oracle_decoy.json  요건 (a) 미끼 파일. 가짜 정답이다. 허용 목록·작업 폴더 밖(파일 권한 0644)

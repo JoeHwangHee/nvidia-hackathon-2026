@@ -129,6 +129,43 @@ class StageToolTest(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
         return path
 
+    def test_case_variants_are_refused(self):
+        """대소문자를 구분하지 않는 파일 시스템의 별칭 우회(MT5b 보안 검토 1). 파일 시스템과 관계없이 규칙으로 막힌다."""
+        for rel in (".ENV", ".Env", "x/.ENV.local", "Outputs/x", "OUTPUTS/sealed/a", "Eval/dev/dev20", "EVAL/scorer/a.py",
+                    "Eval/dev/dev20/Answers/cases.json", "Data/snapshots/x/raw/a.xml", "DATA/Snapshots/x/manifest.json",
+                    "Artifacts/eval/a", "src/.VENV/x", "src/Oracle_x.json", "eval/dev/dev20/input/ANSWERS.json"):
+            with self.subTest(rel=rel):
+                self.assertIsNotNone(stage.blocked_reason(rel, from_add=True))
+        self.assertIsNone(stage.blocked_reason("eval/dev/dev20/input/cases.json", from_add=True))
+
+    def test_spelling_must_match_disk(self):
+        self.write("src/tradesentry/Mixed.txt", "x\n")
+        stage.check_spelling(self.repo, "src/tradesentry/Mixed.txt")
+        # 대소문자를 구분하는 파일 시스템에서는 철자가 다르면 없는 경로라 검사할 것이 없다
+        if self.case_insensitive():
+            with self.assertRaises(stage.StageError):
+                stage.check_spelling(self.repo, "src/tradesentry/mixed.txt")
+            with self.assertRaises(stage.StageError):
+                stage.stage(self.repo, self.dest, ["SRC/tradesentry"])
+            self.assertFalse(self.dest.exists())
+
+    def case_insensitive(self) -> bool:
+        return (self.repo / "SRC").exists()
+
+    def test_hard_link_refused(self):
+        os.link(self.repo / ".env", self.repo / "src" / "tradesentry" / "notes.txt")
+        with self.assertRaises(stage.StageError) as caught:
+            stage.stage(self.repo, self.dest, [])
+        self.assertIn("하드 링크", str(caught.exception))
+        self.assertFalse(self.dest.exists())
+
+    def test_manifest_records_code_version(self):
+        record = stage.stage(self.repo, self.dest, [])
+        self.assertEqual(record["code_version"], {"git_commit": None, "dirty": None})
+        version = stage.code_version(ROOT)
+        self.assertRegex(version["git_commit"] or "", r"^[0-9a-f]{40}$")
+        self.assertIn(version["dirty"], (True, False))
+
     def test_build_record_peer_groups_come_along(self):
         self.build_record("dev20")
         record = stage.stage(self.repo, self.dest, ["data/snapshots/dev20/snapshot_build.sqlite",

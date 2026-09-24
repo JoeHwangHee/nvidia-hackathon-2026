@@ -25,6 +25,8 @@ normalized_sha256·비교국 표를 적는다(결정 기록 model-decision-mt5-s
     - data/snapshots/ 아래는 snapshot_build.sqlite·snapshot_build.json만(raw/·manifest·수집기 SQLite·fixture_spec.json 거부).
       dev20 스냅샷(`uv run --locked python -m eval.datagen.dev20 install`이 만드는 data/snapshots/dev20/snapshot_build.sqlite)은
       --add로 준다
+    - 비교는 경로 조각을 casefold해서 한다(대소문자를 구분하지 않는 파일 시스템에서 `.ENV`·`Eval/` 같은 별칭 우회를
+      막는다). 적힌 철자가 디스크의 철자(os.listdir)와 다르면 거부한다. 하드 링크(링크 수 > 1)와 일반 파일이 아닌 것도 거부한다
     - 심볼릭 링크(파일·폴더), 봉인 폴더(TRADESENTRY_SEALED_DIR, 없으면 기본값) 안의 경로, 저장소 밖으로 풀리는 경로
     - 없는 필수 항목(`?`가 없는 줄과 --add). `?` 줄이 없으면 빼고 알린다
     __pycache__ 폴더와 .pyc 파일은 캐시라 알리지 않고 건너뛴다.
@@ -41,6 +43,8 @@ import json
 import os
 import re
 import shutil
+import stat
+import subprocess
 import sys
 from pathlib import Path, PurePosixPath
 
@@ -74,9 +78,12 @@ def _inside(path: Path, base: Path) -> bool:
 
 def blocked_reason(rel: str, *, from_add: bool) -> str | None:
     """저장소 상대경로(POSIX)가 거부 규칙에 걸리면 이유를, 아니면 None을 돌려준다."""
-    parts = PurePosixPath(rel).parts
-    if not parts or rel.startswith("/") or ".." in parts:
+    raw_parts = PurePosixPath(rel).parts
+    if not raw_parts or rel.startswith("/") or ".." in raw_parts:
         return "저장소 상대경로가 아니다"
+    # 비교는 casefold한 조각으로 한다. macOS APFS 같은 대소문자를 구분하지 않는 파일 시스템에서는 `.ENV`·`Eval/`·
+    # `Outputs/`가 같은 파일·폴더를 가리키므로, 글자 그대로 비교하면 거부 규칙을 우회한다(MT5b 보안 검토 1).
+    parts = tuple(part.casefold() for part in raw_parts)
     name = parts[-1]
     if name.startswith(".env") or name.endswith(".env"):
         return ".env 파일"
@@ -84,7 +91,7 @@ def blocked_reason(rel: str, *, from_add: bool) -> str | None:
         return "저장소 관리·가상환경 폴더"
     if parts[0] in BLOCKED_TOP:
         return f"{parts[0]}/ 아래"
-    if "oracle" in name.lower() or "answer" in name.lower():
+    if "oracle" in name or "answer" in name:
         return "정답표 이름(oracle·answer)"
     if parts[0] == "eval":
         if not (from_add and parts[:4] == DEV20_INPUT_PREFIX):
@@ -107,8 +114,34 @@ def read_include(path: Path) -> list[tuple[str, bool]]:
     return entries
 
 
+def check_spelling(repo_root: Path, rel: str) -> None:
+    """적힌 경로의 조각마다 부모 폴더 목록(os.listdir)에 글자 그대로 있는지 본다. 대소문자만 다른 별칭 경로를 막는다."""
+    current = repo_root
+    for part in PurePosixPath(rel).parts:
+        try:
+            names = os.listdir(current)
+        except OSError:
+            return  # 없는 경로는 부르는 쪽이 "없음"으로 처리한다
+        if part not in names:
+            if any(name.casefold() == part.casefold() for name in names):
+                raise StageError(f"적힌 철자가 디스크의 철자와 다르다(대소문자): {rel}")
+            return
+        current = current / part
+
+
+def _check_regular(path: Path, rel: str) -> None:
+    """일반 파일이고 하드 링크가 아닌지 본다(링크 수 > 1이면 다른 이름의 같은 파일일 수 있다)."""
+    info = os.lstat(path)
+    if not stat.S_ISREG(info.st_mode):
+        raise StageError(f"일반 파일이 아니다: {rel}")
+    if info.st_nlink > 1:
+        raise StageError(f"하드 링크(링크 수 {info.st_nlink})는 들이지 않는다: {rel}")
+
+
 def _files_under(repo_root: Path, rel: str, *, from_add: bool) -> list[str]:
-    """항목 하나를 파일 목록(저장소 상대경로)으로 펼친다. 거부 규칙·심볼릭 링크·저장소 밖이면 StageError."""
+    """항목 하나를 파일 목록(저장소 상대경로)으로 펼친다. 거부 규칙·심볼릭 링크·하드 링크·저장소 밖·철자 불일치면
+    StageError."""
+    check_spelling(repo_root, rel)
     source = repo_root / rel
     for parent in [source, *source.parents]:
         if parent == repo_root:
@@ -139,6 +172,7 @@ def _files_under(repo_root: Path, rel: str, *, from_add: bool) -> list[str]:
         reason = blocked_reason(item, from_add=from_add)
         if reason:
             raise StageError(f"들이지 않는 경로다({reason}): {item}")
+        _check_regular(repo_root / item, item)
     return found
 
 
@@ -190,6 +224,8 @@ def snapshot_companions(repo_root: Path, files: list[str]) -> tuple[list[str], l
             peer = f"data/reference/{name}"
             if not (repo_root / peer).is_file() or (repo_root / peer).is_symlink():
                 raise StageError(f"빌드 기록이 가리키는 비교국 표가 없다: {peer}")
+            check_spelling(repo_root, peer)
+            _check_regular(repo_root / peer, peer)
             if not isinstance(expected, str) or _sha256(repo_root / peer) != expected:
                 raise StageError(f"비교국 표 sha256이 빌드 기록과 다르다: {peer}")
             extra.append(peer)
@@ -200,6 +236,25 @@ def snapshot_companions(repo_root: Path, files: list[str]) -> tuple[list[str], l
                           else None,
                           "build_record": rel, "peer_group_files": peers})
     return extra, snapshots
+
+
+def code_version(repo_root: Path) -> dict:
+    """스테이징한 작업 트리의 git 커밋과 추적 파일 변경 여부. git이 없거나 저장소가 아니면 값이 None이다.
+
+    이미지 안에는 .git이 없으므로, 샌드박스 안 실행 결과의 code_version(자료 계약의 git 커밋 해시)을 이미지 내용과 잇는
+    근거가 이 기록이다(결정 기록 model-decision-mt5-sandbox ⑧). dirty가 참인 이미지는 공식 실행에 쓰지 않는다.
+    """
+    def git(*args: str) -> str | None:
+        try:
+            done = subprocess.run(["git", "-C", str(repo_root), *args], capture_output=True, text=True, timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        return done.stdout if done.returncode == 0 else None
+
+    head = git("rev-parse", "HEAD")
+    status = git("status", "--porcelain", "--untracked-files=no")
+    return {"git_commit": head.strip() if head else None,
+            "dirty": None if status is None or head is None else bool(status.strip())}
 
 
 def _sha256(path: Path) -> str:
@@ -244,6 +299,7 @@ def stage(repo_root: Path, dest: Path, added: list[str]) -> dict:
             "files": entries,
             "optional_missing": missing,
             "snapshots": snapshots,
+            "code_version": code_version(repo_root),
             "dockerfile_sha256": _sha256(resolved / "Dockerfile"),
             "launcher_sha256": _sha256(resolved / "image" / "tradesentry.sh"),
             "include_sha256": _sha256(repo_root / INCLUDE_FILE),
@@ -279,6 +335,8 @@ def main(argv: list[str] | None = None) -> int:
     for snap in record["snapshots"]:
         peers = ",".join(entry["file_name"] for entry in snap["peer_group_files"]) or "-"
         print(f"snapshot {snap['snapshot_id']} normalized_sha256={snap['normalized_sha256']} peer_group_files={peers}")
+    version = record["code_version"]
+    print(f"git_commit={version['git_commit']} dirty={version['dirty']}")
     print(f"manifest_sha256={record['manifest_sha256']}")
     print(f"dockerfile_sha256={record['dockerfile_sha256']}")
     return 0
