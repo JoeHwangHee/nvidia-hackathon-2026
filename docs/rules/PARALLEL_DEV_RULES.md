@@ -52,15 +52,15 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 | `src/tradesentry/`의 M 패키지: `policy/`, `grouping/`, `tools/`, `workflow/`, `reports/`, `validator/`, `evaluation/`, `approval/`, `cli/` | M | `evaluation/`은 평가 하네스(묶음 실행과 실행 결과 기록의 실행 쪽 키), 샌드박스 밖 실행기, 추출 명령, NAT 사후 평가를 담는다(분담 §2의 평가 하네스). 정답 대조 채점을 하는 독립 채점기와 다르다 |
 | `src/tradesentry/runlog/`(trace·실행 결과 기록·원인 분류 코드) | 공동 | 두 트랙의 실행 기록이 같은 형식을 쓰게 한다 |
 | `src/tradesentry/units/`(단위 등록부와 공통 실행기, 개발 전용) | 공동 | 물리 단위(USD·kg)와 관계없다. CLI·런타임 스킬에서 부르지 않는다 |
-| `app.py`(화면) | M | 위치는 계획 경로·명령 표에 아직 없다 |
+| `src/tradesentry/app.py`(화면), `configs/model/`(프롬프트·모델 설정) | M | 계획 경로·명령 표(자료 계약 §10)에 있다 |
 | CLI `tradesentry <명령>` | M | `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate` |
-| `data/` 전체(스냅샷·참조 자료) | D | 예외: `data/reference/peer_group_g1.csv`는 M이 계산하고 D가 검수한다(§3.4) |
+| `data/` 전체(스냅샷·참조 자료) | D | 예외: `data/reference/peer_group_g0.csv`·`data/reference/peer_group_g1.csv`는 M이 계산하고 D가 검수한다(§3.4) |
 | `data/snapshots/controlled_fixture_v0/` | D | 합성 시험자료(§2) |
 | `configs/collection_plan.json`(기존) | D | |
 | `configs/policy_v1.json`(정책 수치 파일) | D 제안·사용자 승인 | 정책 수치를 코드에 하드코딩하지 않는다 |
+| `configs/policy_dev.json`(개발용 정책 `dev-0.1`, oracle 기준값) | D | 승인 전 실행용. DT1에서 만든다(결정 기록 `20260924-2315-user-decision-impl-plan-approval.md` D2) |
 | `configs/nat/workflow.yml` | M | |
 | `configs/openshell/policy.yaml` | M(보안 검토) | |
-| 모델 설정, 프롬프트 | M | 위치는 계획 경로·명령 표에 아직 없다 |
 | `skills/tradesentry/SKILL.md`(런타임 스킬) | M | |
 | `skills/tradesentry-scorecard/SKILL.md`, `skills/tradesentry-eval/SKILL.md` | 공동 | 평가 스킬 ①(룰북 Part A 자기채점)과 ②(성능 평가를 사전 점검 → 실행 → 채점 순으로 수행) |
 | `eval/scenarios/SCENARIO_SPEC.md`(시나리오 명세, 공개) | D | |
@@ -71,7 +71,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 | `eval/scorer/`(독립 채점기) | D | 런타임 코드(`src/tradesentry/` 아래 모든 패키지. 등록부 `units/`와 커널 `contract/` 포함)를 import하지 않고 복사하지도 않은 독립 구현이다. 간접 import(런타임 패키지를 부르는 모듈을 거쳐 부르는 경우)도 하지 않고 `eval/datagen/`도 import하지 않는다. `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증한다. 실행은 `python -m eval.scorer --run <run_dir>` |
 | 봉인 폴더(`TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`) | D | 저장소 밖이다. 쓰기는 격리된 생성 에이전트만 한다(§6). 두 트랙 개발 에이전트와 Codex는 열거나 읽지 않는다(§6.3). §1.3 "읽기만" 규칙의 예외다 |
 | `outputs/`(도메인 출력, 커밋 안 함. 실행마다 `outputs/{실행명}/`, 봉인 묶음 실행은 `outputs/sealed/{실행명}/`) | 공동 | 이름 규칙은 자료 계약 §10.3. 봉인 묶음 실행 사슬의 출력(`outputs/sealed/` 아래)은 금지 해제 조건(정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 전에는 열지 않는다 |
-| `artifacts/eval/score-{시각}/`, `artifacts/scorecard/scorecard-{시각}/`(커밋. 실행 폴더의 커밋 증거 파일을 증거 복사한 커밋 사본) | 공동 | 증거 복사는 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 커밋 증거 파일(평가 결과는 채점기 출력 `scorer_*`, 자기채점은 `scorecard-{시각}.md`)만 복사해 커밋하는 일이다. trace는 빼고, 봉인 묶음은 금지 해제 조건이 채워진 뒤에만 한다 |
+| `artifacts/eval/score-{시각}/`, `artifacts/scorecard/scorecard-{시각}/`(커밋. 실행 폴더의 커밋 증거 파일을 증거 복사한 커밋 사본) | 공동 | 증거 복사는 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 커밋 증거 파일(평가 결과는 채점기 출력 `scorer_*` 파일과 재채점용 보고서 원문, 자기채점은 `scorecard-{시각}.md`)만 복사해 커밋하는 일이다. 재채점용 보고서 원문은 `artifacts/eval/score-{시각}/{run_id}/`에 증거 복사한다(조건 다섯은 자료 계약 §10.3 N11). trace는 빼고, 봉인 묶음은 금지 해제 조건이 채워진 뒤에만 한다 |
 | `artifacts/openshell/openshell_violation_tests-{시각}/`(커밋. 위반 시험 실행 폴더의 결과 파일 `.md`·`.txt`·`.yaml`을 증거 복사한 커밋 사본) | M(보안 검토) | X1 임시 시험 기록은 옛 이름 위치에 있다(자료 계약 §10.3) |
 | `spikes/x1/`(X1: 세로형 최소 통합 시험의 임시 시험 코드) | M | 스캐폴딩 결과에 섞지 않는다 |
 | `docs/`, `tests/` | 공동 | 예외 규칙은 §1.3. 단위 골든 시험 `tests/units/{단위 ID}/`도 여기 든다 |
@@ -91,7 +91,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 
 ### 1.4 표에 없는 경로
 
-- 표에 없는 경로를 만들거나 고쳐야 하면 먼저 소유 트랙을 정해 결정 기록에 남긴다. 예: 기존 `scripts/g4_nim_toolcall_probe.py`, 프롬프트·모델 설정·`app.py`의 위치.
+- 표에 없는 경로를 만들거나 고쳐야 하면 먼저 소유 트랙을 정해 결정 기록에 남긴다. 예: 기존 `scripts/g4_nim_toolcall_probe.py`.
 - 계획 경로·명령 표에 새 이름을 올려야 하면, 그 표와 그 이름을 쓰는 문서를 한 PR에서 함께 고친다. 문서마다 새 경로를 지어내지 않는다.
 
 ### 1.5 분담 문서에서 옮기며 바뀐 것
@@ -122,7 +122,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 | 품목·상대국·기간 | HS6(6자리 품목분류 코드) 3개 × 상대국 10개 × 36개월 |
 | 하위품목 | HS10(10자리 세부 품목) 행 2개월분. 구성효과 분해에 쓰는 기준월과 비교월이다 `[추론]` |
 | 분모 | 전체국가(`ALL`) 합계. 점유율 계산에 필요하다 |
-| 비교 대상 | 합성 `peer_group`(대상국의 비교 대상 국가 집합을 담는 계약 객체). `g0`(2023 수입 상위국 고정 목록)·`g1`과 무관하다 |
+| 비교 대상 | 합성 `peer_group`(대상국의 비교 대상 국가 집합을 담는 계약 객체). `g0`(대상국을 뺀 15개국 중 2023년 수입금액 상위 5개국 고정 목록)·`g1`과 무관하다 |
 | 수집 기록 | `collection_receipt`(수집 요청마다 성공·오류·미수집을 남기는 계약 객체). 성공·실패·미수집을 함께 담는다 |
 | 관측 상태 | 관측치마다 붙는 수집·거래 상태 5종 `OBSERVED`, `NOT_COLLECTED`, `REQUEST_FAILED`, `UNRESOLVED_ZERO`, `CONFIRMED_NO_TRADE`가 각각 한 번 이상 나온다 |
 | 사례 | oracle A/B/C(합성 시연 사례 A 구성변화·B 잔존변화·C 자료누락과 그 정답표 `eval/dev/oracle_ABC.json`). A는 `MONITOR`(모니터링), B는 `MAINTAIN`(검토 유지), C는 `HOLD`(자료 보류)로 끝나야 한다 |
@@ -204,6 +204,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
   - 16개국 안에서 대상국을 뺀 상위 5개국 선택
   - 대만(`TW`)이 BACI(프랑스 CEPII가 만드는 국가 간 연간 교역 자료) 490 "Asia n.e.s."에 대응한다는 주석
 - BACI 값(천USD/톤, 연간)이 관세청 월별 USD/kg 지표와 한 지표 안에서 섞이지 않았는지 본다.
+- `g0` 결과 `data/reference/peer_group_g0.csv`도 M이 계산하고(로드맵 MT6) D가 검수한다. D는 자료 계약 §2.3.6(정본)의 `g0` 필드 값을 확인한다: `scope_type`=`hs6`, `method`=`import_value_topk`(대상국을 뺀 나머지 15개국에서, v2 부모 HS6 행의 2023년 1~12월 수입금액 합(`OBSERVED` 행)이 큰 순서로 5개국. 합이 같으면 국가 코드 사전순), `scope_id`=대상 HS6 코드, `peer_rank`=1~5(금액 큰 순), `peer_id`=비교국 코드, `grouping_version`=`g0`, `source_version`=`kcs_202201_202412_v2`, `source_year`=2023, `input_sha256`=v2의 `raw_sha256`, `similarity`·`community_id`=`null`, `params_hash`=매개변수(k, 기준연도, 후보국 목록)의 해시.
 
 ## 4. 공용 약속과 변경 승인
 
@@ -648,7 +649,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 | `r_U` | 단가(kg당 금액)의 전년동월 변화율 |
 | `threshold_pp` | oracle에 적힌 점유율 판정 기준값(퍼센트포인트) |
 | `peer_group` | 대상국의 비교 대상 국가 집합을 담는 계약 객체 |
-| `g0`, `g1` | 2023 수입 상위국 고정 목록 비교 대상과, BACI 교역 유사도로 고른 비교 대상 |
+| `g0`, `g1` | 대상국을 뺀 15개국 중 2023년 수입금액 상위 5개국 고정 목록 비교 대상과, BACI 교역 유사도로 고른 비교 대상 |
 | BACI | 프랑스 CEPII가 만드는 국가 간 연간 교역 자료. 비교 대상 선택에만 쓴다 |
 | dev20 | 공개 개발용 합성 사례 20건 |
 | holdout40 | 봉인 평가용 합성 사례 40건 |
