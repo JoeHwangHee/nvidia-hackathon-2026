@@ -5,8 +5,10 @@
    고치지 않으므로 머리 주석 대신 "표준 라이브러리만"을 적용한다(수집기는 표준 라이브러리만 쓴다는 규칙).
    허용 항목은 패키지(예: tradesentry.contract)나 모듈 하나(예: tradesentry.evaluation.batch_run)다.
 2. 독립 채점기(eval/scorer/)는 허용 목록 방식이다. eval.scorer에서 import 문으로 직접이든 간접이든 닿는 이름은
-   표준 라이브러리, eval(패키지 자체), eval.scorer 아래만 허용하고 나머지(tradesentry 전부, eval.datagen, tests/
-   도우미, 외부 패키지)는 모두 위반이다.
+   표준 라이브러리 가운데 SCORER_STDLIB(채점기가 실제로 쓰는 모듈만), eval(패키지 자체), eval.scorer 아래만 허용하고
+   나머지(tradesentry 전부, eval.datagen, tests/ 도우미, 외부 패키지, 목록 밖 표준 라이브러리)는 모두 위반이다.
+   채점기는 샌드박스 밖에서 정답표를 쥐고 돌므로 네트워크가 곧 정답 유출 경로다. 네트워크 모듈 넷(7번)만 막으면
+   smtplib·asyncio 같은 다른 연결 경로가 남아 표준 라이브러리도 허용 목록으로 좁힌다(S0 보안 권고, 로드맵 DT8).
 3. dev20 생성 도구(단위 V2)가 tradesentry.metrics·tradesentry.policy와 그것들을 부르는 모듈에 닿지 않는다.
 4. 샌드박스 밖 실행기(단위 E2)가 닿지 않는다: .env를 읽는 tradesentry.ingest(load_env)와 nat(NAT 1.9.0의 nat 명령
    진입점은 import 때 load_dotenv()를 부른다), 사례를 호스트에서 직접 돌릴 수 있는 tradesentry.workflow·tools·
@@ -73,6 +75,10 @@ OS_PROCESS_CALLS = {"system", "popen", "execl", "execle", "execlp", "execlpe", "
 ASYNCIO_PROCESS_CALLS = {"create_subprocess_exec", "create_subprocess_shell"}
 WATCHED_MODULES = ("subprocess", "os", "asyncio", "sys", "builtins")  # 별칭을 따라가는 모듈
 NETWORK_IMPORTS = frozenset({"socket", "urllib", "http", "ssl"})
+# 독립 채점기 닫힘이 쓸 수 있는 표준 라이브러리 최상위 이름(2번). 채점기가 실제로 import하는 것만 둔다. 더하려면 이
+# 목록을 고치고 보안 검토를 받는다.
+SCORER_STDLIB = frozenset({"argparse", "collections", "datetime", "decimal", "fractions", "hashlib", "json", "math", "os",
+                           "pathlib", "re", "sqlite3", "sys", "time"})
 CLI_NAME = "tradesentry"
 
 
@@ -98,8 +104,8 @@ E2_TOKENS = TokenRules(programs=frozenset({"openshell"}), cli_strings_in_program
 class Closure:
     """rule: 보고용 규칙 번호. name: 보고용 이름. starts: 시작 모듈 이름 앞부분.
     forbidden: 닿으면 안 되는 이름 앞부분(금지 목록 방식). allowed가 있으면 허용 목록 방식이다: 표준 라이브러리,
-    allowed_exact(그 이름만), allowed(그 이름과 그 아래)만 허용한다. tokens가 있으면 닿는 저장소 모듈 전부에
-    그 규칙으로 금지 토큰 검사(7번)를 한다."""
+    allowed_exact(그 이름만), allowed(그 이름과 그 아래)만 허용한다. stdlib이 있으면 표준 라이브러리도 그 최상위
+    이름만 허용한다. tokens가 있으면 닿는 저장소 모듈 전부에 그 규칙으로 금지 토큰 검사(7번)를 한다."""
 
     rule: str
     name: str
@@ -108,6 +114,7 @@ class Closure:
     allowed: list[str] | None = None
     allowed_exact: list[str] = field(default_factory=list)
     tokens: TokenRules | None = None
+    stdlib: frozenset[str] | None = None
 
 
 @dataclass
@@ -222,7 +229,10 @@ def allowed(target: str, tokens: list[str]) -> bool:
 
 
 def closure_allows(name: str, closure: Closure) -> bool:
-    if name.split(".")[0] in STDLIB or name in closure.allowed_exact:
+    top = name.split(".")[0]
+    if top in STDLIB:
+        return closure.stdlib is None or top in closure.stdlib
+    if name in closure.allowed_exact:
         return True
     return any(under(name, prefix) for prefix in closure.allowed or [])
 
@@ -407,7 +417,8 @@ def check(root: Path, rules: Rules) -> tuple[list[str], dict[str, int]]:
             if hit in unreadable:
                 problems.append(f"{label}: 닿는 모듈을 읽을 수 없다({hit}, {unreadable[hit]})")
             if closure.allowed is not None and not closure_allows(hit, closure):
-                problems.append(f"{label}: 허용 목록(표준 라이브러리, "
+                stdlib = "표준 라이브러리" if closure.stdlib is None else "표준 라이브러리 중 SCORER_STDLIB"
+                problems.append(f"{label}: 허용 목록({stdlib}, "
                                 f"{', '.join(closure.allowed_exact + closure.allowed)}) 밖 이름에 닿는다({hit})")
             elif any(under(hit, prefix) for prefix in closure.forbidden):
                 problems.append(f"{label}: 직접이든 간접이든 닿으면 안 되는 모듈에 닿는다({hit})")
@@ -448,7 +459,7 @@ def repo_rules() -> Rules:
     v2, e1, e2 = (registry.UNITS[uid].module for uid in ("V2", "E1", "E2"))
     closures = [
         Closure("2", "독립 채점기", ["eval.scorer"], allowed=["eval.scorer"], allowed_exact=["eval"],
-                tokens=SCORER_TOKENS),
+                tokens=SCORER_TOKENS, stdlib=SCORER_STDLIB),
         Closure("3", "단위 V2", [v2], forbidden=["tradesentry.metrics", "tradesentry.policy"]),
         Closure("4", "단위 E2", [e2], forbidden=E2_FORBIDDEN + [e1]),
         Closure("8", "CLI", ["tradesentry.cli"], forbidden=[e2]),
@@ -537,7 +548,7 @@ TREE_RULES = Rules(
            "C1": ("eval.scorer.claims", None), "V2": ("eval.datagen.dev20", None),
            "F2": ("tradesentry.cli.dispatch", None)},
     closures=[Closure("2", "독립 채점기", ["eval.scorer"], allowed=["eval.scorer"], allowed_exact=["eval"],
-                      tokens=SCORER_TOKENS),
+                      tokens=SCORER_TOKENS, stdlib=SCORER_STDLIB),
               Closure("3", "단위 V2", ["eval.datagen.dev20"], forbidden=["tradesentry.metrics", "tradesentry.policy"]),
               Closure("4", "단위 E2", [TREE_E2], forbidden=E2_FORBIDDEN + [TREE_E1]),
               Closure("8", "CLI", ["tradesentry.cli"], forbidden=[TREE_E2]),
@@ -613,6 +624,22 @@ class NegativeCaseTest(unittest.TestCase):
         self.assert_caught({"eval/scorer/claims.py": header("C1", "표준 라이브러리, eval.scorer, numpy")
                             + "import numpy\n"},
                            "2) 독립 채점기", "numpy")
+
+    def test_scorer_standard_library_is_allowlisted(self):
+        for source, name in (("import smtplib\n", "smtplib"), ("import asyncio\n", "asyncio"),
+                             ("from email import message\n", "email"), ("import ftplib\n", "ftplib")):
+            with self.subTest(module=name):
+                self.assert_caught({"eval/scorer/claims.py": header("C1", "표준 라이브러리, eval.scorer") + source},
+                                   "2) 독립 채점기", "SCORER_STDLIB", f"({name})")
+        # 채점기가 부르는 저장소 안 도우미를 거쳐도 잡는다
+        self.assert_caught({"eval/scorer/claims.py": header("C1", "표준 라이브러리, eval.scorer")
+                            + "from eval.scorer import helper\n", "eval/scorer/helper.py": "import xmlrpc.client\n"},
+                           "2) 독립 채점기", "xmlrpc")
+        # 목록 안 모듈은 위반이 아니고, 다른 닫힘(단위 V2)은 표준 라이브러리 제한을 받지 않는다
+        self.assertEqual(self.problems_with({"eval/scorer/claims.py": header("C1", "표준 라이브러리, eval.scorer")
+                                             + "import sqlite3\nimport hashlib\n",
+                                             "eval/datagen/dev20.py": header("V2", "표준 라이브러리, eval.datagen")
+                                             + "import random\n"}), [])
 
     def test_v2_reaches_metrics_through_intermediate_module(self):
         self.assert_caught({"eval/datagen/dev20.py": header("V2", "표준 라이브러리, tradesentry.contract, "
