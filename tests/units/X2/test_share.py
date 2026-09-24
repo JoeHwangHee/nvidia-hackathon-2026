@@ -8,7 +8,8 @@ from fractions import Fraction
 
 from tradesentry.metrics import share as x2
 
-SNAP = "ev:golden_metrics:observation:"
+SNAPSHOT = "golden_metrics"
+SNAP = f"ev:{SNAPSHOT}:observation:"
 
 
 def parent_row(month, status="OBSERVED", v=None, ev=None, **extra):
@@ -28,8 +29,8 @@ def world_row(month, code, v, status="OBSERVED", **extra):
 
 
 def run(parent, world, partner="CN"):
-    out = x2.run({"hs6": "850450", "partner": partner, "period": "202401", "baseline_period": "202301",
-                  "parent": parent, "world": world})
+    out = x2.run({"snapshot_id": SNAPSHOT, "hs6": "850450", "partner": partner, "period": "202401",
+                  "baseline_period": "202301", "parent": parent, "world": world})
     return {(m["inputs"]["metric"], m["inputs"]["partner"], m["inputs"]["period"]): m for m in out["metrics"]}
 
 
@@ -168,8 +169,11 @@ class RejectTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             run(parent, good, partner="ALL")
         with self.assertRaises(TypeError):
+            x2.run({"snapshot_id": SNAPSHOT, "hs6": "850450", "partner": "CN", "period": "202401",
+                    "baseline_period": "202301", "parent": parent})
+        with self.assertRaises(ValueError):  # snapshot_id 누락
             x2.run({"hs6": "850450", "partner": "CN", "period": "202401", "baseline_period": "202301",
-                    "parent": parent})
+                    "parent": parent, "world": good})
 
 
 if __name__ == "__main__":

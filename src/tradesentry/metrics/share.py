@@ -3,14 +3,16 @@
 단위 ID: X2
 도메인명: metrics_share
 소유: D
-입력: 상대국 V(부모 HS6 행)·`ALL` V(HS10 월 행, 중복 제거 뒤)(t, t−12)
-출력: `V`(상대국·`ALL`), `s`(t−12, t), `d_s`(pp)
+입력: 상대국 V·`ALL` V(중복 제거)
+출력: `s`, `d_s`(pp)
 허용 import: 표준 라이브러리, tradesentry.contract, tradesentry.dal, tradesentry.metrics
 
 공식은 자료 계약 docs/rules/DATA_CONTRACT_V1.md §11.2다. s_t = V_country,t / V_world,t를 백분율(%)로, d_s = s_t −
 s_(t−12)를 퍼센트포인트(pp)로 적는다. 분자는 상대국 부모 HS6 행의 V, 분모는 그 HS6 아래 전체국가(`ALL`) HS10 월 행의
 금액 합이다(원천 규칙, 행 규칙 5). 선택국 합계를 분모로 쓰지 않는다. d_s는 반올림한 s끼리 빼지 않고 정확한 s끼리
-뺀 뒤 한 번 반올림한다.
+뺀 뒤 한 번 반올림한다. 머리 주석의 입력·출력 줄은 단위 표 docs/plan/UNITS.md §3.3의 문구다. 이 단위는 그 밖에
+oracle 점유율 필드(V_country·V_world)를 드러내려고 V(상대국·ALL) 지표도 낸다. 구체적인 모양은 아래와 결정 기록
+docs/tracking/decisions/의 DT2 기록(data-decision-dt2-metrics)에 있다.
 
 - ALL 중복 제거(행 규칙 6)는 자료 접근층이 한다. 이 단위는 더하기 전에 달마다 (HS10, 월) 키가 한 번씩인지 세고,
   두 번 나오면 ValueError로 멈춘다(v2에서 중복을 빼지 않으면 분모가 정확히 두 배가 된다).
@@ -19,7 +21,7 @@ s_(t−12)를 퍼센트포인트(pp)로 적는다. 분자는 상대국 부모 HS
   점유율이 0이어도 d_s는 계산한다(룰북 B3-1). s가 하나라도 null이면 d_s는 null이다.
 
 run 입력(JSON 객체)
-- hs6, partner, period, baseline_period: 단위 X1과 같다.
+- snapshot_id, hs6, partner, period, baseline_period: 단위 X1과 같다(snapshot_id 필수).
 - parent: 상대국 부모 역할의 관측 행(단위 X1과 같다).
 - world: 전체국가(partner_code `ALL`) 역할의 관측 행. 달마다 그 HS6 아래 ALL HS10 월 행(OBSERVED, hs_code는
   그 HS6로 시작하는 10자리, 중복 제거 뒤), 또는 행이 없을 때 그 달의 상태 행.
@@ -123,8 +125,13 @@ def exact_value(metric: dict) -> Fraction | None:
 def run(inp: object) -> object:
     """진입 함수. 분자·분모 두 달로 V·s·d_s metric 객체를 낸다."""
     target = x4.parse_target(inp)
-    if set(inp) - {"hs6", "partner", "period", "baseline_period", "parent", "world"}:
-        raise ValueError("X2 입력 키는 hs6·partner·period·baseline_period·parent·world다")
+    if set(inp) - {"snapshot_id", "hs6", "partner", "period", "baseline_period", "parent", "world"}:
+        raise ValueError("X2 입력 키는 snapshot_id·hs6·partner·period·baseline_period·parent·world다")
+    snapshot_id = x4.parse_snapshot_id(inp)
+
+    def make(symbol: str, **fields: object) -> dict[str, object]:
+        return x4.metric(symbol, snapshot_id=snapshot_id, **fields)
+
     parent = x1.parse_parent(inp.get("parent"), target)
     world = parse_world(inp.get("world"), target)
     hs6, partner = target["hs6"], target["partner"]
@@ -133,27 +140,27 @@ def run(inp: object) -> object:
     metrics = []
     for month in months:
         amounts[month] = country_amount(parent[month])
-        metrics.append(x4.metric("V", hs6=hs6, partner=partner, period=month, baseline_period=None, values={},
-                                 evidence_ids=x4.evidence_of(parent[month]), value=amounts[month][0],
-                                 flags=amounts[month][1]))
+        metrics.append(make("V", hs6=hs6, partner=partner, period=month, baseline_period=None, values={},
+                            evidence_ids=x4.evidence_of(parent[month]), value=amounts[month][0],
+                            flags=amounts[month][1]))
     for month in months:
         totals[month] = world_amount(world[month])
-        metrics.append(x4.metric("V", hs6=hs6, partner=WORLD, period=month, baseline_period=None,
-                                 values={"row_count": totals[month][2]}, evidence_ids=x4.evidence_of(world[month]),
-                                 value=totals[month][0], flags=totals[month][1]))
+        metrics.append(make("V", hs6=hs6, partner=WORLD, period=month, baseline_period=None,
+                            values={"row_count": totals[month][2]}, evidence_ids=x4.evidence_of(world[month]),
+                            value=totals[month][0], flags=totals[month][1]))
     for month in months:
         shares[month] = share_of(amounts[month], totals[month])
         evidence[month] = x4.evidence_of(parent[month]) + x4.evidence_of(world[month])
-        metrics.append(x4.metric("s", hs6=hs6, partner=partner, period=month, baseline_period=None,
-                                 values={"V_country": amounts[month][0], "V_world": totals[month][0]},
-                                 evidence_ids=evidence[month], value=shares[month][0], flags=shares[month][1]))
+        metrics.append(make("s", hs6=hs6, partner=partner, period=month, baseline_period=None,
+                            values={"V_country": amounts[month][0], "V_world": totals[month][0]},
+                            evidence_ids=evidence[month], value=shares[month][0], flags=shares[month][1]))
     base, period = months
     change = None
     if shares[base][0] is not None and shares[period][0] is not None:
         change = shares[period][0] - shares[base][0]
-    metrics.append(x4.metric("d_s", hs6=hs6, partner=partner, period=period, baseline_period=base,
-                             values={"V_country_0": amounts[base][0], "V_world_0": totals[base][0],
-                                     "V_country_1": amounts[period][0], "V_world_1": totals[period][0]},
-                             evidence_ids=evidence[base] + evidence[period], value=change,
-                             flags=shares[base][1] + shares[period][1]))
+    metrics.append(make("d_s", hs6=hs6, partner=partner, period=period, baseline_period=base,
+                        values={"V_country_0": amounts[base][0], "V_world_0": totals[base][0],
+                                "V_country_1": amounts[period][0], "V_world_1": totals[period][0]},
+                        evidence_ids=evidence[base] + evidence[period], value=change,
+                        flags=shares[base][1] + shares[period][1]))
     return {"metrics": metrics}

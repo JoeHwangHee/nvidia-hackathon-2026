@@ -80,7 +80,7 @@ def reproduce(case: dict, fallback_baseline: list) -> dict[str, dict[str, object
     parent = parent_rows(case)
     found: dict[tuple[str, str, str], object] = {}
     outputs = [unit_value.run({**target, "snapshot_id": SNAPSHOT, "parent": parent}),
-               share.run({**target, "parent": parent, "world": world_rows(case)}),
+               share.run({**target, "snapshot_id": SNAPSHOT, "parent": parent, "world": world_rows(case)}),
                decompose.run({**target, "parent": parent, "children": child_rows(case, fallback_baseline),
                               "weight_rounding_kg": WEIGHT_ROUNDING_KG})]
     for out in outputs:
