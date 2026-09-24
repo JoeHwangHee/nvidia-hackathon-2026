@@ -17,7 +17,8 @@ nvidia-hackathon-2026/
 │   ├── plan/
 │   │   ├── DEV_PLAN.md                ← 개발 플랜: 실행 사슬, OpenShell 정책 요건, 조사·판정 규칙, 설계 결정 기록
 │   │   ├── ROADMAP.md                 ← 작업 ID·선후 관계·날짜·완료 기준, MVP(최소 기능 제품) 합격 체크리스트, 사용자 확인 항목
-│   │   └── SCAFFOLD_BRIEF.md          ← 앱 뼈대(S0) 외부 자문용 명세서와 열린 질문 Q1~Q21
+│   │   ├── SCAFFOLD_BRIEF.md          ← 앱 뼈대(S0) 외부 자문용 명세서와 열린 질문 Q1~Q21
+│   │   └── UNITS.md                   ← 최소 단위 65개의 정본: 단위 ID·도메인명·파일·소유·조립 판정 후보와 조립 점검 절차
 │   ├── rules/
 │   │   ├── DATA_CONTRACT_V1.md        ← 공용 자료 계약(값의 정본): 객체·필드·상태값·ID·단위·자릿수·경로·명령
 │   │   ├── PARALLEL_DEV_RULES.md      ← 두 트랙의 파일 소유, 인수 조건, 공용 약속(두 트랙이 함께 기대는 약속) 변경, 봉인 자료(개발 중 보지 않도록 저장소 밖에 두는 평가 자료), 실자료 분할, 브랜치·PR(GitHub 변경 요청)
@@ -45,6 +46,7 @@ nvidia-hackathon-2026/
 ├── eval/dev/oracle_ABC.json           ← 개발용 기대 판정 사례 A·B·C
 ├── data/snapshots/                    ← 스냅샷별 manifest(수집 요청 목록)·검사 결과. 원자료와 SQLite는 커밋하지 않는다
 ├── data/reference/                    ← 품목표와 BACI(CEPII가 정리한 국가 간 연간 무역 자료) 참고 자료
+├── outputs/                           ← 실행별 출력 폴더(커밋하지 않는다. 이름 규칙은 자료 계약 §10.3). 봉인 묶음 실행 사슬의 출력은 `outputs/sealed/`에 두고, 봉인 묶음마다 금지 해제 조건(그 묶음의 정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 전에는 그 묶음 출력을 열지 않는다
 ├── scripts/g4_nim_toolcall_probe.py   ← NIM tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능) 왕복 확인
 ├── .env.example                       ← `.env` 양식. API 키 칸은 비어 있고 모델 이름 같은 기본값만 있다
 └── *.md(루트의 나머지)                ← 이전 설계·조사 기록. 사실 출처로 인용만 하고 고치지 않는다(목록은 docs/README.md §4)
@@ -66,6 +68,7 @@ nvidia-hackathon-2026/
 
 - 모든 작업: `docs/README.md`, `docs/standards.md`, `docs/engineering-notes.md`, `docs/tracking/status.md`
 - 객체·필드·상태값·ID·단위·자릿수·경로·명령을 쓰기 전: `docs/rules/DATA_CONTRACT_V1.md`의 해당 절. 다른 문서에 같은 값이 보여도 이 문서에서 가져온다
+- 단위 파일이나 출력 경로를 만들기 전: `docs/plan/UNITS.md`와 `docs/rules/DATA_CONTRACT_V1.md` §10.3(이름·출력 규칙)
 - 판정 정책·조사 흐름·도구·검증기를 건드리기 전: `docs/plan/DEV_PLAN.md` §6·§7
 - 채점기·평가 묶음·산문 패턴 목록을 건드리기 전: `docs/eval/RULEBOOK.md` Part B와 `skills/tradesentry-eval/SKILL.md`
 - OpenShell 정책·샌드박스·키 주입을 다루기 전: `docs/plan/DEV_PLAN.md` §4·§5.3·§5.4
@@ -79,7 +82,7 @@ nvidia-hackathon-2026/
 아래는 그 작업을 멈추고 바로 사용자에게 알린다. 전체 목록은 `docs/rules/AGENT_OPS.md` §4.5와 `docs/plan/ROADMAP.md` §6.4이고, 평가·채점 중에는 `skills/tradesentry-eval/SKILL.md`의 "멈추고 사용자에게 올리는 경우"와 `docs/eval/RULEBOOK.md` B3 채점 절차 0도 따른다.
 
 - 키·토큰이 커밋·PR·로그·trace에 들어갔거나 들어갔을 수 있을 때
-- 봉인 자료나 정답표가 개발 에이전트·Codex·채점 대상 실행 샌드박스에 드러났거나, 봉인 해시가 실제 파일과 다를 때
+- 봉인 자료나 정답표가 개발 에이전트·Codex·채점 대상 실행 샌드박스에 드러났거나, 봉인 묶음 출력(`outputs/sealed/` 아래, 내려받기 전 샌드박스 작업 폴더의 봉인 실행 출력, 봉인 묶음을 채점한 채점기 출력 폴더)이 금지 해제 조건 전에 열렸거나, 봉인 해시가 실제 파일과 다를 때
 - 동결 스냅샷의 원자료(raw 응답)나 SQLite가 바뀌었을 수 있을 때(git으로 되돌릴 수 없다), 또는 원자료 결합 해시나 `normalized_sha256`(정규화한 스냅샷 내용의 해시) 대조가 기록과 다를 때(평가 스킬 ② 사전 점검 단계 4의 3번, `docs/engineering-notes.md`의 스냅샷 항목)
 - 공용 약속을 바꿔야 할 때. 승인 전에는 그 약속에 기대는 작업만 멈춘다
 - X1(구현 첫날 NemoClaw부터 차단 로그까지 한 줄로 통과시키는 통합 시험)에서 키 주입 방식 두 가지가 모두 실패하거나, 공식 채점 대상 실행 전용 샌드박스의 최소 시험이 예측과 다를 때

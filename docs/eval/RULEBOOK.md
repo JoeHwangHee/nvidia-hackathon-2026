@@ -83,7 +83,7 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 ### 자기채점 회차와 결과 위치
 
 - 회차: 2026-09-25(금) MVP 시험 뒤 1회, 2026-09-27(일) 결과 정리 때 1회, 2026-09-28(월) 제출 전 최종 1회 `[DESIGN: 로드맵]`
-- 결과 파일: `artifacts/scorecard/<YYYY-MM-DD>-scorecard.md`(양식은 A3 끝)
+- 결과 파일: `artifacts/scorecard/scorecard-{시각}/scorecard-{시각}.md`(양식은 A3 끝)
 - 실행: 평가 스킬 ① `skills/tradesentry-scorecard/SKILL.md`
 
 ### 적용 원칙
@@ -94,7 +94,7 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
    - "증거 없음"은 무효와 다르다. 증거를 찾지 못했으면 증거 칸에 찾아본 경로·명령을 적고, 근거 줄에 "증거 없음"이라고 쓴 뒤 앵커 정의대로 낮은 점수를 준다. 그래야 채점을 빠뜨린 것(무효)과 찾아봤지만 없었던 것(낮은 점수)이 구분된다.
 4. 점수는 0/1/3/5만 쓴다. 2와 4는 쓰지 않는다. `4d`는 규범에 1점 앵커가 없어서 0/3/5만 쓴다.
 5. 앵커 문언이 두 가지로 읽히면 A2 주석과 부록에 적은 해석을 따른다. 거기에도 없으면 낮은 점수를 주는 해석을 쓰고, 다른 해석은 근거 줄에 함께 적는다 `[DESIGN]`.
-6. 증거 경로는 계획 경로·명령 표(`docs/rules/DATA_CONTRACT_V1.md`)의 예정 위치만 쓴다. `artifacts/runs/`는 커밋하지 않는다. 그래서 심사위원이 볼 수 있어야 하는 증거는 요약을 `artifacts/eval/<run_id>/summary.md`에 옮겨 둔다 `[추론]`.
+6. 증거 경로는 계획 경로·명령 표(`docs/rules/DATA_CONTRACT_V1.md`)의 예정 위치만 쓴다. `outputs/`는 커밋하지 않는다. 그래서 심사위원이 볼 수 있어야 하는 증거는 요약을 `artifacts/eval/score-{시각}/scorer_summary-{시각}.md`에 옮겨 둔다 `[추론]`. 옮기는 주체는 채점기다. 채점기가 실행 조건 입력 파일(채점기가 모르는 실행 조건을 채점기에 넘기는 파일)에서 옮긴다(B7).
 
 ### 적용의 한계 `[DESIGN]`
 
@@ -110,8 +110,8 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 
 | 게이트 | 규범의 판정 질문(요약) | TradeSentry에서 PASS로 보는 증거 | FAIL로 보는 경우 |
 |---|---|---|---|
-| 규범 G1 정량 증명 가능성 | `baseline X → ours Y` 숫자를 뽑을 수 있는가. baseline(비교 기준이 되는 방식)을 한 문장으로 말할 수 있는가 | ① 기준선 한 문장: "같은 자료·도구·예산으로 Nemotron이 사실 주장의 값을 직접 쓰는 보고서(`freeform` 모드)". ② `freeform`과 `full`의 사실 주장 오류율이 한 번 이상 측정돼 `artifacts/eval/<run_id>/summary.md`에 등급과 함께 있다(개발 묶음 값인 등급 D도 인정). ③ `python -m eval.scorer --run <run_dir>`로 다시 계산된다 | 기준선 문장이 없거나, 두 모드를 비교하는 숫자를 낼 경로(`tradesentry evaluate`, 독립 채점기 `eval/scorer/`)가 돌지 않는다 |
-| 규범 G2 교육 미션 정합성 | NemoClaw 또는 OpenShell이 아키텍처에 실질적으로 들어가는가(로고만 붙이면 FAIL) | 채점 대상 실행이 커스텀 정책 `configs/openshell/policy.yaml`을 적용한 OpenShell 샌드박스 안에서 돈다. `artifacts/openshell/violation_tests.md`(예측·실측 대조표)와 `artifacts/openshell/logs/`(감사 로그 발췌)에 허용 1건 이상과 의도적 위반 차단 3종 이상이 종료 코드·로그 행과 함께 있다. 허용 이벤트 행이 `openshell logs`에 남지 않으면 허용 증거는 앱 기록(실행 조건 대조(B7의 샌드박스 이름·라이브 정책 sha256이 시험표의 그 샌드박스 행과 같음. 봉인 묶음은 "공식 채점용" 행)를 통과한 평가 묶음 실행이나 시험표의 대조군 NIM 허용 호출의 trace 요청·응답, 종료 코드 0, HTTP 200)으로 대신할 수 있다. 로드맵 MVP 합격 체크리스트 4번은 로그 행을 차단 증거에만 요구한다(부록 #37) | 정책 파일이나 문서 언급만 있고 실측 증거가 없다. 또는 채점 대상 실행이 샌드박스 밖에서 돈다 |
+| 규범 G1 정량 증명 가능성 | `baseline X → ours Y` 숫자를 뽑을 수 있는가. baseline(비교 기준이 되는 방식)을 한 문장으로 말할 수 있는가 | ① 기준선 한 문장: "같은 자료·도구·예산으로 Nemotron이 사실 주장의 값을 직접 쓰는 보고서(`freeform` 모드)". ② `freeform`과 `full`의 사실 주장 오류율이 한 번 이상 측정돼 `artifacts/eval/score-{시각}/scorer_summary-{시각}.md`에 등급과 함께 있다(개발 묶음 값인 등급 D도 인정). ③ `python -m eval.scorer --run <run_dir>`로 다시 계산된다 | 기준선 문장이 없거나, 두 모드를 비교하는 숫자를 낼 경로(`tradesentry evaluate`, 독립 채점기 `eval/scorer/`)가 돌지 않는다 |
+| 규범 G2 교육 미션 정합성 | NemoClaw 또는 OpenShell이 아키텍처에 실질적으로 들어가는가(로고만 붙이면 FAIL) | 채점 대상 실행이 커스텀 정책 `configs/openshell/policy.yaml`을 적용한 OpenShell 샌드박스 안에서 돈다. `artifacts/openshell/openshell_violation_tests-{시각}/openshell_violation_tests-{시각}.md`(예측·실측 대조표)와 `artifacts/openshell/openshell_violation_tests-{시각}/`(감사 로그 발췌)에 허용 1건 이상과 의도적 위반 차단 3종 이상이 종료 코드·로그 행과 함께 있다. X1 임시 시험 기록은 옛 이름 위치에 있고 이 증거로도 읽는다(`docs/rules/DATA_CONTRACT_V1.md` §10.3). 허용 이벤트 행이 `openshell logs`에 남지 않으면 허용 증거는 앱 기록(실행 조건 대조(B7의 샌드박스 이름·라이브 정책 sha256이, B7 실행 조건에 적은 시험표 실행 폴더 `openshell_violation_tests-{시각}`의 시험표에서 그 샌드박스 행과 같음. 봉인 묶음은 "공식 채점용" 행)를 통과한 평가 묶음 실행이나 시험표의 대조군 NIM 허용 호출의 trace 요청·응답, 종료 코드 0, HTTP 200)으로 대신할 수 있다. 로드맵 MVP 합격 체크리스트 4번은 로그 행을 차단 증거에만 요구한다(부록 #37) | 정책 파일이나 문서 언급만 있고 실측 증거가 없다. 또는 채점 대상 실행이 샌드박스 밖에서 돈다 |
 | 규범 G3 NVIDIA 스택 3종 이상 | 서로 다른 NVIDIA 기술 3개 이상을 실제로 호출·실행하는가 | `1a`의 세는 법으로 실행 증거가 있는 구성요소가 3개 이상이다 | 실행 증거가 있는 구성요소가 2개 이하다 |
 | 규범 G4 재현 가능성 | README대로 돌릴 수 있는가. 키 없이도 스모크 시험(최소 동작 확인 시험)이 되는가 | ① 저장소 README의 명령대로 재현된다. ② 키 없이 도는 스모크 시험(커밋된 합성 픽스처 `data/snapshots/controlled_fixture_v0/` + 기록된 trace)과 `python3 -m unittest discover -s tests -v`가 종료 코드 0이다. ③ 비밀값·로컬 경로 검사(NVIDIA API 키 접두어, 공공데이터포털 서비스키 요청 파라미터, 로컬 절대경로를 찾는 검사. 실제 패턴 문자열은 검사 스크립트에만 두고 문서에는 적지 않는다)를 통과한다 | README 명령이 실패한다. 스모크 시험에 키가 필요하다. 산출물에 비밀값이 있다 |
 | 규범 G5 산업 문제성 | 개인 편의가 아니라 제약이 명확한 산업·공공 문제인가 | 수혜자가 무역통계·관세 분석 담당자(공공, 가상의 수혜자)이고, 제약(동결 스냅샷 `kcs_202201_202412_v2`, 전년동월 비교, 도구·모델 예산, 부정·위법 판정이 아님)이 `docs/plan/DEV_PLAN.md`의 목적과 가설 절에 있다. 문제 규모 숫자를 출처와 함께 제시한다(`2a` 주석) | 가치 제안이 "편해진다"뿐이거나 수혜자·제약이 없다 |
@@ -129,7 +129,7 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 ```
 
 - 판정 값은 PASS와 FAIL 두 가지뿐이다. 근거 한 줄이 비면 무효이고, `FAIL(무효)`로 표기해 FAIL로 계산한다. 증거를 찾지 못한 FAIL은 증거 칸에 찾아본 경로·명령을 적는다(적용 원칙 3).
-- 서식 예시(판정 결과가 아니다): `| 규범 G1 | PASS | 기준선 = freeform 보고서, 지표 = 사실 주장 오류율(real_dev 첫 값, 등급 D) | artifacts/eval/<run_id>/summary.md |`
+- 서식 예시(판정 결과가 아니다): `| 규범 G1 | PASS | 기준선 = freeform 보고서, 지표 = 사실 주장 오류율(real_dev 첫 값, 등급 D) | artifacts/eval/score-{시각}/scorer_summary-{시각}.md |`
 
 ### A2. 하위 지표 증거 정의
 
@@ -140,15 +140,15 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 | 코드 | 지표 | 0 | 1 | 3 | 5 |
 |---|---|---|---|---|---|
 | `1a` | NVIDIA 기술 개수 | 실행 증거가 있는 구성요소 0~1개 | 2개 | 3~4개 | 5개: NIM/Nemotron, NAT, OpenShell, NemoClaw, Agent Skills 모두 |
-| `1b` | OpenShell 활용 깊이 | 쓰지 않음 | 문서에만 나옴 | 채점 대상 실행을 OpenShell 샌드박스 안에서 한 기록이 있음 | 커스텀 정책 `configs/openshell/policy.yaml`(DEV_PLAN의 요건 (a)~(e)) + 감사 로그 발췌 `artifacts/openshell/logs/` + 예측·실측 대조표 `artifacts/openshell/violation_tests.md`를 커밋 |
+| `1b` | OpenShell 활용 깊이 | 쓰지 않음 | 문서에만 나옴 | 채점 대상 실행을 OpenShell 샌드박스 안에서 한 기록이 있음 | 커스텀 정책 `configs/openshell/policy.yaml`(DEV_PLAN의 요건 (a)~(e)) + 감사 로그 발췌 `artifacts/openshell/openshell_violation_tests-{시각}/` + 예측·실측 대조표 `artifacts/openshell/openshell_violation_tests-{시각}/openshell_violation_tests-{시각}.md`를 커밋 |
 | `1c` | NemoClaw 활용 깊이 | 쓰지 않음(대체 경로로 NemoClaw를 뺀 경우 포함) | 설치·기동 기록만 있음 | OpenClaw 에이전트(하네스 1종)가 `skills/tradesentry/SKILL.md`를 거쳐 OpenShell 안 CLI를 불러 유효한 최종 보고서까지 간 시연 기록 + 스킬 호출 성공률 | 하네스 교체 또는 모델 라우팅까지 실증 |
 | `1d` | Agent Skills 활용 | 쓰지 않음 | 공식 스킬 1개 설치 기록 | 공식 스킬 3개 이상을 실제 작업에 쓴 기록 | 3점 증거 + Agent Skills 규격을 만족하는 자체 SKILL.md(`skills/tradesentry/SKILL.md`, `skills/tradesentry-scorecard/SKILL.md`, `skills/tradesentry-eval/SKILL.md`) |
 | `1e` | Nemotron 운용 | Nemotron 호출 없음 | Nemotron 모델 1개 호출(`nvidia/nemotron-3-super-120b-a12b`) | 서로 다른 Nemotron 모델 2개 이상이 역할을 나눠 호출됨 | Nano/Ultra 라우팅으로 비용·성능 트레이드오프 실증 |
 | `1f` | 프로토콜 깊이 | 도구 호출 없음 | native tool call(모델이 API의 도구 호출 형식으로 함수를 부르는 방식)로 도구 5개를 부름 | MCP(모델과 도구를 잇는 표준 프로토콜) 클라이언트로 도구 호출 | MCP 서버 자체 구현 또는 A2A(에이전트끼리 통신하는 프로토콜) |
 
 - **`1a` 세는 법** `[DESIGN]`: 실제 호출·실행 증거가 있는 구성요소만 센다. 설치만 했거나 문서에만 나온 것은 세지 않는다. NIM(NVIDIA 모델 추론 API·서빙)과 Nemotron(NVIDIA 언어 모델 제품군)은 "추론 API로 모델을 부른다"는 하나의 구성요소로 센다(원칙 5의 낮은 해석).
-  - NIM/Nemotron: 결과 기록의 `model_requests`가 0보다 크다(`artifacts/eval/<run_id>/results.jsonl`). trace는 `artifacts/runs/<run_id>/`에 있다.
-  - NAT(NVIDIA NeMo Agent Toolkit, 에이전트 워크플로를 실행·추적·프로파일·평가하는 라이브러리): `configs/nat/workflow.yml`과 NAT 실행 추적·프로파일 결과(`artifacts/runs/<run_id>/`)
+  - NIM/Nemotron: 결과 기록의 `model_requests`가 0보다 크다(`artifacts/eval/score-{시각}/scorer_results-{시각}.jsonl`). trace는 `outputs/{실행명}/`에 있다.
+  - NAT(NVIDIA NeMo Agent Toolkit, 에이전트 워크플로를 실행·추적·프로파일·평가하는 라이브러리): `configs/nat/workflow.yml`과 NAT 실행 추적·프로파일 결과(`outputs/{실행명}/`)
   - OpenShell: `1b` 3점 이상의 증거
   - NemoClaw(모델·에이전트 하네스·보안 런타임을 묶은 NVIDIA 참조 스택): `1c` 3점의 증거
   - Agent Skills(SKILL.md 형식의 에이전트 작업 지침 묶음): `1d` 3점 이상의 증거. 규범은 기술 개수만 세므로 이 조건은 규범보다 엄격한 선택이다(부록)
@@ -185,8 +185,8 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 | `3a` | 정량 지표 제시 | 숫자 없음(CAP-1 발동) | 단일 수치만 있음. 또는 가장 높은 등급이 D뿐(`dev20`·`real_dev`) | 기준선 대비 개선률이 있고, 대표 숫자가 A등급 주장 보류(참고치)이거나 가장 높은 등급이 C(`holdout40`에서 `checklist` 대비 개선률) | 대표 숫자(B3-3 충족): `freeform` 대비 `full` 사실 주장 오류율 + Wilson 95% 구간 + 재현 명령 `python -m eval.scorer --run <run_dir>` + 최종 채점 뒤 공개한 채점 자료 |
 | `3b` | 평가 투명성 | 평가 설명 없음 | 이 룰북 같은 설명만 있음 | 독립 채점기 `eval/scorer/`와 실행 명령 `python -m eval.scorer --run <run_dir>`가 있음 | 3점 증거 + 골든셋(정답이 정해진 평가 자료: `eval/dev/oracle_ABC.json`, `eval/dev/dev20/`, 봉인 해시 `eval/sealed_manifest.json`과 최종 채점 뒤 공개한 봉인 원본) + 버전 고정(결과 기록의 `rulebook_version`, `policy_version`, `snapshot_id`, `grouping_version`, `code_version`) |
 | `3c` | 실행 가능성 | 코드만 있음 | README대로 로컬에서 여러 단계로 실행 | README의 명령 하나(`tradesentry <명령>`)로 키 없는 스모크 재현(커밋된 합성 픽스처 + 기록된 trace)이 끝까지 돈다 | Brev Launchable(Brev의 원클릭 실행 링크) 또는 Docker Compose 원클릭 |
-| `3d` | 관측성 | 기록 없음 | 비구조 로그 | 구조화 trace(JSONL, `artifacts/runs/<run_id>/`) | NAT 프로파일러(도구·에이전트 단위 토큰·지연 측정 도구) 결과(`artifacts/runs/<run_id>/`)를 결과 요약에 옮겨 제시 |
-| `3e` | 실패 내성 | 없음 | 예외 처리만 | 폴백 경로 구현: NIM 5xx 명시 재전송(요청당 최대 3회, 지수 대기), 한도 도달 시 `TIMEOUT`·`BUDGET_EXCEEDED`·`INVALID` 기록, NemoClaw 대체 경로 | 정책 위반·API 장애 시나리오 시험 결과 제시: `artifacts/openshell/violation_tests.md`(정답 경로 읽기, 비허용 호스트 전송, 비허용 바이너리, 키 조회) + 예산 강제 시험과 5xx 재전송 시험의 `tests/` 통과 기록 |
+| `3d` | 관측성 | 기록 없음 | 비구조 로그 | 구조화 trace(JSONL, `outputs/{실행명}/`) | NAT 프로파일러(도구·에이전트 단위 토큰·지연 측정 도구) 결과(`outputs/{실행명}/`)를 결과 요약에 옮겨 제시 |
+| `3e` | 실패 내성 | 없음 | 예외 처리만 | 폴백 경로 구현: NIM 5xx 명시 재전송(요청당 최대 3회, 지수 대기), 한도 도달 시 `TIMEOUT`·`BUDGET_EXCEEDED`·`INVALID` 기록, NemoClaw 대체 경로 | 정책 위반·API 장애 시나리오 시험 결과 제시: `artifacts/openshell/openshell_violation_tests-{시각}/openshell_violation_tests-{시각}.md`(정답 경로 읽기, 비허용 호스트 전송, 비허용 바이너리, 키 조회) + 예산 강제 시험과 5xx 재전송 시험의 `tests/` 통과 기록 |
 | `3f` | 가시화 | 없음 | 표만 | 차트 | 타임라인(36개월 시계열 등)이나 그래프 + before-after 대조(조사 전 경보 → 최종 판정, 모델 원초안 → Critic 뒤 → 검증 뒤) |
 
 - **`3a`** `[추론]`: 5점 앵커의 "공개 벤치마크 점수"는 규범 §3의 숫자 4등급 표에 맞춰 "등급 A 또는 B인 대표 숫자"로 읽는다. 그 표가 등급 A·B의 `3a` 상한을 5로 두기 때문이다. TradeSentry의 대표 지표는 공개 벤치마크가 아니라 공식 통계 원본을 정답으로 쓰는 실제 라벨(등급 A)이다. 봉인 원본은 최종 채점 뒤 공개한다. 다만 채점기 입력(보고서 원문)을 커밋할 위치가 아직 정해지지 않아 저장소만으로 다시 채점할 수는 없다 `[미확인]`(B7).
@@ -194,7 +194,7 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
   - `3a`는 숫자의 존재와 등급으로 매긴다. 결과가 불리해도 점수는 같고, 결과가 좋아 보여도 올리지 않는다.
   - 등급 D 숫자만 있으면 1점이 상한이다(규범 §3 숫자 4등급).
 - **`3c`**: 5점은 계획 범위 밖이다 `[추론]`. X1이 Brev로 옮겨 가더라도 그것은 개발 환경이지 심사위원용 원클릭 실행이 아니다.
-- **`3d`**: NAT 프로파일러가 도구·에이전트 단위 토큰·지연을 잰다는 것은 공식 문서 조사로 확인했다 `[사실: R3 문서 §8]`. 설치할 버전의 산출물 형식은 `[미확인]`이다. `artifacts/runs/`는 커밋하지 않으므로 요약을 `artifacts/eval/<run_id>/summary.md`에 옮겨야 증거가 된다.
+- **`3d`**: NAT 프로파일러가 도구·에이전트 단위 토큰·지연을 잰다는 것은 공식 문서 조사로 확인했다 `[사실: R3 문서 §8]`. 설치할 버전의 산출물 형식은 `[미확인]`이다. `outputs/`는 커밋하지 않으므로 요약을 `artifacts/eval/score-{시각}/scorer_summary-{시각}.md`에 옮겨야 증거가 된다. 옮기는 주체는 채점기다. 채점기가 실행 조건 입력 파일에서 옮긴다(B7).
 - **`3e`**: 예산 강제 시험은 9번째 도구 시도 차단, 두 번째 수정 단계 차단, 수정 단계의 세 번째 재조회 차단, 전체 deadline 우선 종료다(MVP 합격 체크리스트 2번).
 - **`3f`**: Streamlit 화면 3개는 줄이는 순서의 적용을 받는다(화면 3번째, 그다음 2번째 순으로 줄인다). 화면 파일 경로는 계획 경로·명령 표에 없다. 표에 추가된 뒤 근거 줄에 적는다 `[미확인]`.
 
@@ -262,7 +262,7 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 | 구분 | 규범의 신호 | TradeSentry 점검 방법 |
 |---|---|---|
 | 좋은 신호 | 기준선 대비 개선을 지금 말할 수 있다 | Part B의 한 문장 가설과 기준선 `freeform`이 있다. 개선 여부는 결과가 정한다 |
-| 좋은 신호 | 정책 위반을 일부러 일으켜 막히는 장면을 보여줄 수 있다 | `artifacts/openshell/violation_tests.md` |
+| 좋은 신호 | 정책 위반을 일부러 일으켜 막히는 장면을 보여줄 수 있다 | `artifacts/openshell/openshell_violation_tests-{시각}/openshell_violation_tests-{시각}.md` |
 | 좋은 신호 | 결과물이 NVIDIA 제품에 꽂히는 형태다 | 자체 스킬 3개, OpenShell 정책(`4a`) |
 | 좋은 신호 | before/after를 나란히 놓을 수 있다 | `3f` |
 | 좋은 신호 | 공개 벤치마크 점수를 재현 명령과 함께 낼 수 있다 | 공개 벤치마크는 없다. 공식 통계 원본 대조(등급 A)와 재현 명령으로 대신한다(`3a` 주석) |
@@ -280,7 +280,7 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 
 #### 자기채점 결과 파일 양식
 
-`artifacts/scorecard/<YYYY-MM-DD>-scorecard.md`에 아래 양식으로 쓴다. 꺾쇠 괄호는 채울 자리다.
+`artifacts/scorecard/scorecard-{시각}/scorecard-{시각}.md`에 아래 양식으로 쓴다. 꺾쇠 괄호는 채울 자리다.
 
 ```markdown
 # 자기채점 <YYYY-MM-DD>
@@ -313,9 +313,9 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 | 구성요소 | TradeSentry 안의 역할 | 지우면 나빠지는 측정값 | 측정 위치 | 답의 강도 |
 |---|---|---|---|---|
 | NIM/Nemotron(`nvidia/nemotron-3-super-120b-a12b`) | 조사자·Critic 추론 | 모델을 쓰는 모드(`agent`·`full`·`freeform`)가 사라지고 `checklist`만 남는다. 정말 나빠지는지는 `holdout40`에서 `full`이 `checklist`보다 나은지로 정해진다 | B4 비교표 | 조건부. 결과가 정한다. 개선이 없으면 "이 범위에서 LLM 추가 가치 미확인"으로 적는다 |
-| NAT | 조사 흐름 실행·추적·프로파일러·사후 평가 | NAT 프로파일 결과가 사라져 `3d`가 5에서 3으로 내려간다(앱의 JSONL trace는 남는다). 도구·에이전트 단위 비용 분석도 사라진다 | `artifacts/runs/<run_id>/` | 약함. 정확도 지표(대표·보조)는 독립 채점기가 계산하므로 그대로다 |
-| OpenShell | 채점 대상 실행 격리, 정답 경로 읽기 차단, 외부 전송을 NVIDIA 추론 엔드포인트로 제한, 키를 샌드박스 밖에 둠, 감사 로그 | 위반 시험표의 차단 행이 모두 허용으로 바뀐다(차단된 위반 시도 수 k/k → 0/k). 런타임에서 정답 경로를 막는 통제(B6의 통제 ①)가 사라진다 | `artifacts/openshell/violation_tests.md`, `artifacts/openshell/logs/` | 보안 측정값에는 강함. 정확도 지표에는 직접 영향이 없다 |
-| NemoClaw(OpenClaw 에이전트) | 운영자 요청 → 스킬 → OpenShell 안 CLI로 이어지는 시연 경로 | 스킬 호출 성공률(시연 지표)만 사라진다 | `artifacts/eval/<run_id>/summary.md`의 참고 지표 | 약함. 채점 대상 실행은 NemoClaw를 거치지 않으므로 정확도 지표에는 영향을 주지 않는다. 제출서에도 그렇게 적는다 |
+| NAT | 조사 흐름 실행·추적·프로파일러·사후 평가 | NAT 프로파일 결과가 사라져 `3d`가 5에서 3으로 내려간다(앱의 JSONL trace는 남는다). 도구·에이전트 단위 비용 분석도 사라진다 | `outputs/{실행명}/` | 약함. 정확도 지표(대표·보조)는 독립 채점기가 계산하므로 그대로다 |
+| OpenShell | 채점 대상 실행 격리, 정답 경로 읽기 차단, 외부 전송을 NVIDIA 추론 엔드포인트로 제한, 키를 샌드박스 밖에 둠, 감사 로그 | 위반 시험표의 차단 행이 모두 허용으로 바뀐다(차단된 위반 시도 수 k/k → 0/k). 런타임에서 정답 경로를 막는 통제(B6의 통제 ①)가 사라진다 | `artifacts/openshell/openshell_violation_tests-{시각}/openshell_violation_tests-{시각}.md`, `artifacts/openshell/openshell_violation_tests-{시각}/` | 보안 측정값에는 강함. 정확도 지표에는 직접 영향이 없다 |
+| NemoClaw(OpenClaw 에이전트) | 운영자 요청 → 스킬 → OpenShell 안 CLI로 이어지는 시연 경로 | 스킬 호출 성공률(시연 지표)만 사라진다 | `artifacts/eval/score-{시각}/scorer_summary-{시각}.md`의 참고 지표 | 약함. 채점 대상 실행은 NemoClaw를 거치지 않으므로 정확도 지표에는 영향을 주지 않는다. 제출서에도 그렇게 적는다 |
 | Agent Skills(`tradesentry` 스킬, 평가 스킬 2개, 공식 스킬) | NemoClaw가 CLI를 부르는 인터페이스, 자기채점·평가 절차, 정책 작성 보조 | `tradesentry` 스킬이 없으면 NemoClaw 경로가 끊겨 스킬 호출 성공률이 0이 된다. 평가 스킬이 없으면 사전 점검·해시 재대조를 손으로 해야 해서 절차 오류 위험이 커진다 `[추론]` | 스킬 호출 성공률, 평가 스킬 ②의 사전 점검 기록 | 약함~중간. 정확도 지표에는 영향이 없다 |
 
 - **정직한 요약** `[추론]`: 정확도(대표·보조 지표)에 직접 닿는 NVIDIA 구성요소는 NIM/Nemotron 하나이고, 그 효과도 결과가 나와야 확정된다. 나머지는 보안(OpenShell), 관측성(NAT), 배포·시연 경로(NemoClaw, Agent Skills)의 측정값을 가진다. 대표 지표(`freeform` 대 `full`)가 재는 효과는 NVIDIA 구성요소의 효과가 아니라 TradeSentry 처리(틀 채우기와 검증기)의 효과다. 이 사실을 제출서에서 숨기지 않는다.
@@ -462,7 +462,7 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 2. 보고서마다 채점 단위를 뽑는다. `claims`의 typed claim 각각(`source`=`claim`)과, 자유 문장 필드에서 산문 패턴에 잡힌 표현 각각(`source`=`prose`)이다.
 3. 기대값을 스냅샷 원본 행에서 **독립 계산**한다. 도구 출력 봉투나 런타임 metric 값을 정답으로 쓰지 않는다. 어느 원본 행으로 계산하는지는 자료 계약의 원천 규칙을 따른다(B3-1 "기대값의 원본 행").
 4. B3-1과 B3-2로 결과를 하나씩 붙인다.
-5. 채점 단위마다 `artifacts/eval/<run_id>/claims.jsonl`에 기록한다. 키는 `run_id, report_id, claim_id, source, outcome, expected_value, reported_value, unit_expected, unit_reported, tolerance, referent_resolved, evidence_ok, note`다. 요약은 `artifacts/eval/<run_id>/summary.md`(B7)에 쓴다.
+5. 채점 단위마다 `outputs/score-{시각}/scorer_claims-{시각}.jsonl`에 기록한다. 키는 `run_id, report_id, claim_id, source, outcome, expected_value, reported_value, unit_expected, unit_reported, tolerance, referent_resolved, evidence_ok, note`다. 요약은 `outputs/score-{시각}/scorer_summary-{시각}.md`(B7)에 쓴다.
 6. 같은 입력이면 같은 결과가 나온다. 채점기는 모델도 네트워크도 부르지 않는다.
 
 **오류율 정의**:
@@ -490,7 +490,7 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 **독립 채점기 요건**:
 
 - 위치는 `eval/scorer/`, 실행은 `python -m eval.scorer --run <run_dir>`이다.
-- 런타임 모듈(`src/tradesentry/`의 `metrics.py` 등)을 import하지 않는 독립 구현이다.
+- 런타임 모듈(`src/tradesentry/`의 `metrics/` 등)을 import하지 않는 독립 구현이다(간접 import와 `eval/datagen/` 포함, 자료 계약 §10.3).
 - 봉인 채점 전에 `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증한다.
 - 샌드박스 밖에서 돈다. 정답표를 읽는 것은 채점기뿐이다.
 - 결정적이다. 모델·네트워크를 부르지 않고, 사람·AI 판정을 섞지 않는다.
@@ -724,7 +724,7 @@ typed claim의 필드는 `claim_id, claim_type, hs6, partner, period, baseline_p
 | 개선·악화 목록 | 비교군 사이에 같은 사례가 좋아지거나 나빠진 목록 |
 
 - **예상 상태 일치** `[DESIGN]`: 사례 판정(`review_status_final`), 신호별 판정(`signal_status`), `unresolved_evidence`가 모두 정답표와 같을 때다. 사례 집계 규칙(`MAINTAIN > HOLD > MONITOR`, `MAINTAIN`과 `HOLD`가 섞이면 `MAINTAIN`에 `unresolved_evidence=true`)까지 맞아야 한다.
-- **채점 필드의 주체** `[DESIGN]`: 결과 기록의 `required_evidence_ok`, `numeric_ok`, `provenance_ok`는 샌드박스 밖 채점기가 정답표로 채운다. 런타임이 쓴 값이 있으면 채점기 값이 우선한다.
+- **채점 필드의 주체** `[DESIGN]`: 결과 기록의 `required_evidence_ok`, `numeric_ok`, `provenance_ok`는 샌드박스 밖 채점기가 정답표로 채운다. 런타임이 쓴 값이 있으면 채점기 값이 우선한다. 실행 쪽 키는 평가 하네스(`evaluation_batch_run`)가 쓰고, 채점기는 하네스의 파일을 고치지 않고 실행 쪽 키에 이 세 키를 더한 파일(`scorer_results-{시각}.jsonl`)을 자기 실행 폴더에 새로 쓴다.
 - **정상 실행**: `execution_status=COMPLETED`. 실행 실패로 끝난 보류 화면은 기대 상태가 보류여도 성공이 아니다.
 - **모든 사례를 보류했을 때의 점수** `[DESIGN]`: 발동한 신호는 모두 `HOLD`, 발동하지 않은 신호는 `NOT_TRIGGERED`로 둔 가상의 결과를 예상 상태 일치만으로 채점한다(근거 조건은 충족했다고 가정한 상한). 구 개발계획 §8.1 배분대로면 예상 상태가 `HOLD`인 사례가 최소 16건이라 이 점수는 40% 이상이 된다 `[추론]`.
 - **상태 변화의 해석**: Critic 전후 변화만으로 전체 구조의 성능 향상을 추정하지 않는다. 같은 모델을 두 번 쓴 것을 정확성 보증으로 표현하지 않는다(구 개발계획 §8.3).
@@ -822,7 +822,7 @@ p = x / n
 2. **봉인**: 생성 직후 파일별 sha256 목록을 만든다.
 3. **해시 등록**: 해시 목록만 PR로 커밋한다.
 4. **한 번 채점**: `RB-1` 동결 뒤 오케스트레이터가 평가 스킬 ②를 실행할 때만 봉인 **입력**을 샌드박스에 읽기 전용으로 넣는다.
-   - 파일시스템 정책(정적 계층)은 샌드박스를 만들 때 고정된다 `[사실: 03 문서 §2.1-1]`. 그래서 봉인 입력은 **공식 채점 대상 실행 전용 샌드박스를 새로 만들어** 넣는다. 개발·시연용 샌드박스에는 넣지 않는다. 넣는 방식은 X1 뒤에 확정한다 `[미확인]`.
+   - 파일시스템 정책(정적 계층)은 샌드박스를 만들 때 고정된다 `[사실: 03 문서 §2.1-1]`. 그래서 봉인 입력은 **공식 채점 대상 실행 전용 샌드박스를 새로 만들어** 넣는다. 개발·시연용 샌드박스에는 넣지 않는다. 넣는 방식은 로드맵 MT5에서 확정한다 `[미확인]`.
    - 정답표는 어떤 샌드박스에도 넣지 않는다. 샌드박스 밖 채점기만 읽는다.
 5. **재대조**: 채점 전에 해시를 다시 대조한다. 일치하지 않으면 그 묶음을 무효로 하고 사용자에게 올린다.
 
@@ -859,10 +859,15 @@ p = x / n
 
 ### B7. 결과 보고 양식
 
-평가 결과는 `artifacts/eval/<run_id>/`에 `results.jsonl`(실행 결과 기록), `claims.jsonl`(주장 채점 기록), `summary.md`(요약)로 남긴다.
+평가 결과는 `artifacts/eval/score-{시각}/`에 `scorer_results-{시각}.jsonl`(실행 결과 기록), `scorer_claims-{시각}.jsonl`(주장 채점 기록), `scorer_summary-{시각}.md`(요약)로 남긴다.
 
-- 여기서 `<run_id>`는 평가 묶음 실행의 식별자로 읽는다 `[추론]`. `results.jsonl`의 각 행은 (사례 × 모드) 실행 1건이고, 그 행의 `run_id`와 이름이 겹친다. 이름은 S0에서 확정한다.
-- 채점기의 입력인 보고서 원문(보고서 객체)을 커밋할 위치는 계획 경로·명령 표에 없다. 실행 기록 `artifacts/runs/`는 커밋하지 않으므로, 지금 계획으로는 저장소만으로 다시 채점할 수 없다 `[미확인]`. 위치는 S0 외부 자문에서 정한다. 이 문서에서 새 경로를 짓지 않는다.
+- 평가 결과 폴더 이름 `score-{시각}`은 채점 실행의 실행명이다(자료 계약 §10.3 N5·N11). `scorer_results-{시각}.jsonl`의 각 행은 (사례 × 모드) 실행 1건이고, 그 행의 `run_id`는 사례 실행의 실행명(자료 계약 §4.5)이라 폴더 이름과 겹치지 않는다.
+- 채점기의 입력인 보고서 원문(보고서 객체)을 커밋할 위치는 계획 경로·명령 표에 없다. 실행 기록 `outputs/`는 커밋하지 않으므로, 지금 계획으로는 저장소만으로 다시 채점할 수 없다 `[미확인]`. 위치는 S0 작업이 제안하고 오케스트레이터가 결정 기록으로 정한다(결정 기록 `20260924-2035-user-decision-s0-no-advisory.md`). 계획 경로 표를 바꾸는 안이면 사용자 승인을 받는다. 이 문서에서 새 경로를 짓지 않는다.
+- 요약 `scorer_summary-{시각}.md`는 채점기만 쓴다. 에이전트는 채점기 출력 파일을 고쳐 쓰지 않는다(자료 계약 §10.3 N8). 채점기가 모르는 값은 실행 조건 입력 파일(채점기가 모르는 실행 조건을 채점기에 넘기는 파일)로 채점기에 들어가고, 채점기는 그 값을 아래 양식의 0절·4절에 그대로 옮긴다. 채점기는 실행 조건을 이 파일에서만 읽는다. 샌드박스가 쓴 파일은 믿지 않는 입력이다. 채점기 명령(`python -m eval.scorer --run <run_dir>`)은 바꾸지 않는다(자료 계약 §8.2).
+  - 담는 값: 사전 점검 결과, 샌드박스 이름, 라이브 정책 sha256, 시험표 폴더 이름, 봉인 해시 재대조 결과, 봉인 출처 점검 결과, 스킬 호출 성공률, 한도 값, 순서 seed, 동시성, 평가 스킬 ② 채점 전 확인 1·2·5번의 결과(참·거짓과 건수). 봉인 묶음이 아니면 NAT 프로파일 요약과 한국어 품질 표본 점검 결과도 이 파일로 요약에 들어간다.
+  - 봉인 묶음이면 봉인 실행 출력을 열지 않고 얻는 값만 넣는다. 봉인 출력이 있어야 하는 값(NAT 프로파일 요약, 한국어 품질 표본 점검)은 금지 해제 조건(정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 뒤에 결과표(로드맵 R1)에 적고, 채점기 요약에는 넣지 않는다.
+  - 만드는 주체와 방법: 내려받기를 끝낸 호스트 쪽 프로그램이 자기가 확보한 실행 폴더 안에 배타 생성(이미 있으면 실패하는 방식의 파일 만들기)한다. 샌드박스에서 받은 출력에 같은 이름이 있으면 내려받기를 거부한다. 만드는 때는 담을 값이 모두 정해진 뒤, 채점기를 부르기 전이다. 봉인 묶음이면 채점 직전의 봉인 해시 재대조 뒤다.
+  - 이름·형식, `<run_dir>` 안의 위치, 누락·잘못된 입력의 처리는 로드맵 MT7·DT8에서 F1(`RB-1` 동결) 전에 정한다 `[미확인]`.
 
 **등급 표기 규칙**:
 
@@ -879,8 +884,10 @@ p = x / n
 - policy_version <값>, grouping_version <g1 또는 g0와 사유>
 - code_version <값>, 채점기 커밋 <해시>, 산문 패턴 목록 커밋 <해시>
 - 실행 기간(KST) <시작> ~ <끝>, 동시성 <값>, 순서 seed <값>
-- 샌드박스 이름 <값>, 커밋한 라이브 정책 조회 본문(정책 YAML) sha256 <값>(이 두 값의 대조 원문: `artifacts/openshell/violation_tests.md`의 그 샌드박스 행. 봉인 묶음은 "공식 채점용" 행), `configs/openshell/policy.yaml` sha256 <값>(출처 기록: `code_version` 커밋의 파일. 봉인 묶음 샌드박스를 이 파일과 다른 정책으로 만들었으면 그 정책 원본이나 생성 방법도 적는다)
+- 한도(룰북 B2와 대조한 실행 설정): 도구 호출 시도 <값>, 재조사 <값>, 모델 요청 <값>, 사례당 wall time <값>초, 누적 토큰 <값>
+- 샌드박스 이름 <값>, 커밋한 라이브 정책 조회 본문(정책 YAML) sha256 <값>(이 두 값의 대조 원문: 바로 뒤에 적는 시험표 실행 폴더의 시험표 `openshell_violation_tests-{시각}.md`에서 그 샌드박스 행. 봉인 묶음은 "공식 채점용" 행), 대조한 시험표 실행 폴더 이름 <`openshell_violation_tests-{시각}` 형식의 값>(커밋 위치 `artifacts/openshell/openshell_violation_tests-{시각}/`), `configs/openshell/policy.yaml` sha256 <값>(출처 기록: `code_version` 커밋의 파일. 봉인 묶음 샌드박스를 이 파일과 다른 정책으로 만들었으면 그 정책 원본이나 생성 방법도 적는다)
 - 봉인 해시 재대조 <일치 또는 불일치(그 묶음 무효)>
+- 채점 전 확인(평가 스킬 ②): 1 예정 실행의 최종 상태 확정 <참·거짓, 미실행 건수>, 2 버전 키 일치 <참·거짓, 불일치 건수>, 5 모드별 사례 집합 일치 <참·거짓>, 순서 seed·동시성 적용 <참·거짓>, 동시성을 올렸다면 근거 결정 기록 <참·거짓>
 
 ## 1. 대표 지표 — 실자료 사실 주장 오류율 (real_sealed)
 - A등급 주장 조건(B3-3): <충족 또는 미충족과 사유>
@@ -921,7 +928,7 @@ p = x / n
 
 ## 4. 참고 지표
 - 스킬 호출 성공률(NemoClaw 경로, 정확도 지표에는 영향을 주지 않는다): <x/n>
-- 한국어 품질: 한글 비율 <값>, 금지 표현 <n>건, 필수 항목 누락 <n>건, 표본 점검 <요약>
+- 한국어 품질: 한글 비율 <값>, 금지 표현 <n>건, 필수 항목 누락 <n>건, 표본 점검 <요약. 봉인 묶음이면 "금지 해제 조건 뒤 결과표(로드맵 R1)에 적음">
 
 ## 5. 재현 명령
 - 채점 대상 실행: tradesentry evaluate --snapshot <snapshot_id> --policy <정책> --mode <모드> <나머지 인자는 구현 뒤 채운다>
@@ -980,18 +987,19 @@ p = x / n
 | 26 | 모든 사례를 보류했을 때의 점수 | 상태 일치만 본 상한 | `[DESIGN]` | 근거 조건까지 적용 | — |
 | 27 | 승격된 달의 값 | `CONFIRMED_NO_TRADE`가 된 달의 금액·중량은 지표·채점에서 0(행의 V·Q 칸은 null, 자료 계약 §3.4). 그 달이 기준월이면 `r_U`는 null, `d_s`는 계산된다 | `[DESIGN]` | — | — |
 | 28 | 표본 추출 seed 파일 | nonce를 포함해 사례 목록 생성 전에 정해 봉인 폴더에 두고 채점 뒤 공개한다 | `[DESIGN]` | seed를 먼저 공개한다 | — |
-| 29 | 평가 결과 폴더의 `<run_id>` | 평가 묶음 식별자로 읽는다. 이름은 S0에서 확정한다 | `[추론]` | 자료 계약이 정한 뜻 | — |
-| 30 | 채점기 입력(보고서 원문)의 커밋 위치 | 계획 경로·명령 표에 없어 미정이다. S0 외부 자문에서 정한다 | `[미확인]` | — | — |
+| 29 | 평가 결과 폴더 이름 | 채점 실행의 실행명 `score-{시각}`이다. 행마다의 `run_id`(사례 실행의 실행명)와 겹치지 않는다(자료 계약 §10.3 N5·N11) | `[DESIGN: 사용자 결정(이름 형식) + 오케스트레이터 정리(실행 이름), 2026-09-24(목) 사용자 확인(PR #18)]` | — | — |
+| 30 | 채점기 입력(보고서 원문)의 커밋 위치 | 계획 경로·명령 표에 없어 미정이다. S0 작업이 제안하고 오케스트레이터가 결정 기록으로 정한다(결정 기록 `20260924-2035-user-decision-s0-no-advisory.md`). 계획 경로 표를 바꾸는 안이면 사용자 승인을 받는다 | `[미확인]` | — | — |
 | 31 | 봉인 원본의 커밋 위치 | 계획 경로·명령 표에 없어 미정이다 | `[미확인]` | — | — |
 | 32 | 한국어 품질 표본 | 모드별 무작위 5건 | `[DESIGN]` | — | — |
 | 33 | "X에서 Y로"(PT-8)의 짝 규칙 | 같은 `hs6`·`partner`·`metric`의 수준 claim 짝 가운데 X 기간이 앞서는 짝이 하나라도 있으면 통과. 그런 짝이 없으면 방향만 본다 | `[DESIGN]` | 문장 단위로 대상 맞춤 | 예 |
 | 34 | `data_status` 주장의 근거 | 계획 안 키와 비교 대상 키는 자기 상태 행을 인용한다. 계획 밖 키는 `UNSUPPORTED`(대상 오류 아님) | `[DESIGN]` | 계획 밖 키도 `CORRECT`(이전 안, 철회) | — |
 | 35 | 지표 이름 속 증감 글자(EX-6) | 증가율·상승률은 부호 그대로, 감소율·하락률은 부호를 반대로 읽는다. 부호가 없으면 지표 이름으로 방향을 정한다 | `[DESIGN]` | — | — |
 | 36 | 보인 자리수 세기 | 저장된 JSON 숫자 토큰을 십진수로 읽어 센다. 저장·채점 모두 원문 표기를 보존한다 | `[DESIGN]` | 부동소수 값으로 센다 | — |
-| 37 | 규범 G2 허용 증거의 앱 기록 대체 | `openshell logs`에 허용 이벤트 행이 없으면 실행 조건 대조(B7의 샌드박스 이름·라이브 정책 sha256이 시험표의 그 샌드박스 행과 같음. 봉인 묶음은 "공식 채점용" 행)를 통과한 평가 묶음 실행이나 시험표의 대조군 NIM 허용 호출의 앱 기록(trace 요청·응답, 종료 코드 0, HTTP 200)으로 허용 증거를 채운다. 로그 행은 차단 증거에만 요구한다(로드맵 체크리스트 4번). 근거 줄에 출처를 적는다 | `[DESIGN]` | 허용 행이 없으면 규범 G2 FAIL | 예 |
+| 37 | 규범 G2 허용 증거의 앱 기록 대체 | `openshell logs`에 허용 이벤트 행이 없으면 실행 조건 대조(B7의 샌드박스 이름·라이브 정책 sha256이, B7 실행 조건에 적은 시험표 실행 폴더 `openshell_violation_tests-{시각}`의 시험표에서 그 샌드박스 행과 같음. 봉인 묶음은 "공식 채점용" 행)를 통과한 평가 묶음 실행이나 시험표의 대조군 NIM 허용 호출의 앱 기록(trace 요청·응답, 종료 코드 0, HTTP 200)으로 허용 증거를 채운다. 로그 행은 차단 증거에만 요구한다(로드맵 체크리스트 4번). 근거 줄에 출처를 적는다 | `[DESIGN]` | 허용 행이 없으면 규범 G2 FAIL | 예 |
 | 38 | 규범 G6의 체크리스트 8번 자기 참조 | 자기채점 결과 파일 자체가 8번(자기채점 결과 파일)을 채운 것으로 본다 | `[추론]` | 1회차 규범 G6 FAIL | 예 |
 | 39 | Brev 단계의 `1c` | OpenShell만 쓰는 단계까지 간 경우만 `1c` 0/1 상한. Brev에서 NemoClaw 경로가 서면 실제 증거대로 | `[추론: docs/plan/DEV_PLAN.md §5.4]` | 대체 경로 발동 전체에 0/1 상한 | 예 |
 | 40 | `real_sealed`의 봉인 입력 | 사례 목록·표본 파일은 샌드박스에 넣지 않고, 샌드박스 밖 실행기(프로그램)가 해시 대조 뒤 식별자를 `run-case`에 한 건씩 넘긴다. 에이전트는 건수·종료 코드·해시 대조 결과만 받는다. 설계 명세의 "봉인 사례 목록은 샌드박스에 들이지 않는다"와 "같은 절차를 따른다"를 함께 지키는 해석이다 | `[DESIGN]` | 목록 파일을 전용 샌드박스에 읽기 전용으로 넣는다 | 예 |
+| 41 | 규범 G2의 '허용 1건 이상과 차단 3종 이상'을 시험표 폴더 하나 안에서 채울지 여러 폴더를 합산할지, X1 옛 위치 기록을 G2 밖(`1b`·`3e`)에서도 인정할지 | 정하지 않았다. 그때까지는 적용 원칙 5(두 해석이면 낮은 점수를 주는 쪽)를 따른다 | `[미확인]` | 한 폴더 안 / 합산 | 예 |
 
 ## 용어 설명
 

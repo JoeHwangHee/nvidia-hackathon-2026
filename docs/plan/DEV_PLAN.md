@@ -197,7 +197,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 | NIM 추론 API | 모델 `nvidia/nemotron-3-super-120b-a12b`, 엔드포인트 `https://integrate.api.nvidia.com/v1/chat/completions`. native tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능) 왕복은 구 개발계획 G4 관문 시험에서 확인했다 | `[사실: 실측 메모 §5]` |
 | 검증기 | 실행 중에 보고서를 검사하고 잘못된 보고서를 막는 코드 | §7.4 |
 | typed claim 보고서 | 사실 주장을 정해진 필드로 나눠 쓴 구조화 주장(typed claim)과 설명·가설 문장으로 된 한국어 보고서 | §7.1, §7.2 |
-| 실행 기록 | JSONL trace(한 줄에 이벤트 하나씩 JSON으로 적는 실행 추적 파일)와 NAT 프로파일 결과. `artifacts/runs/<run_id>/`에 두고 커밋하지 않는다 | §10.1 |
+| 실행 기록 | JSONL trace(한 줄에 이벤트 하나씩 JSON으로 적는 실행 추적 파일)와 NAT 프로파일 결과. 도메인 출력(실행마다 폴더 하나에 쌓는 도메인별 출력물)으로 그 실행 폴더 `outputs/{실행명}/`에 두고 커밋하지 않는다. 실행명은 `{실행 이름}-{yymmddhhmmss}`다(자료 계약 §10.3) | §10.1 |
 
 ### 3.2 채점 대상 실행 경로와 시연 경로
 
@@ -213,9 +213,9 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 
 ### 3.3 검증기와 NAT의 역할 구분
 
-- 검증기(`validator.py`)는 **실행 중에** 보고서를 검사해 막는다(§7.4).
+- 검증기(`validator/` 패키지)는 **실행 중에** 보고서를 검사해 막는다(§7.4).
 - NAT는 조사 흐름을 감싸 실행·추적·프로파일·**사후** 평가를 맡는다. 프로파일러 산출물은 요청별 지연·토큰 표(`standardized_data_all.csv`), 평균·백분위 지표(`workflow_profiling_metrics.json`), 보고서(`workflow_profiling_report.txt`)다 `[사실: R3 문서 §8]`. 두 역할을 섞지 않는다.
-- 정답이 필요한 계산(예: 예상 상태 일치)은 샌드박스 밖 독립 채점기만 한다. 정답표는 채점기만 읽는다. NAT 사후 평가는 정답 없이 계산할 수 있는 항목에 쓴다 `[추론]`. NAT를 조사 흐름에 붙이는 정확한 위치와 방식은 S0 외부 자문 질문으로 정한다 `[미확인]`.
+- 정답이 필요한 계산(예: 예상 상태 일치)은 샌드박스 밖 독립 채점기만 한다. 정답표는 채점기만 읽는다. NAT 사후 평가는 정답 없이 계산할 수 있는 항목에 쓴다 `[추론]`. NAT를 조사 흐름에 붙이는 정확한 위치와 방식은 S0 작업이 제안하고 오케스트레이터가 결정 기록으로 정한다(결정 기록 `20260924-2035-user-decision-s0-no-advisory.md`) `[미확인]`.
 - NAT 연동은 아직 시작하지 않았다 `[사실: 인계 문서 §3]`. MVP 기준(로드맵 체크리스트 7번)은 MVP 실행에 대한 NAT 실행 추적과 프로파일 결과가 남는 것이다.
 
 ### 3.4 넣지 않는 것과 이유
@@ -253,7 +253,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 
 - 시연 샌드박스는 다르게 다뤄야 한다. NemoClaw는 OpenClaw를 OpenShell 샌드박스 안에서 돌린다 `[사실: R3 문서 §7]`. 03 문서 §1의 정책(DLI 코스가 2026-06-17(수) 런처블에서 읽은 "shields up" 정책)에는 `managed_inference`(경로 `/**` + `curl`·`python3`·`node` 허용)와 `clawhub`·`openclaw_docs`·`npm_registry` 블록이 있다 `[사실: 03 문서 §1]`. 우리가 설치한 NemoClaw의 기본 정책이 같은지는 라이브 정책 조회로 확인한다 `[미확인]`. 게다가 OpenClaw가 띄운 CLI·`curl`은 조상 프로세스 상속으로 OpenClaw의 허가를 물려받는다(§4.1 작성 원칙).
 - 그래서 "허용 목적지 하나, 추론 요청 한 경로"(§4.6)는 **채점 대상 실행 샌드박스 기준**이다. 요건 (b) 자체는 두 샌드박스 모두 지킨다. 시연 샌드박스의 추가 통제는 §4.8에 적는다.
-- 두 샌드박스의 정책을 `configs/openshell/policy.yaml` 한 파일로 쓸지 따로 둘지는 새 경로를 짓지 않고 X1 뒤 S0 자문에서 정하며, 그때 §10.1 경로 표를 함께 고친다 `[미확인]`.
+- 두 샌드박스의 정책을 `configs/openshell/policy.yaml` 한 파일로 쓸지 따로 둘지는 새 경로를 짓지 않고 로드맵 MT5에서 정하며(결정 기록 2035), 그때 §10.1 경로 표를 함께 고친다 `[미확인]`.
 - 채점 대상 실행 샌드박스에는 개발 평가용과, `RB-1` 동결 뒤 봉인 묶음만을 위해 새로 만드는 공식 채점 대상 실행 전용 샌드박스가 있다. 그래서 문서에 따라 샌드박스를 세 종류(채점 대상 실행용·공식 채점 대상 실행 전용·시연용)로 세기도 한다(`docs/plan/SCAFFOLD_BRIEF.md` §4.4.1).
 
 ### 4.1 요건
@@ -292,22 +292,28 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 
 ### 4.3 파일시스템 정책은 허용 목록 방식이다
 
-- 파일시스템 정책은 **허용 목록 방식**이다. 나열한 경로(와 작업 폴더)만 허용하고 나머지는 거부한다 `[사실: 03 문서 §3.6]`. 판정은 가장 긴 prefix(경로 앞부분 일치)가 이기고, 어디에도 맞지 않으면 작업 폴더(`include_workdir: true`일 때 `/sandbox` 아래)만 허용한다.
+- 파일시스템 정책은 **허용 목록 방식**이다. 나열한 경로(와 작업 폴더)만 허용하고 나머지는 거부한다 `[사실: 03 문서 §3.6]`. 판정은 가장 긴 prefix(경로 앞부분 일치)가 이기고, 어디에도 맞지 않으면 작업 폴더(`include_workdir: true`일 때 `/sandbox` 아래)만 허용한다 `[사실: 03 문서 §3.6]`. 이 판정은 DLI 코스 평가 함수의 모형이다. 겹치는 경로의 실제 집행은 자료 계약 §10.3 "읽기 전용 입력"을 따른다.
 - **따라서 요건 (a)는 정답 경로를 허용 목록이나 작업 폴더에 넣지 않을 때만 성립한다.**
 - 설계 원칙 `[추론]`
   - 읽기 전용(`read_only`)으로 허용: 앱 코드, 설정, 읽기 전용 SQLite 스냅샷
-  - 쓰기 허용: 실행 기록 출력(`artifacts/runs/<run_id>/`에 대응하는 샌드박스 안 경로)
-  - 넣지 않는 것: 평가 정답(`eval/dev/oracle_ABC.json`, `eval/dev/dev20/`의 정답표), 독립 채점기 `eval/scorer/`, 봉인 폴더(예외: 공식 채점 대상 실행 전용 샌드박스의 봉인 입력, §9.8), `.env`
+  - 쓰기 허용: 샌드박스 안 작업 폴더(`/sandbox` 아래)의 실행 출력 경로만 쓴다(앱이 지키는 약속이다. 정책은 `/tmp`도 쓰기로 연다). 호스트의 `outputs/`는 허용 목록에도 작업 폴더에도 넣지 않고, 실행이 끝나면 샌드박스 밖 실행기가 `openshell sandbox download`로 받아 `outputs/{실행명}/`(봉인 묶음이면 `outputs/sealed/{실행명}/`)에 둔다. 여러 사례 실행이 한 샌드박스를 쓰면 작업 폴더 안에서도 사례 실행별 하위 폴더를 나눈다 `[DESIGN: 오케스트레이터 권고, 2026-09-24(목) 사용자 확인(PR #18), 자료 계약 §10.3의 방식 (나)]`. 이유: 정적 계층은 샌드박스를 만들 때 고정되고(§4.2) 사례 실행마다 시각이 든 새 실행명을 쓰므로, 호스트의 사례 실행 폴더를 허용 목록에 미리 넣을 수 없다. 그렇다고 `outputs/`를 통째로 열면, 허용 목록이 경로 앞부분 일치로 판정되므로 다른 실행의 출력과 `outputs/sealed/`의 봉인 실행 출력을 읽을 수 있다. 1차 근거는 공식 문서다. CLI는 샌드박스의 정식 작업 폴더를 찾아 그 안으로 풀리는 샌드박스 쪽 원본만 받고, 글자 그대로(예: `/sandbox/../etc/passwd`)나 심볼릭 링크로 그 밖으로 벗어나는 경로는 전송 전에 거부한다 `[사실: 공식 문서 manage-sandboxes "Transfer Files"]`. 원문은 자료 계약 §10.3에 있다. X1 임시 시험 기록(옛 이름, 자료 계약 §10.3)의 "저장소 파일·봉인 입력 반입 방식" 행과 "NAT 실행 추적 산출물 위치" 행은 OpenShell 0.0.116에서 같은 동작을 관찰한 보강 근거다. X1은 샌드박스 안 `/sandbox/x1-runs/<run_id>/`에 쓰고 download로 호스트에 받았다. 작업 폴더 `/sandbox`는 X1 이미지에서 관찰한 값이다 `[사실: X1 임시 시험 기록, X1 PR로 병합 예정]`. 대안 (가)는 샌드박스를 만들기 전에 묶음 단위 실행 폴더를 정해 그 폴더 하나만 여는 것이다. 호스트 폴더를 샌드박스에 마운트하는 수단은 `[미확인]`이다. 최종 확정은 로드맵 MT5(샌드박스 출력 방식과 봉인 입력 반입 방식의 확정·리허설)와 MT7(샌드박스 밖 실행기)에서 한다.
+    - 내려받는 시점: 실행이 끝난 때는 CLI가 NAT 파일 내보내기의 남은 쓰기를 기다린 뒤 끝난 때다. X1에서 NAT 1.9.0의 `stop()`은 남은 쓰기를 기다리지 않아 끝 이벤트가 빠졌다 `[사실: X1 임시 시험 기록 "NAT 실행 추적 산출물 위치" 행]`.
+    - 받기 전 확인: 받을 곳은 그 실행의 실행명을 확보할 때 만든 폴더(자료 계약 §10.3 N8)이고, 그 폴더가 비어 있어야 한다. 비어 있지 않으면 받지 않고 실패로 끝낸다. 공식 문서는 받는 곳에 같은 이름이 이미 있을 때 거부하는지 적지 않는다. 그래서 download가 덮어쓰기 금지(N8)를 보장한다고 볼 수 없다. 확보와 내려받기는 같은 샌드박스 밖 프로그램이 한다. download가 받는 곳의 기존 파일을 덮지 않는지는 로드맵 MT5에서 검증하고, 보장이 없으면 임시 위치에 받은 뒤 확보한 빈 폴더로 옮긴다. 봉인 묶음이면 임시 위치도 `outputs/sealed/` 아래에 두고 같은 금지(N10)를 받는다.
+    - 읽기 전용 입력: 읽기 전용 입력(앱 코드·설정·스냅샷·봉인 입력)은 작업 폴더와 `read_write` 경로 밖에 둔다(X1의 `/opt/x1`처럼). `include_workdir: true`이면 작업 폴더가 `read_write`에 더해지고, Landlock(리눅스 커널의 파일 접근 제한 기능)은 규칙 하나라도 허용하면 허용하므로 쓰기 가능한 부모 아래의 `read_only` 자식은 막히지 않을 수 있다 `[추론: 근거는 https://docs.nvidia.com/openshell/sandboxes/policies(include_workdir가 작업 폴더를 read_write에 더한다)와 https://docs.kernel.org/userspace-api/landlock.html(한 정책 층 안에서는 규칙 하나라도 허용하면 허용한다)]`. 로드맵 MT5 리허설에서 작업 폴더 아래 `read_only` 하위 경로에 탐침 파일(시험용으로 새로 만드는 빈 파일)을 써 본다. 검토 후보는 `include_workdir: false`에 `read_write: [<출력 폴더>]`만 두는 구성이다. 프록시 모드(기본값)는 `/tmp`를 기본 쓰기 경로로 더하므로, 이 구성도 출력 폴더만 쓰기 가능하게 만들지는 않는다 `[사실: 공식 정책 문서 docs/sandboxes/policies.mdx(main 브랜치)]`. 설치 판 0.0.116에서의 동작은 로드맵 MT5에서 확인한다 `[미확인]`. 이때의 CLI 동작과 download 가능 여부는 `[미확인]`이다.
+    - 반입 목록: 이미지 빌드나 upload로 들이는 파일은 명시한 포함 목록으로 고른다. `.env`, `outputs/`, `artifacts/eval/`, 정답표(`eval/dev/oracle_ABC.json`, dev20 정답표), `eval/scorer/`는 빼도록 명시한다. 저장소 루트나 `eval/dev/`를 통째로 올리지 않는다.
+    - upload 주의: 근거는 공식 문서이고 `[사실: 공식 문서 manage-sandboxes "Transfer Files"]`, 우리 환경에서의 확정은 로드맵 MT5에서 한다 `[미확인]`. Git 저장소 안의 경로를 올리면 upload는 기본으로 `.gitignore`를 따른다. 추적 파일이 섞인 경로를 올리면 무시 대상(이 저장소에서는 스냅샷 SQLite와 `raw/` 등)은 빠진다. 모든 파일이 무시 대상인 경로(예: `snapshot.sqlite` 하나)는 경고와 함께 거르지 않고 올라간다. 그래서 `.gitignore`는 제외 장치가 아니고, 제외는 명시한 반입 목록이 맡는다. `--no-git-ignore`는 `.env`가 없는 경로에만 쓰고, 이 주의는 모든 파일이 무시 대상일 때 거르지 않고 올리는 자동 전환에도 똑같이 걸린다. 목적지를 빼면 샌드박스 작업 폴더에 올라간다. upload는 심볼릭 링크를 그대로 두고, 이미 있는 폴더에는 합쳐 덮어쓴다. 원문은 자료 계약 §10.3에 있다.
+  - 넣지 않는 것: 평가 정답(`eval/dev/oracle_ABC.json`, `eval/dev/dev20/`의 정답표), 독립 채점기 `eval/scorer/`, 봉인 폴더(예외: 공식 채점 대상 실행 전용 샌드박스의 봉인 입력, §9.8), `.env`, 그리고 `outputs/` 전체와 `outputs/sealed/`, `artifacts/eval/`. 채점기 출력(정답표에서 온 값)은 샌드박스가 읽거나 쓸 수 있는 곳(허용 목록과 작업 폴더)에 두지 않는다. 커밋 사본 `artifacts/eval/score-{시각}/`(채점기 출력을 복사해 커밋한 폴더)도 같다. 위 방식에서는 어떤 샌드박스도 `outputs/`를 열지 않으므로 채점 실행 폴더 `outputs/score-{시각}/`가 이 조건을 채우고, 커밋 사본은 반입 목록에서 뺀다
+  - 어떤 샌드박스도 허용 목록과 작업 폴더에 `outputs/` 전체나 `outputs/sealed/`를 넣지 않는다. 쓰기는 위 쓰기 허용 항목대로 샌드박스 안 작업 폴더에만 한다. 판정이 경로 앞부분 일치이고 작업 폴더 안은 허용 목록에 없어도 허용되므로(이 절 첫 항목), 작업 폴더를 `outputs/`나 그 위 폴더로 잡으면 다른 실행과 봉인 실행의 출력이 읽힌다. 정답 경로를 허용 목록과 작업 폴더에 넣지 않는 조건(`docs/rules/PARALLEL_DEV_RULES.md` §6.5 ①)과 같은 구조다
   - 넓은 prefix(작업 폴더 전체, 03 문서 §1 정책의 `/app` 같은 경로)가 정답 경로를 덮지 않는지 확인한다. 저장소 전체를 작업 폴더에 복사하면 정답 파일도 읽을 수 있게 된다.
   - `eval/dev/dev20/`에는 입력과 정답표가 함께 있다(§10.1). 샌드박스에는 입력만 들이고 정답표는 들이지 않는다.
-  - 저장소 파일을 샌드박스의 어느 경로에 어떻게 들이는지는 X1 뒤에 확정한다 `[미확인]`.
+  - 저장소 파일을 샌드박스의 어느 경로에 어떻게 들이는지는 로드맵 MT5에서 확정한다 `[미확인]`.
 - 읽을 수 있는 것은 허용된 출력 채널로 나갈 수 있다 `[사실: 03 문서 §5·§7]`. 출력 채널은 채점 대상 실행 샌드박스에서는 추론 요청 한 경로이고, 시연 샌드박스에서는 요건 (b)에 맞게 좁힌 NVIDIA 추론 목적지다(§4.8). 그래서 정답과 키를 읽을 수 없게 하는 것이 외부 전송 제한만큼 중요하다.
 
 ### 4.4 요건별 대응표
 
-요건마다 정책 위치(섹션, 계층), 위반 시험 입력, 기대 종료 코드와 감사 로그 행, 확인 검토자를 한 줄씩 적는다. 실측 결과는 `artifacts/openshell/violation_tests.md`(예측·실측 대조표)와 `artifacts/openshell/logs/`(감사 로그 발췌)에 남긴다. 이 표는 채점 대상 실행 샌드박스 기준이다. 시험표에는 행마다 시험한 샌드박스(채점 대상 실행용·시연용)를 적는다. 채점 대상 실행용 샌드박스(개발 평가 포함) 행에는 샌드박스 이름과, 커밋한 라이브 정책 조회 본문(정책 YAML. 로컬 절대경로를 바꿔 적은 뒤의 본문)의 sha256도 적는다. 평가 묶음 `summary.md` 실행 조건의 같은 값과 대조하기 위해서다(`docs/eval/RULEBOOK.md` B7, `skills/tradesentry-eval/SKILL.md`). 조회 출력의 정확한 형식과 바이트 안정성은 X1 실측 전까지 `[미확인]`이고, 해시할 바이트의 추출 규칙(코드 블록 경계, 줄 끝 문자, 마지막 줄바꿈)은 로드맵 MT5에서 정한다. 경로 치환은 평가 스킬 ②의 규칙을 따르고, 해시에 쓰는 치환 규칙은 로드맵 MT5에서 하나로 확정한다. 게이트웨이 추론 설정(provider·모델)은 정책 본문 밖이라 이 해시에 들지 않으므로 따로 조회해 적는다(§4.8). 이 해시는 시험 때 조회한 정책을 가리킬 뿐이다. 네트워크 계층은 실행 중에 다시 불러올 수 있으므로(§4.2) 실행 기간 내내 같은 정책이었다는 증거가 아니고, 샌드박스에 들인 파일은 덮지 않으므로 격리 증거로도 쓰지 않는다. 실행 중 재적용을 잡는 방법은 X1에서 `CONFIG:LOADED`가 재적용마다 남는지와 그 행 형식을 확인한 뒤 로드맵 MT5에서 정한다.
+요건마다 정책 위치(섹션, 계층), 위반 시험 입력, 기대 종료 코드와 감사 로그 행, 확인 검토자를 한 줄씩 적는다. 실측 결과는 위반 시험 실행 폴더의 결과 파일만 같은 이름의 OpenShell 증거 폴더 `artifacts/openshell/openshell_violation_tests-{시각}/`로 복사해 커밋한다(증거 복사, 자료 계약 §10.3). 결과 파일은 시험표 `openshell_violation_tests-{시각}.md`(예측·실측 대조표), 감사 로그 발췌(`.txt`), 라이브 정책 조회 본문(`.yaml`)이다. 시험을 다시 돌리면 시각이 다른 새 폴더가 생기고, 앞 폴더를 고쳐 쓰지 않는다. X1 임시 시험 기록은 옛 이름 위치에 있다(자료 계약 §10.3). 이 표는 채점 대상 실행 샌드박스 기준이다. 시험표에는 행마다 시험한 샌드박스(채점 대상 실행용·시연용)를 적는다. 채점 대상 실행용 샌드박스(개발 평가 포함) 행에는 샌드박스 이름과, 커밋한 라이브 정책 조회 본문(정책 YAML. 로컬 절대경로를 바꿔 적은 뒤의 본문)의 sha256도 적는다. 평가 묶음 채점 요약 `scorer_summary-{시각}.md`의 실행 조건에 대조한 시험표 실행 폴더 이름(`openshell_violation_tests-{시각}`)을 적고(적는 주체는 채점기다. 채점기가 실행 조건 입력 파일(채점기가 모르는 실행 조건을 채점기에 넘기는 파일)에서 옮긴다, 자료 계약 §8.2), 그 폴더 시험표의 같은 샌드박스 행과 값을 맞추기 위해서다(`docs/eval/RULEBOOK.md` B7, `skills/tradesentry-eval/SKILL.md`). 조회 출력의 정확한 형식과 바이트 안정성은 X1 실측 전까지 `[미확인]`이고, 해시할 바이트의 추출 규칙(코드 블록 경계, 줄 끝 문자, 마지막 줄바꿈)은 로드맵 MT5에서 정한다. 경로 치환은 평가 스킬 ②의 규칙을 따르고, 해시에 쓰는 치환 규칙은 로드맵 MT5에서 하나로 확정한다. 게이트웨이 추론 설정(provider·모델)은 정책 본문 밖이라 이 해시에 들지 않으므로 따로 조회해 적는다(§4.8). 이 해시는 시험 때 조회한 정책을 가리킬 뿐이다. 네트워크 계층은 실행 중에 다시 불러올 수 있으므로(§4.2) 실행 기간 내내 같은 정책이었다는 증거가 아니고, 샌드박스에 들인 파일은 덮지 않으므로 격리 증거로도 쓰지 않는다. 실행 중 재적용을 잡는 방법은 X1에서 `CONFIG:LOADED`가 재적용마다 남는지와 그 행 형식을 확인한 뒤 로드맵 MT5에서 정한다.
 
-공식 채점 대상 실행 전용 샌드박스는 새 정적 정책으로 새로 만들므로 이전 시험 증거가 그대로 이어지지 않는다. 그래서 공식 실행 전에 그 샌드박스의 라이브 정책 조회 결과와 최소 시험 행을 "공식 채점용"으로 따로 남긴다. 최소 시험 행은 비허용 호스트 1건, 정답표 부재 확인, 요건 (c) 키 조회 1건, 봉인 입력 쓰기 거부다. 쓰기 거부 행에는 어느 장치가 거부했는지 적는다. 정책의 `read_only`이면 EACCES, 읽기 전용 마운트이면 EROFS가 나오며, EROFS는 03 문서 §6.4의 거부 문구 목록에 없다 `[사실: 03 문서 §2.2, §6.4, §6.6]`.
+공식 채점 대상 실행 전용 샌드박스는 새 정적 정책으로 새로 만들므로 이전 시험 증거가 그대로 이어지지 않는다. 그래서 공식 실행 전에 그 샌드박스의 라이브 정책 조회 결과와 최소 시험 행을 "공식 채점용"으로 따로 남긴다. 최소 시험 행은 비허용 호스트 1건, 정답표 부재 확인, `outputs/`·채점기 출력 부재 확인, 요건 (c) 키 조회 1건, 봉인 입력 쓰기 거부다. 쓰기 거부 행에는 어느 장치가 거부했는지 적는다. 정책의 `read_only`이면 EACCES, 읽기 전용 마운트이면 EROFS가 나오며, EROFS는 03 문서 §6.4의 거부 문구 목록에 없다 `[사실: 03 문서 §2.2, §6.4, §6.6]`.
 
 | 요건 | 정책 위치(섹션·계층) | 위반 시험 입력 | 기대 종료 코드 | 기대 감사 로그 행 | 확인 검토자 |
 |---|---|---|---|---|---|
@@ -316,7 +322,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 | (b) 비허용 바이너리 | `network_policies`의 `binaries` — 동적 | 허용 목록에 없는 바이너리(예: `curl`)를 허용 바이너리의 자손이 아닌 프로세스로 띄워(`openshell sandbox exec -n <agent> -- curl …`) 허용 목적지에 같은 추론 요청. 정책 예측: deny(binary-miss, 허용되지 않은 실행 파일) | 0이 아님 + 프록시 거부 문구. `curl`은 `--fail`로 403에서 0이 아닌 값으로 끝나게 하고 HTTP 상태 코드(`-w '%{http_code}'`)를 함께 기록 | 네트워크 거부 이벤트 1행 | NVIDIA 스택·보안 |
 | (b) L7 위반(선택) | `network_policies`의 `rules`(method·path) — 동적 | 허용 바이너리를 자손이 아닌 프로세스로 띄워 허용 목적지에 허용하지 않은 method·path로 요청(예: `GET /v1/models`). 정책 예측: deny(L7 불일치) | 0이 아님 + HTTP 403 기록 | 네트워크 거부 이벤트 1행 | NVIDIA 스택·보안 |
 | (c) 키 비보유 | credential placeholder rewrite면 동적 계층의 rewrite 설정(근거 문서마다 엔드포인트 필드 또는 `network_middlewares`로 달리 적혀 있어 정확한 위치는 `[미확인]`). `inference.local`이면 게이트웨이 추론 설정과 `network_policies`의 `inference.local` 블록 — 동적 | 샌드박스 안에서 키를 찾는 시도: 환경변수 전체, `.env` 파일, 점검 후보인 하네스 설정 경로(예: `/sandbox/.nemoclaw`, `/sandbox/.openclaw`). 키 종류별 판정 방법은 표 아래에 적는다. 시연 샌드박스에서는 하네스가 띄운 프로세스(예: 스킬 경로)에서도 같은 확인을 돌린다. 새 셸이 하네스가 자식 프로세스에 넘기는 환경을 보지 못하는지는 `[미확인]`이고, 방법은 X1에서 정한다. 값은 출력하지 않고 있음/없음만 기록한다 | 확인 명령은 실제 키 값이 없으면 0, 있으면 0이 아닌 값으로 끝나게 만든다. 기대: 0 | 해당 없음(환경 변수·파일 조회는 네트워크 이벤트가 아니다). 짝 증거로 키 없이 성공한 NIM 호출 1건의 허용 기록을 남긴다. 허용 이벤트 행 형식은 `[미확인]`이라, 행이 없으면 그 실행의 trace·종료 코드 0·HTTP 상태 코드로 대신하고 "허용 증거 출처: 앱 기록(`openshell logs` 행 없음)"으로 적는다 | NVIDIA 스택·보안 |
-| (d) 감사 로그 수집 | 정책 섹션이 아니다. 샌드박스 로그를 `openshell logs <sandbox-name> --since <기간>`으로 모은다 | 별도 입력 없음. (a)~(c) 시험과 NIM 허용 호출 1건 뒤에 같은 시간 범위를 수집 | 수집 명령 0 | 네트워크 거부마다 거부 이벤트 행, 정책 적용 이벤트(`CONFIG:LOADED`). 발췌를 `artifacts/openshell/logs/`에 커밋 | NVIDIA 스택·보안 |
+| (d) 감사 로그 수집 | 정책 섹션이 아니다. 샌드박스 로그를 `openshell logs <sandbox-name> --since <기간>`으로 모은다 | 별도 입력 없음. (a)~(c) 시험과 NIM 허용 호출 1건 뒤에 같은 시간 범위를 수집 | 수집 명령 0 | 네트워크 거부마다 거부 이벤트 행, 정책 적용 이벤트(`CONFIG:LOADED`). 발췌(`.txt`)를 OpenShell 증거 폴더에 커밋 | NVIDIA 스택·보안 |
 | (e) 의도적 위반 시험표 | (a)~(c)의 정책 전체 | 정답 경로(미끼 파일) 읽기, 비허용 호스트 전송, 비허용 바이너리, 키 조회 4종(+ L7 위반: 로드맵 MT5는 필수로 둔다)과 대조군 NIM 허용 호출 1건. 행마다 시험한 샌드박스를 적는다 | 행마다 정책 평가 규칙으로 계산한 예측(allow/deny)과 실측 종료 코드·분류를 나란히 적는다 | 행마다 로그 발췌 파일과 행 참조 | NVIDIA 스택·보안 |
 
 - 로그 이벤트 이름(`HTTP:* DENIED`, `CONFIG:LOADED`)은 R3 문서 §3에서 확인한 것이다 `[사실]`. 실제 행의 형식은 X1과 위반 시험에서 실측으로 채운다.
@@ -334,11 +340,11 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 
 ### 4.5 두 통제의 구분
 
-- **① 저장소 경로 차단**: 샌드박스 파일시스템 정책(정적 계층)이 저장소 안의 평가 정답 경로 읽기를 막는다. §4.3의 허용 목록 조건이 지켜질 때만 성립한다.
+- **① 저장소 경로 차단**: 샌드박스 파일시스템 정책(정적 계층)이 저장소 안의 평가 정답 경로 읽기를 막는다. §4.3의 허용 목록 조건이 지켜질 때만 성립한다. 도메인 출력 폴더도 같은 구조로 다룬다. 어떤 샌드박스도 허용 목록과 작업 폴더에 `outputs/` 전체나 봉인 실행 출력 `outputs/sealed/`를 넣지 않는다. 권고 방식은 샌드박스가 `outputs/`를 아예 열지 않고 샌드박스 안 작업 폴더에 쓴 출력을 밖에서 받아 오는 것이다(§4.3, 자료 계약 §10.3). 이 방식(자료 계약 §10.3의 방식 (나))에서는 `outputs/`를 반입하지 않는 것으로 막는다. 이것은 통제 ①(파일시스템 정책의 거부)의 증거가 아니므로, 제출서와 위반 시험표에서 OpenShell 차단으로 세지 않는다.
 - **② 저장소 밖 봉인 격리**: 봉인 자료를 저장소 밖(`TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`)에 두어 격리한다. 공식 채점 대상 실행 때에만 봉인 **입력**을 그 실행 전용 샌드박스에 읽기 전용으로 넣고, 정답표는 샌드박스에 절대 넣지 않는다. 정답표는 밖의 채점기만 읽는다.
 - **①이 ②를 보장한다고 쓰지 않는다.** ①은 샌드박스 안의 프로세스만 막는다. ②는 저장소를 보는 개발 에이전트와 봉인 자료를 떼어 놓는 장치다.
 - ②의 정직한 한계: 봉인 폴더 위치는 문서에 적혀 있어 비밀이 아니다. 개발 에이전트가 같은 OS 사용자로 돌기 때문에 열람을 기술적으로 막지는 못하고, 지시와 기록으로 관리한다. 해시(`eval/sealed_manifest.json`)는 변조를 드러낼 뿐 열람을 막지 않는다. 기술적 차단은 런타임 샌드박스(OpenShell 정책)에만 해당한다.
-  - 봉인 실행의 trace(`artifacts/runs/<run_id>/`)에는 봉인 입력 내용이 담긴다. 이 trace도 채점이 끝나기 전에는 읽지 말라는 지시 대상에 넣는다(§9.8).
+  - 봉인 실행 출력(trace 포함, `outputs/sealed/{실행명}/`)에는 봉인 입력 내용이 담긴다. 이 출력과 봉인 묶음을 채점한 채점기 출력 폴더도 금지 해제 조건(정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 전에는 읽지 말라는 지시 대상에 넣는다(§9.8). 봉인 묶음 실행 출력은 샌드박스 작업 폴더에 있는 동안(내려받기 전, 지우기 전)에도 같은 열람·커밋 금지를 받고, 내려받기는 샌드박스 밖 실행기(프로그램)만 한다(자료 계약 §10.3 N10).
   - `real_sealed` 사례 목록은 기록된 값으로 다시 계산할 수 있어 기밀이 아니다. 봉인의 목적은 기밀이 아니라 개발 사용 금지와 무결성이다(§9.8).
 
 ### 4.6 키 주입 방식과 `inference.local`
@@ -361,7 +367,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 
 - **핵심 통제**: 키와 모든 정답표(봉인 정답표 포함)는 어떤 샌드박스에서도 읽을 수 없다. 봉인 입력은 공식 채점 대상 실행 전용 샌드박스에서만 읽기 전용으로 읽는다.
 - lethal trifecta(민감 데이터 읽기 + 외부 입력 수용 + 외부 전송 경로가 한 경로에 겹치는 위험) 관점에서, 공식 채점 대상 실행 전용 샌드박스는 세 요소가 실제로 겹치는 경로다. 봉인 입력(민감 데이터)을 읽고, 모델 응답(외부 입력)을 받고, 추론 요청(외부 전송)을 보낸다. 추론 요청에는 조사에 필요한 봉인 입력 내용이 실린다.
-- 그 샌드박스에 남는 통제는 세 가지다: 요건 (b)의 추론 요청 한 경로 제한, 정답표 부재, 봉인 실행 trace 취급(채점이 끝나기 전 열람 금지, 커밋하지 않음. §4.5·§9.8).
+- 그 샌드박스에 남는 통제는 세 가지다: 요건 (b)의 추론 요청 한 경로 제한, 정답표 부재, 봉인 실행 출력 `outputs/sealed/{실행명}/`(trace 포함)의 취급(금지 해제 조건 전 열람 금지, 커밋하지 않음. §4.5·§9.8).
 - 도구는 모델에게서 경로·SQL·URL·셸 명령을 받지 않는다(§6.5). 도구가 돌려준 품목명·설명은 데이터로만 다루고 지시문으로 실행하지 않는다.
 - 목적지가 허용 목록에 있다는 사실만으로 안전하다고 쓰지 않는다. 정책은 목적지를 승인할 뿐 그 위로 오가는 바이트의 의미를 승인하지 않는다 `[사실: 03 문서 §4]`.
 
@@ -380,7 +386,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
   - 하네스 자체의 추론 경로: NemoClaw 기본은 `inference.local`이다. X1 구성에서는 `integrate.api.nvidia.com` 직접 호출(헤더 자리표시 값)로 바꿔 OpenClaw의 모델 호출이 HTTP 200을 받았다 `[사실: artifacts/openshell/violation_tests.md §4, §6.3 DA4]`.
   - 조상 프로세스 상속: 문서대로다. OpenClaw(node)가 띄운 CLI 파이썬과 `curl`이 `nvidia` 블록 허가를 물려받았고, 목적지·L7 제한은 그대로였다 `[사실: artifacts/openshell/violation_tests.md §6.3 DA4·DT3'·DT4'(4판 재시험)]`.
   - 기본 블록을 빼거나 좁혀도 하네스가 도는지: 돈다. `nvidia` 블록 하나만 남긴 4판에서 한 줄 경로가 통과했다. 단 바이너리를 `openclaw`만 두면(2판) 돌지 않아 위 예외가 필요했다 `[사실: artifacts/openshell/violation_tests.md §6.3 DA1·DA4]`.
-- **증거**: 시연 샌드박스의 라이브 정책 조회(`openshell policy get <agent> --full`) 결과, 게이트웨이 provider 설정 조회 결과, 남은 블록 목록을 위반 시험표(`artifacts/openshell/violation_tests.md`)에 함께 적는다.
+- **증거**: 시연 샌드박스의 라이브 정책 조회(`openshell policy get <agent> --full`) 결과, 게이트웨이 provider 설정 조회 결과, 남은 블록 목록을 위반 시험표(OpenShell 증거 폴더 `artifacts/openshell/openshell_violation_tests-{시각}/`의 시험표)에 함께 적는다.
 - **(b)를 채우지 못하면**: 예외를 두지 않고 즉시 사용자 결정을 받는다. 대안의 예는 §5.4 대체 경로(NemoClaw 없이 OpenShell만)다. 키 주입 방식이 모두 실패할 때(§4.6 채택 규칙)와 같은 처리다.
 - 요건 (a)·(c)도 시연 샌드박스에 똑같이 적용한다. 정답표·봉인 자료·키를 들이지 않는다.
 
@@ -405,7 +411,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
 | 부르는 명령 | `tradesentry detect`(경보 목록), `tradesentry run-case`(사례 1건 조사). 공통 옵션 `--snapshot`, `--policy`, `--mode`(값은 `checklist`, `agent`, `full`, `freeform`). 사례를 지정하는 인자의 형식은 S0 뒤에 확정한다 |
 | 부르지 않는 명령 | `snapshot-build`·`snapshot-verify`(자료 구축은 데이터 트랙의 일), `evaluate`(평가는 평가 스킬 ② `skills/tradesentry-eval/SKILL.md`가 샌드박스 밖 채점과 함께 다룬다) |
 | 입력 | 운영자의 자연어 요청을 위 명령과 옵션으로 옮긴다. 스냅샷 ID·정책 버전·모드·사례만 넘기고, 파일 경로·SQL·URL·셸 조각은 넘기지 않는다. 이 경로에서는 하네스 모델이 CLI 명령을 조립하므로 CLI가 인자를 코드로 검증한다: 모드는 4개 값만, 스냅샷 ID와 사례 인자는 정해진 형식만 받는다. `--policy`는 파일 경로가 아니라 버전 이름(예: `policy_v1`)으로 받는다. 모델에게서 경로·SQL·URL·셸 명령을 받지 않는다는 원칙(§4.7, §6.5)과 같다 |
-| 출력 | CLI 결과를 그대로 전한다: `case_id`, `review_status_final`, `signal_status`, `unresolved_evidence`, `execution_status`, 보고서 본문, 실행 기록 위치(`artifacts/runs/<run_id>/`). 숫자를 고쳐 쓰거나 다시 계산하지 않는다 |
+| 출력 | CLI 결과를 그대로 전한다: `case_id`, `review_status_final`, `signal_status`, `unresolved_evidence`, `execution_status`, 보고서 본문, 실행 폴더 위치(샌드박스 안 실행 폴더. 내려받은 뒤 `outputs/{실행명}/`). 숫자를 고쳐 쓰거나 다시 계산하지 않는다 |
 | 금지 | 정답표·봉인 폴더·`.env` 읽기, 키 다루기, 봉인 자료 실행, 정답 대조 채점 |
 | 기록 | 시연 요청마다 스킬이 CLI를 실제로 호출했는지와 그 실행의 `execution_status`를 남긴다. 스킬 호출 성공률의 정의는 로드맵(`docs/plan/ROADMAP.md`) §3 체크리스트 1번을 따른다 |
 | 거버넌스 카드 | 공식 스킬 `skill-card-generator`로 우리 스킬의 카드를 만든다 |
@@ -577,7 +583,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 - 공통 출력 봉투(도구 5개가 같은 형식으로 돌려주는 출력 구조)의 키: `query_id, tool, scope, snapshot_id, source_kind, evidence_ids, metrics, comparability, missingness, retryable_error, elapsed_ms`. 출처 종류 `source_kind`는 `real | controlled`다.
 - 근거 ID 형식: `ev:<snapshot_id>:<table>:<rowid>`.
 - 모델 인자로 DB 경로·SQL·외부 URL·셸 명령을 받지 않는다. 도구가 반환한 품목명·설명은 데이터로만 다루고 지시문으로 실행하지 않는다.
-- 도구는 D가 만드는 자료 접근층 `dal.py`(읽기 전용 SQLite 읽기 함수)를 M이 감싸서 만든다(분담 D7).
+- 도구는 D가 만드는 자료 접근층 `dal/` 패키지(읽기 전용 SQLite 읽기 함수)를 M이 감싸서 만든다(분담 D7).
 - 도구는 로컬 스냅샷만 조회한다. 외부 자료 HTTP 요청은 사전 수집 단계의 별도 기록(`collection_http_attempts`)에 있고, 도구 시도 횟수와 섞지 않는다.
 - 공개 정책의 "이 주장을 하려면 이 근거가 필요하다"는 조건은 모든 모드가 쓸 수 있다. 숨기는 것은 사례별 예상 상태·생성 계열·평가 정답이다(구 개발계획 §5.2).
 
@@ -668,12 +674,12 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 - 코드가 모델의 틀린 상태를 조용히 정답으로 고치지 않는다.
 - 실행 실패 때문에 화면에 보류로 보이는 것과 평가의 정답 보류를 같게 보지 않는다(구 개발계획 §5.3).
 - 실행 결과 기록 키(run 1건): `run_id, case_id, dataset, mode, policy_version, rulebook_version, snapshot_id, grouping_version, code_version, review_status_final, signal_status, unresolved_evidence, execution_status, required_evidence_ok, numeric_ok, provenance_ok, tool_attempts, model_requests, tokens_in, tokens_out, wall_ms, critic_used, revision_used, errors`
-- 실행 기록은 `artifacts/runs/<run_id>/`(trace JSONL, NAT 프로파일 결과. 커밋하지 않는다)에, 평가 결과는 `artifacts/eval/<run_id>/`(`results.jsonl`, `claims.jsonl`, `summary.md`. 커밋한다)에 둔다.
+- 실행 기록(trace JSONL, NAT 프로파일 결과)은 그 실행 폴더 `outputs/{실행명}/`에 두고 커밋하지 않는다. 봉인 묶음 실행은 `outputs/sealed/{실행명}/`이다. 실행 쪽 키는 평가 하네스(단위 `evaluation_batch_run`)가 `evaluation_batch_run-{시각}.jsonl`에 쓰고, 채점기가 세 키를 더한 평가 결과를 채점 실행 폴더에 새로 쓴다. 평가 결과는 채점 실행 폴더의 채점기 출력(`scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`)만 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(증거 복사). trace와 NAT 프로파일 결과는 복사하지 않고, 봉인 묶음은 금지 해제 조건이 채워진 뒤에만 복사한다(자료 계약 §8.2·§10.3).
 - 키 값은 로그·trace·결과 파일에 남지 않아야 한다.
 
 ### 7.6 승인(모의, 코드 검증만)
 
-- 공유용 보고서 승인만 모의로 구현한다. 화면 없이 코드와 시험으로만 만든다(2026-09-26(토)~2026-09-27(일), 모듈 `approval.py`).
+- 공유용 보고서 승인만 모의로 구현한다. 화면 없이 코드와 시험으로만 만든다(2026-09-26(토)~2026-09-27(일), 패키지 `approval/`).
 - 승인 기록 필드: `reviewer_label`, `timestamp`, `report_hash`, `evidence_digest`, `snapshot_id`, `policy_version`, `code_version`
 - 승인 유효 상태: `VALID | REVIEW_REQUIRED`
 - 의존 자료·정책·수치·보고서가 바뀌면 기존 기록은 보존하고 유효 상태만 `REVIEW_REQUIRED`로 바꾼다. 승인 시점에 digest(의존 자료를 요약한 해시값)를 다시 계산해 대조한다.
@@ -717,7 +723,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | 기록 | `grouping_version=g1`, `params_hash`, 입력 sha256 |
 | 대만 | BACI 490(S19, "Asia n.e.s.")에 대응한다. 주석 내용: BACI 490(Other Asia, nes)에는 대만 외 기타 아시아 미상분이 섞일 수 있다. 기록 위치는 분담 §3·D3의 국가 코드 대응표(country_map)이며, 그 파일 위치는 §10.1 표에 없어 S0에서 정한다 |
 
-- 결과는 `data/reference/peer_group_g1.csv`(M 계산·D 검수)이고, 계산 모듈은 `src/tradesentry/grouping.py`(M)다.
+- 결과는 `data/reference/peer_group_g1.csv`(M 계산·D 검수)이고, 계산 패키지는 `src/tradesentry/grouping/`(M)다.
 - 객체 필드는 분담 문서 §4의 `peer_group`을 그대로 쓴다(`schema_version=1`). 정본은 `docs/rules/DATA_CONTRACT_V1.md`다.
 
 ### 8.3 쓰는 곳과 쓰지 않는 곳
@@ -793,7 +799,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
   - `UNBACKED_PROSE`는 보고서당 건수로도 따로 보고한다.
   - 유효한 최종 보고서가 없는 실행은 보고서 단위 실패로 분모에 남긴다.
 - 주장 채점 기록 키(claim 1건): `run_id, report_id, claim_id, source, outcome, expected_value, reported_value, unit_expected, unit_reported, tolerance, referent_resolved, evidence_ok, note`. `source`는 `claim | prose`(산문 패턴으로 잡힌 표현)이고, `outcome`은 위 채점 결과 값이다.
-- 독립 채점기: `eval/scorer/`(D 소유). 런타임 모듈을 import하지 않는 **독립 구현**이며 런타임 `metrics.py`를 재사용하지 않는다. `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증하고, 샌드박스 밖에서 돈다. 실행: `python -m eval.scorer --run <run_dir>`.
+- 독립 채점기: `eval/scorer/`(D 소유). 런타임 모듈을 import하지 않는 **독립 구현**이며 런타임 `metrics/` 패키지를 재사용하지 않는다. import 금지에는 간접 import(런타임 패키지를 부르는 모듈을 거쳐 부르는 경우)도 들고, 평가 자료 도구 `eval/datagen/`도 import하지 않는다(자료 계약 §10.3). `eval/dev/oracle_ABC.json`과 손계산 예제로 먼저 검증하고, 샌드박스 밖에서 돈다. 실행: `python -m eval.scorer --run <run_dir>`. `<run_dir>`는 채점할 실행 폴더 `outputs/{실행명}/`(봉인 묶음은 `outputs/sealed/{실행명}/`)이고, 채점기는 자기 출력을 `outputs/score-{시각}/`에 쓴다. 봉인 묶음을 채점할 때 채점기는 시작 직후 자기가 확보한 실행 폴더 이름을 표준 출력 첫 줄로 알리고, 봉인 묶음을 채점한 채점기 출력은 금지 해제 조건(자료 계약 §10.3 N10) 전에는 에이전트가 열지 않고 커밋하지 않는다.
 - MVP 기준(로드맵 체크리스트 6번): `real_dev`로 대표 지표 첫 값(`freeform` vs `full`)을 낸다. 이 값은 "개발 묶음 값, 대표 숫자 아님"으로 표기한다.
 
 ### 9.4 A등급 주장 조건
@@ -824,7 +830,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
   - holdout40 근거 충족 처리정확도: C
   - dev20·`real_dev` 결과: D(개선 과정에 노출된 값)
 - 합성 자료로 만든 숫자의 등급은 holdout40이 C, dev20이 D이며 그보다 높게 적지 않는다. 대표 숫자는 `real_sealed`에서만 나온다.
-- Part A 자기채점: 규범 §2~§4의 하드 게이트·채점 지표·보정 규칙을 TradeSentry 증거 정의로 풀어 쓴 것이 룰북 Part A다. 평가 스킬 ①이 자기채점하고 결과를 `artifacts/scorecard/<YYYY-MM-DD>-scorecard.md`에 남긴다. 규범의 가중치·게이트·앵커는 팀 설계 규칙 `[DESIGN]`이고 대회 공식 배점이 아니다.
+- Part A 자기채점: 규범 §2~§4의 하드 게이트·채점 지표·보정 규칙을 TradeSentry 증거 정의로 풀어 쓴 것이 룰북 Part A다. 평가 스킬 ①이 자기채점하고, 회차마다 새 실행 폴더에 쓴 결과 파일 `scorecard-{시각}.md`를 같은 이름의 폴더 `artifacts/scorecard/scorecard-{시각}/`로 복사해 커밋한다(증거 복사). 규범의 가중치·게이트·앵커는 팀 설계 규칙 `[DESIGN]`이고 대회 공식 배점이 아니다.
 - 컴포넌트 삭제 시험(NVIDIA 구성요소마다 "지우면 어떤 지표가 나빠지는가")은 룰북 Part A에서 판정한다. 답이 약한 구성요소는 약하다고 정직하게 적는다. 예: NemoClaw는 정확도 지표에 영향이 없다.
 
 ### 9.7 실행 규칙과 동결
@@ -844,14 +850,14 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 - 봉인 대상: holdout40 입력과 정답표, `real_sealed` 사례 목록과 채점 표본
 - 보관 위치: **저장소 밖** `~/.tradesentry/sealed/`(환경변수 `TRADESENTRY_SEALED_DIR`로 바꿀 수 있음). 에이전트 작업 폴더에도 두지 않는다.
 - 내용 증명용 sha256 해시만 PR로 커밋한다(`eval/sealed_manifest.json`). 원본 파일은 최종 채점이 끝난 뒤 커밋한다.
-- 모델 트랙 에이전트와 Codex의 작업 지시에 봉인 폴더를 넣지 않고, 읽지 말라고 지시한다. 봉인 실행의 trace(`artifacts/runs/<run_id>/`)에도 봉인 입력 내용이 담기므로, 채점이 끝나기 전에는 이 trace도 읽지 말라고 지시한다.
+- 모델 트랙 에이전트와 Codex의 작업 지시에 봉인 폴더를 넣지 않고, 읽지 말라고 지시한다. 봉인 실행 출력(trace 포함, `outputs/sealed/{실행명}/`)에도 봉인 입력 내용이 담기므로, 금지 해제 조건(자료 계약 §10.3 N10) 전에는 `outputs/sealed/` 아래 출력과 봉인 묶음을 채점한 채점기 출력 폴더도 읽지 말라고 지시한다. 봉인 묶음 실행 출력은 샌드박스 작업 폴더에 있는 동안(내려받기 전, 지우기 전)에도 같은 열람·커밋 금지를 받는다. 에이전트는 그 폴더를 `openshell sandbox exec`·`connect`·`download`로 열거나 받지 않는다. 내려받기는 샌드박스 밖 실행기(프로그램)만 `outputs/sealed/{실행명}/`로 한다. 예외는 기존 셋 그대로다: 채점기 실행, 결정적 건수 추출(내용을 열지 않고 상태·원인 코드의 건수만 뽑는 명령), 한 번만 채점하기 위한 존재 확인. 공식 채점 대상 실행 전용 샌드박스를 내려받은 뒤 지우는지 남기는지를 봉인 사건(봉인 폴더에 닿거나 봉인 묶음을 움직인 일. 평가 스킬 ②가 결정 기록에 남긴다)으로 기록한다. 지우는 시점은 정답 대조 채점 뒤다.
 - 정직한 한계는 §4.5와 같다. 룰북과 제출서에 이 한계를 적는다.
 - `real_sealed`의 정직한 한계: 사례 목록은 기록된 분할 seed·동결 스냅샷·승인된 `policy_v1`로 다시 계산할 수 있으므로 봉인은 기밀 유지가 아니다. 봉인의 목적은 개발·튜닝에 쓰지 않도록 지시와 기록으로 관리하는 것과, 결과를 보기 전에 표본을 고정하고 해시로 증명하는 것(무결성)이다. 표본 추출 seed는 생성 전에 정해 봉인 폴더 안에 두고, 채점 뒤 공개한다.
 - 생성 → 봉인 → 해시 등록 → 한 번 채점의 권한 분리 절차
   1. 생성: holdout40 생성 에이전트(격리된 Claude 보조 에이전트)는 시나리오 명세와 생성 규칙만 입력으로 받는다. 결과를 봉인 폴더에 **직접** 기록하고, 저장소에는 쓰지 않는다. 생성 에이전트는 런타임 코드를 작성하지 않고, 그 대화 기록은 모델 트랙에 넘기지 않는다.
   2. 봉인: 생성 직후 파일별 sha256 목록을 만든다.
   3. 해시 등록: 해시 목록만 PR로 커밋한다.
-  4. 한 번 채점: `RB-1` 동결 뒤 오케스트레이터(작업을 배분하고 병합하는 주관 에이전트)가 평가 스킬 ②를 실행할 때만 봉인 **입력**을 샌드박스에 읽기 전용으로 넣는다. 파일시스템 정책(정적 계층)은 샌드박스를 만들 때 고정되므로, 봉인 입력은 **공식 채점 대상 실행 전용 샌드박스를 새로 만들어** 넣는다. 개발·시연용 샌드박스에는 넣지 않는다. 넣는 방식은 X1 뒤에 확정한다 `[미확인]`. 공식 실행 전에 그 샌드박스의 라이브 정책 조회 결과와 최소 시험 행(비허용 호스트, 정답표 부재, 요건 (c) 키 조회, 봉인 입력 쓰기 거부)을 "공식 채점용"으로 남긴다(§4.4). 정답표는 어떤 샌드박스에도 넣지 않고, 샌드박스 밖 채점기만 읽는다.
+  4. 한 번 채점: `RB-1` 동결 뒤 오케스트레이터(작업을 배분하고 병합하는 주관 에이전트)가 평가 스킬 ②를 실행할 때만 봉인 **입력**을 샌드박스에 읽기 전용으로 넣는다. 파일시스템 정책(정적 계층)은 샌드박스를 만들 때 고정되므로, 봉인 입력은 **공식 채점 대상 실행 전용 샌드박스를 새로 만들어** 넣는다. 개발·시연용 샌드박스에는 넣지 않는다. 넣는 방식은 로드맵 MT5에서 확정한다 `[미확인]`. 공식 실행 전에 그 샌드박스의 라이브 정책 조회 결과와 최소 시험 행(비허용 호스트, 정답표 부재, `outputs/`·채점기 출력 부재 확인, 요건 (c) 키 조회, 봉인 입력 쓰기 거부)을 "공식 채점용"으로 남긴다(§4.4). 정답표는 어떤 샌드박스에도 넣지 않고, 샌드박스 밖 채점기만 읽는다.
   5. 채점 전에 해시를 다시 대조한다. 일치하지 않으면 그 묶음을 무효로 하고 사용자에게 올린다.
   - `real_sealed`의 사례 목록과 표본도 같은 절차를 따른다. 다만 `real_sealed`에서 4단계의 봉인 입력 전달은 룰북 B5와 부록 40번(사용자 확인 대기)을 따른다. 지금 안은 목록·표본 파일을 샌드박스에 넣지 않고, 샌드박스 밖 실행기(프로그램, 로드맵 MT7)가 해시 대조 뒤 사례 식별자를 `run-case`에 한 건씩 넘기는 것이다.
 - 세부 규칙은 병렬 개발 규칙(`docs/rules/PARALLEL_DEV_RULES.md`)과 룰북에 있다.
@@ -873,13 +879,16 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 
 ### 10.1 계획 경로·명령 표
 
+아래 표는 자료 계약(`docs/rules/DATA_CONTRACT_V1.md`) §10 표의 사본이고 글자까지 같다. 그 표는 2026-09-24(목) 사용자 결정(결정 기록 `docs/tracking/decisions/20260924-1720-user-decision-domain-restructure.md`)으로 고쳤다. 자리표시 `{실행명}`·`{도메인명}`·`{시각}` 등을 채우는 이름·출력 규칙(실행명, 도메인명, 도메인 출력 `outputs/`, 증거 복사)은 자료 계약 §10.3, 단위 목록은 `docs/plan/UNITS.md`에 있다. 두 표가 다르면 자료 계약이 이긴다.
+
 - 모든 문서는 아래 표의 경로와 명령만 쓴다. 이름은 조정값이며, S0 외부 자문으로 바뀌면 이 표와 참조 문서를 **함께** 고친다.
 - 기존 파일(`src/tradesentry/ingest.py`, `eval/dev/oracle_ABC.json`, `configs/collection_plan.json`)의 위치는 바꾸지 않는다.
 
 | 대상 | 예정 경로·명령 | 소유 |
 |---|---|---|
-| 앱 패키지 | `src/tradesentry/` — `ingest.py`(기존), `metrics.py`, `dal.py`, `policy.py`, `tools.py`, `workflow.py`, `validator.py`, `reports.py`, `grouping.py`, `approval.py`, `evaluation.py`, `cli.py` | D: ingest·metrics·dal / M: 나머지 |
-| CLI | `tradesentry <명령>` — `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate`, 공통 옵션 `--snapshot`, `--policy`, `--mode`(값은 §9.2의 모드 4개) | M |
+| 앱 패키지 | `src/tradesentry/` — `ingest.py`(기존), 패키지 `contract/`, `snapshot/`, `dal/`, `metrics/`, `policy/`, `grouping/`, `tools/`, `workflow/`, `reports/`, `validator/`, `runlog/`, `evaluation/`, `approval/`, `cli/`. 단위 파일은 `{패키지}/{단위}.py` | D: ingest·contract·snapshot·dal·metrics / M: policy·grouping·tools·workflow·reports·validator·evaluation·approval·cli / 공동: runlog |
+| 단위 등록부·공통 실행기(개발 전용) | `src/tradesentry/units/`, 실행 `python -m tradesentry.units <단위 ID> --in <입력 파일>` | 공동 |
+| CLI | `tradesentry <명령>` — `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate`, 공통 옵션 `--snapshot`, `--policy`, `--mode`(값은 `checklist`, `agent`, `full`, `freeform`) | M |
 | 정책 수치 | `configs/policy_v1.json` | D 제안·사용자 승인 |
 | NAT 설정 | `configs/nat/workflow.yml` | M |
 | OpenShell 정책 | `configs/openshell/policy.yaml` | M(보안 검토) |
@@ -889,42 +898,51 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | 그룹핑 결과 | `data/reference/peer_group_g1.csv` | M 계산·D 검수 |
 | 시나리오 명세(공개) | `eval/scenarios/SCENARIO_SPEC.md` | D |
 | dev20 | `eval/dev/dev20/`(입력 + 정답표) | D |
+| 평가 자료 도구 | `eval/datagen/` — `dev20.py`(dev20 생성), `holdout40_check.py`(holdout40 결정적 검사), `split.py`(실자료 분할) | D |
 | 봉인 해시 목록 | `eval/sealed_manifest.json` | D |
 | 봉인 폴더 | 환경변수 `TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`(저장소 밖) | D |
-| 독립 채점기 | `eval/scorer/`(런타임 모듈을 import하지 않음), 실행 `python -m eval.scorer --run <run_dir>` | D |
-| 실행 기록(커밋 안 함) | `artifacts/runs/<run_id>/`(trace JSONL, NAT 프로파일 결과) | 공동 |
-| 평가 결과(커밋) | `artifacts/eval/<run_id>/`(`results.jsonl`, `claims.jsonl`, `summary.md`) | 공동 |
-| 자기채점 결과(커밋) | `artifacts/scorecard/<YYYY-MM-DD>-scorecard.md` | 공동 |
-| OpenShell 증거(커밋) | `artifacts/openshell/violation_tests.md`(예측·실측 대조표), `artifacts/openshell/logs/`(감사 로그 발췌) | M(보안 검토) |
+| 독립 채점기 | `eval/scorer/`(런타임 모듈을 import하지 않음), 실행 `python -m eval.scorer --run <run_dir>`, 출력 `outputs/score-{시각}/` | D |
+| 도메인 출력(커밋 안 함) | `outputs/{실행명}/{도메인명}-{시각}.{확장자}`(trace JSONL, NAT 프로파일 결과, 보고서, 실행 결과 기록 등 도메인 출력 전부). 봉인 묶음 실행은 `outputs/sealed/{실행명}/` | 공동 |
+| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력만 복사: `scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`) | 공동 |
+| 자기채점 결과(커밋) | `artifacts/scorecard/scorecard-{시각}/`(자기채점 실행 폴더의 결과 파일만 복사: `scorecard-{시각}.md`) | 공동 |
+| OpenShell 증거(커밋) | `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일만 복사: 예측·실측 대조표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`) | M(보안 검토) |
 | X1 임시 시험 코드 | `spikes/x1/` | M |
-| 시험 | `tests/`(기존 `test_ingest.py` 유지) | 공동 |
+| 시험 | `tests/`(기존 `test_ingest.py` 유지), 단위 골든 시험 `tests/units/{단위 ID}/` | 공동 |
 
 - 표에 없는 M 소유 대상: 화면(`app.py`), 프롬프트, 모델 설정. 위치는 S0에서 정하고, 정해지면 이 표와 참조 문서를 함께 고친다.
+- 실행 이름은 시각이 붙지 않은 실행의 이름(예: `run_case`)이고, 실행명(`run_id`)은 거기에 시작 시각을 붙인 `{실행 이름}-{yymmddhhmmss}`다. 표의 `{시각}`은 그 실행이 시작한 KST 24시간 12자리 시각이다. 증거 복사는 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고, 종류마다 정한 커밋 증거 파일만 복사해 커밋하는 일이고, 그렇게 커밋한 폴더와 파일을 커밋 사본이라 한다. trace는 빼고, 봉인 묶음은 금지 해제 조건이 채워진 뒤에만 한다(자료 계약 §10.3).
 
 ### 10.2 모듈 역할
 
-| 모듈(`src/tradesentry/`) | 소유 | 역할 |
-|---|---|---|
-| `ingest.py`(기존) | D | 관세청 API 수집기와 스냅샷 검증(`plan`·`collect`·`verify`). 표준 라이브러리만 쓴다 |
-| `metrics.py` | D | 단가·변화율·점유율·HS10 분해·반올림 검증. `eval/dev/oracle_ABC.json`의 A/B/C를 그대로 재현해야 한다 |
-| `dal.py` | D | 자료 접근층. 읽기 전용 SQLite 읽기 함수, typed dict(필드와 타입이 정해진 파이썬 사전) 반환 |
-| `policy.py` | M | 신호별 판정·필수 근거·사례 집계. 수치는 `configs/policy_v1.json`에서 읽는다 |
-| `tools.py` | M | 도구 5개 래퍼, 공통 봉투, 예산 강제 |
-| `workflow.py` | M | 조사자 → Critic → 수정 1회, NIM 호출·재전송·한도, NAT 감싸기 |
-| `validator.py` | M | 실행 중 보고서 검사·차단(`freeform`에서는 기록 전용) |
-| `reports.py` | M | typed claim → 한국어 보고서 틀, `report_hash` |
-| `grouping.py` | M | 유사도 그룹핑 `g1`(BACI) |
-| `approval.py` | M | 모의 승인, digest 재대조, `REVIEW_REQUIRED` 전환 |
-| `evaluation.py` | M | 평가 하네스(결과 기록 + NAT 사후 평가) |
-| `cli.py` | M | `tradesentry <명령>` 진입점. 인자(모드·스냅샷 ID·사례·정책 버전 이름)를 코드로 검증한다(§5.2) |
+| 패키지(`src/tradesentry/`) | 소유 | 역할 | 단위(`docs/plan/UNITS.md`) |
+|---|---|---|---|
+| `ingest.py`(기존, 패키지 밖 모듈) | D | 관세청 API 수집기와 스냅샷 검증(`plan`·`collect`·`verify`). 표준 라이브러리만 쓴다 | 단위 S1 |
+| `contract/` | D | 공유 커널: 계약 타입, 근거 ID, 정책 수치 읽기, 도구 봉투 키 | 단위 K1·K2·K4·K5 |
+| `snapshot/` | D | 스냅샷 빌드·검증(`snapshot-build`·`snapshot-verify`의 자료 쪽 구현)과 합성 스냅샷 생성 | 단위 S2~S4 |
+| `dal/` | D | 자료 접근층. 읽기 전용 SQLite 읽기 함수, typed dict(필드와 타입이 정해진 파이썬 사전) 반환 | 단위 K3 |
+| `metrics/` | D | 단가·변화율·점유율·HS10 분해·반올림 검증. `eval/dev/oracle_ABC.json`의 A/B/C를 그대로 재현해야 한다 | 단위 X1~X4 |
+| `policy/` | M | 신호 발동·사례 만들기·신호별 판정·사례 집계·필수 근거. 수치는 `configs/policy_v1.json`에서 읽는다 | 단위 P1~P5 |
+| `grouping/` | M | 비교 대상 `g0` 고정 목록과 유사도 그룹핑 `g1`(BACI) | 단위 G1·G2 |
+| `tools/` | M | 도구 5개 래퍼와 예산 강제. 공통 봉투는 단위 K5(`contract/envelope.py`, 로드맵 DT1)로 만든다 | 단위 I1~I6 |
+| `workflow/` | M | 조사자 → Critic → 수정 1회, NIM 호출·재전송·한도, 기록 재생, NAT 감싸기 | 단위 I7·I8·I10~I13 |
+| `reports/` | M | typed claim → 한국어 보고서 틀, `report_hash` | 단위 R1·R2 |
+| `validator/` | M | 실행 중 보고서 검사·차단(`freeform`에서는 기록 전용) | 단위 R3·R4 |
+| `runlog/` | 공동 | trace, 실행 결과 기록, `errors`의 원인 분류 코드 | 단위 L1~L3 |
+| `evaluation/` | M | 평가 하네스(묶음 실행과 실행 결과 기록의 실행 쪽 키), 샌드박스 밖 실행기, 추출 명령, NAT 사후 평가 | 단위 E1~E4 |
+| `approval/` | M | 모의 승인, digest 재대조, `REVIEW_REQUIRED` 전환 | 단위 A1 |
+| `cli/` | M | `tradesentry <명령>` 진입점. 인자(모드·스냅샷 ID·사례·정책 버전 이름)를 코드로 검증하고 조립체를 부른다(§5.2) | 단위 F1·F2 |
+| `units/` | 공동 | 단위 등록부와 공통 실행기(개발 전용, `python -m tradesentry.units <단위 ID> --in <입력 파일>`) | — |
+
+- 패키지는 파이썬 모듈 파일을 여럿 담는 폴더이고, 단위는 혼자 실행하고 시험할 수 있게 파일 하나로 만든 가장 작은 구현 조각이다. 2026-09-24(목) 사용자 결정(도메인 재편 A안)으로 계획 모듈을 패키지로 바꿨고, import 경로(예: `tradesentry.metrics`)는 그대로다. 단위별 파일·도메인명·입출력·조립 판정 후보는 `docs/plan/UNITS.md`가 정본이다.
+- 그 밖의 단위: 화면 `app.py`(단위 A2), 프롬프트·모델 설정(단위 I9), 런타임 스킬·OpenShell 정책·샌드박스 이미지·키 주입 설정·위반 시험(단위 F3~F7), 국가 코드 대응표(단위 G3), 평가 자료 도구 `eval/datagen/`(단위 V2·V4·V5), 독립 채점기 `eval/scorer/`(단위 C1~C4).
 
 ### 10.3 파일 소유
 
-- D 소유: `src/tradesentry/ingest.py`, `metrics.py`, `dal.py`, `data/`, `configs/collection_plan.json`, 평가 자료 생성 스크립트와 정답표, 독립 채점기
-- M 소유: `tools.py`, `workflow.py`, `policy.py`, `validator.py`, `reports.py`, `grouping.py`, 모델·NAT·OpenShell 설정, 프롬프트, 런타임 스킬, `evaluation.py`, `app.py`
-- 공동: `docs/`, `tests/`
+- D 소유: `src/tradesentry/ingest.py`, 패키지 `contract/`·`snapshot/`·`dal/`·`metrics/`, `data/`, `configs/collection_plan.json`, 평가 자료 도구 `eval/datagen/`과 정답표, 독립 채점기 `eval/scorer/`
+- M 소유: 패키지 `policy/`·`grouping/`·`tools/`·`workflow/`·`reports/`·`validator/`·`evaluation/`·`approval/`·`cli/`, 모델·NAT·OpenShell 설정, 프롬프트, 런타임 스킬, `app.py`
+- 공동: `docs/`, `tests/`, 패키지 `runlog/`·`units/`, 도메인 출력 `outputs/`(커밋 안 함)
 - 소유 트랙이 아닌 에이전트는 읽기만 한다.
-- `approval.py`, `cli.py`는 §10.1 표에 따라 M 소유다. 정책 수치 `configs/policy_v1.json`은 D가 제안하고 사용자가 승인한다.
+- 정책 수치 `configs/policy_v1.json`은 D가 제안하고 사용자가 승인한다. 단위별 소유는 `docs/plan/UNITS.md` §3에 있다.
 
 ### 10.4 협업 규칙 요약
 
@@ -932,8 +950,8 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 - **D → M 인수 조건**(넘겨받는 쪽이 확인하는 완료 기준)
   - 인수물마다 `schema_version=1` 표시가 있어야 한다.
   - 자료 계약 검사 명령이 통과해야 한다.
-  - 자료 접근층(`dal.py`)으로 읽혀야 한다.
-  - `metrics.py`가 oracle A/B/C를 재현해야 한다.
+  - 자료 접근층(`dal/` 패키지)으로 읽혀야 한다.
+  - `metrics/` 패키지가 oracle A/B/C를 재현해야 한다.
   - 인수물마다 검증 명령과 종료 코드가 PR에 기록돼 있어야 한다.
   - 인수 조건을 못 채운 인수물은 M이 받지 않고 D에게 돌려보낸다.
 - **공용 약속 변경 = 사용자 승인**(공용 약속: 두 트랙이 함께 기대는 형식과 값)
@@ -954,7 +972,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 
 ### 10.5 S0 앱 스캐폴딩과 외부 자문
 
-- S0는 구현 단계의 첫 작업 단위다. 대상은 디렉터리·패키지 구조, 가상환경과 lock, 설정 파일 뼈대, CLI 진입점, 시험 배치다.
+- S0는 구현 단계의 첫 작업 단위다. 대상은 디렉터리·패키지 구조, 가상환경과 lock, 설정 파일 뼈대, CLI 진입점, 시험 배치다. 단위 표(`docs/plan/UNITS.md`)에 따라 단위 파일 뼈대, 단위 등록부와 공통 실행기, 골든 시험(고정 입력과 기대 출력 한 쌍으로 단위 출력을 확인하는 시험) 틀, 경계 시험(허용 밖 import가 없는지 import 문만 읽어 확인하는 시험)도 만든다.
 - S0는 **외부 자문 체크포인트**다. 실행자는 뼈대를 만들기 전에 `docs/plan/SCAFFOLD_BRIEF.md`를 사용자에게 제시하고, 사용자가 외부 자문 결과(또는 "반영 없음")를 전해 줄 때까지 스캐폴딩 생성을 **멈춘다**.
 - 자문 내용은 반영 여부와 이유를 결정 기록에 남긴다. 공용 약속을 바꾸는 자문은 §10.4의 사용자 승인 절차를 거친다.
 - X1(§5.3)은 S0 자문 대기와 병렬로 진행할 수 있다.
@@ -1001,7 +1019,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | 8 | `real_sealed` 경보나 유효 보고서가 모자랄 수 있다 | A등급 주장 조건. 미달이면 보류 | `[추론]`, §9.4 |
 | 9 | 40건 신뢰구간이 넓다(50% 부근 ±14.8pp) | 작은 차이를 주장하지 않는다 | `[사실: 인계 문서 §5]`, §9.5 |
 | 10 | 같은 OS 사용자로 도는 개발 에이전트의 봉인 폴더 열람을 기술적으로 막지 못한다 | 지시와 기록으로 관리, 해시로 변조 확인, 한계를 문서·제출서에 명시 | §4.5 |
-| 11 | `eval/dev/dev20/`에 입력과 정답표가 함께 있다 | 샌드박스에는 입력만 들인다. 반입 방식은 X1 뒤 확정 | `[미확인]`, §4.3 |
+| 11 | `eval/dev/dev20/`에 입력과 정답표가 함께 있다 | 샌드박스에는 입력만 들인다. 반입 방식은 로드맵 MT5에서 확정 | `[미확인]`, §4.3 |
 | 12 | 동결·실행이 늦어진다(120회 약 10시간) | 봉인 채점 시작 마감(목표 2026-09-26(토) 14:00, 늦어도 2026-09-27(일) 06:00), 끝난 만큼만 보고 | §9.7 |
 | 13 | `g1`이 동결 시한까지 안 된다 | `g0` + 사실 표기 | §8.4 |
 | 14 | 경보가 많아(771/1,267) 탐지 임계값이 크게 바뀔 수 있다 | 탐지 임계값 조정 전 분할, `real_dev`만으로 조정 | `[사실: 2026-09-23(수) v2 조회]`, §2.3·§9.1 |
@@ -1189,7 +1207,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | Landlock | 리눅스 커널의 파일시스템 접근 제한 기능 |
 | seccomp | 리눅스 커널의 시스템 호출 필터 |
 | L7 규칙 | HTTP method·path·query 수준의 허용 규칙 |
-| prefix | 경로의 앞부분. OpenShell 파일시스템 정책은 가장 긴 일치 prefix로 판정한다 |
+| prefix | 경로의 앞부분. 03 문서는 OpenShell 파일시스템 정책을 가장 긴 일치 prefix로 판정한다고 적는다. 이 판정은 DLI 코스 평가 함수의 모형이고, 겹치는 경로의 실제 집행은 자료 계약 §10.3 "읽기 전용 입력"을 따른다(§4.3) |
 | credential placeholder rewrite | 샌드박스 프로그램에는 자리표시 문자열만 두고, 샌드박스 안 감독 프로세스의 정책 프록시가 요청을 내보낼 때 실제 키로 바꾸는 방식 |
 | `inference.local` | 샌드박스가 보는 추론 주소. 게이트웨이가 설정된 provider 1개·모델 1개로 전달한다 |
 | 게이트웨이 | 샌드박스의 정책과 provider 설정을 보관하고 샌드박스에 내려보내는 OpenShell 제어면. 요청에 정책을 적용하고 전달하는 일은 감독 프로세스의 정책 프록시가 한다 |

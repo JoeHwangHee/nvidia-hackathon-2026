@@ -14,7 +14,7 @@
 | 스냅샷·키 보호, 비밀값·로컬 경로 검사 | 같은 문서 §10 |
 | 의존성 관리: Python 3.12 가상환경과 uv(파이썬 패키지·가상환경 관리 도구), 버전 고정 파일(lock), NAT(NVIDIA 에이전트 실행 추적·평가 도구 모음) 버전 고정, 수집기는 표준 라이브러리만 | `docs/plan/DEV_PLAN.md` §3.5, `docs/plan/SCAFFOLD_BRIEF.md` §4.1 |
 | 코드 규약: 정책 수치·스냅샷 경로를 코드에 박지 않기, Decimal(반올림 오차 없이 십진 소수를 다루는 파이썬 수 형식) 사사오입, 모델 입력 통제, 예산의 코드 강제, 상태 분리, 보고서 문구 | `docs/plan/SCAFFOLD_BRIEF.md` §4.10, `docs/rules/DATA_CONTRACT_V1.md` §11.3 |
-| 채점기의 독립성: 런타임 모듈을 import하지 않고, `metrics.py` 구현자와 다른 실행자가 만든다 | `docs/plan/ROADMAP.md` §2.3(DT8), `docs/eval/RULEBOOK.md` B3 |
+| 채점기의 독립성: 런타임 패키지(`src/tradesentry/` 아래 전부)와 평가 자료 도구 `eval/datagen/`을 직접이든 간접이든 import하지 않고, 지표 패키지 `metrics/`의 단위 구현자와 다른 실행자가 만든다 | `docs/plan/ROADMAP.md` §2.3(DT8), `docs/eval/RULEBOOK.md` B3 |
 | 실행자 선택(Claude 보조 에이전트, Codex headless(OpenAI의 코딩 에이전트 CLI를 대화 없이 명령으로 돌리는 방식), 도메인 검토자) | `docs/rules/AGENT_OPS.md` §1 |
 | Codex 명령 형식, 넘기지 않는 것, 제한 시간, 결과 판단 | 같은 문서 §2 |
 | 작업 성격별 검토자, 판정 형식, 수정·재검토 횟수 | 같은 문서 §3·§4 |

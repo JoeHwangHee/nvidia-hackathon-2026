@@ -87,8 +87,8 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 - 용도
   - 샌드박스 생성, 정책 적용, 라이브 정책 확인(`openshell policy get <agent> --full`) `[사실: 03-openshell-policy-yaml-구조.md §6.1]`.
   - 감사 로그 수집: `openshell logs`로 허용·차단 이벤트를 모은다. 모든 allow/deny를 감사 로그로 기록한다는 근거는 `NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md` §8-2에, `openshell logs`의 이벤트 예(`HTTP:* DENIED`, `CONFIG:LOADED` 등)는 `HSGATE_R3_NVIDIA_STACK_CHECK.md` §3에 있다 `[사실]`. 감사 증거는 `openshell logs`의 허용·차단 이벤트와 앱 실행 기록이다.
-  - 의도적 위반 시험: 정답 경로 읽기 시도, 비허용 호스트 전송, 비허용 바이너리, 키 조회를 각각 시험한다. 예측과 실측, 종료 코드, 로그 근거를 `artifacts/openshell/violation_tests.md`(예측·실측 대조표)와 `artifacts/openshell/logs/`(감사 로그 발췌)에 남긴다.
-  - 공식 채점 대상 실행 전용 샌드박스: 정적 계층은 생성 때 고정되므로, 봉인 입력은 공식 채점 대상 실행 전용 샌드박스를 새로 만들어 넣는다. 넣는 방식은 X1 뒤에 정한다 `[미확인]`.
+  - 의도적 위반 시험: 정답 경로 읽기 시도, 비허용 호스트 전송, 비허용 바이너리, 키 조회를 각각 시험한다. 예측과 실측, 종료 코드, 로그 근거를 위반 시험 실행 폴더(`outputs/openshell_violation_tests-{시각}/`. `{시각}`은 시험을 시작한 KST 12자리 시각 `yymmddhhmmss`)에 시험표 `openshell_violation_tests-{시각}.md`(예측·실측 대조표), 감사 로그 발췌(`.txt`), 라이브 정책 조회 본문(`.yaml`)으로 남긴다. 한 시험 실행이 샌드박스 여럿을 다루면 폴더 안 파일 이름은 단위 표 `docs/plan/UNITS.md`의 단위 F7 행에 고정한다(자료 계약 §10.3 N7). 이 결과 파일만 같은 이름의 폴더 `artifacts/openshell/openshell_violation_tests-{시각}/`로 복사해 커밋한다(증거 복사: 실행 폴더와 같은 이름의 폴더에 커밋 증거 파일만 복사해 커밋하는 일, `docs/rules/DATA_CONTRACT_V1.md` §10.3).
+  - 공식 채점 대상 실행 전용 샌드박스: 정적 계층은 생성 때 고정되므로, 봉인 입력은 공식 채점 대상 실행 전용 샌드박스를 새로 만들어 넣는다. 넣는 방식은 로드맵 MT5에서 정한다 `[미확인]`.
 - 해석 규칙: 명령 실패라는 사실만으로는 어느 장치가 막았는지 알 수 없다. 종료 코드와 감사 로그 행을 함께 남긴다 `[사실: 03-openshell-policy-yaml-구조.md §6.6]`. 정책이 어떤 목적지를 열어 두었다는 것만으로 안전을 주장하지 않는다.
 - 삭제 시험 답: 정확도 지표는 변하지 않는다. 위반 시험 명령과 로그 수집 절차를 매번 따로 찾아야 해서 규범 3e(정책 위반 시험 결과) 증거를 만드는 시간이 늘어난다 `[추론]`.
 
@@ -172,7 +172,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
   - `2e`: 점수가 아니라 CAP-3(개인 편의류로 판정되면 축 2 점수의 상한을 1점으로 묶는 규칙) 발동 여부 표시다. 축 2(채점 규범의 두 번째 평가 축: 실용성·산업가치·혁신성) 평균의 분모에 넣지 않는다.
   - CAP-1~3(점수 상한 규칙), TIE 규칙(동점 처리), 판정 밴드(총점 구간별 판정), 채점 규범 §7 냄새 목록(좋은 신호·나쁜 신호를 빠르게 가리는 목록)
   - 컴포넌트 삭제 시험과 숫자 등급(정답을 누가 만들었는지와 정답이 개선 과정에 노출됐는지로 매기는 A~D 신뢰 등급). Agent Skills의 삭제 시험 답은 이 사전 §2.1·§3.4를 근거로 쓴다.
-- 출력: `artifacts/scorecard/<YYYY-MM-DD>-scorecard.md`(커밋).
+- 출력: 회차마다 새 실행 폴더에 `scorecard-{시각}.md`를 쓰고, 그 파일만 같은 이름의 폴더 `artifacts/scorecard/scorecard-{시각}/`로 복사해 커밋한다(증거 복사).
 - 언제: 2026-09-25(금) MVP 시험 때 첫 결과를 낸다(MVP 합격 체크리스트의 "자기채점 스킬 1회 결과 파일" 항목). 2026-09-27(일)에 다시 채점하고, 2026-09-28(월) 제출 전에 최종 채점한다.
 - 경계 규칙
   - 증거를 찾지 못한 지표는 앵커 정의상 낮은 점수를 준다. 추정해서 올리지 않는다.
@@ -193,10 +193,10 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
   - NemoClaw 에이전트와 런타임 `tradesentry` 스킬을 거치지 않는다.
   - 모드는 `checklist | agent | full | freeform`이다. 모든 모드에 같은 자료·도구·정책·한도·재시도 규칙을 쓴다.
   - 정답표와 봉인 사례 목록은 샌드박스에 들이지 않는다.
-  - 실행 기록은 `artifacts/runs/<run_id>/`에 남긴다(커밋하지 않음). 실패·미실행·timeout·invalid는 분모에 남긴다.
+  - 실행 기록은 실행 폴더 `outputs/{실행명}/`(봉인 묶음은 `outputs/sealed/{실행명}/`)에 남긴다(커밋하지 않음). 실행명은 시각이 붙지 않은 실행 이름에 시작 시각을 붙인 `{실행 이름}-{yymmddhhmmss}`다(`docs/rules/DATA_CONTRACT_V1.md` §10.3). 실패·미실행·timeout·invalid는 분모에 남긴다.
 - 채점(정답 대조 채점)
   - 샌드박스 밖에서 독립 채점기 `eval/scorer/`(런타임 모듈을 import하지 않고 따로 만든 채점 프로그램)로 한다: `python -m eval.scorer --run <run_dir>`.
-  - 결과는 `artifacts/eval/<run_id>/`(`results.jsonl`, `claims.jsonl`, `summary.md`)에 커밋한다.
+  - 결과는 채점 실행 폴더 `outputs/score-{시각}/`에 쓰고(`scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`), 이 채점기 출력만 같은 이름의 폴더 `artifacts/eval/score-{시각}/`로 복사해 커밋한다(증거 복사).
 - 봉인 자료
   - 봉인 입력은 공식 채점 대상 실행 전용 샌드박스를 새로 만들어 읽기 전용으로 넣는다. 정답표는 어떤 샌드박스에도 넣지 않고 샌드박스 밖 채점기만 읽는다.
   - 채점 전에 해시를 다시 대조한다. 봉인 해시와 실제 파일이 다르면 그 묶음의 채점을 무효로 하고 사용자에게 올린다.
