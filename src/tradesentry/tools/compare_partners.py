@@ -22,9 +22,12 @@ docs/plan/DEV_PLAN.md §6.5, 자료 계약 docs/rules/DATA_CONTRACT_V1.md §2.3.
 봉투
 - metrics: 비교국마다 지표 단위 X1의 r_U와 X2의 d_s(분모는 대상국과 같은 `ALL` 합계). 사례당 토큰 한도 때문에 단가·
   점유율 수준 값(U·s·V)은 싣지 않는다(r_U·d_s의 inputs에 금액·중량이 있다).
-- comparability: {"grouping_version", "denominator": {"partner": "ALL", "months": [{month, observation_status}]},
-  "peers_allowed": [허용 비교국], "peers": [{"partner", "peer_rank", "months": [{"month", "observation_status",
-  "amount_zero"}]}]}. peers는 조회한 비교국마다 기준월·비교월의 부모 HS6 관측 상태다. amount_zero는 값이 있는 달에서
+- comparability: {"grouping_version", "comparable", "issues", "denominator": {"partner": "ALL", "months": [{month,
+  observation_status}]}, "peers_allowed": [허용 비교국], "peers": [{"partner", "peer_rank", "months": [{"month",
+  "observation_status", "amount_zero"}]}]}.
+  comparable은 허용 비교국이 하나라도 있으면 참이다. 없으면 거짓이고 issues에 "no_allowed_peers"를 적는다(비교를 수행하지
+  못했다는 명시 표시. 비교 대상 표를 적재하지 않은 빌드이거나 grouping_version이 틀린 경우다. 오류 표시 없는 빈 봉투를
+  "비교 완료"로 옮기지 않게). 조회한 비교국의 자료가 모두 빠진 경우는 comparable이 참이고, peers의 관측 상태로 알린다. peers는 조회한 비교국마다 기준월·비교월의 부모 HS6 관측 상태다. amount_zero는 값이 있는 달에서
   금액이 0인가(수입 0 명시)이고, 값이 없으면 null이다. 무거래(수입 0 명시, CONFIRMED_NO_TRADE)는 비교를 마친 것으로,
   빠진 자료(NOT_COLLECTED 등)만 미완료로 볼 수 있게 남긴다(그 판단은 조립 AS2와 판정 정책이 한다).
 - evidence_ids: 허용 비교국의 비교 대상 표 행, 지표의 근거, 빠진 자료. missingness: 조회한 비교국의 부모 행과 분모의
@@ -39,6 +42,7 @@ from tradesentry.tools import check_comparability as common
 
 TOOL = "compare_partners"
 MAX_PARTNERS = 5
+NO_ALLOWED_PEERS = "no_allowed_peers"  # comparability.issues 값(이 단위가 정했다)
 
 
 def _partners_problem(value: object) -> str | None:
@@ -94,6 +98,8 @@ def _body(snap: dal.Snapshot, request: dict, started: int) -> dict:
         missing += parent.missing
     comparability = {
         "grouping_version": grouping,
+        "comparable": bool(allowed),
+        "issues": [] if allowed else [NO_ALLOWED_PEERS],
         "denominator": {"partner": types.ALL_PARTNER,
                         "months": [{"month": v["month"], "observation_status": v["observation_status"]}
                                    for v in world_values]},

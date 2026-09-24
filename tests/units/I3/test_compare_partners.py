@@ -91,10 +91,14 @@ class ComparePartnersTest(unittest.TestCase):
     def test_grouping_version_selects_the_peer_table(self):
         g1 = self.run_tool(grouping="g1")
         self.assertEqual(g1["comparability"]["peers_allowed"], ["CN"])
-        none = self.run_tool(grouping="g9")
-        self.assertEqual((none["comparability"]["peers_allowed"], none["metrics"]), ([], []))
-        other = self.run_tool(partner="CN")
-        self.assertEqual(other["comparability"]["peers"], [])
+        self.assertEqual((g1["comparability"]["comparable"], g1["comparability"]["issues"]), (True, []))
+
+    def test_no_allowed_peers_is_marked_not_an_empty_success(self):
+        for out in (self.run_tool(grouping="g9"), self.run_tool(partner="CN")):
+            comp = out["comparability"]
+            self.assertEqual((comp["peers_allowed"], comp["peers"], out["metrics"]), ([], [], []))
+            self.assertEqual((comp["comparable"], comp["issues"]), (False, [compare_partners.NO_ALLOWED_PEERS]))
+            self.assertIsNone(out["retryable_error"])  # 모델이 고쳐 다시 부를 수 있는 오류가 아니다
 
     def test_grouping_version_is_required(self):
         with self.assertRaises(common.ToolError):
