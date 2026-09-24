@@ -1,6 +1,6 @@
 ---
 name: tradesentry-scorecard
-description: TradeSentry 저장소를 평가 룰북 docs/eval/RULEBOOK.md의 Part A(팀 채점 규범 SCORING_GOLDEN_RULE.md를 TradeSentry 증거로 풀어 쓴 자기채점 규칙)로 채점하는 평가 스킬 ①이다. 규범 G1~G6 하드 게이트, 채점 지표 20개(0/1/3/5만)와 2e 표시, CAP 규칙과 판정 밴드, 가장 낮은 축 2개와 보강안, 컴포넌트 삭제 시험 답을 판정마다 근거 한 줄과 증거 경로를 붙여 회차마다 새 실행 폴더(scorecard-{시각})에 결과 파일로 남기고 artifacts/scorecard/ 아래로 승격해 커밋한다. 2026-09-25(금) MVP 시험 뒤, 룰북 RB-1 동결 뒤인 2026-09-27(일) 결과 정리 때, 2026-09-28(월) 제출 전 최종 채점 때, 그리고 자기채점·점수표를 요청받을 때 쓴다. Self-scores the TradeSentry repository against RULEBOOK Part A, recording a one-line rationale and an evidence path for every verdict, and is used after the MVP test, after the RB-1 rulebook freeze, before final submission, and whenever a self-score or scorecard is requested.
+description: TradeSentry 저장소를 평가 룰북 docs/eval/RULEBOOK.md의 Part A(팀 채점 규범 SCORING_GOLDEN_RULE.md를 TradeSentry 증거로 풀어 쓴 자기채점 규칙)로 채점하는 평가 스킬 ①이다. 규범 G1~G6 하드 게이트, 채점 지표 20개(0/1/3/5만)와 2e 표시, CAP 규칙과 판정 밴드, 가장 낮은 축 2개와 보강안, 컴포넌트 삭제 시험 답을 판정마다 근거 한 줄과 증거 경로를 붙여 회차마다 새 실행 폴더(scorecard-{시각})에 결과 파일로 남기고 artifacts/scorecard/ 아래로 증거 복사해 커밋한다. 2026-09-25(금) MVP 시험 뒤, 룰북 RB-1 동결 뒤인 2026-09-27(일) 결과 정리 때, 2026-09-28(월) 제출 전 최종 채점 때, 그리고 자기채점·점수표를 요청받을 때 쓴다. Self-scores the TradeSentry repository against RULEBOOK Part A, recording a one-line rationale and an evidence path for every verdict, and is used after the MVP test, after the RB-1 rulebook freeze, before final submission, and whenever a self-score or scorecard is requested.
 ---
 
 # tradesentry-scorecard — 룰북 Part A 자기채점
@@ -36,7 +36,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 - **자료 묶음**: `controlled_fixture_v0`(개발용 합성 시험자료), `dev20`(공개 합성 개발 자료 20건), `holdout40`(봉인한 합성 평가 자료 40건), `real_dev`(실자료 시계열 중 개발·조정용 묶음), `real_sealed`(실자료 시계열 중 봉인해 대표 지표 채점에만 쓰는 묶음). 봉인은 평가 자료를 저장소 밖에 두고 sha256 해시(파일 내용의 지문. 내용이 바뀌면 값이 달라진다) 목록만 커밋해 개발 과정에 노출되지 않게 관리하는 일이다.
 - **모드**: `checklist`(모델 없는 고정 체크리스트), `agent`(Critic 없는 Nemotron), `full`(전체 TradeSentry), `freeform`(사실 주장의 값을 모델이 직접 쓰는 대표 지표 기준선). 기준선은 비교 기준이 되는 방식이다.
 - **대표 지표 / 보조 지표**: 제출서에서 내세우는 숫자인 `real_sealed`의 실자료 사실 주장 오류율(`freeform` 대 `full`) / `holdout40`의 근거 충족 처리정확도.
-- **이름과 출력 위치**(자료 계약 §10.3 이름·출력 규칙): 실행 하나가 폴더 하나(`outputs/{실행명}/`)에 도메인 출력을 쌓는다. 실행명(`run_id`)은 시각이 붙지 않은 실행 이름에 그 실행이 시작한 KST 24시간 12자리 시각 `yymmddhhmmss`를 붙인 것이고, 이 스킬은 시각 자리를 `{시각}`으로 적는다. 파일 이름은 `{도메인명}-{시각}.{확장자}`이고, 도메인명은 단위(혼자 실행하고 시험할 수 있게 파일 하나로 만든 가장 작은 구현 조각)마다 붙인 출력용 이름이다. `outputs/`는 커밋하지 않는다. 커밋할 증거는 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 종류마다 정한 증거 파일만 복사해 커밋하며, 이 일을 승격이라 한다. 이 스킬의 실행 이름과 도메인명은 `scorecard`다.
+- **이름과 출력 위치**(자료 계약 §10.3 이름·출력 규칙): 실행 하나가 폴더 하나(`outputs/{실행명}/`)에 도메인 출력을 쌓는다. 실행명(`run_id`)은 시각이 붙지 않은 실행 이름에 그 실행이 시작한 KST 24시간 12자리 시각 `yymmddhhmmss`를 붙인 것이고, 이 스킬은 시각 자리를 `{시각}`으로 적는다. 파일 이름은 `{도메인명}-{시각}.{확장자}`이고, 도메인명은 단위(혼자 실행하고 시험할 수 있게 파일 하나로 만든 가장 작은 구현 조각)마다 붙인 출력용 이름이다. `outputs/`는 커밋하지 않는다. 커밋할 증거는 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 종류마다 정한 증거 파일만 복사해 커밋하며, 이 일을 증거 복사라 하고 그렇게 커밋한 폴더와 파일을 커밋 사본이라 한다. 이 스킬의 실행 이름과 도메인명은 `scorecard`다.
 
 ## 언제 쓰나
 
@@ -78,9 +78,9 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 
 | 무엇 | 경로·명령 |
 |---|---|
-| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(`scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`). 채점 실행 폴더 `outputs/score-{시각}/`의 채점기 출력만 승격한 것이다 |
+| 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(`scorer_summary-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`). 채점 실행 폴더 `outputs/score-{시각}/`의 채점기 출력만 증거 복사한 커밋 사본이다 |
 | 실행 기록(커밋 안 함, 로컬에만 있음) | 실행 폴더 `outputs/{실행명}/`(trace JSONL, NAT 프로파일 결과 등 도메인 출력. 봉인 묶음 실행은 `outputs/sealed/{실행명}/`). trace는 실행 중 호출과 응답을 단계별로 남긴 기록이고, JSONL은 JSON 하나를 한 줄에 적는 기록 파일이며, 프로파일 결과는 단계별 시간·토큰 측정 결과다 |
-| OpenShell | `configs/openshell/policy.yaml`, OpenShell 증거 폴더 `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일을 승격한 것. 시험표 `openshell_violation_tests-{시각}.md`는 예측·실측 대조표이고, 같은 폴더에 감사 로그 발췌 `.txt`와 라이브 정책 조회 본문 `.yaml`이 있다). 시험을 돌릴 때마다 새 폴더가 생긴다. X1 임시 시험 기록은 옛 이름 위치에 있고 규범 G2 증거로 함께 읽는다(자료 계약 §10.3) |
+| OpenShell | `configs/openshell/policy.yaml`, OpenShell 증거 폴더 `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일을 증거 복사한 커밋 사본. 시험표 `openshell_violation_tests-{시각}.md`는 예측·실측 대조표이고, 같은 폴더에 감사 로그 발췌 `.txt`와 라이브 정책 조회 본문 `.yaml`이 있다). 시험을 돌릴 때마다 새 폴더가 생긴다. X1 임시 시험 기록은 옛 이름 위치에 있고 규범 G2 증거로 함께 읽는다(자료 계약 §10.3) |
 | NAT | `configs/nat/workflow.yml` |
 | 스킬 | `skills/tradesentry/SKILL.md`, `skills/tradesentry-scorecard/SKILL.md`, `skills/tradesentry-eval/SKILL.md`, 스킬 사전 상태 열 |
 | 채점기와 골든셋(정답이 정해진 평가 자료) | `eval/scorer/`(실행 `python -m eval.scorer --run <run_dir>`), `eval/dev/oracle_ABC.json`, `eval/dev/dev20/`, `eval/sealed_manifest.json` |
@@ -126,7 +126,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
    - 규범 G1의 PASS 증거 ③("`python -m eval.scorer --run <run_dir>`로 다시 계산된다")은 ②의 숫자, 곧 `freeform`과 `full`의 사실 주장 오류율을 다시 계산하는 일이다(룰북 A1 규범 G1 행). 그래서 `real_dev`의 run_dir(채점기에 넘기는 평가 묶음 실행 폴더 `outputs/{실행명}/`, 자료 계약 §10.1)에서만 확인한다. 채점기로 두 모드의 사실 주장 오류율을 다시 계산하고, 종료 코드와 요약(`artifacts/eval/score-{시각}/scorer_summary-{시각}.md`) 값과의 일치 여부를 적는다. 값이 다르면 ③을 충족하지 못한 것이다. `real_dev`의 run_dir을 찾지 못하면 찾아본 경로를 적는다.
      - `dev20` 재계산은 ③의 증거가 아니다. `dev20`은 `freeform`을 돌리지 않기 때문이다(룰북 B2).
      - `holdout40`·`real_sealed`에는 돌리지 않는다. 재채점(이미 채점한 결과를 다시 채점하는 일)이 되어 룰북 B3-3 조건 7과 B6 "한 번만 채점"에 어긋나고, 채점기가 봉인 정답표를 읽기 때문이다.
-     - 채점기 출력으로 커밋된 평가 결과를 덮어쓰지 않는다. 다시 계산한 값은 비교에만 쓰고, 재계산으로 새로 생긴 채점 실행 폴더(`outputs/score-{시각}/`)는 승격하지 않는다.
+     - 채점기 출력으로 커밋된 평가 결과를 덮어쓰지 않는다. 다시 계산한 값은 비교에만 쓰고, 재계산으로 새로 생긴 채점 실행 폴더(`outputs/score-{시각}/`)는 증거 복사하지 않는다.
    - 종료 코드는 명령 바로 뒤에서 `$?`로 읽는다. 파이프(`|`)로 잇지 않는다. 출력 문장만 보고 성공을 추정하지 않는다(`docs/rules/AGENT_OPS.md` §7.3).
 4. 룰북 A1 표 아래의 주석과 다음 확인 방법을 적용한다.
    - 규범 G4의 "심사위원이 GitHub만 보고" 조건은 원격 저장소가 비공개인 동안 확인할 수 없다 `[미확인]`. 공개 방식 결정(2026-09-28(월) 오전) 전에는 로컬 재현으로 판정하고 그 사실을 근거 줄에 적는다.
@@ -236,7 +236,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 - [ ] 점수는 0 / 1 / 3 / 5 / 0(무효)만 있다. 2와 4가 없고, `4d`에는 1이 없다.
 - [ ] 모든 행에 근거 한 줄과 증거 경로·명령이 있다. "증거 없음" 행에는 찾아본 경로·명령이 있다. 근거가 빈 행은 무효로 바꾸고 다시 계산했다.
 - [ ] 규범 G4의 시험 명령에 종료 코드와 출력에 찍힌 시험 수가 함께 있다.
-- [ ] 채점기를 돌렸다면 `real_dev`의 run_dir에서만 돌려 `freeform`·`full` 사실 주장 오류율을 다시 계산했고, 커밋된 평가 결과를 덮어쓰지 않았으며, 재계산으로 생긴 채점 실행 폴더를 승격하지 않았다.
+- [ ] 채점기를 돌렸다면 `real_dev`의 run_dir에서만 돌려 `freeform`·`full` 사실 주장 오류율을 다시 계산했고, 커밋된 평가 결과를 덮어쓰지 않았으며, 재계산으로 생긴 채점 실행 폴더를 증거 복사하지 않았다.
 - [ ] 규범 G2와 `1b`의 샌드박스 증거는 요약 줄만이 아니라 같은 샌드박스의 정책 조회 기록과 대조한 것이다. 허용 증거를 앱 기록으로 대신했으면 근거 줄에 "허용 증거 출처: 앱 기록(`openshell logs` 행 없음)"이 있다.
 - [ ] (게이트가 모두 PASS일 때만) `3a`의 해석 주석에 문언 해석 점수가 있다.
 - [ ] (게이트가 모두 PASS일 때만) 축점수가 "합 / 분모 = 값" 꼴이고, CAP 적용 줄이 있다.
@@ -249,13 +249,13 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 1. 이 회차의 실행 폴더 `outputs/scorecard-{시각}/`를 새로 만들고 결과를 `outputs/scorecard-{시각}/scorecard-{시각}.md`에 쓴다. `{시각}`은 이 회차를 시작한 KST 시각(`yymmddhhmmss`)이다. 같은 이름의 폴더가 이미 있으면 덮어쓰지 않고 멈춘다(자료 계약 §10.3 N8). 한국어로 쓰고 식별자·경로·명령은 원형대로 둔다.
 2. 결과 파일에 비밀값·로컬 경로 검사(NVIDIA API 키 접두어, 공공데이터포털 서비스키 요청 파라미터, 로컬 절대경로를 찾는 검사. 실제 패턴 문자열은 검사 스크립트에만 두고 문서에는 적지 않는다)를 돌리고 종료 코드가 0인지 확인한다. 종료 코드는 머리 정보의 검사 줄에 적는다.
    - 검사 스크립트의 위치는 계획 경로·명령 표에 없다 `[미확인]`. 스크립트를 찾지 못하면 머리 정보의 검사 줄에 "미실행(검사 스크립트를 찾지 못함)"을 적고, 그 사실을 호출자에게 보고한다.
-3. 승격: 실행 폴더와 같은 이름의 폴더 `artifacts/scorecard/scorecard-{시각}/`를 만들고, 검사를 통과한 결과 파일 `scorecard-{시각}.md`만 복사해 커밋한다(계획 경로·명령 표의 "자기채점 결과(커밋)", 자료 계약 §10.3 N11). 스테이징은 `git add <파일>`로만 하고, `outputs/`는 커밋하지 않는다. 브랜치와 PR(변경을 main에 합치기 전에 검토받는 병합 요청)은 `docs/rules/AGENT_OPS.md` §5의 작업 단위 PR 규칙을 따른다.
+3. 증거 복사: 실행 폴더와 같은 이름의 폴더 `artifacts/scorecard/scorecard-{시각}/`를 만들고, 검사를 통과한 결과 파일 `scorecard-{시각}.md`만 복사해 커밋한다(계획 경로·명령 표의 "자기채점 결과(커밋)", 자료 계약 §10.3 N11). 스테이징은 `git add <파일>`로만 하고, `outputs/`는 커밋하지 않는다. 브랜치와 PR(변경을 main에 합치기 전에 검토받는 병합 요청)은 `docs/rules/AGENT_OPS.md` §5의 작업 단위 PR 규칙을 따른다.
 4. 회차마다 새 실행 폴더(`scorecard-{시각}`)를 만든다. 같은 날 다시 채점해도 앞선 회차의 폴더와 파일을 고쳐 쓰지 않는다(덮어쓰기 금지, 자료 계약 §10.3 N8). 같은 날 앞선 회차가 있으면 머리 정보의 "같은 날 앞선 채점" 줄에 그 폴더 이름을 적는다. 회차를 가리킬 때는 폴더 이름을 쓴다. 결과표나 보고에 적은 폴더 이름이 있으면 그것을, 없으면 `artifacts/scorecard/` 아래에서 시각이 가장 늦은 폴더를 최신 회차로 본다 `[DESIGN]`.
 5. 호출자에게 짧게 보고한다: 결과 파일 경로와 커밋 해시, 게이트 결과(FAIL이면 FAIL 게이트와 해소 조건), 총점과 판정 밴드, 가장 낮은 축 2개, 비밀값·로컬 경로 검사의 종료 코드 또는 미실행 사실.
 
 ## 출력
 
-- 경로: `outputs/scorecard-{시각}/scorecard-{시각}.md`에 쓰고, 이 결과 파일만 같은 이름의 폴더 `artifacts/scorecard/scorecard-{시각}/`로 복사해 커밋한다(승격). 계획 경로·명령 표의 "자기채점 결과(커밋)"이며 이름은 조정값이다. 실행 이름과 도메인명은 `scorecard`이고(자료 계약 §10.3 N5), `{시각}`은 이 회차를 시작한 KST 시각 `yymmddhhmmss`다. 양식 머리 첫 줄의 `<YYYY-MM-DD>`는 채점한 날짜(KST)다.
+- 경로: `outputs/scorecard-{시각}/scorecard-{시각}.md`에 쓰고, 이 결과 파일만 같은 이름의 폴더 `artifacts/scorecard/scorecard-{시각}/`로 복사해 커밋한다(증거 복사). 계획 경로·명령 표의 "자기채점 결과(커밋)"이며 이름은 조정값이다. 실행 이름과 도메인명은 `scorecard`이고(자료 계약 §10.3 N5), `{시각}`은 이 회차를 시작한 KST 시각 `yymmddhhmmss`다. 양식 머리 첫 줄의 `<YYYY-MM-DD>`는 채점한 날짜(KST)다.
 - 양식: 룰북 A3 "자기채점 결과 파일 양식"을 바탕으로 한다. 룰북 양식의 절 제목, 칸 이름, 머리 첫 줄은 바꾸지 않는다. 이 스킬이 덧붙인 것은 다음과 같다 `[DESIGN]`.
   - 머리 정보 네 줄: 커밋되지 않은 변경, 같은 날 앞선 채점, NemoClaw 대체 경로, 비밀값·로컬 경로 검사
   - "해소 조건" 절(게이트 FAIL이 있을 때만): 룰북 Part A "적용의 한계"가 남기라고 한 해소 조건을 두는 자리
@@ -454,4 +454,4 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 - **실행 이름 / 실행명(`run_id`)**: 시각이 붙지 않은 실행의 이름(예: `scorecard`, `evaluate`, `score`) / 실행 이름에 시작 시각을 붙인 `{실행 이름}-{yymmddhhmmss}`. 실행 폴더 `outputs/{실행명}/`의 이름이다(자료 계약 §10.3 N5).
 - **`{시각}`**: 그 실행이 시작한 KST 24시간 12자리 시각 `yymmddhhmmss`.
 - **도메인명 / 도메인 출력(`outputs/`)**: 단위마다 붙인 출력용 이름(이 스킬은 `scorecard`) / 실행마다 폴더 하나에 쌓는 출력물. 커밋하지 않는다.
-- **승격**: 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 종류마다 정한 증거 파일만 복사해 커밋하는 일. 자기채점은 결과 파일 `scorecard-{시각}.md`만 `artifacts/scorecard/scorecard-{시각}/`로 복사한다. trace 같은 실행 기록 원본은 복사하지 않는다.
+- **증거 복사 / 커밋 사본**: 실행 폴더와 같은 이름의 폴더를 `artifacts/{종류}/` 아래에 만들고 종류마다 정한 커밋 증거 파일만 복사해 커밋하는 일 / 그렇게 커밋한 폴더와 파일. "승격"은 이 일에 쓰지 않는다(자료 계약 용어 설명). 자기채점은 결과 파일 `scorecard-{시각}.md`만 `artifacts/scorecard/scorecard-{시각}/`로 복사한다. trace 같은 실행 기록 원본은 복사하지 않는다.
