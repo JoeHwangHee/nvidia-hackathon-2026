@@ -283,6 +283,8 @@ class ModelModesTest(RunCaseBase):
         차례(버린 초안 없음, 모델 요청 2회)."""
         files, record, _, transport = self.run_ok(CASES["A"], "agent", script_for("A", "agent"))
         self.assertEqual((transport.payloads[0]["tool_choice"], "tools" in transport.payloads[1]), ("required", False))
+        # 10회차: 도구 차례 max_tokens는 tool_turn_max_tokens(1024), 초안 차례는 max_tokens(8192)
+        self.assertEqual((transport.payloads[0]["max_tokens"], transport.payloads[1]["max_tokens"]), (1024, 8192))
         self.assertEqual((record["review_status_final"], record["model_requests"]), ("MONITOR", 2))
         phases = [e["data"]["phase"] for e in self.trace(files) if e["event"] == "state_change"]
         self.assertNotIn("draft_discarded", phases)
@@ -333,6 +335,34 @@ class ModelModesTest(RunCaseBase):
                 self.assertEqual((record["execution_status"], record["review_status_final"], record["signal_status"]),
                                  (cause_codes.COMPLETED, "MAINTAIN", {"unit_value": "MAINTAIN", "share": N}))
                 self.assertEqual(record["model_requests"], len(transport.payloads))
+
+    def test_disallowed_status_combination_is_blocked_in_full_and_recorded_in_freeform(self):
+        """10회차(평 권고 C): 허용되지 않는 상태 조합(단가 MONITOR인데 사례 MAINTAIN)을 가짜 모델이 내면 full은 수정 1회
+        뒤에도 검증기가 막아 INVALID(VALIDATOR_BLOCKED), freeform은 COMPLETED이고 검증기 사유를 기록만 한다."""
+        for mode in ("full", "freeform"):
+            with self.subTest(mode=mode):
+                bad = dict(draft_for("A", mode), review_status="MAINTAIN",
+                           signal_status={"unit_value": "MONITOR", "share": N})
+                script = [tools_answer("decompose_hs", "compare_partners"), draft_answer(bad),
+                          critic_answer(needs_revision=False)]
+                if mode == "full":
+                    script.append(draft_answer(bad))
+                transport = ScriptedTransport(script)
+                with mock.patch.object(dispatch, "run_case_transport", lambda config: transport):
+                    code, out, err = call(argv(CASES["A"], mode))
+                files = self.files(out)
+                record = self.read_json(files["runlog_run_record"])
+                checks = [e["data"] for e in self.trace(files) if e["event"] == "validator_result"]
+                codes = {f["code"] for c in checks for f in c["findings"]}
+                self.assertIn("STATUS_INCONSISTENT", codes)
+                if mode == "full":
+                    self.assertEqual((code, record["execution_status"], [e["code"] for e in record["errors"]]),
+                                     (1, "INVALID", [cause_codes.VALIDATOR_BLOCKED]))
+                else:
+                    report = self.read_json(files["reports_render_ko"])
+                    self.assertEqual((code, record["execution_status"], record["review_status_final"]),
+                                     (0, cause_codes.COMPLETED, "MAINTAIN"))
+                    self.assertIn("STATUS_INCONSISTENT", {f["code"] for f in report["validator_findings"]})
 
     def test_model_mode_keeps_c_type_expansion(self):
         _, _, report, _ = self.run_ok(CASES["C"], "agent", script_for("C", "agent"))

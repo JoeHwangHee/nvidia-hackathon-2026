@@ -90,5 +90,27 @@ class ProsePatternListTest(unittest.TestCase):
         self.assertEqual(missing, [])
 
 
+class FeedbackAndUnavailableTextTest(unittest.TestCase):
+    """AS2 10회차: 수정 지시의 막힌 산문 표현 나열, 참고값 계산 불가 안내(자료 부족 HOLD로 이끌지 않음)."""
+
+    def test_blocked_prose_is_listed_with_path_and_text(self):
+        findings = [{"check": "validator", "code": "PROSE_UNBACKED", "path": "narrative", "claim_id": None,
+                     "detail": "PT-6 표현 '변동이 없': 같은 보고서의 typed claim으로 뒷받침되지 않는다(룰북 B3-2)"},
+                    {"check": "validator", "code": "PROSE_UNBACKED", "path": "hypotheses[0]", "claim_id": None,
+                     "detail": "PT-1 표현 '50.0%': 같은 보고서의 typed claim으로 뒷받침되지 않는다(룰북 B3-2)"},
+                    {"check": "validator", "code": "NUMERIC_MISMATCH", "path": "claims[0].value", "claim_id": "c1",
+                     "detail": "값이 다르다"}]
+        content = investigator.feedback_message([], None, findings, {"requeries": 0, "model_requests": 3})["content"]
+        self.assertIn("[검증기가 막은 산문 표현] narrative: '변동이 없'; hypotheses[0]: '50.0%'. 이 표현이 든 문장을 지우거나",
+                      content)
+        self.assertIsNone(investigator.prose_fix_line(findings[2:]))
+
+    def test_unavailable_text_names_the_missing_lookup_and_is_not_a_hold_hint(self):
+        text = investigator.reference_unavailable_text(["compare_partners"])
+        self.assertIn("받지 못한 도구: compare_partners", text)
+        self.assertIn("이것은 자료 부족이 아니다", text)
+        self.assertNotIn("모자라면 HOLD", text)
+
+
 if __name__ == "__main__":
     unittest.main()

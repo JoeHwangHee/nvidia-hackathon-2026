@@ -110,6 +110,7 @@ class ModelSettings:
     request_cap_ms: int
     end_reserve_ms: int
     structured_output: str = "off"
+    tool_turn_max_tokens: int | None = None  # tool_choice required 차례의 max_tokens(없으면 max_tokens. AS2 ㉑)
 
 
 @dataclass(frozen=True)
@@ -165,7 +166,9 @@ def load_model_config(config_dir: Path | None = None, *, api_key_env: str | None
             backoff_factor=_int(retry["backoff_factor"], "retry.backoff_factor"),
             request_cap_ms=_int(timeouts["request_cap_ms"], "timeouts.request_cap_ms"),
             end_reserve_ms=_int(timeouts["end_reserve_ms"], "timeouts.end_reserve_ms"),
-            structured_output=structured)
+            structured_output=structured,
+            tool_turn_max_tokens=None if request.get("tool_turn_max_tokens") is None
+            else _int(request["tool_turn_max_tokens"], "request.tool_turn_max_tokens"))
         run_limits = RunLimits(**{key: _int(limits[key], f"limits.{key}") for key in LIMIT_KEYS})
     except (OSError, KeyError, TypeError, ValueError) as exc:
         if isinstance(exc, ConfigError):
@@ -378,10 +381,12 @@ class ModelClient:
     def build_payload(self, messages: list[dict], tools: list[dict] | None, json_output: bool = False,
                       tool_choice: str = "auto") -> dict:
         """요청 본문. 도구가 없으면 tools·tool_choice 키를 싣지 않는다. 구조화 출력(response_format json_object)은 설정이
-        "json_object"이고, 도구가 없고, 부르는 쪽이 json_output을 참으로 줄 때만 싣는다."""
+        "json_object"이고, 도구가 없고, 부르는 쪽이 json_output을 참으로 줄 때만 싣는다. tool_choice가 required인 도구 차례의
+        max_tokens는 설정 tool_turn_max_tokens(있을 때)다(도구 호출 응답은 짧다. 공백 반복 실측, AS2 ㉑)."""
         s = self.settings
+        cap = s.tool_turn_max_tokens if tools and tool_choice == "required" and s.tool_turn_max_tokens else s.max_tokens
         payload = {"model": s.model, "messages": messages, "temperature": s.temperature, "top_p": s.top_p,
-                   "max_tokens": max(1, min(s.max_tokens, self.budget.limits.tokens - self.budget.tokens_total)),
+                   "max_tokens": max(1, min(cap, self.budget.limits.tokens - self.budget.tokens_total)),
                    "stream": False, "chat_template_kwargs": {"enable_thinking": s.enable_thinking}}
         if tools:
             payload["tools"] = tools

@@ -91,8 +91,9 @@ BASIS_LABELS = {"composition_explained": "구성효과로 설명됨", "unexplain
 SIGNAL_LABELS = {"unit_value": "단가 신호(unit_value)", "share": "점유율 신호(share)"}
 REFERENCE_HEAD = "[규칙 계산 결과(참고값)] 공개 판정 규칙을 지금까지 받은 근거에 코드로 적용한 결과다: "
 REFERENCE_TAIL = " 이 값과 다르게 판정하려면 narrative에 그 반대 근거를 적는다."
-REFERENCE_UNAVAILABLE = ("[규칙 계산 결과(참고값)] 규칙 계산 불가: 판정에 필요한 근거가 없다{missing}. 받은 근거로 판정하고, "
-                         "모자라면 HOLD다.")
+REFERENCE_UNAVAILABLE = ("[규칙 계산 결과(참고값)] 규칙 계산 불가: 필수 조회 결과를 아직 받지 않았다{missing}. 이것은 자료 부족이 "
+                         "아니다. 허용된 인자로 그 도구를 부른다(compare_partners는 인자 없이 부르면 허용 비교국 전부). "
+                         "자료 부족(HOLD)은 조회한 자료가 비었을 때만이다.")
 
 
 def reference_text(signals: dict, statuses: dict, basis: dict) -> str:
@@ -318,6 +319,21 @@ def tool_result_message(call_id: str | None, tool: str, result: object) -> dict:
     return {"role": "tool", "tool_call_id": call_id or "", "name": tool, "content": dumps_for_model(result)}
 
 
+PROSE_FIX = ("[검증기가 막은 산문 표현] {items}. 이 표현이 든 문장을 지우거나, 같은 값·같은 방향의 지표 주장(claims)을 "
+             "인용하는 문장으로 바꾼다. 같은 표현을 다른 곳에 다시 쓰지 않는다.")
+QUOTED_RE = re.compile(r"'([^']*)'")
+
+
+def prose_fix_line(findings: list) -> str | None:
+    """검증기가 막은 산문 표현(PROSE_UNBACKED)을 경로와 글자 그대로 나열한 수정 지시(모든 모드 같음, AS2 ㉑)."""
+    items = []
+    for finding in findings or []:
+        if isinstance(finding, dict) and finding.get("code") == "PROSE_UNBACKED":
+            quoted = QUOTED_RE.search(str(finding.get("detail") or ""))
+            items.append(f"{finding.get('path')}: '{quoted.group(1) if quoted else ''}'")
+    return PROSE_FIX.format(items="; ".join(items)) if items else None
+
+
 def feedback_message(problems: list, critic: dict | None, findings: list | None, remaining: dict) -> dict:
     """수정 단계(1회) 지시. 스키마 문제·Critic 지적·검증기 findings를 받아 한 번만 고친다."""
     lines = ["[수정 단계] 아래 지적을 반영해 초안을 한 번만 고쳐 쓴다. 이번이 마지막 수정 기회다."]
@@ -327,6 +343,9 @@ def feedback_message(problems: list, critic: dict | None, findings: list | None,
         lines += ["[검수자(Critic) 지적]", dumps_for_model({k: critic.get(k) for k in ("findings", "requery")})]
     if findings:
         lines += ["[검증기 지적]", dumps_for_model(findings)]
+        prose = prose_fix_line(findings)
+        if prose:
+            lines.append(prose)
     lines += [f"[남은 횟수] 재조회 {remaining.get('requeries', 0)}회, 모델 요청 {remaining.get('model_requests', 0)}회",
               "재조회가 필요하면 도구로 하고, 아니면 고친 초안 JSON 하나만 답하라."]
     return {"role": "user", "content": "\n".join(lines)}
