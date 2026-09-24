@@ -1,11 +1,12 @@
 # MT5가 채운다. 이 파일로 샌드박스를 만들지 않는다.
+# 파싱되게 하려고 `version: 1` 한 줄만 넣지 않는다. 샌드박스는 항상 채운 정책 파일을 명시해서 만든다.
 #
 # OpenShell(에이전트를 격리해 돌리는 NVIDIA 샌드박스 런타임) 샌드박스 정책 자리다(단위 F4, 소유 M, 보안 검토).
 # S0(앱 뼈대)는 허용 규칙을 하나도 넣지 않은 빈 틀만 둔다. 이 파일에는 YAML 키가 없다.
 #
 # 채울 섹션(docs/plan/DEV_PLAN.md §4.2)
 #   정적 계층(샌드박스를 만들 때 고정): filesystem_policy, landlock, process
-#   동적 계층(실행 중 다시 불러올 수 있음): network_policies
+#   동적 계층(실행 중 다시 불러올 수 있음): network_policies, network_middlewares
 # 요건 (a)~(e)와 대응표: docs/plan/DEV_PLAN.md §4.1·§4.4
 # 샌드박스 종류(채점 대상 실행용·공식 채점 대상 실행 전용·시연용)별 파일 구성: 자문 명세서 Q7, 로드맵 MT5가 정한다
 # 키 값과 로컬 절대경로를 이 파일에 적지 않는다.
