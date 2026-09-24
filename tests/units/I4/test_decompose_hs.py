@@ -1,0 +1,79 @@
+"""단위 I4(tools_decompose_hs) 보조 시험: X3에 넘기는 역할별 행과 정책 수치, 하위자료 실패·무거래 확정, 싣는 지표.
+
+자료는 I1 폴더의 합성 스냅샷(tools_fixture.py)이고 지표 단위 X3은 대역(fake_metrics.py)이다. 값은 합성이다.
+"""
+import unittest
+from decimal import Decimal
+
+from tradesentry.contract import envelope as k5
+from tradesentry.tools import check_comparability as common
+from tradesentry.tools import decompose_hs
+
+from ..I1 import fake_metrics, tools_fixture as fx
+
+
+class DecomposeTest(unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        fx.use_fixture(self)
+        self.fake = fake_metrics.patch_metrics(self)
+        fake_metrics.fix_clock(self)
+
+    def run_tool(self, partner="MX", month="202401", args=None):
+        out = decompose_hs.run(fx.request(args, partner=partner, month=month, policy_version="dev-0.1"))
+        self.assertEqual(k5.envelope_problems(out), [])
+        return out
+
+    def test_composition_case(self):
+        out = self.run_tool()
+        values = {m["inputs"]["metric"] + ":" + m["inputs"]["period"]: str(m["value"]) for m in out["metrics"]}
+        self.assertEqual((values["within_effect:202401"], values["mix_effect:202401"], values["residual:202401"]),
+                         ("0.00", "-2.40", "0.00"))
+        self.assertEqual(values[f"r_U@{fx.C1}:202401"], "0.0")
+        self.assertEqual((values[f"w@{fx.C1}:202301"], values[f"w@{fx.C1}:202401"]), ("50.0", "80.0"))
+        self.assertFalse([m for m in out["metrics"] if m["inputs"]["metric"].startswith("U@")])
+        self.assertTrue(all(c["V_match"] and c["Q_match"] for c in out["comparability"]["parent_check"]))
+        self.assertTrue(out["comparability"]["same_hs10_set"])
+
+    def test_x3_input_roles_and_policy_rounding(self):
+        self.run_tool()
+        name, inp = self.fake.calls[0]
+        self.assertEqual(name, "X3")
+        self.assertEqual(inp["weight_rounding_kg"], Decimal("0.5"))  # configs/policy_dev.json tolerance
+        self.assertEqual([(r["month"], r["hs_code"], r["amount_usd"], r["net_weight_kg"]) for r in inp["children"]],
+                         [("202301", fx.C1, 1000, 500), ("202301", fx.C2, 5000, 500),
+                          ("202401", fx.C1, 1600, 800), ("202401", fx.C2, 2000, 200)])
+        self.assertEqual({r["partner_code"] for r in inp["children"] + inp["parent"]}, {"MX"})
+
+    def test_failed_hs10_request_leaves_effects_null(self):
+        out = self.run_tool("CN")
+        effects = [m for m in out["metrics"] if m["inputs"]["metric"] in ("within_effect", "mix_effect", "residual")]
+        self.assertEqual({m["value"] for m in effects}, {None})
+        self.assertTrue(all("REQUEST_FAILED" in m["comparability_flags"] for m in effects))
+        self.assertEqual(out["comparability"]["hs10"][1], {"month": "202401", "observation_status": "REQUEST_FAILED",
+                                                           "codes": []})
+        self.assertIsNone(out["comparability"]["same_hs10_set"])
+        self.assertEqual([(m["hs_code"], m["month"], m["observation_status"]) for m in out["missingness"]],
+                         [("850431", "202401", "REQUEST_FAILED")])
+        children = self.fake.calls[0][1]["children"]
+        self.assertEqual([(r["month"], r["hs_code"], r["observation_status"]) for r in children if r["month"] == "202401"],
+                         [("202401", "850431", "REQUEST_FAILED")])
+
+    def test_confirmed_no_trade_children_row(self):
+        out = self.run_tool("MY", month="202402")
+        children = self.fake.calls[0][1]["children"]
+        self.assertEqual([(r["month"], r["observation_status"]) for r in children if r["month"] == "202402"],
+                         [("202402", "CONFIRMED_NO_TRADE")])
+        self.assertEqual(out["comparability"]["hs10"][1]["observation_status"], "CONFIRMED_NO_TRADE")
+        self.assertNotIn("CONFIRMED_NO_TRADE", {m["observation_status"] for m in out["missingness"]})
+
+    def test_policy_version_is_required_and_args_are_refused(self):
+        with self.assertRaises(common.ToolError):
+            decompose_hs.run(fx.request())
+        out = self.run_tool(args={"hs10": [fx.C1]})
+        self.assertEqual(out["retryable_error"]["code"], common.INVALID_ARGS)
+        self.assertEqual(self.fake.calls, [])
+
+
+if __name__ == "__main__":
+    unittest.main()

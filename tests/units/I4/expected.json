@@ -1,0 +1,304 @@
+{
+ "query_id": "decompose_hs-39ac1791692743a9",
+ "tool": "decompose_hs",
+ "scope": {
+  "hs6": "850431",
+  "partner": "MX",
+  "month": "202401",
+  "baseline_month": "202301",
+  "months": [
+   "202301",
+   "202401"
+  ],
+  "partners": [
+   "MX"
+  ],
+  "hs10": [
+   "8504311000",
+   "8504312000"
+  ]
+ },
+ "snapshot_id": "unit_fixture_tools",
+ "source_kind": "controlled",
+ "evidence_ids": [
+  "ev:unit_fixture_tools:observation:3",
+  "ev:unit_fixture_tools:observation:31",
+  "ev:unit_fixture_tools:observation:209",
+  "ev:unit_fixture_tools:observation:211",
+  "ev:unit_fixture_tools:observation:239",
+  "ev:unit_fixture_tools:observation:241"
+ ],
+ "metrics": [
+  {
+   "metric_id": "fake-within_effect-289da453e7e6",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "within_effect",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": "202301",
+    "V_0": 6000,
+    "Q_0": 1000,
+    "V_1": 3600,
+    "Q_1": 1000,
+    "hs10": [
+     "8504311000",
+     "8504312000"
+    ]
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:3",
+    "ev:unit_fixture_tools:observation:31",
+    "ev:unit_fixture_tools:observation:209",
+    "ev:unit_fixture_tools:observation:211",
+    "ev:unit_fixture_tools:observation:239",
+    "ev:unit_fixture_tools:observation:241"
+   ],
+   "value": 0.00,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-mix_effect-c706bcc17b2e",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "mix_effect",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": "202301",
+    "V_0": 6000,
+    "Q_0": 1000,
+    "V_1": 3600,
+    "Q_1": 1000,
+    "hs10": [
+     "8504311000",
+     "8504312000"
+    ]
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:3",
+    "ev:unit_fixture_tools:observation:31",
+    "ev:unit_fixture_tools:observation:209",
+    "ev:unit_fixture_tools:observation:211",
+    "ev:unit_fixture_tools:observation:239",
+    "ev:unit_fixture_tools:observation:241"
+   ],
+   "value": -2.40,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-residual-831b5c09edb1",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "residual",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": "202301",
+    "V_0": 6000,
+    "Q_0": 1000,
+    "V_1": 3600,
+    "Q_1": 1000,
+    "hs10": [
+     "8504311000",
+     "8504312000"
+    ]
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:3",
+    "ev:unit_fixture_tools:observation:31",
+    "ev:unit_fixture_tools:observation:209",
+    "ev:unit_fixture_tools:observation:211",
+    "ev:unit_fixture_tools:observation:239",
+    "ev:unit_fixture_tools:observation:241"
+   ],
+   "value": 0.00,
+   "unit": "USD/kg",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-r_U@8504311000-33dc34753a57",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "r_U@8504311000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": "202301",
+    "V_0": 1000,
+    "Q_0": 500,
+    "V_1": 1600,
+    "Q_1": 800
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:209",
+    "ev:unit_fixture_tools:observation:239"
+   ],
+   "value": 0.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-w@8504311000-7f7410736c72",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "w@8504311000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202301",
+    "baseline_period": null,
+    "Q": 500,
+    "Q_total": 1000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:209",
+    "ev:unit_fixture_tools:observation:211"
+   ],
+   "value": 50.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-w@8504311000-02828966576f",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "w@8504311000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": null,
+    "Q": 800,
+    "Q_total": 1000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:239",
+    "ev:unit_fixture_tools:observation:241"
+   ],
+   "value": 80.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-r_U@8504312000-ec40f19790ed",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "r_U@8504312000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": "202301",
+    "V_0": 5000,
+    "Q_0": 500,
+    "V_1": 2000,
+    "Q_1": 200
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:211",
+    "ev:unit_fixture_tools:observation:241"
+   ],
+   "value": 0.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-w@8504312000-1e64fc96bfd3",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "w@8504312000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202301",
+    "baseline_period": null,
+    "Q": 500,
+    "Q_total": 1000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:209",
+    "ev:unit_fixture_tools:observation:211"
+   ],
+   "value": 50.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  },
+  {
+   "metric_id": "fake-w@8504312000-d3d9c096b22f",
+   "formula_version": "fake-1",
+   "inputs": {
+    "metric": "w@8504312000",
+    "hs6": "850431",
+    "partner": "MX",
+    "period": "202401",
+    "baseline_period": null,
+    "Q": 200,
+    "Q_total": 1000
+   },
+   "evidence_ids": [
+    "ev:unit_fixture_tools:observation:239",
+    "ev:unit_fixture_tools:observation:241"
+   ],
+   "value": 20.0,
+   "unit": "%",
+   "comparability_flags": [],
+   "tolerance": null
+  }
+ ],
+ "comparability": {
+  "parent_check": [
+   {
+    "period": "202301",
+    "row_count": 2,
+    "V_parent": 6000,
+    "V_hs10": 6000,
+    "Q_parent": 1000,
+    "Q_hs10": 1000,
+    "tolerance": 1.5,
+    "V_match": true,
+    "Q_match": true
+   },
+   {
+    "period": "202401",
+    "row_count": 2,
+    "V_parent": 3600,
+    "V_hs10": 3600,
+    "Q_parent": 1000,
+    "Q_hs10": 1000,
+    "tolerance": 1.5,
+    "V_match": true,
+    "Q_match": true
+   }
+  ],
+  "hs10": [
+   {
+    "month": "202301",
+    "observation_status": "OBSERVED",
+    "codes": [
+     "8504311000",
+     "8504312000"
+    ]
+   },
+   {
+    "month": "202401",
+    "observation_status": "OBSERVED",
+    "codes": [
+     "8504311000",
+     "8504312000"
+    ]
+   }
+  ],
+  "same_hs10_set": true
+ },
+ "missingness": [],
+ "retryable_error": null,
+ "elapsed_ms": 0
+}
