@@ -1,0 +1,37 @@
+# TradeSentry OpenShell 정책 — NemoClaw 시연 샌드박스의 네트워크 부분(단위 F4, 소유 M, 보안 검토)
+#
+# 시연 샌드박스는 NemoClaw(OpenShell 위에서 에이전트를 돌리는 NVIDIA 참조 스택)가 온보딩 때 만든다. 정적 계층
+# (filesystem_policy·landlock·process)은 그때 고정되고 실행 중에 바꿀 수 없으므로 이 파일에 두지 않는다. 적용할 때
+# `python -m scripts.openshell_violation_tests compose-demo-policy`가 라이브 정책(`openshell policy get <이름> --full`)의
+# 정적 계층을 글자 그대로 두고 network_policies만 이 파일의 것으로 바꾼 본문을 저장소 밖 파일로 만든다. 그 파일을
+# `openshell policy set <이름> --policy <그 파일> --wait`로 적용한다(결정 기록 model-decision-mt5-sandbox ①).
+#
+# 출발점: X1 시연 샌드박스 최종 4판(spikes/x1/policy/x1-demo-narrowed.policy.yaml의 network_policies, NemoClaw v0.0.124·
+# OpenClaw 2026.7.1·OpenShell 0.0.116에서 요건 (b) 충족 판정). NemoClaw 기본 블록 7개 가운데 6개(clawhub·openclaw_api·
+# openclaw_docs·npm_registry·managed_inference·openclaw_gateway_dialback)를 빼고 nvidia 블록 하나를 추론 요청 한 경로로
+# 좁혔다.
+#
+# 바이너리(docs/plan/DEV_PLAN.md §4.8의 예외)
+#   /usr/local/bin/node      OpenClaw 2026.7.1의 openclaw는 node 스크립트라 실제 실행 파일이 node로 판정된다. 범용 바이너리의
+#                            허가를 목적지 하나·POST /v1/chat/completions 한 경로로 좁힌다. node를 실행한 어떤 프로세스와
+#                            그 자손(OpenClaw exec 도구가 띄운 CLI 포함)도 이 허가를 쓸 수 있다(조상 프로세스 상속)
+#   /usr/local/bin/openclaw  openclaw.mjs로 풀려 어떤 실행 파일과도 맞지 않아 사실상 쓰이지 않는다. OpenClaw 판이 바뀌면
+#                            실행 파일 판정을 다시 확인한다
+# 시연 샌드박스의 CLI 파이썬은 목록에 없다. OpenClaw(node)가 띄운 CLI는 조상 상속으로 이 블록을 쓴다(X1 DA4).
+# 이 파일에는 version과 network_policies만 둔다. 키 값과 호스트의 로컬 절대경로를 적지 않는다.
+version: 1
+network_policies:
+  nvidia:
+    name: nvidia
+    endpoints:
+    - host: integrate.api.nvidia.com
+      port: 443
+      protocol: rest
+      enforcement: enforce
+      rules:
+      - allow:
+          method: POST
+          path: /v1/chat/completions
+    binaries:
+    - path: /usr/local/bin/openclaw
+    - path: /usr/local/bin/node

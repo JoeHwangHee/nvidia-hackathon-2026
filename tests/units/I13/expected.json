@@ -1,0 +1,40 @@
+{
+ "nat": {
+  "nat_events": [
+   "WORKFLOW_START",
+   "FUNCTION_START",
+   "SPAN_START",
+   "TOOL_START",
+   "TOOL_END",
+   "TOOL_START",
+   "TOOL_END",
+   "LLM_START",
+   "LLM_END",
+   "SPAN_END",
+   "SPAN_START",
+   "LLM_START",
+   "LLM_END",
+   "SPAN_END",
+   "TOOL_START",
+   "TOOL_END",
+   "FUNCTION_END",
+   "WORKFLOW_END"
+  ],
+  "workflow_end": true,
+  "llm_spans": 2,
+  "tool_spans": 3,
+  "stage_spans": 2,
+  "tokens": {
+   "prompt_tokens": 2700,
+   "completion_tokens": 240,
+   "total_tokens": 2940
+  }
+ },
+ "profile_files": [
+  "all_requests_profiler_traces.json",
+  "inference_optimization.json",
+  "standardized_data_all.csv",
+  "workflow_profiling_metrics.json",
+  "workflow_profiling_report.txt"
+ ]
+}
