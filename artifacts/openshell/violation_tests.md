@@ -37,8 +37,10 @@
   - 추론 경로를 지우고, OpenClaw가 `integrate.api.nvidia.com`을 헤더 자리표시 값으로 직접 부르게 하고, 기본 블록을 뺐다.
   - 처음 구성(추론 블록 바이너리 `openclaw`만)에서는 OpenClaw의 모델 호출이 binary-miss로 거부됐다. OpenClaw는 node 스크립트라 게이트웨이 프로세스의 실행 파일이 `/usr/local/bin/node`로 판정되기 때문이다(demo 로그 528~530행) `[사실]`.
   - 오케스트레이터 판단 정정에 따라 추론 블록에 `/usr/local/bin/node`를 더하고 경로는 `POST /v1/chat/completions` 하나로 두었다(3판).
-  - **한 줄 경로 통과** `[사실]`: OpenClaw 요청 → `x1-probe` 스킬 → 샌드박스 안 CLI → NIM 1회(HTTP 200) → NAT 실행 추적(이벤트 4개) → 의도적 위반 1건 차단. 증거는 demo 로그 579~587행과 `20260924-x1-demo-nim-run-excerpt.txt`다. NemoClaw 래퍼는 턴 메타데이터의 `replayInvalid=true` 때문에 종료 코드 1을 냈다(OpenClaw 결과는 `status: ok`, `stopReason: stop`, 도구 2건 실패 0).
-  - 3판에 남은 `openclaw_gateway_dialback`(자기 주소, `access: full`, rules 없음)을 뺀 **최종 4판**에서도 한 줄 경로가 통과했다(NIM 과부하 오류 2회 뒤 세 번째 요청, demo 로그 722~736행). 이 턴에서는 OpenClaw가 `exec`를 두 번 불러 CLI가 두 번 돌았다(각 실행은 NIM 1회). 위반 시험 4종도 4판에서 다시 막혔다.
+  - **한 줄 경로 통과(최종 4판, 요건 (b) 판정의 증거)** `[사실]`: 3판에 남았던 `openclaw_gateway_dialback`(자기 주소, `access: full`, rules 없음)을 빼고 `nvidia` 블록 하나만 남긴 4판에서, OpenClaw 요청 → `x1-probe` 스킬 → 샌드박스 안 CLI → NIM 1회(HTTP 200) → NAT 실행 추적(이벤트 4개) → 의도적 위반 1건 차단이 이어졌다. NIM 과부하 오류 2회(DA3) 뒤 세 번째 요청이다(DA4). 증거는 demo 로그 722~736행과 `20260924-x1-demo-nim-run-excerpt.txt` 33~55행이다. 위반 시험 4종도 4판에서 다시 막혔다(DT1'~DT4').
+  - 4판 턴은 SKILL.md를 다시 읽지 않고 `exec`만 두 번 불렀다(도구 `exec` 2건, demo transcript [A4-2]). 그래서 CLI가 두 번 돌았다(각 실행은 NIM 1회, 실행 기록 둘). 스킬을 읽고 CLI를 부른 기록은 3판 턴(demo transcript [A2])이다. 4판 턴이 같은 세션의 앞 턴 문맥을 썼다는 설명은 `[추론]`이다. 새 세션으로 4판에서 다시 돌리는 일은 MT5로 넘긴다.
+  - NemoClaw 래퍼는 3판·4판 턴 모두 턴 메타데이터의 `replayInvalid=true` 때문에 종료 코드 1을 냈다(OpenClaw 결과는 `status: ok`, `stopReason: stop`, 도구 실패 0).
+  - 3판 턴(17:46, demo 로그 579~587행, `20260924-x1-demo-nim-run-excerpt.txt` 1~31행)은 요건 (b)를 채우지 못한 구성의 이력이다. 규칙 없는 `openclaw_gateway_dialback` 블록이 남아 있었다. 이 턴에서 OpenClaw는 `read`로 SKILL.md를 읽고 `exec`로 CLI를 한 번 불렀다([A2], 도구 2건 실패 0).
 
 ## 1. 시험 환경 `[사실]`
 
@@ -49,7 +51,7 @@
 | 샌드박스 이미지 | `ghcr.io/nvidia/openshell-community/sandboxes/base:latest` 위에 `spikes/x1/Dockerfile`(Python 3.12.13을 `/opt/x1/python`에, `nvidia-nat` 1.9.0, X1 CLI, 미끼 파일)을 얹었다. 생성 명령은 `openshell sandbox create --from spikes/x1 …` |
 | 정책 | 1판 `spikes/x1/policy/x1-os-test.policy.yaml`(네트워크 블록 없음) → 2판·4판 `spikes/x1/policy/x1-os-test.nim.policy.yaml`(블록 `x1_nim_chat` 하나). 4판 라이브 정책 해시(OpenShell이 보고한 값) `3c8009005cf17ccd3e551590f59353f29b94fa72978d17808f50c41517d34eb2` |
 | provider | `x1-nvidia`(사용자 프로필 `x1-nvidia-chat`, 샌드박스에 첨부), `x1-nvidia-route`(내장 유형 `nvidia`, `inference.local` 경로용, 첨부 안 함). 둘 다 `spikes/x1/with_nvidia_key.py`로 `--credential NVIDIA_API_KEY`(이름만)를 넘겨 만들었다 |
-| 정리 | 시험 뒤 샌드박스·provider 2개·사용자 프로필·추론 경로를 지웠다(transcript 마지막 상태: 샌드박스 0, provider 0, 추론 경로 없음) |
+| 정리 | 시험 뒤 샌드박스·provider 2개(`x1-nvidia`, `x1-nvidia-route`)·사용자 프로필·추론 경로를 지웠는지는 `[미확인]`이다. 정리 명령과 그 결과(종료 코드, 목록 조회)는 저장소 안 기록에 없다(os-test transcript는 [T7b]에서 끝난다). 2단계에서 NemoClaw가 게이트웨이 서비스를 새 상태 저장소로 다시 구성했으므로(demo transcript [N2]) 그 뒤의 빈 목록은 1단계 저장소의 상태를 보여 주지 않는다 |
 
 ## 2. 위반 시험표 — `x1-os-test`(OpenShell 단독 시험 샌드박스)
 
@@ -93,6 +95,9 @@
 
 - 거부 사유 문구는 03 문서의 예측 진단(endpoint-miss·binary-miss·L7 불일치)과 대응한다. binary-miss 행에는 조상 프로세스 목록과 명령줄이 함께 찍힌다 `[사실]`.
 - `CONFIG:LOADED`는 `openshell policy set`으로 다시 불러올 때마다(3번) 남았다. 같은 내용을 다시 불러오면 revision은 바뀌고 `policy_hash`는 같았다(72행과 208행). `openshell policy get --full`의 `Hash:` 값과 같다 `[사실]`.
+- 수집 한계 `[사실]`: `openshell logs`는 게이트웨이가 샌드박스별로 두는 크기가 정해진 버퍼에서 읽는다. 커밋한 두 감사 로그의 1행에 경고가 있다: `Warning: log buffer contains only the last N lines; --since results may be incomplete.`(os-test 로그 N=341, demo 로그 N=829).
+  - 공식 문서: 게이트웨이는 샌드박스별 최근 로그 행만 버퍼에 두고, 이 버퍼는 디스크에 남지 않아 게이트웨이를 재시작하면 사라진다. 샌드박스가 로그를 게이트웨이로 보내는 gRPC(원격 호출 프로토콜) 전송 통로는 부하가 걸리면 막히는 대신 이벤트를 버린다. 완전한 기록은 샌드박스 안 `/var/log/openshell.*.log`에 있고, 오래 둘 기록에는 그 파일이나 OCSF JSON 내보내기를 쓴다 `[사실: OpenShell v0.0.116 docs/observability/accessing-logs.mdx 38·40·60행]`.
+  - 그래서 이 문서의 행 번호 근거는 그 버퍼에서 받은 사본 기준이다. 어떤 행이 "없다"는 관찰(파일시스템 거부 행 없음, V8의 해당 행 없음 등)은 버퍼나 전송에서 빠졌을 가능성을 배제하지 못한다 `[추론]`. X1은 샌드박스 안 로그 파일과 대조하지 않았다 `[미확인]`.
 
 ## 4. 개발 플랜 §5.3 `[미확인]` 항목의 확인 결과
 
@@ -101,7 +106,7 @@
 | Docker 안 Landlock 집행(요건 (a)) | **집행됨**(`x1-os-test`, colima VM 커널). 커널 ABI v4, 적용 V2 BestEffort. 미끼 파일 읽기 EACCES. 시연 샌드박스는 미실시 | V4·V4b, 27행 |
 | 키 주입: 헤더에 키를 넣을 수 있는지 | **된다.** 자리표시 값을 `Authorization: Bearer` 헤더에 실으면, 샌드박스 안 감독 프로세스의 정책 프록시가 게이트웨이에서 받은 자격 증명으로 요청 시점에 실제 키로 바꿨다(NIM 200) `[사실: OpenShell v0.0.116 docs/sandboxes/manage-providers.mdx 327~330·363행(헤더 값은 치환 위치의 하나)]`. 프로필에 선언한 `auth_style: bearer`, `header_name: authorization`은 이 판에서 저장·검증되는 메타데이터이고 치환을 일으킨 원인이 아니다 `[사실: 같은 판 docs/sandboxes/providers-v2.mdx 216행]` | V0, [N1]·[N3], `spikes/x1/policy/x1-nvidia-chat.profile.yaml` |
 | 키 주입: `inference.local` 전달 | **된다**(NIM 200). 단, 클러스터 추론 경로는 내장 유형 provider만 받고(사용자 프로필 유형은 거부), 정책 블록 없이 모든 바이너리에 열린다 | [I1]~[I3], [N2], V7 |
-| `openshell logs` 거부·허용 행 형식, 파일시스템 거부 로그 | §3. 허용·거부 모두 L4·L7 행이 남는다. 파일시스템 거부는 남지 않는다 | §3 |
+| `openshell logs` 거부·허용 행 형식, 파일시스템 거부 로그 | §3. 허용·거부 모두 L4·L7 행이 남는다. 파일시스템 거부는 `openshell logs`에 남지 않았다. 이 출처는 크기가 정해진 버퍼라 행이 빠질 수 있고, 샌드박스 안 로그 파일은 대조하지 않았다 `[미확인]`(§3 "수집 한계") | §3 |
 | 정책 재적용 때 `CONFIG:LOADED` | 재적용마다 남는다. 형식은 §3 | 72·184·208행 |
 | 샌드박스 밖에서 `openshell sandbox exec -n <이름> -- <명령>` | 동작한다. CLI가 원격 명령의 종료 코드를 그대로 돌려준다(V1~V4b의 4·22·3·1·2). `--timeout` 옵션이 있다 | transcript 전체 |
 | 저장소 파일·봉인 입력 반입 방식 | 관찰만: 이미지 빌드(`sandbox create --from <Dockerfile 폴더>`, `.dockerignore`가 Dockerfile도 걸러 내므로 `!Dockerfile` 필요), `sandbox upload <로컬> <샌드박스 경로>`(`/tmp`로 가능), `sandbox download`는 `/sandbox` 작업 폴더 아래만. 읽기 전용 반입·봉인 입력은 미실시(MT5 몫) | [S1], transcript [T1..T4b] 머리 |
@@ -163,7 +168,7 @@
 | DP3 | 최종 4판 적용(`openclaw_gateway_dialback` 제거) | 적재 | 0 | — | completed | demo 로그 678행 `CONFIG:LOADED [policy_hash:721639af…]` | O |
 | DK4 | 요건 (c) 키 조회, 4판 뒤·요청 전 | 실제 키 0건(UID 998 범위) | 0 | — | completed | demo transcript [K4] | O |
 | DA3 | 4판에서 같은 요청(17:55:31, 17:55:56) | allow | 1, 1 | 200(SSE 안에 과부하 오류) | command failed | 694·695·712·713행 OpenClaw ALLOWED. 오류는 `FailoverError: The AI service is temporarily overloaded`(NIM 쪽 일시 오류, 정책 거부 아님) | O(정책 판정) |
-| DA4 | **4판 한 줄 경로**(17:56:19 재요청) | OpenClaw·CLI의 NIM 요청 allow, 위반 deny | 래퍼 1(`replayInvalid=true`), CLI 0 | 200 | completed(래퍼 표시는 incomplete) | 722·727·735행 OpenClaw ALLOWED, 724·725·732·733행 CLI python ALLOWED(조상 상속), 726·734행 위반 DENIED. OpenClaw가 `exec`를 두 번 불러 CLI 실행 기록이 둘(`20260924T085624-x1-888ea4`, `20260924T085638-x1-b37f25`)이고 각각 NIM 1회 | O |
+| DA4 | **4판 한 줄 경로**(17:56:19 재요청) | OpenClaw·CLI의 NIM 요청 allow, 위반 deny | 래퍼 1(`replayInvalid=true`), CLI 0 | 200 | completed(래퍼 표시는 incomplete) | 722·727·735행 OpenClaw ALLOWED, 724·725·732·733행 CLI python ALLOWED(조상 상속), 726·734행 위반 DENIED. OpenClaw가 `exec`를 두 번 불러 CLI 실행 기록이 둘(`20260924T085624-x1-888ea4`, `20260924T085638-x1-b37f25`)이고 각각 NIM 1회. 4판 턴은 SKILL.md를 다시 읽지 않고 exec만 두 번 불렀다(도구 `exec` 2건, [A4-2]). 스킬을 읽고 CLI를 부른 기록은 3판 턴 [A2]다. 같은 세션의 앞 턴 문맥을 썼다는 설명은 `[추론]`이다(새 세션 재시험은 MT5) | O |
 | DH2 | 4판 한 줄 경로의 CLI 안 키 조회 | 실제 키 0건(UID 998 범위) | (CLI 0) | — | completed | CLI JSON `key_check`: `NO_REAL_KEY`, `proc_environ_readable 14`, `unreadable 3` | O |
 | DT1' | 4판에서 DT1 다시 | deny(binary-miss) | 22 | 403 | access-denial | 798행 | O |
 | DT2' | 4판에서 DT2 다시 | deny(binary-miss) | 4 | CONNECT 403 | access-denial | 807행 | O |

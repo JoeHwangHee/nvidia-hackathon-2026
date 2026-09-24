@@ -105,14 +105,16 @@ NemoClaw 설치기는 라이선스·제3자 소프트웨어 고지 수락을 요
 ```bash
 # 1. 설치(부트스트랩 스크립트를 내려받아 읽은 뒤 판 고정). 키가 없으므로 온보딩 [3/8]에서 종료 코드 1이 정상
 curl -fsSL -o nemoclaw.sh https://www.nvidia.com/nemoclaw.sh
-env -u NVIDIA_API_KEY -u NVIDIA_INFERENCE_API_KEY DOCKER_HOST=<colima Docker 소켓> \
+#    실제 실행 형태는 artifacts/openshell/logs/20260924-x1-demo-transcript.txt [N1]
+env -u NVIDIA_API_KEY -u NVIDIA_INFERENCE_API_KEY -u DATA_GO_KR_SERVICE_KEY DOCKER_HOST=<colima Docker 소켓> \
   NEMOCLAW_INSTALL_TAG=v0.0.124 NEMOCLAW_PROVIDER=build bash nemoclaw.sh --yes-i-accept-third-party-software
 
 # 2. 온보딩(키는 래퍼로만, NemoClaw가 읽는 변수 이름으로 넘긴다)
 python3 spikes/x1/with_nvidia_key.py --env-file <.env 경로> --export-as NVIDIA_INFERENCE_API_KEY -- \
   env DOCKER_HOST=<colima Docker 소켓> NEMOCLAW_PROVIDER=build \
   NEMOCLAW_MODEL=nvidia/nemotron-3-super-120b-a12b NEMOCLAW_POLICY_TIER=restricted NEMOCLAW_POLICY_MODE=skip \
-  NEMOCLAW_WEB_SEARCH_PROVIDER=none nemoclaw onboard --non-interactive --fresh --name x1-demo --yes-i-accept-third-party-software
+  NEMOCLAW_WEB_SEARCH_PROVIDER=none NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 \
+  nemoclaw onboard --non-interactive --fresh --name x1-demo --yes-i-accept-third-party-software   # 실제 실행은 transcript [N3]
 
 # 3. 첫 점검과 요건 (c) 키 조회(OpenClaw 요청 전)
 openshell policy get x1-demo --full
@@ -139,7 +141,10 @@ nemoclaw x1-demo gateway restart
 openshell sandbox exec -n x1-demo --timeout 240 -- /usr/bin/python3 /tmp/x1-tools/key_check.py /
 nemoclaw x1-demo agent --agent main --json --timeout 300 \
   -m "Run the X1 probe now: use the x1-probe skill with the one-line input 'Reply with exactly: X1 OK', then return the JSON line printed by the command exactly as it is."
-openshell logs x1-demo --since 10m -n 3000
+openshell logs x1-demo --since <기간> -n 3000
+#    커밋한 demo 로그(17:20:31~17:57:27, 37분)를 만든 수집 명령은 기록이 없다 [미확인]. 앞 판의 --since 10m은
+#    그 로그를 만든 명령이 아니다. openshell logs는 크기가 정해진 버퍼에서 읽어 행이 빠질 수 있다(첫 줄 경고,
+#    OpenShell v0.0.116 docs/observability/accessing-logs.mdx 38·60행). 완전한 기록은 샌드박스 안 /var/log/openshell.*.log다
 openshell sandbox download x1-demo /sandbox/x1-runs artifacts/runs/
 ```
 

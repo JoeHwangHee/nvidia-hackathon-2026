@@ -378,7 +378,7 @@ HS6별 36개월 완비 상황(HS10 행 기준, 16개국 중) `[사실: 실측 �
   - CLI의 파이썬 실행 파일을 추론 블록의 바이너리에서 빼면(예: `inference.local`을 채택하고 `managed_inference`에서 `python3`를 뺀 경우), 시연 샌드박스에서 CLI의 NIM 호출은 조상 프로세스 상속에 기댄다. X1에서 바이너리 목록에 없는 CLI 파이썬이 OpenClaw(node)의 허가를 물려받아 통과했다 `[사실: artifacts/openshell/violation_tests.md §6.3 DA4]`.
 - **확인 결과**(X1 목록, §5.3, 2026-09-24(목) NemoClaw v0.0.124·OpenClaw 2026.7.1·OpenShell 0.0.116):
   - 하네스 자체의 추론 경로: NemoClaw 기본은 `inference.local`이다. X1 구성에서는 `integrate.api.nvidia.com` 직접 호출(헤더 자리표시 값)로 바꿔 OpenClaw의 모델 호출이 HTTP 200을 받았다 `[사실: artifacts/openshell/violation_tests.md §4, §6.3 DA4]`.
-  - 조상 프로세스 상속: 문서대로다. OpenClaw(node)가 띄운 CLI 파이썬과 `curl`이 `nvidia` 블록 허가를 물려받았고, 목적지·L7 제한은 그대로였다 `[사실: artifacts/openshell/violation_tests.md §6.3 DA4·DT3·DT4]`.
+  - 조상 프로세스 상속: 문서대로다. OpenClaw(node)가 띄운 CLI 파이썬과 `curl`이 `nvidia` 블록 허가를 물려받았고, 목적지·L7 제한은 그대로였다 `[사실: artifacts/openshell/violation_tests.md §6.3 DA4·DT3'·DT4'(4판 재시험)]`.
   - 기본 블록을 빼거나 좁혀도 하네스가 도는지: 돈다. `nvidia` 블록 하나만 남긴 4판에서 한 줄 경로가 통과했다. 단 바이너리를 `openclaw`만 두면(2판) 돌지 않아 위 예외가 필요했다 `[사실: artifacts/openshell/violation_tests.md §6.3 DA1·DA4]`.
 - **증거**: 시연 샌드박스의 라이브 정책 조회(`openshell policy get <agent> --full`) 결과, 게이트웨이 provider 설정 조회 결과, 남은 블록 목록을 위반 시험표(`artifacts/openshell/violation_tests.md`)에 함께 적는다.
 - **(b)를 채우지 못하면**: 예외를 두지 않고 즉시 사용자 결정을 받는다. 대안의 예는 §5.4 대체 경로(NemoClaw 없이 OpenShell만)다. 키 주입 방식이 모두 실패할 때(§4.6 채택 규칙)와 같은 처리다.
