@@ -6,9 +6,15 @@
 - 단위 패키지 안에 등록부에 없는 모듈 파일이 없다(단위 하나가 파일 하나, N3).
 단위 표 문서 자체와의 대조는 이 시험에 넣지 않는다(문서 판이 바뀌는 동안 깨지기 때문이다).
 """
+import ast
+import os
 import re
+import socket
+import tempfile
 import unittest
+from decimal import Decimal
 from pathlib import Path
+from unittest import mock
 
 from tradesentry.units import registry, runner
 
@@ -124,11 +130,48 @@ class RegistryTest(unittest.TestCase):
         self.assertEqual(registry.read_header("x = 1\n"), {})
 
 
+SKIP_NAMES = {"skipTest", "skip", "skipIf", "skipUnless", "expectedFailure", "SkipTest"}
+
+
+def skip_uses(source: str) -> list[str]:
+    """시험 소스에서 skipTest 호출, skip 장식자(skip·skipIf·skipUnless·expectedFailure), SkipTest를 찾는다."""
+    found = set()
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Attribute) and node.attr in SKIP_NAMES:
+            found.add(node.attr)
+        elif isinstance(node, ast.Name) and node.id in SKIP_NAMES:
+            found.add(node.id)
+    return sorted(found)
+
+
+def run_golden(unit_id: str, entry, expected_json: str | None, input_json: str = "{}") -> unittest.TestResult:
+    """임시 골든 폴더와 가짜 진입 함수로 GoldenMixin.test_golden_pair를 한 번 돌린다(run은 뼈대가 아니라고 본다)."""
+    from units import golden  # discover가 tests/를 맨 위 경로로 넣으므로 tests/units는 units로 불린다
+
+    with tempfile.TemporaryDirectory() as tmp:
+        folder = Path(tmp)
+        (folder / golden.INPUT_NAME).write_text(input_json, encoding="utf-8")
+        if expected_json is not None:
+            (folder / golden.EXPECTED_NAME).write_text(expected_json, encoding="utf-8")
+
+        class Case(golden.GoldenMixin, unittest.TestCase):
+            UNIT_ID = unit_id
+
+            def golden_dir(self):
+                return folder
+
+        result = unittest.TestResult()
+        with mock.patch.object(golden, "is_skeleton", return_value=False), \
+                mock.patch.object(registry, "load_entry", return_value=entry):
+            Case("test_golden_pair").run(result)
+    return result
+
+
 class GoldenRuleTest(unittest.TestCase):
-    """골든 시험이 건너뛰는 조건(run이 아직 뼈대)을 가르는 규칙(tests/units/golden.py)."""
+    """골든 시험 규칙(tests/units/golden.py): 건너뛰기 범위, 형식까지 보는 비교, 시험 환경, 건너뛰기 허용 목록."""
 
     def test_skeleton_detection(self):
-        from units import golden  # discover가 tests/를 맨 위 경로로 넣으므로 tests/units는 units로 불린다
+        from units import golden
 
         skeleton = 'def run(inp):\n    """설명."""\n    raise NotImplementedError("아직")\n'
         bare = "def run(inp):\n    raise NotImplementedError\n"
@@ -140,6 +183,96 @@ class GoldenRuleTest(unittest.TestCase):
         self.assertFalse(golden.is_skeleton_source(partial, "run"))
         self.assertFalse(golden.is_skeleton_source(skeleton, "other"))
         self.assertTrue(all(golden.is_skeleton(u) for u in registry.UNITS.values() if u.entry))
+
+    def test_not_implemented_in_non_skeleton_run_is_an_error(self):
+        def calls_skeleton(inp):
+            raise NotImplementedError("부른 단위가 아직 뼈대다")
+
+        result = run_golden("X1", calls_skeleton, '{"U": 1}')
+        self.assertEqual(len(result.errors), 1)
+        self.assertEqual(result.skipped, [])
+
+    def test_implemented_run_without_pair_fails(self):
+        result = run_golden("X1", lambda inp: {"U": 1}, None)
+        self.assertEqual(len(result.failures), 1)
+        self.assertEqual(result.skipped, [])
+
+    def test_exact_values_and_formats_pass(self):
+        output = {"U": Decimal("20.30"), "n": 1, "ok": True, "xs": (1, 2), "none": None, "s": "가"}
+        expected = '{"xs": [1, 2], "U": 20.30, "n": 1, "ok": true, "none": null, "s": "가"}'
+        result = run_golden("X1", lambda inp: output, expected)
+        self.assertTrue(result.wasSuccessful(), result.failures + result.errors)
+        self.assertEqual(result.skipped, [])
+
+    def test_number_format_differences_fail(self):
+        cases = [
+            ("20.3 대 20.30", {"U": Decimal("20.3")}, '{"U": 20.30}'),
+            ("20.30 대 20.3", {"U": Decimal("20.30")}, '{"U": 20.3}'),
+            ("1 대 true", {"ok": 1}, '{"ok": true}'),
+            ("true 대 1", {"n": True}, '{"n": 1}'),
+            ("Decimal 대 int", {"n": Decimal("1")}, '{"n": 1}'),
+            ("float 출력", {"U": 20.3}, '{"U": 20.3}'),
+            ("list 순서", {"xs": [2, 1]}, '{"xs": [1, 2]}'),
+        ]
+        for name, output, expected in cases:
+            with self.subTest(name):
+                result = run_golden("X1", lambda inp, value=output: value, expected)
+                self.assertEqual(len(result.failures), 1)
+                self.assertEqual(result.errors, [])
+
+    def test_golden_run_has_no_home_sealed_folder_or_network(self):
+        seen = {}
+        home_before = os.environ.get("HOME")
+        create_connection_before = socket.create_connection
+
+        def probe(inp):
+            seen["home"] = os.environ["HOME"]
+            seen["sealed"] = os.environ["TRADESENTRY_SEALED_DIR"]
+            try:
+                socket.create_connection(("127.0.0.1", 9), timeout=1)
+                seen["create_connection"] = "연결됨"
+            except OSError as exc:
+                seen["create_connection"] = str(exc)
+            with socket.socket() as sock:
+                try:
+                    sock.connect(("127.0.0.1", 9))
+                    seen["connect"] = "연결됨"
+                except OSError as exc:
+                    seen["connect"] = str(exc)
+            return {"ok": True}
+
+        result = run_golden("X1", probe, '{"ok": true}')
+        self.assertTrue(result.wasSuccessful(), result.failures + result.errors)
+        self.assertFalse(Path(seen["home"]).exists())
+        self.assertFalse(Path(seen["sealed"]).exists())
+        self.assertIn("네트워크", seen["create_connection"])
+        self.assertIn("네트워크", seen["connect"])
+        self.assertEqual(os.environ.get("HOME"), home_before)  # 시험이 끝나면 되돌린다
+        self.assertIs(socket.create_connection, create_connection_before)
+        self.assertNotIn("connect", vars(socket.socket))
+
+    def test_unit_folders_skip_only_with_allowance(self):
+        from units import golden
+
+        for unit_id, reason in golden.SKIP_ALLOWED.items():
+            self.assertIn(unit_id, registry.UNITS)
+            self.assertTrue(reason)
+        base = ROOT / "tests" / "units"
+        checked = 0
+        for folder in sorted(p for p in base.iterdir() if p.is_dir() and p.name != "__pycache__"):
+            for path in sorted(folder.glob("*.py")):
+                checked += 1
+                uses = skip_uses(path.read_text(encoding="utf-8"))
+                if uses:
+                    self.assertIn(folder.name, golden.SKIP_ALLOWED, f"{path.relative_to(ROOT)}: {uses}")
+        self.assertGreaterEqual(checked, 2 * len(registry.UNITS))
+
+    def test_skip_use_detection(self):
+        self.assertEqual(skip_uses("class T:\n    def test(self):\n        self.skipTest('x')\n"), ["skipTest"])
+        self.assertIn("skip", skip_uses("import unittest\n@unittest.skip('x')\ndef f():\n    pass\n"))
+        self.assertIn("skipIf", skip_uses("from unittest import skipIf\n@skipIf(True, 'x')\ndef f():\n    pass\n"))
+        self.assertIn("SkipTest", skip_uses("import unittest\nraise unittest.SkipTest('x')\n"))
+        self.assertEqual(skip_uses((ROOT / "tests" / "units" / "X1" / "test_golden.py").read_text(encoding="utf-8")), [])
 
 
 if __name__ == "__main__":
