@@ -79,5 +79,16 @@ class StatusValueFormatTest(unittest.TestCase):
             self.assertNotIn("MONITOR(", text)
 
 
+class ProsePatternListTest(unittest.TestCase):
+    """AS2 9회차: 조사자 지침의 증감·무변동 어휘 목록이 검증기(R3) 산문 패턴 PT-6의 목록과 글자까지 같다(새로 짓지 않는다)."""
+
+    def test_every_pt6_word_of_the_validator_is_in_the_prompt(self):
+        from tradesentry.validator import validate
+        prompt = model_client.load_model_config().prompts["investigator"]
+        line = [ln for ln in prompt.splitlines() if "(PT-6)" in ln][0]
+        missing = [w for w in validate.UP_WORDS + validate.DOWN_WORDS + validate.FLAT_WORDS if w not in line]
+        self.assertEqual(missing, [])
+
+
 if __name__ == "__main__":
     unittest.main()
