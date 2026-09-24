@@ -69,7 +69,8 @@ class ModelConfigTest(unittest.TestCase):
         self.assertFalse(any(isinstance(v, float) for v in walk(cfg)))
         self.assertIsInstance(cfg["request"]["temperature"], Decimal)
         self.assertIs(cfg["request"]["enable_thinking"], False)
-        self.assertEqual(cfg["request"]["structured_output"], "off")  # 켜려면 config_version을 올린다(결정 기록 ⑯)
+        # model-0.2: 도구 없는 조사자 초안 요청에 response_format json_object(실측 뒤 켬, 결정 기록 ⑯)
+        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-0.2", "json_object"))
         for value in walk(cfg):
             if isinstance(value, str):
                 self.assertNotRegex(value, r"(?i)bearer|secret")

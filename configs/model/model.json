@@ -1,5 +1,5 @@
 {
-  "config_version": "model-0.1",
+  "config_version": "model-0.2",
   "model": "nvidia/nemotron-3-super-120b-a12b",
   "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
   "api_key_env": "NVIDIA_API_KEY",
@@ -8,7 +8,7 @@
     "top_p": 0.95,
     "max_tokens": 2048,
     "enable_thinking": false,
-    "structured_output": "off"
+    "structured_output": "json_object"
   },
   "retry": {
     "max_5xx_retries": 3,
