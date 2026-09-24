@@ -1,0 +1,129 @@
+{
+ "snapshot_id": "unit_fixture_s2",
+ "schema_version": 1,
+ "build_file": "snapshot_build.sqlite",
+ "ok": true,
+ "normalized_sha256": "881cb7e32b3cf46823f3ccbb689e2be1dca687b8c1798ea606f4649ed5850dc5",
+ "recorded_normalized_sha256": "881cb7e32b3cf46823f3ccbb689e2be1dca687b8c1798ea606f4649ed5850dc5",
+ "checks": [
+  {
+   "name": "open_read_only",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "journal_mode_not_wal",
+   "ok": true,
+   "detail": {
+    "journal_mode": "delete"
+   }
+  },
+  {
+   "name": "tables_and_columns",
+   "ok": true,
+   "detail": {
+    "problems": 0,
+    "examples": []
+   }
+  },
+  {
+   "name": "snapshot_meta",
+   "ok": true,
+   "detail": {
+    "problems": 0,
+    "examples": []
+   }
+  },
+  {
+   "name": "observation_values",
+   "ok": true,
+   "detail": {
+    "problems": 0,
+    "examples": []
+   }
+  },
+  {
+   "name": "observation_rowids_contiguous",
+   "ok": true,
+   "detail": {
+    "rows": 68
+   }
+  },
+  {
+   "name": "all_duplicates_consistent",
+   "ok": true,
+   "detail": {
+    "duplicated_keys": 6,
+    "problems": 0,
+    "examples": []
+   }
+  },
+  {
+   "name": "coverage",
+   "ok": true,
+   "detail": {
+    "keys": 8,
+    "problems": 0,
+    "examples": []
+   }
+  },
+  {
+   "name": "collection_receipts",
+   "ok": true,
+   "detail": {
+    "problems": 0,
+    "examples": []
+   }
+  },
+  {
+   "name": "raw_sha256",
+   "ok": true,
+   "detail": {
+    "recomputed_matches_meta": true
+   }
+  },
+  {
+   "name": "observation_matches_raw",
+   "ok": true,
+   "detail": {
+    "rows": 68,
+    "confirmed_no_trade_rule": "ingest_verify_candidates",
+    "confirmed_no_trade_rows": 1,
+    "problems": 0,
+    "examples": []
+   }
+  },
+  {
+   "name": "receipts_match_raw",
+   "ok": true,
+   "detail": {
+    "receipts": 7
+   }
+  },
+  {
+   "name": "meta_matches_source",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "normalized_sha256_record",
+   "ok": true,
+   "detail": {
+    "matches": true
+   }
+  }
+ ],
+ "counts": {
+  "collection_receipt": 7,
+  "observation": 68,
+  "peer_group": 4,
+  "snapshot_meta": 14,
+  "import_observation_status": {
+   "CONFIRMED_NO_TRADE": 1,
+   "NOT_COLLECTED": 6,
+   "OBSERVED": 24,
+   "REQUEST_FAILED": 2,
+   "UNRESOLVED_ZERO": 1
+  }
+ }
+}
