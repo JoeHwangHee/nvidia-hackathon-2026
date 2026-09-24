@@ -74,7 +74,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | K1 | 계약 타입 | `contract_types` | `src/tradesentry/contract/types.py` | 커널 | D | 정의 모음(상태값·키·typed dict·`schema_version`). 입출력 없음 | 유지 | 공유 | — | 합침의 목적지 |
 | K2 | 근거 ID | `contract_evidence_id` | `src/tradesentry/contract/evidence_id.py` | 앱 | D | (`snapshot_id`, `table`, `rowid`) ↔ `ev:` 문자열, 풀림 규칙 | 합침 후보(→ K1) | 공유 | — | 채점기는 따로 구현한다(독립성) |
 | K3 | 읽기 전용 조회 | `dal_query` | `src/tradesentry/dal/query.py` | 앱 | D | `snapshot_id` + 허용 scope → 계약 객체(빠진 자료는 관측 상태 코드) | 유지 | 공유 | — | — |
-| K4 | 정책 수치 읽기 | `contract_policy_load` | `src/tradesentry/contract/policy_load.py` | 앱 | D | `configs/policy_v1.json` → 정책 객체 | 합침 후보(→ K1) | 공유 | — | 단위 S2, 판정 정책(P 묶음), 지표 단위 X3·X4가 함께 쓴다 |
+| K4 | 정책 수치 읽기 | `contract_policy_load` | `src/tradesentry/contract/policy_load.py` | 앱 | D | `configs/policy_v1.json`(승인 전에는 개발용 `configs/policy_dev.json`) → 정책 객체 | 합침 후보(→ K1) | 공유 | — | 단위 S2, 판정 정책(P 묶음), 지표 단위 X3·X4가 함께 쓴다 |
 | K5 | 공통 봉투 | `contract_envelope` | `src/tradesentry/contract/envelope.py` | 앱 | D | 도구 결과 → 키 11개 봉투 | 합침 후보(→ K1) | 공유 | — | 키 목록이 계약이라 커널로 모은다 |
 
 ### 3.3 X — 지표(4개)

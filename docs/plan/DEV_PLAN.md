@@ -923,7 +923,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | `snapshot/` | D | 스냅샷 빌드·검증(`snapshot-build`·`snapshot-verify`의 자료 쪽 구현)과 합성 스냅샷 생성 | 단위 S2~S4 |
 | `dal/` | D | 자료 접근층. 읽기 전용 SQLite 읽기 함수, typed dict(필드와 타입이 정해진 파이썬 사전) 반환 | 단위 K3 |
 | `metrics/` | D | 단가·변화율·점유율·HS10 분해·반올림 검증. `eval/dev/oracle_ABC.json`의 A/B/C를 그대로 재현해야 한다 | 단위 X1~X4 |
-| `policy/` | M | 신호 발동·사례 만들기·신호별 판정·사례 집계·필수 근거. 수치는 `configs/policy_v1.json`에서 읽는다 | 단위 P1~P5 |
+| `policy/` | M | 신호 발동·사례 만들기·신호별 판정·사례 집계·필수 근거. 수치는 `configs/policy_v1.json`(승인 전에는 개발용 `configs/policy_dev.json`)에서 읽는다 | 단위 P1~P5 |
 | `grouping/` | M | 비교 대상 `g0` 고정 목록과 유사도 그룹핑 `g1`(BACI) | 단위 G1·G2 |
 | `tools/` | M | 도구 5개 래퍼와 예산 강제. 공통 봉투는 단위 K5(`contract/envelope.py`, 로드맵 DT1)로 만든다 | 단위 I1~I6 |
 | `workflow/` | M | 조사자 → Critic → 수정 1회, NIM 호출·재전송·한도, 기록 재생, NAT 감싸기 | 단위 I7·I8·I10~I13 |

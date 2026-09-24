@@ -58,6 +58,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율의 
 | `data/snapshots/controlled_fixture_v0/` | D | 합성 시험자료(§2) |
 | `configs/collection_plan.json`(기존) | D | |
 | `configs/policy_v1.json`(정책 수치 파일) | D 제안·사용자 승인 | 정책 수치를 코드에 하드코딩하지 않는다 |
+| `configs/policy_dev.json`(개발용 정책 `dev-0.1`, oracle 기준값) | D | 승인 전 실행용. DT1에서 만든다(결정 기록 `20260924-2315-user-decision-impl-plan-approval.md` D2) |
 | `configs/nat/workflow.yml` | M | |
 | `configs/openshell/policy.yaml` | M(보안 검토) | |
 | `skills/tradesentry/SKILL.md`(런타임 스킬) | M | |

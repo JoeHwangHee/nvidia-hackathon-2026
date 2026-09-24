@@ -232,7 +232,7 @@
 | `src/tradesentry/snapshot/` | 스냅샷 빌드(`snapshot-build`)·검증(`snapshot-verify`)과 합성 스냅샷 생성 | D | 단위 S2~S4 |
 | `src/tradesentry/dal/` | 자료 접근층(스냅샷 SQLite를 읽기 전용으로 여는 함수 모음). 계약 객체를 typed dict로 돌려준다 | D | 단위 K3. 도구는 이것을 거쳐서만 자료를 읽는다(분담 D7) |
 | `src/tradesentry/metrics/` | 단가·변화율·점유율·HS10 구성효과 분해·반올림 대조. `eval/dev/oracle_ABC.json`의 A/B/C를 그대로 재현해야 한다 | D | 단위 X1~X4. 위험이 큰 산출물이라 Codex 교차 검토 대상이다 |
-| `src/tradesentry/policy/` | 신호 발동·사례 만들기(탐지), 신호별 판정, 사례 집계, 필수 근거. 수치는 `configs/policy_v1.json`에서 읽는다 | M | 단위 P1~P5 |
+| `src/tradesentry/policy/` | 신호 발동·사례 만들기(탐지), 신호별 판정, 사례 집계, 필수 근거. 수치는 `configs/policy_v1.json`(승인 전에는 개발용 `configs/policy_dev.json`)에서 읽는다 | M | 단위 P1~P5 |
 | `src/tradesentry/grouping/` | 비교 대상 `g0`(고정 목록)와 유사도 그룹핑 `g1`(BACI) 계산 | M | 단위 G1·G2. 결과는 D가 검수한다 |
 | `src/tradesentry/tools/` | 도구 5개, 예산 강제 | M | 단위 I1~I6 |
 | `src/tradesentry/workflow/` | NIM 호출·재전송·한도, 기록 재생, 조사자 → Critic → 수정 1회, NAT 감싸기 | M | 단위 I7·I8·I10~I13 |
@@ -350,7 +350,7 @@ eval/scorer/(샌드박스 밖, tradesentry 패키지·eval/datagen import 금지
 | `snapshot/` | raw 응답·manifest·`peer_group_g1.csv`·승격 규칙 | 파생 SQLite(결정적 rowid), 검증 보고와 `normalized_sha256` | §3.4.2, §4.6 |
 | `dal/` | `snapshot_id`, 허용된 scope(사례의 HS6·대상국·비교 대상·비교월·기준월·필요한 HS10) | 계약 객체의 typed dict. 빠진 자료는 관측 상태 코드로 표시 | §3.4.2, §3.4.3 |
 | `metrics/` | 관측치 | `metric` 객체(값 또는 `null` + 사유, 입력 근거 ID, `formula_version`) | §3.4.2, §3.4.8 |
-| `policy/` | 스냅샷, `configs/policy_v1.json` | `case`(신호별 `signal_trigger`), 신호별 판정·사례 집계 규칙 | §3.4.2, §3.4.3 |
+| `policy/` | 스냅샷, `configs/policy_v1.json`(승인 전에는 개발용 `configs/policy_dev.json`) | `case`(신호별 `signal_trigger`), 신호별 판정·사례 집계 규칙 | §3.4.2, §3.4.3 |
 | `tools/` | 모델이 고른 도구 이름과 허용된 인자(`case_id`, `snapshot_id`, scope) | 공통 봉투(키 11개). 예산을 넘으면 거부 | §3.4.6 |
 | `workflow/` | 사례, 모드, 한도 | 최종 보고서, 실행 결과 기록의 실행 쪽 키, trace | §3.4.10, §4.8 |
 | `validator/` | 보고서, 봉투에 담긴 근거·지표, 스냅샷 | 통과/차단 판정과 `validator_findings` | §3.4.11 |
@@ -1326,7 +1326,7 @@ CLI(명령줄 실행 도구)는 `tradesentry <명령>` 하나로 모은다.
 
 이 절의 규칙은 따로 적지 않으면 `[DESIGN]`이다.
 
-- **정책 수치**: `configs/policy_v1.json`에서 읽고 코드에 하드코딩하지 않는다. 수치는 D가 `real_dev`만으로 제안하고 사용자가 승인한다.
+- **정책 수치**: `configs/policy_v1.json`(승인 전에는 개발용 `configs/policy_dev.json`)에서 읽고 코드에 하드코딩하지 않는다. 수치는 D가 `real_dev`만으로 제안하고 사용자가 승인한다.
 - **스냅샷**: 코드에 스냅샷 이름이나 파일 경로를 박아 두지 않는다. 모든 조회는 `snapshot_id`를 받아 `dal/`을 거친다.
 - **출력**: 출력 파일은 이름·출력 규칙(§2.3 아래, 자료 계약 §10.3)대로 쓰고, 이미 있는 이름에는 쓰지 않는다(덮어쓰기 금지). 키 값과 로컬 절대경로는 어떤 출력에도 쓰지 않는다.
 - **수집기**: `src/tradesentry/ingest.py`는 표준 라이브러리만 쓴다.
