@@ -8,8 +8,8 @@
 - **수집기와 시험**: `src/tradesentry/ingest.py`와 `tests/test_ingest.py`의 시험 17개가 네트워크·키 없이 통과한다(2026-09-24(목) `python3 -m unittest discover -s tests` 종료 코드 0).
 - **자료**: 스냅샷 `kcs_202201_202412_v2`의 수집과 검사 기록(`data-readiness.json`, `snapshot_hash.json`)이 있다. 상태 표시는 아직 `COLLECTED_NOT_FROZEN`이다. 동결 표시는 데이터 트랙이 결정 기록과 함께 바꾸고(`docs/rules/PARALLEL_DEV_RULES.md` §10.1), 최종 스냅샷 빌드의 동결은 로드맵 DT7에서 한다.
 - **사용자 승인**(2026-09-24(목)): 결정 기록은 `docs/tracking/decisions/`의 `20260924-1504-user-approval-contract-design.md`와 `20260924-1504-user-approval-x1-exception.md`다.
-  - 자료 계약 v1(`docs/rules/DATA_CONTRACT_V1.md`)의 `[DESIGN]`(팀 설계 규칙) 항목. `g0`(비교국 고정 목록) 해석, `policy_v1`(동결 판정 정책) 수치, 룰북 부록 항목은 이 승인에 들지 않는다.
-  - X1(구현 첫날의 세로형 최소 통합 시험) 대체 경로 규칙의 두 예외: 키 주입 두 방식이 모두 실패하거나 시연 샌드박스(시연용으로 따로 두는 샌드박스)가 요건 (b)(외부 전송을 NVIDIA 추론 주소로만 허용하는 정책 요건)를 채우지 못하면, Brev(NVIDIA 원클릭 클라우드 개발 환경)로 옮기지 않고 바로 사용자 결정을 받는다.
+  - 자료 계약 v1(`docs/rules/DATA_CONTRACT_V1.md`)의 `[DESIGN]`(팀 설계 규칙) 항목. `g0`(비교국 고정 목록) 해석, `policy_v1`(동결 판정 정책) 승인 때 확인할 로드맵 §6.3의 항목 전체(수치, 무거래 확정 승격과 0 처리, 수입 0이 명시된 달의 처리, 허용오차), 룰북 부록 항목은 이 승인에 들지 않는다.
+  - X1(구현 첫날의 세로형 최소 통합 시험) 대체 경로 규칙의 두 예외: 키 주입(샌드박스 안에 API 키를 두지 않고 추론 요청에 키를 붙이는 일) 두 방식(credential placeholder rewrite, 곧 게이트웨이가 자리표시 문자열을 실제 키로 바꾸는 방식과, 샌드박스가 보는 추론 주소 `inference.local`)이 모두 실패하거나, 기본 블록을 빼거나 좁힌 정책으로도 시연 샌드박스(시연용으로 따로 두는 샌드박스)가 요건 (b)를 채우지 못하면 Brev(NVIDIA 원클릭 클라우드 개발 환경)로 옮기지 않고 바로 사용자 결정을 받는다. 요건 (b)는 외부 전송을 NVIDIA 추론 엔드포인트로만 허용하고 L7(HTTP 요청 수준) method·path를 명시하며, `rules` 생략과 범용 바이너리 + `/**` 조합을 쓰지 않는 정책 요건이다(`docs/plan/DEV_PLAN.md` §4.1).
 - **NIM 연결**: NIM(NVIDIA 클라우드 추론 API)의 Nemotron(NVIDIA 언어 모델)에서 native tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능) 왕복은 구 개발계획의 G4 관문 시험(NIM으로 모델의 도구 호출 왕복을 확인한 이전 계획의 시험)에서 확인한 기록이 있다(`docs/plan/DEV_PLAN.md` §3.1). NAT(NVIDIA 에이전트 실행 추적·평가 도구 모음) 연동은 아직 시작하지 않았다(같은 문서 §3.3). 확인 스크립트는 `scripts/g4_nim_toolcall_probe.py`이고, 이번 문서 작업에서는 다시 돌리지 않았다.
 
 ## 남은 일
