@@ -1,0 +1,17 @@
+cntyCd,baci_country_code,baci_country_iso3,kcs_country_name,baci_country_name,note
+CN,156,CHN,중국,China,
+DE,276,DEU,독일,Germany,
+FI,246,FIN,핀란드,Finland,
+FR,251,FRA,프랑스,France,
+ID,360,IDN,인도네시아,Indonesia,
+IN,699,IND,인도,India,
+JP,392,JPN,일본,Japan,
+KH,116,KHM,캄보디아,Cambodia,
+MX,484,MEX,멕시코,Mexico,
+MY,458,MYS,말레이시아,Malaysia,
+NL,528,NLD,네덜란드,Netherlands,
+PH,608,PHL,필리핀,Philippines,
+SE,752,SWE,스웨덴,Sweden,
+TW,490,S19,대만,"Other Asia, nes","대만(TW)은 BACI 490(iso3 자리 S19, Asia n.e.s.)에 대응시킨다. BACI 490(Other Asia, nes)에는 대만 외 기타 아시아 미상분이 섞일 수 있다."
+US,842,USA,미국,USA,
+VN,704,VNM,베트남,Viet Nam,
