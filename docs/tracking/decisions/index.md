@@ -19,4 +19,4 @@
 | `20260924-2212-user-decision-impl-plan-after-s0.md` | 2026-09-24(목) 22:12 | 두 트랙 구현 계획은 S0(앱 뼈대) 병합 뒤 따로 세우고 사용자가 보고 승인한 뒤 착수 | 사용자 | 유효 |
 | `20260924-2212-user-decision-snapshot-build-and-g0.md` | 2026-09-24(목) 22:12 | 최종 스냅샷 빌드 파일 `data/snapshots/{snapshot_id}/snapshot_build.sqlite`와 `g0` 해석(대상국을 뺀 15개국 중 상위 5개국) | 사용자 | 유효 |
 | `20260924-2212-orchestrator-decision-s0-scaffold.md` | 2026-09-24(목) 22:12 | S0가 정할 위치와 S0 뼈대의 약속 확정(계획 경로 표를 바꾸는 항목 제외) | 오케스트레이터 | 유효 |
-| `20260925-0035-data-decision-dt2-metrics.md` | 2026-09-25(금) 00:35 | DT2 지표 단위(X1~X4)의 입출력 모양, metric `value`의 뜻(표시 값)과 반올림 전 값(`exact_value`), `inputs` 키, `metric_id`, 사유 어휘, 허용오차, 행 규칙 전제, 부모 중량 0, 부모 대조 | 소유 트랙(D) | 유효. ①·⑪은 잠정(AS1·AS4에서 확정), ②는 공용 약속 여부를 오케스트레이터가 정할 때까지 잠정 |
+| `20260925-0035-data-decision-dt2-metrics.md` | 2026-09-25(금) 00:35 | DT2 지표 단위(X1~X4)의 입출력 모양, metric `value`의 뜻(표시 값)과 반올림 전 값(`exact_value`), `inputs` 키, `metric_id`, 사유 어휘, 허용오차, 행 규칙 전제, 부모 중량 0, 부모 대조 | 소유 트랙(D) | 유효. ①·⑪은 잠정(AS1·AS4에서 확정). ②·⑫는 오케스트레이터 판단으로 확정 |
