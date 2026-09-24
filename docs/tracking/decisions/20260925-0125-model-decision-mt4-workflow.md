@@ -1,0 +1,136 @@
+# MT4 조사 흐름·NIM 호출·NAT 감싸기·실행 기록의 해석과 약속
+
+MT4(조사 흐름·NIM 호출·NAT 감싸기·실행 기록, 모델 트랙) 구현(단위 L1~L3·I7~I13, PR #29)에서 자료 계약과 룰북이 정하지 않았거나 모델 트랙(M)에 맡긴 세부와, 검토 1회차(평가 방법론, NVIDIA 스택, 보안)가 요구한 해석을 적는다. 코드와 시험은 PR #29에 있다. 항목마다 **확정** 또는 **잠정**을 붙였다. 잠정 항목 가운데 ①·②·③·⑨는 2026-09-25(금) 09:00 사용자 결정 안건(원인 분류 코드 이름과 결정 D12)에 올린다.
+
+용어
+
+- NIM: NVIDIA 클라우드 추론 API. OpenAI 호환 chat completions 형식이다.
+- NAT: NVIDIA NeMo Agent Toolkit 1.9.0. 에이전트 실행을 추적하고 프로파일(토큰·지연 측정)을 내는 도구 모음이다.
+- trace: 사례 실행 1건의 호출과 응답을 순서대로 남긴 기록(단위 L1, `runlog_trace-{시각}.jsonl`).
+- 원인 분류 코드: 실행 결과 기록 `errors` 항목의 `code`. 실행을 멈춘 원인 하나를 적는다(단위 L3).
+- 인프라 실패 재실행: 룰북 B5가 허용하는, 모델 제공자 쪽 오류로 `FAILED`가 된 실행을 같은 설정으로 한 번 다시 돌리는 일.
+- 결정 D12: 인프라 실패 재실행 규칙의 빈칸(어떤 원인을 재실행 대상으로 볼지). 2026-09-25(금) 09:00 사용자 결정 안건이다.
+- 정책 프록시: OpenShell(에이전트를 격리해 돌리는 NVIDIA 샌드박스 런타임) 샌드박스 안 감독 프로세스가 바깥 요청의 목적지·실행 파일·HTTP method·path를 검사하는 부분.
+- CONNECT 403: HTTPS 터널을 열어 달라는 요청을 정책 프록시가 거부한 응답. L7 거부: HTTP 요청의 method·path가 정책에 맞지 않아 정책 프록시가 준 HTTP 403.
+- 조기 종료: 비교 불가가 확정되면 이력·하위 조회를 건너뛰는 흐름 규칙(개발 플랜 §6.6).
+- 허용 상태 조합: 발동하지 않은 신호는 `NOT_TRIGGERED`, 발동한 신호는 판정 상태, 사례 판정은 발동 신호 판정을 `MAINTAIN > HOLD > MONITOR`로 묶은 값이라는 규칙(자료 계약 §3.1).
+- 조립 AS2: 사례 조사 조립 작업(로드맵). 도구 봉투를 판정 정책·검증기 입력으로 옮기는 변환을 맡는다.
+
+| 항목 | 내용 |
+|---|---|
+| 날짜 | 2026-09-25(금) 01:25(기록 시각). ①~⑭는 2026-09-24(목) 밤 MT4 구현과 2026-09-25(금) 새벽 검토 1회차 수정 중에 정했다 |
+| 제목 | MT4의 원인 분류 코드·재실행 입력, 도구 시도 세기, Critic 사용 기준, 조기 종료와 비교 가능 키, 기록 없이 끝나는 경로, 초안 형식 검사 범위, 모드 사이 메시지, 정책 프록시 거부, 키 취급, 요청 설정, trace 추가 값, 배선과 조립 인계 |
+| 결정 | 아래 "결정 내용" ①~⑭ |
+| 이유와 근거 | 아래 "결정 내용"의 항목마다 적었다 |
+| 검토한 대안 | 아래 "검토한 대안" |
+| 결정 주체 | 소유 트랙(M). ①·②·⑨는 사용자 결정(09:00 안건) 뒤 확정하고, ③은 사용자 확인 뒤 확정한다 |
+| 공용 약속 여부 | ①(원인 분류 코드 이름)은 평가 구성에 닿아 공용 약속으로 본다(병렬 개발 규칙 §4.5: 애매하면 공용 약속). ③은 계약 필드 `tool_attempts`의 해석이라 사용자 확인을 받는다. 나머지는 M 소유 단위의 입출력과 흐름 세부다. 자료 계약의 필드·상태값·기준값·한도 값은 바꾸지 않았다 |
+| 영향 | 아래 "영향과 넘길 곳" |
+| 관련 PR | #29 |
+
+## 결정 내용
+
+① **원인 분류 코드 11개와 실행 상태** — 잠정(2026-09-25(금) 09:00 사용자 결정 안건. 이름 전체가 D12에서 바뀔 수 있다)
+
+- `PROVIDER_HTTP_5XX`·`PROVIDER_CONNECTION`(`FAILED`, 재실행 대상), `PROVIDER_HTTP_4XX`·`PROVIDER_REQUEST_TIMEOUT`·`PROVIDER_BAD_RESPONSE`·`CODE_ERROR`(`FAILED`, 재실행 대상 아님), `BUDGET_MODEL_REQUESTS`·`BUDGET_TOKENS`(`BUDGET_EXCEEDED`), `DEADLINE`(`TIMEOUT`), `SCHEMA_INVALID`·`VALIDATOR_BLOCKED`(`INVALID`)다. 코드와 실행 상태의 대응은 `src/tradesentry/runlog/cause_codes.py` 한 곳에 있다.
+- 재실행 대상 판정은 `infra_rerun_eligible` 하나로 한다: 실행 상태가 `FAILED`이고 `errors`의 모든 코드가 `PROVIDER_HTTP_5XX`·`PROVIDER_CONNECTION`일 때만 참이다. 룰북 B5의 "모델 제공자 쪽 오류(… 연결 실패)"를 옮긴 것이다 `[사실: cause_codes.py, 시험 tests/units/L3]`.
+- `errors`에는 실행을 멈춘 원인 하나만 적는다. 재전송으로 흡수한 5xx와 막힌 도구 시도는 trace에만 남긴다. 그래야 "원인이 모델 제공자 쪽 오류뿐인 `FAILED`" 판정이 흐려지지 않는다.
+- 이유: 룰북 B5와 평가 스킬 ②가 코드 이름을 "자료 계약이나 S0에서 정한다 `[미확인]`"로 남겼다. 이름을 바꿔도 단위 L3 한 파일과 시험만 고치면 된다.
+
+② **결정 D12에 올리는 분류(지금 값)** — 잠정(D12 결정 뒤 확정)
+
+- HTTP 429: `PROVIDER_HTTP_4XX`, 재실행 대상 아님. 재전송하지 않는다.
+- 요청별 제한 시간 초과(최대 60초, 사례 deadline 전): `PROVIDER_REQUEST_TIMEOUT`, 재실행 대상 아님. 연결 단계의 시간 초과(`URLError(socket.timeout)`)도 여기로 온다.
+- 정책 프록시 거부: `CODE_ERROR`, 재실행 대상 아님(⑨).
+- 본문을 받는 도중 끊김(`http.client.IncompleteRead`): 전송 자리에서 잡지 않아 흐름 조정이 예외 이름을 적는 `CODE_ERROR`가 된다(detail `IncompleteRead`), 재실행 대상 아님 `[사실: 검토 1회차 탐침]`.
+- 평가 스킬 ②의 "중단 원인 코드"에 해당하는 코드는 단위 L3에 없다. `CODE_ERROR`로 쓸지 새 코드를 둘지 D12에서 함께 정한다.
+
+③ **`tool_attempts`의 뜻** — 잠정(계약 필드의 해석, 사용자 확인 대상)
+
+- 실행한 도구는 사례당 8회를 넘지 않는다. 흐름 조정(단위 I12)의 단계별 몫(기본 경로 5회: `check_comparability`·`get_history`·조사자 비교 최대 2회와 `verify_evidence` 1회 예약, 수정 단계 재조회 2회, 최종 `verify_evidence` 1회)과 도구 예산 단위 I6가 함께 막는다.
+- 실행 결과 기록의 `tool_attempts`는 막힌 시도까지 센 기록 값이다(자료 계약 §8.1 "넘은 실행은 실제 값"). 그래서 `COMPLETED` 실행도 `tool_attempts`가 8을 넘을 수 있다(예: 실행 8회 + 막힌 시도 2회 = 10) `[사실: tests/units/I12/test_orchestrate.py test_tool_shares_cap_executed_tools_at_eight]`. MT2의 단위 I6도 같은 해석이다(막힌 시도는 기록에만 들고 예산을 쓰지 않는다) `[사실: MT2 브랜치 src/tradesentry/tools/budget.py 머리말]`.
+- 로드맵 MVP 체크리스트 2번("9번째 도구 시도 차단")의 증거 문구는 "실행한 도구 8회까지, 막힌 시도는 `tool_attempts`에만"으로 적기를 제안한다. 룰북 B7의 "도구 시도 중앙값"도 이 기록 값을 쓴다.
+
+④ **`critic_used`와 `revision_used`의 기준** — 확정
+
+- `critic_used`는 Critic 단계를 연 때 참이다. Critic 요청 중에 멈춘 실행(예: 5xx 재전송 한도)도 Critic을 쓴 실행으로 센다. `revision_used`는 수정 단계를 연 때 참이다. 두 값의 기준을 "단계를 열었나"로 맞췄다.
+- `agent`는 Critic이 없고 `checklist`는 Critic·수정이 없다(단위 L2가 검사한다). 첫 초안이 형식·보고서 스키마 검사에 실패하면 Critic을 건너뛴다(개발 플랜 §6.6).
+
+⑤ **조기 종료와 비교 가능 키** — 확정(키 이름은 MT2 단위 I1 봉투 정의를 따른다)
+
+- 비교 불가 여부는 `check_comparability` 봉투의 `comparability.comparable`(참거짓)로 본다 `[사실: MT2 브랜치 src/tradesentry/tools/check_comparability.py 머리말 "comparable: 두 신호 가운데 하나라도 계산할 수 있으면 참"]`. 키가 없거나 참거짓이 아니면 `CODE_ERROR`로 멈춘다. 1회차의 "없으면 비교 가능"은 봉투 모양이 다를 때 조기 종료를 조용히 끄므로 버렸다.
+- 거짓이면 `get_history`를 건너뛰고, 기본 단계와 수정 단계 모두 조사자 요청에 도구를 주지 않는다. 모델이 그래도 도구를 부르면 부르지 않고 막는다(`budget_block` 종류 `not_comparable`, `tool_attempts`에는 센다). 남은 비교·재조회 횟수는 0회로 알린다. 조기 종료는 프롬프트가 아니라 코드가 강제한다(개발 플랜 §6.6, 룰북 B2의 checklist 행).
+- `verify_evidence`(코드가 예약한 근거 대조)는 비교 불가 사례에서도 부른다. 이력·하위 조회가 아니라 초안이 가리킨 근거의 대조다.
+
+⑥ **기록 없이 끝나는 경로** — 확정
+
+- 실행 전에 정해지는 키 9개(`run_id`·`case_id`·`dataset`·`mode`·`policy_version`·`rulebook_version`·`snapshot_id`·`grouping_version`·`code_version`)는 흐름을 시작하기 전에 단위 L2 `check_static`으로 본다. 틀리면 모델 요청·도구를 쓰기 전에 `ValueError`로 멈춘다(모드·사례 키 검사와 같다). 1회차에는 흐름을 다 돈 뒤 끝에서 멈춰 NIM 요청과 도구를 쓰고도 기록이 없었다.
+- 필수 근거(단위 P5) 계산은 흐름의 `try` 안으로 옮겼다. 실패도 `CODE_ERROR` 기록(`run_start`·`run_end` 포함)으로 남는다.
+- 남는 경로는 흐름 시작 전의 입력 오류(모드·사례 키·실행 전 키)와 개발용 재생 진입 함수의 재생 불일치뿐이다. 묶음 실행(단위 E1)은 "목록에 있는데 줄이 없으면 실패"로 세므로 분모는 지켜진다 `[추론]`.
+
+⑦ **초안 형식 검사의 범위** — 확정(검토 1회차 막는 지적 1)
+
+- 모든 모드에서 막는 초안 형식 문제: JSON 객체 하나, 초안 키 다섯, 상태값 집합(`review_status` 3값, `signal_status`의 키 `unit_value`·`share`와 4값), 주장·설명·가설의 형식과 자료형, 응답이 `max_tokens`에서 잘림(`finish_reason` `length`).
+- 허용 상태 조합은 초안 형식 문제가 아니다. 룰북 B2의 스키마 검사는 형식·자료형과 발동 신호별 주장 요건(자료 계약 §9.4)만 본다. 그래서 이 조합은 검증기 부류(단위 R3 `STATUS_INCONSISTENT`)가 맡는다: `full`·`agent`·`checklist`에서는 막고 `freeform`에서는 기록만 한다. 조사자는 관찰(`status_notes`)만 돌려주고 흐름 조정이 trace에 남긴다. 1회차에는 이 조합을 모든 모드에서 막아 기준선 `freeform`에 검증기 차단이 샜다.
+- 보고서를 만들 때 단위 P4(사례 집계)가 발동 여부와 판정의 불일치로 `ValueError`를 내면, 상태를 고치지 않고 `unresolved_evidence`를 발동 신호 기준(P4·R3와 같은 기준)으로 세어 보고서를 만든다. 다른 예외는 그대로 낸다. 병합된 R1~R4·P4로 돌린 통합 시험에서 `freeform`은 사유를 기록만 하고 `COMPLETED`, `full`은 검증기 차단 뒤 수정으로 `COMPLETED`였다 `[사실: tests/units/I12/test_orchestrate.py MergedUnitsTest]`.
+
+⑧ **모드 사이 메시지** — 확정(검토 1회차 막는 지적 3)
+
+- 조사자 메시지에 모드 이름을 넣지 않는다. 모드 사이 차이는 시스템 지침 뒤쪽의 claims 지침(`claims_template.txt`·`claims_freeform.txt`)뿐이다. Critic 메시지도 사례·근거·초안만 싣는다. 룰북 B2 "`freeform`은 `full`과 처리만 다르고 나머지는 같다"를 따른다.
+- 시험: `agent`와 `full`의 첫 메시지 목록이 글자까지 같고, `full`과 `freeform`은 claims 지침만 다르며, 사용자 메시지에 모드 이름이 없다. I12 골든 입력의 `model_request`에 `request_sha256`을 넣어, 요청 본문(프롬프트 포함)이 바뀌면 재생이 실패한다.
+
+⑨ **정책 프록시 거부 가르기** — 잠정(코드 이름은 D12와 함께 정한다)
+
+- 모양 둘을 전송 자리(단위 I7)가 가른다 `[사실: artifacts/openshell/violation_tests.md V0a·V1·V2b·V3, Python 3.12.13 http.client의 터널 오류 문구]`: CONNECT 403·407(파이썬에서는 `URLError(OSError("Tunnel connection failed: 403 …"))`)과 L7 거부(HTTP 403, JSON 본문의 `error`가 `policy_denied`). 다른 터널 상태(예: 502)는 상류 실패일 수 있어 연결 실패(`PROVIDER_CONNECTION`)로 둔다.
+- 재전송하지 않고 `CODE_ERROR`로 멈춘다. 모델 제공자 쪽 오류가 아니므로 재실행 대상이 아니다. 새 코드 이름은 짓지 않았다.
+- 가르는 값: `errors` detail `policy_denied(connect) 403`·`policy_denied(l7) 403`, trace `model_error`의 `http_status`(프록시가 준 상태)·`error` `policy_denied`·`denial`(`connect`·`l7`). 기록 재생(단위 I8)도 `denial`을 그대로 돌려준다. 프록시 응답 본문(실행 파일 경로가 들어 있다)은 어디에도 싣지 않는다.
+
+⑩ **키 취급 보강** — 확정(보안 검토 권고 1·2·6, NVIDIA 검토 권고 4)
+
+- 리디렉션을 따라가지 않는 opener로 보내고 `Authorization`은 리디렉션 요청에 옮겨 가지 않는 헤더(`add_unredirected_header`)로 싣는다. 3xx는 `PROVIDER_BAD_RESPONSE`로 멈춘다. 그래서 키가 다른 호스트로 가지 않고, `model_requests`에 세지 않는 HTTP 시도도 생기지 않는다. 프록시 환경변수는 표준 처리기대로 따른다.
+- 키 환경변수 값이 공백 없는 출력 가능 ASCII가 아니면 요청을 세기 전에 변수 이름만 담은 오류(`CODE_ERROR`)로 멈춘다. 표준 라이브러리의 헤더 검사 예외는 문장·repr에 값을 싣기 때문이다. OpenShell 자리표시 값(`openshell:resolve:env:…`)은 이 형식에 든다 `[사실: spikes/x1/key_check.py PLACEHOLDER_PREFIXES]`.
+- 설정은 허용 목록만 받는다: 엔드포인트는 `https://integrate.api.nvidia.com`(443, 사용자 정보 없음), 키 환경변수 이름은 `NVIDIA_API_KEY`·`NVIDIA_INFERENCE_API_KEY`. 샌드박스 종류(채점 대상 실행용·시연용)에 따라 어느 이름을 쓸지는 CLI(로드맵 MT5)가 정한다. 스킬이나 하네스 입력에서 받지 않는다(개발 플랜 §5.2).
+
+⑪ **요청 설정과 `max_tokens`** — 확정(조정값)
+
+- `temperature` 1.0·`top_p` 0.95·`enable_thinking` 끔은 구 개발계획 G4 관문 시험(`scripts/g4_nim_toolcall_probe.py`)에서 확인한 조합이다. 모든 모드가 같다.
+- `max_tokens` 2048은 G4 확인값(1024)과 다른 조정값이다. 1회차 구현 보고의 "G4에서 확인한 조합(max_tokens 2048 포함)"은 틀린 문장이라 이 기록으로 바로잡는다. 한국어 `freeform` 초안(주장마다 12필드)이 1024를 넘을 수 있어 2048로 둔다 `[추론]`.
+- 응답이 잘리면(`finish_reason` `length`) 조사자 초안은 형식 문제로 수정 단계나 `SCHEMA_INVALID`로 가고, Critic 답은 문제 목록 맨 앞에 적는다. trace `model_response`에 `finish_reason`이 남는다. 2048이 넉넉한지는 실측 스모크의 `finish_reason`으로 1건 확인한다.
+
+⑫ **trace 추가 값** — 확정
+
+- `state_change`의 `draft`·`revised`에 `problem_list`(초안 형식 문제)·`status_notes`(허용 상태 관찰), `after_critic`에 Critic `problems`, `validator_result`에 `rejected_requests`(틀 채우기가 채우지 못해 버린 요청, 단위 R1 `rejected`), `model_error`에 `denial`을 더했다. 기존 키(`problems` 개수 등)는 그대로다.
+- 개발용 재생 진입 함수는 재생이 끝났는데 기록된 응답·봉투가 남으면 `ReplayMismatch`다.
+
+⑬ **배선(`unit_ports`)과 조립 AS2 인계** — 잠정(`[미확인]` 표시한 대응은 AS2에서 확정)
+
+- 병합된 단위의 입출력에 맞췄다: R1~R4(자료 상태의 상대국 키 `partner_code`, 근거 ID `evidence_id` 하나, 같은 항목은 한 번), P3(근거 상태에 기본값 없음), P4(`signals`·`signal_status`), 도구 예산 I6(한도 키 `tool_attempts`·`basic_tool_attempts`·`revision_stages`·`revision_requeries`·`final_verify`를 모두 넘긴다).
+- 정책 객체(단위 K4)의 `thresholds.unit_value`·`share`를 검증기 R3 입력 `thresholds`(수 목록, 개발 정책 `dev-0.1`은 30과 10)로 옮겨 모든 모드에 넘긴다. R3는 형식이 틀린 값을 오류 없이 버리므로 int·Decimal만 넘기고, 다른 형식이면 실행 전에 `ValueError`다.
+- `checklist`의 P3 근거 상태는 AS2 변환 훅 `evidence_state(사례, 봉투 목록)`을 받는다. 없으면 `missingness`와 발동 신호 블록의 `comparisons`만 채우고(P3가 입력 오류로 멈춰 `CODE_ERROR`가 된다), `comparisons`는 흐름이 받은 봉투로 `done`·`not_performed`를 적는다. 비교와 도구의 대응(`comparability` ← `check_comparability`, `partners` ← `compare_partners`, `country_and_world` ← `get_history`)과 `incomplete` 가리기는 `[미확인]`이다.
+- AS2가 넘길 것: `policy`(K4), `rows`(근거 ID → 스냅샷 행, 단위 K3), `evidence_state`(나머지 근거 상태 키, 반올림 전 정확값). AS2에서 맞출 것: C형 자료 상태(부모 HS6 행이 있는 키에서 HS10 하위 자료만 빠짐)의 `hs10` 채우기(`observation_status@<HS10>`), 도구 요청의 선택 키(`policy_version`·`grouping_version`·`attempt`·`verify_evidence`의 `envelopes`, MT2 도구 공통 틀), R3의 선택 입력 `hs_codes`.
+
+⑭ **1회차 구현의 나머지 해석** — 확정(M 소유 단위의 세부)
+
+- `COMPLETED`가 아닌 실행의 `signal_status`는 null, `review_status_final`은 null, `unresolved_evidence`는 false다. DT8 채점기도 null을 받는다 `[사실: 검토 1회차 평가 방법론 보고]`.
+- 토큰 한도는 엄격하다: 요청마다 `max_tokens`를 남은 토큰으로 줄이고, 응답 뒤 누적이 32,000을 넘으면 `BUDGET_TOKENS`다. 5xx만 요청당 3회 재전송하고(1·2·4초 대기, 재전송도 `model_requests`에 센다), 연결 실패·4xx·요청별 시간 초과는 재전송하지 않는다. 종료 기록 예약 시간은 5초(조정값)다.
+- `wall_ms`는 흐름 조정 시작부터 끝까지다(NAT 불러오기·프로파일 시간은 빠진다). 한도와 재전송 수치는 `configs/model/model.json` 한 곳에 있다.
+- 틀 채우기 모드의 주장은 `metric_id`나 근거 ID로 가리키고 R1이 값을 채운다. `rulebook_version`·`code_version`은 빈 문자열이 아닌 문자열이면 받는다.
+- NAT 출력: N7 폴더 `outputs/{실행명}/workflow_nat_wrap-{시각}/` 안에 NAT가 정한 이름(`nat_trace.jsonl`과 프로파일 파일 5개)으로 쓴다. NAT 설정 사본은 쓰지 않는다(로컬 절대경로가 들어간다). NAT를 불러오는 함수는 모두 먼저 `.env` 자동 로드와 텔레메트리를 끈다(`nat` 명령 진입점과 의존성 pymilvus가 import 때 `.env`를 읽는다).
+
+## 검토한 대안
+
+- 허용 상태 조합을 초안 형식 문제로 두기(1회차): 기준선 `freeform`이 처리(검증기 차단)의 비용을 떠안아 버렸다(⑦).
+- 정책 프록시 거부에 새 코드 이름(예: 샌드박스 정책 거부 전용 코드): 원인 분류 코드 이름 전체가 09:00 결정 대상이라 이름을 늘리지 않고 `CODE_ERROR`와 detail로 갈랐다(⑨).
+- 비교 불가 사례의 수정 단계에 도구를 주고 도구 예산 I6에 맡기기: I6은 비교 가능 여부를 모르고, 아직 부르지 않은 인자(`get_history {}`)는 같은 인자 차단에도 걸리지 않는다. 흐름이 막는다(⑤).
+- `comparable` 키가 없으면 비교 가능으로 보기(1회차): 봉투 모양이 달라지면 모든 모드에서 조기 종료가 조용히 꺼져 버렸다(⑤).
+- `critic_used`를 Critic 답을 받은 뒤 참으로 두기(1회차): 요청을 보냈는데 멈춘 실행이 false로 남아 `revision_used`와 기준이 달랐다(④).
+- `max_tokens` 1024(G4 확인값): 한국어 `freeform` 초안이 잘릴 위험이 있어 두지 않았다. 잘림을 형식 문제로 드러내는 것과 함께 2048을 쓴다(⑪).
+- 도구 이력이 있는 요청을 `tools` 없이 보내는 모양(NVIDIA 검토 권고 1): G4·X1이 확인하지 않은 모양이다. 실측 전이라 바꾸지 않았다. 확인이 실패하면 (i) 조사자 요청에 늘 같은 `tools`를 싣고 몫을 넘는 호출은 지금의 거부 경로로 막거나, (ii) 도구를 뺄 때 이전 도구 결과를 사용자 메시지 글로 옮긴다.
+
+## 영향과 넘길 곳
+
+- 사용자(09:00 안건): ①의 코드 이름, ②의 D12 입력, ③의 `tool_attempts` 뜻, ⑨의 코드 이름.
+- 오케스트레이터: 실측 스모크 1건과 NVIDIA 검토 권고 1의 탐침(도구 이력 뒤 `tools` 없는 요청, `finish_reason`)을 X1 키 래퍼로 돌린다. `docs/engineering-notes.md`의 `.env` 자동 로드 항목에 pymilvus와 `dotenv_values`(`PYTHON_DOTENV_DISABLED`를 보지 않는다) 예외를 더하는 일은 문서 작업이다. 로드맵 MVP 체크리스트 2번 증거 문구(③)와 단위 표 I13 행의 NAT 출력 이름(⑭)도 문서 후속이다.
+- 조립 AS2: ⑬의 넘길 것과 맞출 것.
+- MT5(CLI·샌드박스): 키 환경변수 이름을 샌드박스 종류로 고른다(⑩). 샌드박스 바깥 제한 시간은 사례 wall time 300초에 NAT 불러오기·프로파일 시간을 더한 값보다 길게 둔다. NAT 프로파일러 의존성(sdist 전용 패키지 셋 포함)을 이미지에 넣을지, 프로파일을 샌드박스 밖에서 만들지 정한다.
+- 단위 E3(추출)·DT8(채점기): 재실행 대상은 `infra_rerun_eligible`로 가르고, 정책 프록시 거부는 detail의 `policy_denied`로 가린다(①·⑨).
