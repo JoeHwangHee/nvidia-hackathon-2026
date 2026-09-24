@@ -194,7 +194,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 | 조립체 | 이름 | 드는 단위 | 명령·진입점 | 조립하는 작업 |
 |---|---|---|---|---|
-| 1 | 스냅샷 빌드·검증 | S2, S3, G2, G3 | `tradesentry snapshot-build`, `tradesentry snapshot-verify` | DT1(자료 쪽 구현), DT7(단위 S2 최종 빌드). 점검은 AS4 |
+| 1 | 스냅샷 빌드·검증 | S2, S3, G2, G3 | `tradesentry snapshot-build`, `tradesentry snapshot-verify` | DT1(자료 쪽 구현), DT7(단위 S2 최종 빌드). `snapshot-build`·`snapshot-verify` CLI 배선은 MT5의 첫 PR(결정 기록 `docs/tracking/decisions/20260924-2315-user-decision-impl-plan-approval.md` D18). 점검은 AS4 |
 | 2 | 탐지 | X1, X2, X4, P1, P2 | `tradesentry detect` | AS1 |
 | 3 | 사례 조사 | X1, X2, X3, X4, P3, P4, P5, G1, I1~I13, R1~R4, L1~L3 | `tradesentry run-case` | AS2 |
 | 4 | 평가 실행 | E1~E4, L1~L3 | `tradesentry evaluate`, 샌드박스 밖 실행기 | AS3 |
@@ -203,7 +203,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | 7 | 승인·화면 | A1, A2 | 모의 승인 코드, 화면 `app.py` | AP1, U1. 점검은 AS4 |
 | 8 | 런타임 밖 도구 | S1, S4, V1~V7 | 수집기, 합성 스냅샷 생성, 평가 자료 도구, 봉인 자료 생성 | 조립하지 않는다. 맡은 작업의 검사로 확인한다 |
 | 공유 | 계약 커널·자료 접근 | K1~K5 | 모든 조립체가 import한다 | 점검은 AS4 |
-| CLI 조립 층 | 명령 배선 | F1, F2 | `tradesentry <명령>`이 인자를 검증하고 조립체 1~4를 부른다 | AS1~AS3에서 명령마다 잇는다 |
+| CLI 조립 층 | 명령 배선 | F1, F2 | `tradesentry <명령>`이 인자를 검증하고 조립체 1~4를 부른다 | AS1~AS3에서 명령마다 잇는다. `snapshot-build`·`snapshot-verify` CLI 배선은 MT5의 첫 PR(결정 기록 `docs/tracking/decisions/20260924-2315-user-decision-impl-plan-approval.md` D18) |
 
 - 단위 X1·X2·X4와 L1~L3은 두 조립체에 함께 든다. X1(단가·변화율)·X2(점유율·변화)·X4(자릿수·반올림)는 조립체 2·3에, L1~L3(실행 기록)은 조립체 3·4에 든다.
 - CLI 조립 층은 조립체 1~4를 부르기만 한다. 채점기(조립체 5)는 CLI가 부르지 않고 샌드박스 밖에서 따로 돈다. 채점기가 `tradesentry` 패키지를 import하지 않는다는 경계(§2)는 조립 뒤에도 그대로다.
