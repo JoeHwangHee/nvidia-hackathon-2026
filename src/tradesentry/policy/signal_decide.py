@@ -37,7 +37,11 @@ MT1 판정 정책 결정 기록(`*-model-decision-mt1-policy.md`)에 있다.
    - 모든 HS10 하위품목의 |r_U@HS10| < θ: 하위품목 각각의 단가 변화가 기준 안이다(상쇄 검사)
    "개별 하위변동·잔차가 기준 안"을 단가 탐지 임계값 θ로 읽은 것은 잠정 해석이다(사용자 확인 대기). 계산은 분수로 한다.
 5. 필수 비교: 후보 판정 근거의 규칙이 요구하는 필수 비교(단위 P5 required_comparisons)가 모두 `done`일 때만 그 후보로
-   낸다. 하나라도 `incomplete`면 `HOLD`(`comparison_incomplete`)다. 단가 `MAINTAIN`은 비교 조건 점검과 비교국 비교,
+   낸다. 하나라도 `not_performed`면 입력 오류(ValueError)다. 1~3번에서 판정이 끝나지 않았는데 필요한 비교를 하지
+   않았다는 뜻이라, 흐름의 누락이 그럴듯한 `HOLD`로 숨지 않게 실행 실패로 드러낸다. `not_performed`가 없고 하나라도
+   `incomplete`면 `HOLD`(`comparison_incomplete`)다. 1~3번에서 판정이 끝나면 비교 표시를 보지 않는다. 그래서 비교
+   불가로 조기 종료한 정상 흐름(개발 플랜 §6.6, 룰북 B2)은 건너뛴 비교를 `not_performed`로 적어도 1번의 `HOLD`가 된다.
+   후보가 요구하지 않는 비교(예: 단가 `MONITOR`의 `partners`)는 `not_performed`여도 된다. 단가 `MAINTAIN`은 비교 조건 점검과 비교국 비교,
    단가 `MONITOR`는 비교 조건 점검, 점유율 `MAINTAIN`은 비교 조건 점검·비교국 비교·해당국 금액과 전체국가 분모 변화
    확인이 끝나 있어야 한다. 다른 상대국의 동반 변화는 상태를 낮추지 않으므로 비교 결과의 내용은 판정에 쓰지 않고,
    비교를 마쳤는지만 본다(개발 플랜 §6.3 5행과 표 아래).
@@ -57,7 +61,7 @@ MT1 판정 정책 결정 기록(`*-model-decision-mt1-policy.md`)에 있다.
 - 빠진 달·분모·하위자료는 `missingness`와 `decomposition`으로, 부모·하위 대조는 `decomposition.parent_child_match`로 넘긴다.
 - 두 달의 정의가 같은데 정보만 모자란 표시(예: 개정판을 확인하지 못한 `HSK` 코드 체계가 두 달에 같게 쓰임)는 넣지 않는다.
 - 문자열이 하나라도 있으면 그 계열은 `HOLD`다. 비교 조건 점검 자체를 끝내지 못했으면 목록이 아니라
-  `comparisons.comparability`를 `incomplete`로 둔다.
+  `comparisons.comparability`에 적는다(빠진 관측 때문이면 `incomplete`, 수행하지 않았으면 `not_performed`).
 
 입력(JSON 객체)
 - `policy`: 정책 객체. 단위 P1의 policy_values로 읽는다(단가 임계값만 쓴다).
@@ -71,9 +75,15 @@ MT1 판정 정책 결정 기록(`*-model-decision-mt1-policy.md`)에 있다.
     `rounding_unstable`, `resolved_after_correction`(참거짓).
   - `share`(점유율 신호가 발동했을 때): `comparability_issues`, `comparisons`({`comparability`, `partners`,
     `country_and_world`}), `resolved_after_correction`.
-  - 필수 비교의 완료 표시는 `done`(수행해서 결과를 얻었다. 비교국 일부의 제외 사유가 있어도 된다)이나
-    `incomplete`(수행했지만 자료가 모자라 결과를 얻지 못했다. 예: 허용된 비교국이 모두 그 달 자료 없음)다.
-    수행하지 않은 비교를 이 두 값으로 꾸미지 않는다.
+  - 필수 비교의 완료 표시는 셋 가운데 하나다(단위 P5 COMPARISON_STATES). 수행하지 않은 비교를 `done`·`incomplete`로
+    꾸미지 않는다.
+    - `done`: 수행해서 결과를 얻었다. 비교국 일부의 제외 사유가 있어도 되고, 비교국이 모두 무거래로 확인된 것도 결과다.
+    - `incomplete`: 수행했지만 빠진 관측(`REQUEST_FAILED`·`NOT_COLLECTED`·`UNRESOLVED_ZERO`) 때문에 결과를 얻지 못했다
+      (예: 허용된 비교국의 그 달 자료가 모두 빠짐).
+    - `not_performed`: 수행하지 않았다. 비교 불가로 조기 종료했거나, 도구 호출이 실패했다(재시도할 수 있는 오류를 다
+      씀. 실행 실패를 자료 보류로 보이게 하지 않는다, 개발 플랜 §7.5).
+  - `decomposition`이 null이면 분해를 수행했지만 쓸 수 없었다는 뜻이다. 분해를 수행하지 않고 null을 적어도 되는 것은
+    그 계열에 다른 1번 사유가 이미 있을 때(조기 종료)뿐이다. 분해 도구 호출이 실패했으면 근거 상태를 만들지 않는다.
   - 수는 반올림 전 정확값(int·Decimal·Fraction)이다. 표시 자릿수로 반올림한 값은 경계에서 판정을 뒤집으므로 넘기지
     않는다. float는 받지 않는다.
   발동하지 않은 신호의 블록은 없어도 되고, 있으면 읽지 않는다.
@@ -88,10 +98,10 @@ from fractions import Fraction
 from tradesentry.policy.required_evidence import (ALL_PARTNER, BASIS_COMPARISON_INCOMPLETE,
                                                   BASIS_COMPOSITION_EXPLAINED, BASIS_DATA_INSUFFICIENT,
                                                   BASIS_NOT_TRIGGERED, BASIS_RESOLVED_AFTER_CORRECTION,
-                                                  BASIS_ROUNDING_UNSTABLE, BASIS_UNEXPLAINED, COMPARISON_DONE,
-                                                  COMPARISON_STATES, NOT_COLLECTED, NOT_TRIGGERED,
-                                                  OBSERVATION_STATUSES, REQUEST_FAILED, SHARE, SIGNAL_CODES,
-                                                  TRIGGERED, UNIT_VALUE, UNRESOLVED_ZERO, check_signals,
+                                                  BASIS_ROUNDING_UNSTABLE, BASIS_UNEXPLAINED, COMPARISON_INCOMPLETE,
+                                                  COMPARISON_NOT_PERFORMED, COMPARISON_STATES, NOT_COLLECTED,
+                                                  NOT_TRIGGERED, OBSERVATION_STATUSES, REQUEST_FAILED, SHARE,
+                                                  SIGNAL_CODES, TRIGGERED, UNIT_VALUE, UNRESOLVED_ZERO, check_signals,
                                                   family_comparisons, required_comparisons, rule_status)
 from tradesentry.policy.trigger import (HS6_RE, MONTH_RE, PARTNER_RE, baseline_of, check_number, exact,
                                         policy_values)
@@ -245,7 +255,12 @@ def _decide(family: str, block: dict, missing: list[dict], threshold: Fraction) 
     if resolved:
         return BASIS_RESOLVED_AFTER_CORRECTION, []
     candidate = BASIS_COMPOSITION_EXPLAINED if explained else BASIS_UNEXPLAINED
-    incomplete = [key for key in required_comparisons(family, candidate) if comparisons[key] != COMPARISON_DONE]
+    required = required_comparisons(family, candidate)
+    skipped = [key for key in required if comparisons[key] == COMPARISON_NOT_PERFORMED]
+    if skipped:
+        raise ValueError(f"evidence.{family}.comparisons: 자료 부족 같은 앞 단계 사유가 없는데 판정 근거 {candidate}에 "
+                         f"필요한 비교 {skipped}를 수행하지 않았다(not_performed)")
+    incomplete = [key for key in required if comparisons[key] == COMPARISON_INCOMPLETE]
     if incomplete:
         return BASIS_COMPARISON_INCOMPLETE, [{"reason": "comparison_incomplete", "comparison": key}
                                              for key in incomplete]
