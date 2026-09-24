@@ -41,6 +41,8 @@ class EnvelopeTest(unittest.TestCase):
             "null 사유 없음": {**BASE, "metrics": [{**METRIC, "value": None}]},
             "comparability 모양": {**BASE, "comparability": []},
             "retryable_error 모양": {**BASE, "retryable_error": "503"},
+            "missingness에 OBSERVED": {**BASE, "missingness": [{"observation_status": "OBSERVED"}]},
+            "missingness에 모르는 상태": {**BASE, "missingness": [{"observation_status": "MISSING"}]},
         }
         for name, fields in cases.items():
             with self.subTest(name), self.assertRaises(ValueError):
@@ -51,6 +53,13 @@ class EnvelopeTest(unittest.TestCase):
         env = k5.make_envelope(**BASE, metrics=[metric], retryable_error={"reason": "잠시 뒤 다시"})
         self.assertEqual(env["metrics"], [metric])
         self.assertEqual(k5.metric_problems(metric, "s1"), [])
+
+    def test_missingness_statuses(self):
+        for status in ("NOT_COLLECTED", "REQUEST_FAILED", "UNRESOLVED_ZERO", "CONFIRMED_NO_TRADE"):
+            env = k5.make_envelope(**BASE, missingness=[{"observation_status": status, "evidence_id": "ev:s1:observation:2"}])
+            self.assertEqual(env["missingness"][0]["observation_status"], status)
+        free = k5.make_envelope(**BASE, missingness=[{"note": "도구가 정한 모양"}, "HS10 자료 없음"])
+        self.assertEqual(len(free["missingness"]), 2)  # observation_status가 없는 항목은 도구가 정한 모양 그대로
 
     def test_problems_of_incomplete_envelope(self):
         self.assertIn("봉투 키가 없다", k5.envelope_problems({"query_id": "q"})[0])

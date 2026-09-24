@@ -11,20 +11,27 @@
 `normalized_sha256` 재계산과 기록값 대조를 하고 보고(dict)를 돌려준다. 파일을 고치지 않는다. `tradesentry snapshot-verify`의
 자료 쪽 구현이고, 스냅샷 인수물의 자료 계약 검사(인수 조건 2)로도 쓴다. 정본: 자료 계약 §2.3·§3.4·§4.4 규칙 4.
 
-입력(`run`): {"snapshot_id", "build_file"?, "source_dir"?, "check_raw"?}
+입력(`run`): {"snapshot_id", "build_file"?, "source_dir"?, "check_raw"?, "peer_group_files"?}
 - build_file이 없으면 정본 빌드 `data/snapshots/{snapshot_id}/snapshot_build.sqlite`를 보고, 그 옆 기록
   `snapshot_build.json`의 `normalized_sha256`과 반드시 대조한다(기록이 없으면 실패).
 - 승인 전 개발 빌드는 build_file(저장소 루트 기준 상대경로 또는 절대경로, 예:
   `outputs/snapshot_build-{시각}/snapshot_build-{시각}.sqlite`)로 준다. 옆에 같은 이름의 기록 `.json`이 있으면 대조하고,
   없으면 대조를 건너뛰었다고 적는다(실패가 아니다).
 - raw 대조의 원천은 source_dir(없으면 `data/snapshots/{snapshot_id}/`: manifest.json, raw/, 수집기 snapshot.sqlite)다.
-  check_raw가 참(기본)인데 원천이 없으면 그 검사는 실패다. 거짓이면 raw 대조를 건너뛰고 보고에 적는다.
+  check_raw가 참(기본)인데 원천이 없으면 그 검사는 실패다. 거짓이면 raw 대조만 건너뛰고 보고에 적는다.
+- raw 없이 도는 계약 검사는 check_raw와 관계없이 늘 돈다: 표·열, 메타, 관측 값, rowid 연속, `ALL` 중복 값, 분석 범위와
+  HS10 하위 자리, 관측 행 규칙(HS 코드·월·수신 기록과 상태·raw 위치 칸·`NOT_COLLECTED` 집합·승격 집합), 비교국 표 행 규칙
+  (단위 S2와 같은 `peer_group_problems`), 비교국 표 원본 대조.
+- 비교국 표 원본 대조: peer_group_files(경로 목록)를 주면 그 파일로, 없으면 빌드 기록의 `peer_group_files` 이름을
+  `data/reference/`에서 찾아 sha256을 빌드 기록과 대조하고 행을 다시 읽어 저장된 행과 비교한다. 찾지 못하면 건너뛴다.
 
 출력: {"snapshot_id", "schema_version", "build_file"(파일 이름만), "ok", "normalized_sha256",
 "recorded_normalized_sha256", "checks": [{"name", "ok", "detail"}…], "counts"}. `ok`는 건너뛰지 않은 검사가 모두 통과했는지다.
 로컬 절대경로는 보고에 적지 않는다(N13).
 """
+import hashlib
 import json
+import re
 import sqlite3
 from pathlib import Path
 
@@ -37,6 +44,9 @@ META_COLUMNS = ("key", "value")
 TABLE_COLUMNS = {"collection_receipt": types.COLLECTION_RECEIPT_COLUMNS, "observation": types.OBSERVATION_COLUMNS,
                  "peer_group": types.PEER_GROUP_COLUMNS, "snapshot_meta": META_COLUMNS}
 EXAMPLES = 5  # 문제 예시는 몇 건만 적는다
+RAW_LOCATOR_RE = re.compile(r"item\[[0-9]+\]")  # raw 파일 안 행 위치(수집기 store_result)
+HS_CODE_RE = re.compile(r"[0-9]+")
+REFERENCE_DIR = ("data", "reference")  # 비교국 표의 정본 자리(계획 경로 표 "그룹핑 결과")
 
 
 class _Report:
@@ -132,33 +142,202 @@ def _check_all_duplicates(con: sqlite3.Connection, report: _Report) -> bool:
                       {"duplicated_keys": len(groups), **_problems_detail(conflicts)})
 
 
-def _check_coverage(con: sqlite3.Connection, meta: dict, report: _Report) -> bool:
-    """분석 범위의 키마다 값 행(부모 HS6 행·ALL HS10 행)이나 상태 행이 있다."""
+def _receipt_map(con: sqlite3.Connection) -> dict:
+    """수신 기록 request_id → {"endpoint", "params", "status", "raw_file_id"}."""
+    out = {}
+    for rid, endpoint, params_json, status, raw_file_id in con.execute(
+            "SELECT request_id, endpoint, params_json, status, raw_file_id FROM collection_receipt"):
+        try:
+            params = json.loads(params_json)
+        except (TypeError, ValueError):
+            params = None
+        out[rid] = {"endpoint": endpoint, "params": params if isinstance(params, dict) else {}, "status": status,
+                    "raw_file_id": raw_file_id}
+    return out
+
+
+def _check_coverage(con: sqlite3.Connection, meta: dict, receipts: dict, report: _Report) -> bool:
+    """분석 범위의 키마다 값 행(부모 HS6 행·ALL HS10 행)이나 상태 행이 있고, 상대국 키마다 HS10 하위 자리(HS6 조회의
+    HS10 행이나 HS6 자릿수 상태 행)가 있다(DAL `children()`이 멈추지 않게)."""
     plan = meta.get("collection_plan") or {}
     period = meta.get("period") or {}
     months = ingest.months_between(period["start"], period["end"])
-    rows = con.execute("SELECT partner_code, hs_code, hs_level, month, observation_status FROM observation "
+    rows = con.execute("SELECT request_id, partner_code, hs_code, hs_level, month, observation_status FROM observation "
                        "WHERE flow = 'import' AND month NOT LIKE 'RAW:%'").fetchall()
-    value_keys, status_keys = set(), set()
-    for partner, hs, level, month, status in rows:
+    value_keys, status_keys, child_keys = set(), set(), set()
+    for rid, partner, hs, level, month, status in rows:
         if status == types.OBSERVED:
             if level == 6 and partner != types.ALL_PARTNER:
                 value_keys.add((partner, hs, month))
             elif level == 10 and partner == types.ALL_PARTNER:
                 value_keys.add((partner, hs[:6], month))
+            elif level == 10:
+                request = receipts.get(rid) or {}
+                if request.get("endpoint") == "nitemtrade" and request["params"].get("hsSgn") == hs[:6]:
+                    child_keys.add((partner, hs[:6], month))
         else:
             status_keys.add((partner, hs, month))
-    missing = []
+    missing, missing_children = [], []
     for hs6 in plan.get("hs6", []):
         for partner in list(plan.get("partners", [])) + [types.ALL_PARTNER]:
             for month in months:
-                if (partner, hs6, month) in value_keys:
-                    continue
-                if (partner, hs6, month) in status_keys or (partner, hs6[:4], month) in status_keys:
-                    continue
-                missing.append(f"{partner}·{hs6}·{month}")
-    return report.add("coverage", not missing, {"keys": len(plan.get("hs6", [])) * (len(plan.get("partners", [])) + 1)
-                                                * len(months), **_problems_detail(missing)})
+                key = (partner, hs6, month)
+                if key not in value_keys and key not in status_keys and (partner, hs6[:4], month) not in status_keys:
+                    missing.append(f"{partner}·{hs6}·{month}")
+                if partner != types.ALL_PARTNER and key not in child_keys and key not in status_keys:
+                    missing_children.append(f"{partner}·{hs6}·{month}")
+    keys = len(plan.get("hs6", [])) * (len(plan.get("partners", [])) + 1) * len(months)
+    ok = report.add("coverage", not missing, {"keys": keys, **_problems_detail(missing)})
+    child_total = len(plan.get("hs6", [])) * len(plan.get("partners", [])) * len(months)
+    return report.add("coverage_hs10_children", not missing_children,
+                      {"keys": child_total, **_problems_detail(missing_children)}) and ok
+
+
+def _expected_status(row_status: str) -> str | None:
+    """관측 상태 → 그 행을 만든 요청의 수신 기록 상태(`None`이면 수신 기록이 없어야 한다)."""
+    return {types.OBSERVED: "OK", types.UNRESOLVED_ZERO: "OK", types.CONFIRMED_NO_TRADE: "OK",
+            types.REQUEST_FAILED: "FAILED", types.NOT_COLLECTED: None}.get(row_status, "?")
+
+
+def _check_observation_rules(con: sqlite3.Connection, meta: dict, snapshot_id: str, receipts: dict,
+                             record: dict | None, report: _Report) -> bool:
+    """raw 없이 볼 수 있는 관측 행 규칙(`check_raw`와 관계없이 늘 돈다, 자료 계약 §2.3.2·§3.4).
+
+    HS 코드는 숫자이고 자릿수는 2·4·6·10, 월은 수집 기간 안이거나 `RAW:` 원문(값이 있는 `OBSERVED` 행만), 행의 요청과 수신
+    기록·상태가 맞는다(`OBSERVED`·`UNRESOLVED_ZERO`·`CONFIRMED_NO_TRADE`는 OK, `REQUEST_FAILED`는 FAILED, `NOT_COLLECTED`는
+    수신 기록 없음), 행의 상대국·코드·월이 그 요청의 조회 조건 안, raw 위치 칸의 모양, `NOT_COLLECTED` 행 집합이 수집 계획과
+    비교국 표에서 다시 계산한 집합과 같다, `CONFIRMED_NO_TRADE`는 수입·HS6 자릿수 행에만 있고 승격 규칙을 다시 적용한
+    집합과 같다, 수신 기록은 모두 수집 계획의 요청이다.
+    """
+    plan = meta.get("collection_plan") or {}
+    period = meta.get("period") or {}
+    problems: list[str] = []
+    try:
+        planned = {r["request_id"]: r for r in ingest.build_manifest(plan)}
+        months = set(ingest.months_between(period["start"], period["end"]))
+    except (KeyError, TypeError, ValueError) as exc:
+        return report.add("observation_rules", False, {"error": f"수집 설정으로 계획을 다시 만들지 못했다({type(exc).__name__})"})
+    for rid in sorted(set(receipts) - set(planned)):
+        problems.append(f"수신 기록 {rid}: 수집 계획에 없는 요청이다")
+    columns = ", ".join(types.OBSERVATION_COLUMNS)
+    rows = [list(row) for row in con.execute(f"SELECT rowid, {columns} FROM observation ORDER BY rowid")]
+    at = {name: i + 1 for i, name in enumerate(types.OBSERVATION_COLUMNS)}
+    for row in rows:
+        rowid, rid, status = row[0], row[at["request_id"]], row[at["observation_status"]]
+        hs, level, month = row[at["hs_code"]] or "", row[at["hs_level"]], row[at["month"]] or ""
+        partner, locator, raw_file = row[at["partner_code"]], row[at["raw_row_locator"]], row[at["raw_file_id"]]
+        where = f"observation rowid {rowid}"
+        if not HS_CODE_RE.fullmatch(hs) or level not in types.HS_LEVELS:
+            problems.append(f"{where}: hs_code가 숫자가 아니거나 자릿수가 2·4·6·10이 아니다")
+        if types.MONTH_RE.fullmatch(month):
+            if month not in months:
+                problems.append(f"{where}: month가 수집 기간 밖이다")
+        elif month.startswith(types.RAW_MONTH_PREFIX) and status != types.OBSERVED:
+            problems.append(f"{where}: RAW: 월 행은 OBSERVED(응답의 총계 행)만 있다")
+        receipt = receipts.get(rid)
+        expected = _expected_status(status)
+        if expected is None and receipt is not None:
+            problems.append(f"{where}: NOT_COLLECTED인데 요청의 수신 기록이 있다")
+        elif expected not in (None, "?") and (receipt is None or receipt["status"] != expected):
+            problems.append(f"{where}: {status} 행의 요청에 {expected} 수신 기록이 없다")
+        if receipt is not None:
+            params = receipt["params"]
+            request_partner = params.get("cntyCd", types.ALL_PARTNER)
+            code = params.get("hsSgn", "")
+            request_months = set(ingest.months_between(params["strtYymm"], params["endYymm"])) \
+                if {"strtYymm", "endYymm"} <= set(params) else set()
+            if partner != request_partner:
+                problems.append(f"{where}: 상대국이 요청 조건과 다르다")
+            if (status == types.OBSERVED and not hs.startswith(code)) or (status != types.OBSERVED and hs != code):
+                problems.append(f"{where}: HS 코드가 요청 코드와 맞지 않다")
+            if types.MONTH_RE.fullmatch(month) and month not in request_months:
+                problems.append(f"{where}: 달이 요청 조회 구간 밖이다")
+        if status == types.OBSERVED:
+            if raw_file != f"{rid}.xml" or not isinstance(locator, str) or not RAW_LOCATOR_RE.fullmatch(locator):
+                problems.append(f"{where}: OBSERVED 행의 raw_file_id·raw_row_locator 모양이 수집기와 다르다")
+        else:
+            wanted = {types.UNRESOLVED_ZERO: f"{rid}.xml", types.CONFIRMED_NO_TRADE: f"{rid}.xml",
+                      types.REQUEST_FAILED: None if receipt is None else receipt["raw_file_id"]}.get(status)
+            if locator is not None or row[at["item_name"]] is not None or raw_file != wanted:
+                problems.append(f"{where}: {status} 행의 raw 위치 칸이 수집기 규칙과 다르다")
+        if status == types.CONFIRMED_NO_TRADE and (row[at["flow"]] != types.METRIC_FLOW or level != 6):
+            problems.append(f"{where}: CONFIRMED_NO_TRADE가 수입·HS6 자릿수 행이 아니다")
+    # NOT_COLLECTED 행 집합: 수신 기록 없는 계획 요청의 상태 행 + 계획 밖 비교국 행(단위 S2 규칙)
+    expected_nc: set[tuple] = set()
+    for rid, request in planned.items():
+        if rid not in receipts:
+            params = request["params"]
+            for status_row in build._status_rows(snapshot_id, rid, params.get("cntyCd", types.ALL_PARTNER),
+                                                 params.get("hsSgn", ""), request["months"], types.NOT_COLLECTED, None):
+                expected_nc.add(tuple(status_row))
+    try:
+        for status_row in build.peer_not_collected_rows(snapshot_id, plan, _peer_rows(con)):
+            expected_nc.add(tuple(status_row))
+    except build.BuildError as exc:
+        problems.append(f"비교국 표로 NOT_COLLECTED 행을 다시 만들지 못했다({exc})")
+    stored_nc = {tuple(row[1:]) for row in rows if row[at["observation_status"]] == types.NOT_COLLECTED}
+    if stored_nc != expected_nc:
+        problems.append(f"NOT_COLLECTED 행이 계획·비교국 표에서 다시 만든 집합과 다르다(스냅샷 {len(stored_nc)}, "
+                        f"다시 만든 행 {len(expected_nc)})")
+    # 승격: CONFIRMED_NO_TRADE를 되돌려 규칙을 다시 적용한 집합과 같아야 한다
+    promoted = {row[0] for row in rows if row[at["observation_status"]] == types.CONFIRMED_NO_TRADE}
+    rule = record.get("confirmed_no_trade_rule") if record else (PROMOTION_RULES[0] if promoted else None)
+    reverted = [row[1:] for row in rows]
+    for values in reverted:
+        if values[at["observation_status"] - 1] == types.CONFIRMED_NO_TRADE:
+            values[at["observation_status"] - 1] = types.UNRESOLVED_ZERO
+    try:
+        build.apply_promotion(reverted, None if rule is None else {"rule": rule})
+        again = {rows[i][0] for i, values in enumerate(reverted)
+                 if values[at["observation_status"] - 1] == types.CONFIRMED_NO_TRADE}
+        if again != promoted:
+            problems.append(f"CONFIRMED_NO_TRADE 행이 승격 규칙({rule})을 다시 적용한 집합과 다르다"
+                            f"(스냅샷 {len(promoted)}, 다시 적용 {len(again)})")
+    except build.BuildError as exc:
+        problems.append(f"승격 규칙을 다시 적용하지 못했다({exc})")
+    return report.add("observation_rules", not problems,
+                      {"rows": len(rows), "confirmed_no_trade_rule": rule, **_problems_detail(problems)})
+
+
+def _check_peer_groups(con: sqlite3.Connection, meta: dict, record: dict | None, peer_files: list[Path] | None,
+                       report: _Report) -> bool:
+    """비교국 표 행 규칙(단위 S2와 같은 함수)과 적재 순서, 그리고 입력 CSV와의 대조(빌드 기록의 sha256·행 값)."""
+    stored = _peer_rows(con)
+    problems = build.peer_group_problems([dict(zip(types.PEER_GROUP_KEYS, row)) for row in stored],
+                                         meta.get("collection_plan") or {})
+    if not problems and stored != build.order_peer_rows(stored):
+        problems.append("peer_group 행이 정해진 적재 순서가 아니다")
+    ok = report.add("peer_group_rows", not problems, {"rows": len(stored), **_problems_detail(problems)})
+    entries = list((record or {}).get("peer_group_files") or [])
+    if peer_files is None:
+        candidates = [build.REPO_ROOT.joinpath(*REFERENCE_DIR, entry.get("file_name", "")) for entry in entries]
+        if not entries:
+            if stored:
+                return report.add("peer_group_sources", None,
+                                  {"skipped": "빌드 기록에 비교국 표 파일이 없어 원본 CSV와 대조하지 못했다"}) or ok
+            return report.add("peer_group_sources", True, {"files": 0}) and ok
+        if not all(path.is_file() for path in candidates):
+            return report.add("peer_group_sources", None,
+                              {"skipped": "빌드 기록의 비교국 표 파일을 data/reference/에서 찾지 못했다"}) or ok
+        peer_files = candidates
+    source_problems = []
+    names = sorted(Path(path).name for path in peer_files)
+    if record is not None:
+        recorded = {entry.get("file_name"): entry.get("sha256") for entry in entries}
+        if sorted(recorded) != names:
+            source_problems.append("비교국 표 파일 이름이 빌드 기록과 다르다")
+        for path in peer_files:
+            digest = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+            if recorded.get(Path(path).name) != digest:
+                source_problems.append(f"{Path(path).name}: sha256이 빌드 기록과 다르다")
+    try:
+        loaded = build.order_peer_rows(build.load_peer_groups(list(peer_files)))
+        if loaded != stored:
+            source_problems.append("peer_group 행이 비교국 표 CSV를 다시 읽은 행과 다르다")
+    except (build.BuildError, OSError, TypeError) as exc:
+        source_problems.append(f"비교국 표 CSV를 다시 읽지 못했다({_error_detail(exc)['error']})")
+    return report.add("peer_group_sources", not source_problems,
+                      {"files": names, **_problems_detail(source_problems)}) and ok
 
 
 def _check_receipts(con: sqlite3.Connection, report: _Report) -> bool:
@@ -215,7 +394,7 @@ def _check_against_raw(con: sqlite3.Connection, meta: dict, snapshot_id: str, so
 
 
 def verify_snapshot(snapshot_id: str, *, build_file: Path | None = None, source_dir: Path | None = None,
-                    check_raw: bool = True) -> dict:
+                    check_raw: bool = True, peer_group_files: list[Path] | None = None) -> dict:
     """스냅샷 빌드 파일을 검증한 보고. 머리 설명의 출력 모양이다."""
     canonical = build_file is None
     if canonical:
@@ -238,14 +417,17 @@ def verify_snapshot(snapshot_id: str, *, build_file: Path | None = None, source_
         if not _check_tables(con, report):
             return out
         meta = {key: json.loads(value) for key, value in con.execute("SELECT key, value FROM snapshot_meta")}
+        record_path = build_file.with_suffix(".json")
+        record = json.loads(record_path.read_text(encoding="utf-8")) if record_path.is_file() else None
+        receipts = _receipt_map(con)
         meta_ok = _check_meta(meta, snapshot_id, report)
         _check_observation_values(con, meta, report)
         _check_all_duplicates(con, report)
-        if meta_ok:
-            _check_coverage(con, meta, report)
         _check_receipts(con, report)
-        record_path = build_file.with_suffix(".json")
-        record = json.loads(record_path.read_text(encoding="utf-8")) if record_path.is_file() else None
+        if meta_ok:  # 아래 셋은 raw 없이 도는 계약 검사다(check_raw와 관계없이 늘 돈다)
+            _check_coverage(con, meta, receipts, report)
+            _check_observation_rules(con, meta, snapshot_id, receipts, record, report)
+            _check_peer_groups(con, meta, record, peer_group_files, report)
         if check_raw:
             if (source_dir / build.MANIFEST_FILE).is_file() and (source_dir / build.RAW_DIR).is_dir():
                 _check_against_raw(con, meta, snapshot_id, source_dir, record, report)
@@ -281,7 +463,7 @@ def run(inp: object) -> object:
     """진입 함수. 입력 {"snapshot_id", "build_file"?, "source_dir"?, "check_raw"?} → 검증 보고(JSON 객체, `ok`는 합격 여부)."""
     if not isinstance(inp, dict) or "snapshot_id" not in inp:
         raise ValueError("입력은 snapshot_id를 담은 객체다")
-    unknown = set(inp) - {"snapshot_id", "build_file", "source_dir", "check_raw"}
+    unknown = set(inp) - {"snapshot_id", "build_file", "source_dir", "check_raw", "peer_group_files"}
     if unknown:
         raise ValueError(f"모르는 입력 키: {', '.join(sorted(unknown))}")
     check_raw = inp.get("check_raw", True)
@@ -294,5 +476,9 @@ def run(inp: object) -> object:
         path = Path(value)
         return path if path.is_absolute() else build.REPO_ROOT / path
 
+    files = inp.get("peer_group_files")
+    if files is not None and (not isinstance(files, list) or not all(isinstance(f, str) for f in files)):
+        raise ValueError("peer_group_files는 경로 글자의 목록이다")
     return verify_snapshot(inp["snapshot_id"], build_file=repo_path(inp.get("build_file")),
-                           source_dir=repo_path(inp.get("source_dir")), check_raw=check_raw)
+                           source_dir=repo_path(inp.get("source_dir")), check_raw=check_raw,
+                           peer_group_files=None if files is None else [repo_path(f) for f in files])

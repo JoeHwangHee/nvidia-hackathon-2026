@@ -27,6 +27,8 @@
   글자열로 둔다. 빌드 시각·경로·정책 버전 같은 출처 정보는 SQLite에 넣지 않고 옆의 빌드 기록 JSON에 둔다. 그래서 같은
   입력으로 다시 빌드하면 `normalized_sha256`이 같다.
 - `peer_group` 표: 비교국 표 CSV(열 = 계약 §2.3.6 필드 17개)를 적재한다. `similarity`는 원문 표기를 지키려고 TEXT로 둔다.
+  행 규칙(`peer_group_problems`, 단위 S3도 같은 함수를 쓴다)에 어긋나면 빌드를 멈춘다.
+- `ALL` 중복 행(행 규칙 6): 같은 (HS10, 월, 흐름)의 `ALL` HS10 월 행이 두 요청에 있고 값이 다르면 빌드를 멈춘다.
 
 `normalized_sha256`(§2.3.1·§4.4 규칙 4. 직렬화는 D가 정한다): 표 `collection_receipt`, `observation`, `peer_group`,
 `snapshot_meta`를 이름 순으로, 표마다 머리 줄 `["table", 표 이름, [열 이름…]]`(열은 정의 순서) 한 줄과 행마다
@@ -270,27 +272,116 @@ def apply_promotion(rows: list[list], rule: dict | None) -> int:
 
 
 # ----------------------------------------------------------------------------- 비교국 표
-def _peer_value(column: str, text: str, where: str) -> object:
+PEER_ID_RE = re.compile(r"[A-Z]{2}")  # 관세청 2자리 국가코드(`KCS_cntyCd`)
+HEX64_RE = re.compile(r"[0-9a-f]{64}")
+KST_ISO_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\+09:00")  # §11.4 KST ISO 8601(초 단위)
+PEER_TEXT_COLUMNS = ("method", "grouping_version", "source_version")  # 비지 않은 문자열이어야 하는 칸
+PEER_GROUP_ORDER = ("grouping_version", "entity_type", "entity_id", "scope_type", "scope_id", "peer_rank", "peer_id")
+
+
+def _peer_value(column: str, text: str) -> object:
+    """CSV 칸 글자 → 저장 값. 형식 판정은 하지 않는다(peer_group_problems가 한다)."""
     if column in NULLABLE_PEER_COLUMNS and text.strip() in NULLABLE_PEER_TEXT:
         return None
-    if column in ("peer_rank", "source_year"):
-        if not re.fullmatch(r"[0-9]+", text) or int(text) < 1:
-            raise BuildError(f"{where}.{column}: 1 이상 정수여야 한다")
+    if column in ("peer_rank", "source_year") and re.fullmatch(r"[0-9]+", text):
         return int(text)
-    if column == "similarity":
-        try:
-            if not Decimal(text).is_finite():
-                raise InvalidOperation
-        except InvalidOperation as exc:
-            raise BuildError(f"{where}.similarity: 수여야 한다") from exc
-        return text  # 원문 표기를 지킨다(TEXT)
-    if not text:
-        raise BuildError(f"{where}.{column}: 비었다")
-    return text
+    return text  # similarity는 원문 표기를 지킨다(TEXT)
+
+
+def _is_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _finite_number_text(value: object) -> bool:
+    if isinstance(value, Decimal):
+        return value.is_finite()
+    if not isinstance(value, str) or value != value.strip() or not value:
+        return False
+    try:
+        return Decimal(value).is_finite()
+    except InvalidOperation:
+        return False
+
+
+def peer_group_problems(rows: list[dict], plan: dict) -> list[str]:
+    """비교국 표 행(계약 §2.3.6 필드 이름 → 값)의 규칙 위반 목록. 비었으면 맞다. S2 적재와 S3 검증이 함께 쓴다.
+
+    plan은 수집 설정(`collection_plan`: `partners`, `hs6`)이다. 행마다: `entity_type`=`exporter_country`,
+    `entity_namespace`=`KCS_cntyCd`, 대상국은 수집 상대국, 비교국은 두 글자 대문자 국가코드이고 대상국 자신·`ALL`이 아니다,
+    `scope_type`은 소문자 `hs2`·`hs4`·`hs6`이고 `scope_id`는 그 자릿수 숫자이며 수집 HS6 가운데 하나의 앞자리,
+    `peer_rank`는 1 이상 정수, `similarity`는 null이나 유한한 수의 글자, `community_id`는 null이나 비지 않은 글자,
+    `baci_country_code`는 null이나 숫자 글자, `params_hash`·`input_sha256`은 16진수 소문자 64자, `generated_at`은 KST ISO
+    8601(초 단위, `+09:00`), `source_year`는 네 자리 연도 정수, `method`·`grouping_version`·`source_version`은 비지 않은 글자.
+    묶음(`grouping_version`, `entity_type`, `entity_id`, `scope_type`, `scope_id`)마다 순위는 1부터 빈틈없이 이어지고
+    비교국이 겹치지 않는다.
+    """
+    partners = set(plan.get("partners", []))
+    hs6_codes = list(plan.get("hs6", []))
+    digits = {"hs2": 2, "hs4": 4, "hs6": 6}
+    problems: list[str] = []
+    groups: dict[tuple, list[tuple]] = {}
+    for index, row in enumerate(rows, start=1):
+        where = f"비교국 표 {index}행"
+        if set(row) != set(types.PEER_GROUP_KEYS):
+            problems.append(f"{where}: 필드가 계약 §2.3.6 17개와 다르다")
+            continue
+        if row["entity_type"] != types.PEER_ENTITY_TYPE:
+            problems.append(f"{where}: entity_type이 {types.PEER_ENTITY_TYPE}가 아니다")
+        if row["entity_namespace"] != types.PARTNER_NAMESPACE:
+            problems.append(f"{where}: entity_namespace가 {types.PARTNER_NAMESPACE}가 아니다")
+        if row["entity_id"] not in partners:
+            problems.append(f"{where}: 대상국 {row['entity_id']!r}가 수집 상대국이 아니다")
+        peer = row["peer_id"]
+        if peer == types.ALL_PARTNER:
+            problems.append(f"{where}: 비교국이 전체국가 ALL이다")
+        elif not isinstance(peer, str) or not PEER_ID_RE.fullmatch(peer):
+            problems.append(f"{where}: 비교국 {peer!r}가 두 글자 대문자 국가코드가 아니다")
+        elif peer == row["entity_id"]:
+            problems.append(f"{where}: 대상국 자신을 비교국으로 두었다")
+        scope_type, scope_id = row["scope_type"], row["scope_id"]
+        if scope_type not in digits:
+            problems.append(f"{where}: scope_type {scope_type!r}가 소문자 hs2·hs4·hs6가 아니다")
+        elif not isinstance(scope_id, str) or not re.fullmatch(r"[0-9]{%d}" % digits[scope_type], scope_id):
+            problems.append(f"{where}: scope_id가 {scope_type} 자릿수 숫자가 아니다")
+        elif not any(code.startswith(scope_id) for code in hs6_codes):
+            problems.append(f"{where}: scope_id {scope_id}가 수집 HS6의 앞자리가 아니다")
+        if not _is_int(row["peer_rank"]) or row["peer_rank"] < 1:
+            problems.append(f"{where}: peer_rank가 1 이상 정수가 아니다")
+        if row["similarity"] is not None and not _finite_number_text(row["similarity"]):
+            problems.append(f"{where}: similarity가 null이나 수가 아니다")
+        if row["community_id"] is not None and (not isinstance(row["community_id"], str) or not row["community_id"]):
+            problems.append(f"{where}: community_id가 null이나 비지 않은 글자가 아니다")
+        code = row["baci_country_code"]
+        if code is not None and (not isinstance(code, str) or not re.fullmatch(r"[0-9]+", code)):
+            problems.append(f"{where}: baci_country_code가 null이나 숫자 글자가 아니다")
+        for column in ("params_hash", "input_sha256"):
+            if not isinstance(row[column], str) or not HEX64_RE.fullmatch(row[column]):
+                problems.append(f"{where}: {column}이 16진수 소문자 64자가 아니다")
+        if not isinstance(row["generated_at"], str) or not KST_ISO_RE.fullmatch(row["generated_at"]):
+            problems.append(f"{where}: generated_at이 KST ISO 8601(+09:00) 시각이 아니다")
+        if not _is_int(row["source_year"]) or not 1000 <= row["source_year"] <= 9999:
+            problems.append(f"{where}: source_year가 네 자리 연도 정수가 아니다")
+        for column in PEER_TEXT_COLUMNS:
+            if not isinstance(row[column], str) or not row[column]:
+                problems.append(f"{where}: {column}이 비었다")
+        key = tuple(str(row[k]) for k in PEER_GROUP_ORDER[:5])
+        groups.setdefault(key, []).append((row["peer_rank"], peer))
+    for key, members in groups.items():
+        ranks = [rank for rank, _ in members]
+        if all(_is_int(rank) for rank in ranks) and sorted(ranks) != list(range(1, len(ranks) + 1)):
+            problems.append(f"비교국 묶음 {'·'.join(key)}: 순위가 1부터 빈틈없이 이어지지 않는다")
+        peers = [peer for _, peer in members]
+        if len(set(peers)) != len(peers):
+            problems.append(f"비교국 묶음 {'·'.join(key)}: 같은 비교국이 두 번 있다")
+    return problems
 
 
 def load_peer_groups(paths: list[Path]) -> list[list]:
-    """비교국 표 CSV들을 읽어 `peer_group` 행 목록(계약 §2.3.6 필드 순서)을 정해진 순서로 돌려준다."""
+    """비교국 표 CSV들을 읽어 `peer_group` 행 목록(계약 §2.3.6 필드 순서, 파일·줄 순서)을 돌려준다.
+
+    열이 계약 필드 17개와 다르면 BuildError다. 칸 값의 규칙은 peer_group_problems로 따로 본다. 정해진 순서는
+    order_peer_rows로 만든다.
+    """
     rows = []
     for path in paths:
         with open(path, encoding="utf-8", newline="") as fh:
@@ -298,19 +389,31 @@ def load_peer_groups(paths: list[Path]) -> list[list]:
             fields = reader.fieldnames or []
             if sorted(fields) != sorted(types.PEER_GROUP_KEYS) or len(fields) != len(set(fields)):
                 raise BuildError(f"비교국 표 {Path(path).name}: 열이 계약 §2.3.6 필드 17개와 다르다")
-            for number, record in enumerate(reader, start=2):
-                where = f"{Path(path).name}:{number}"
-                row = [_peer_value(col, record[col], where) for col in types.PEER_GROUP_KEYS]
-                values = dict(zip(types.PEER_GROUP_KEYS, row))
-                if values["entity_type"] != types.PEER_ENTITY_TYPE or values["entity_namespace"] != types.PARTNER_NAMESPACE:
-                    raise BuildError(f"{where}: entity_type·entity_namespace가 계약 값이 아니다")
-                digits = {"hs2": 2, "hs4": 4, "hs6": 6}.get(values["scope_type"])
-                if digits is None or not re.fullmatch(r"[0-9]{%d}" % digits, values["scope_id"]):
-                    raise BuildError(f"{where}: scope_type·scope_id가 hs2·hs4·hs6와 그 자릿수 코드가 아니다")
-                rows.append(row)
-    order = [types.PEER_GROUP_KEYS.index(k) for k in ("grouping_version", "entity_type", "entity_id", "scope_type",
-                                                      "scope_id", "peer_rank", "peer_id")]
+            for record in reader:
+                if None in record or any(record[col] is None for col in types.PEER_GROUP_KEYS):
+                    raise BuildError(f"비교국 표 {Path(path).name}: 칸 수가 머리줄과 다른 줄이 있다")
+                rows.append([_peer_value(col, record[col]) for col in types.PEER_GROUP_KEYS])
+    return rows
+
+
+def order_peer_rows(rows: list[list]) -> list[list]:
+    """비교국 표 행의 정해진 적재 순서(`grouping_version`, `entity_type`, `entity_id`, `scope_type`, `scope_id`,
+    `peer_rank`, `peer_id`). peer_group_problems를 통과한 행에만 쓴다."""
+    order = [types.PEER_GROUP_KEYS.index(k) for k in PEER_GROUP_ORDER]
     return sorted(rows, key=lambda r: tuple(r[i] for i in order))
+
+
+def all_duplicate_problems(rows: list[list]) -> list[str]:
+    """행 규칙 6: `ALL` HS10 월 행이 같은 (HS10, 월, 흐름)으로 둘 이상이면 금액·중량이 모두 같아야 한다. 다른 키 목록."""
+    c = _COL
+    seen: dict[tuple, set] = {}
+    for row in rows:
+        if row[c["partner_code"]] == types.ALL_PARTNER and row[c["hs_level"]] == 10 \
+                and row[c["observation_status"]] == types.OBSERVED and types.MONTH_RE.fullmatch(row[c["month"]]):
+            key = (row[c["hs_code"]], row[c["month"]], row[c["flow"]])
+            seen.setdefault(key, set()).add((row[c["amount_usd"]], row[c["net_weight_kg"]]))
+    return [f"ALL {hs}·{month}·{flow}: 중복 행의 값이 다르다" for (hs, month, flow), values in sorted(seen.items())
+            if len(values) > 1]
 
 
 def peer_not_collected_rows(snapshot_id: str, config: dict, peer_rows: list[list]) -> list[list]:
@@ -507,7 +610,15 @@ def assemble(snapshot_id: str, source_dir: Path, policy: dict | None, peer_group
     if record is not None and (record.get("raw_combined_sha256") != raw_sha256
                                or record.get("raw_files", raw_files) != raw_files):
         raise BuildError(f"raw 결합 해시가 {HASH_FILE}의 기록과 다르다")
+    duplicates = all_duplicate_problems(rows)
+    if duplicates:  # 행 규칙 6: 하나를 조용히 고르지 않고 빌드를 멈춘다
+        raise BuildError(f"ALL 중복 행의 값이 다르다({len(duplicates)}건, 첫 번째 {duplicates[0]})")
     peers = load_peer_groups(list(peer_group_files))
+    problems = peer_group_problems([dict(zip(types.PEER_GROUP_KEYS, row)) for row in peers],
+                                   source["manifest"]["config"])
+    if problems:
+        raise BuildError(f"비교국 표가 계약 §2.3.6 행 규칙에 맞지 않다({len(problems)}건, 첫 번째 {problems[0]})")
+    peers = order_peer_rows(peers)
     rows += peer_not_collected_rows(snapshot_id, source["manifest"]["config"], peers)
     rule = None if policy is None else policy["confirmed_no_trade"]
     promoted = apply_promotion(rows, rule)

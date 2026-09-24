@@ -106,8 +106,12 @@ def raw_combined_sha256_shasum_style(raw_dir: Path) -> str:
     return hashlib.sha256("".join(out).encode("utf-8")).hexdigest()
 
 
-def make_source(root: Path, *, with_hash_file: bool = True) -> Path:
-    """root 아래에 SNAPSHOT_ID 폴더(manifest.json, raw/, snapshot.sqlite, snapshot_hash.json)를 만들고 그 경로를 돌려준다."""
+def make_source(root: Path, *, with_hash_file: bool = True, responses: dict | None = None) -> Path:
+    """root 아래에 SNAPSHOT_ID 폴더(manifest.json, raw/, snapshot.sqlite, snapshot_hash.json)를 만들고 그 경로를 돌려준다.
+
+    responses를 주면 RESPONSES 대신 그 응답으로 만든다(변조 시험용).
+    """
+    responses = RESPONSES if responses is None else responses
     requests = ingest.build_manifest(CONFIG)
     with mock.patch.object(ingest, "SNAP_DIR", Path(root)), mock.patch.object(ingest, "now_iso", return_value=FIXED_TIME):
         folder, con = ingest.open_snapshot(SNAPSHOT_ID, "real")
@@ -116,7 +120,7 @@ def make_source(root: Path, *, with_hash_file: bool = True) -> Path:
                                                          ensure_ascii=False, indent=1), encoding="utf-8")
         for request in requests:
             params = request["params"]
-            spec = RESPONSES[(request["endpoint"], params["hsSgn"], params.get("cntyCd", "ALL"))]
+            spec = responses[(request["endpoint"], params["hsSgn"], params.get("cntyCd", "ALL"))]
             if spec is None:
                 continue
             if spec == "FAILED":

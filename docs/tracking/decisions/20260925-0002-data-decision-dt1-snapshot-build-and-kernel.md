@@ -15,7 +15,7 @@ DT1(자료 접근층과 계약 커널, 데이터 트랙) 구현에서 자료 계
 |---|---|
 | 날짜 | 2026-09-25(금) 00:02(기록 시각). 결정은 2026-09-24(목) 23:30~2026-09-25(금) 00:00 DT1 구현 중에 했다 |
 | 제목 | `normalized_sha256` 직렬화, 스냅샷 빌드의 행 순서·표 형식·빌드 기록, 정책 파일 형식, 근거 ID rowid 표준형, 국가 코드 대응표 열 |
-| 결정 | 아래 "결정 내용" ①~⑦ |
+| 결정 | 아래 "결정 내용" ①~⑦과 "2회차 보탬" ⑧~⑩(검토 반영, 같은 PR의 수정 커밋) |
 | 이유와 근거 | 아래 "결정 내용"의 항목마다 적었다 |
 | 검토한 대안 | 아래 "검토한 대안" |
 | 결정 주체 | 소유 트랙(D). ⑤의 정책 객체 모양은 판정 정책 작업(MT1)이 먼저 가정한 모양을 오케스트레이터 알림으로 받아 그대로 맞췄다 |
@@ -71,6 +71,24 @@ DT1(자료 접근층과 계약 커널, 데이터 트랙) 구현에서 자료 계
 ⑦ **국가 코드 대응표 열(단위 G3)** `[DESIGN]`
 
 - `data/reference/country_map.csv`의 열은 `cntyCd`(관세청 2자리), `baci_country_code`, `baci_country_iso3`, `kcs_country_name`, `baci_country_name`, `note`이고, 행은 수집 상대국 16개다. 대만(`TW`)은 BACI 490(iso3 자리 `S19`)이며 `note`에 "BACI 490에는 대만 외 기타 아시아 미상분이 섞일 수 있다"를 적었다. 값은 커밋된 참조 자료(`data/reference/partner_superset_2023.json`, BACI 한국 수입 발췌 CSV, 관세청 조회코드 국가명)에서 가져왔고 시험(`tests/test_country_map.py`)이 대조한다.
+
+## 2회차 보탬(2026-09-25(금), 무역통계·Codex 교차 검토 반영)
+
+⑧ **스냅샷 빌드가 멈추는 경우와 비교국 표 행 규칙** `[DESIGN]`
+
+- `ALL` 중복 행(자료 계약 §2.3.2 행 규칙 6): 같은 (HS10, 월, 흐름)의 `ALL` HS10 월 행이 두 요청에 있고 금액·중량이 다르면 빌드를 멈춘다(조용히 고르지 않는다).
+- 비교국 표 행 규칙은 함수 하나(`peer_group_problems`, 단위 S2)로 정하고 단위 S3도 같은 함수로 저장된 행을 본다. 규칙: `entity_type`=`exporter_country`, `entity_namespace`=`KCS_cntyCd`, 대상국은 수집 상대국, 비교국은 두 글자 대문자 국가코드이고 대상국 자신과 `ALL`이 아니다(자료 계약 §2.3.6의 "대상국을 뺀"·"p 제외"), `scope_type`은 소문자 `hs2`·`hs4`·`hs6`이고 `scope_id`는 그 자릿수 숫자이며 수집 HS6 가운데 하나의 앞자리, `peer_rank`는 1 이상 정수이고 묶음마다 1부터 빈틈없이 이어지며 비교국이 겹치지 않는다, `similarity`는 null이나 유한한 수, `community_id`는 null이나 비지 않은 글자, `baci_country_code`는 null이나 숫자 글자, `params_hash`·`input_sha256`은 16진수 소문자 64자, `generated_at`은 KST ISO 8601(`+09:00`, 초 단위), `source_year`는 네 자리 연도, `method`·`grouping_version`·`source_version`은 비지 않은 글자다. MT6의 `g0` 표(320행)가 이 규칙을 통과함을 확인했다 `[사실: 2026-09-25(금) 읽기 전용 확인]`.
+
+⑨ **스냅샷 검증(단위 S3)의 범위** `[DESIGN]`
+
+- `check_raw`는 raw 대조(raw에서 다시 만든 행과 한 칸씩 비교)만 켜고 끈다. raw 없이 볼 수 있는 계약 검사는 늘 돈다: HS 코드는 숫자이고 자릿수는 2·4·6·10, 달은 수집 기간 안(`RAW:` 원문은 `OBSERVED` 총계 행만), 상태와 수신 기록(`OBSERVED`·`UNRESOLVED_ZERO`·`CONFIRMED_NO_TRADE`는 `OK`, `REQUEST_FAILED`는 `FAILED`, `NOT_COLLECTED`는 수신 기록 없음), 행의 상대국·코드·달이 요청 조건 안, raw 위치 칸의 모양(수집기 규칙), `NOT_COLLECTED` 행 집합이 수집 계획과 비교국 표에서 다시 계산한 집합과 같음, `CONFIRMED_NO_TRADE`는 수입·HS6 자릿수 행에만 있고 승격 규칙을 다시 적용한 집합과 같음, 상대국 키마다 HS10 하위 자리(HS6 조회의 HS10 행이나 HS6 자릿수 상태 행), 비교국 표 행 규칙(⑧).
+- 관측 행 규칙은 수집 계획을 메타 `collection_plan`에서 수집기 `build_manifest`로 다시 만들어 본다. 그래서 manifest가 `build_manifest(collection_plan)`과 같고 raw 위치 칸이 수집기 규칙(`{request_id}.xml`, `item[n]`)을 따르는 스냅샷을 전제로 한다. 합성 스냅샷(DT3)도 수집기 형식 원천을 만든 뒤 단위 S2로 빌드해야 이 검사를 통과한다.
+- 비교국 표 원본 대조: 입력 `peer_group_files`가 있으면 그 파일로, 없으면 빌드 기록의 파일 이름을 `data/reference/`(계획 경로 표의 "그룹핑 결과" 자리)에서 찾아, sha256을 빌드 기록과 대조하고 행을 다시 읽어 저장된 행과 비교한다. 찾지 못하면 건너뛰고 보고에 적는다.
+
+⑩ **도구 봉투와 개발용 정책** `[DESIGN]`
+
+- 도구 봉투 `missingness` 항목의 모양은 도구(M)가 정한다. 다만 항목이 `observation_status`를 가지면 `OBSERVED`가 아닌 관측 상태 코드여야 한다(자료 계약 §5.2).
+- `dev-0.1`에는 승격 규칙이 없다. `dev-0.1`로 만든 빌드는 `UNRESOLVED_ZERO`를 그대로 두고, 승격은 사용자가 승인한 `policy_v1`의 규칙으로만 한다. `configs/policy_dev.json` 설명에도 적었다(수치는 그대로라 `policy_version`을 올리지 않는다).
 
 ## 검토한 대안
 

@@ -14,6 +14,8 @@
 - 꼭 받아야 하는 값: `query_id`, `tool`(도구 5개 중 하나), `scope`(실제로 조회한 범위 객체), `snapshot_id`,
   `source_kind`(`real`/`controlled`), `elapsed_ms`(0 이상 정수). `scope`의 세부 모양은 도구(M)가 정한다(§5.1).
 - 근거 ID는 형식(단위 K2)과 스냅샷(봉투의 `snapshot_id`와 같음)을 본다. 행이 실제로 있는지는 자료 접근층이 본다.
+- `missingness` 항목의 모양은 도구(M)가 정한다. 다만 항목이 `observation_status`를 가지면 그 값은 `OBSERVED`가 아닌 관측
+  상태 코드여야 한다(§5.2 "빠진 자료와 그 관측 상태", 자료 접근층의 missingness 항목과 같은 키).
 - `metrics`의 원소는 `metric` 객체 키 8개를 모두, 그 키만 가진다. 수는 int나 Decimal이다. 봉투 어디에도 float를
   두지 않는다(계약 §11.1 "수치 입력은 정수 또는 Decimal로 보존").
 """
@@ -123,6 +125,12 @@ def envelope_problems(envelope: object) -> list[str]:
         problems.append("comparability: 객체나 null이어야 한다")
     if not isinstance(e["missingness"], list):
         problems.append("missingness: 목록이어야 한다")
+    else:
+        for i, entry in enumerate(e["missingness"]):
+            status = entry.get("observation_status") if isinstance(entry, dict) else None
+            if isinstance(entry, dict) and "observation_status" in entry \
+                    and (status not in types.OBSERVATION_STATUSES or status == types.OBSERVED):
+                problems.append(f"missingness[{i}].observation_status: OBSERVED가 아닌 관측 상태 코드여야 한다(§5.2)")
     if e["retryable_error"] is not None and not isinstance(e["retryable_error"], dict):
         problems.append("retryable_error: 객체나 null이어야 한다")
     elapsed = e["elapsed_ms"]
