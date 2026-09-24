@@ -88,20 +88,6 @@
 - 지금 풀 수 없는 이유: 고칠 곳이 개발 플랜과 로드맵 본문이라, 계획 문서 수정 PR과 그 검토(개발 플랜은 Codex 교차 검토 포함)가 필요하다. 이 항목을 찾은 PR #16은 결정 기록 PR이다.
 - 가능한 방법: 그 경우가 생기면 결정 자료에 룰북 A1 기준(FAIL)으로 적는다(`docs/tracking/decisions/20260924-1504-user-approval-x1-exception.md`). 개발 플랜·로드맵 문구는 다음 계획 문서 수정 PR에서 룰북에 맞춘다.
 
-## 키 사본이 생기는 곳이 "키는 `.env`에만" 규칙과 글자로 어긋난다
-
-- 무엇이 깨지나: 안내 문서 절대 규칙 1과 병렬 개발 규칙 §10.2는 "키는 `.env`에만 둔다"고 적는다. 그런데 설계된 키 주입 방식은 샌드박스 밖 게이트웨이(OpenShell의 제어면, 곧 상태·정책·provider(자격 증명 묶음) 설정을 보관하고 샌드박스에 내려보내는 부분)가 키를 보관하고, 샌드박스 컨테이너 안에서 root로 도는 감독 프로세스(supervisor)가 게이트웨이에서 자격 증명을 받아 요청 시점에 넣어야 동작한다 `[사실: OpenShell v0.0.116 docs/about/how-it-works.mdx 14·116행, docs/sandboxes/manage-providers.mdx 327~330행]`. credential placeholder rewrite(샌드박스의 에이전트 쪽 프로세스에는 자리표시 문자열만 두고, 감독 프로세스의 정책 프록시가 요청 시점에 실제 키로 바꾸는 방식)가 그런 방식이다. 그래서 키 사본이 다음 곳에 생긴다.
-  - 게이트웨이의 provider 저장소: X1 2단계에서 NemoClaw(OpenShell 위에서 에이전트를 돌리는 NVIDIA 참조 스택)의 등록 단계가 다시 구성한 게이트웨이에 provider `nvidia-prod`(자격 증명 키 이름 `NVIDIA_INFERENCE_API_KEY`, 키 1개)를 만들었다 `[사실: artifacts/openshell/logs/20260924-x1-demo-policy.txt 2절]`. 그 게이트웨이의 DB 폴더는 NemoClaw가 `gateway.env`의 `OPENSHELL_DB_URL`에 적는다 `[사실: spikes/x1/README.md "자리표시" 표, demo transcript [N2]]`. OpenShell 게이트웨이는 `OPENSHELL_DB_URL`이 가리키는 DB에 provider 자격 증명을 암호화해 저장한다 `[사실: OpenShell v0.0.116 docs/reference/gateway-config.mdx 19·392행]`. 저장소 안의 값은 열어 보지 않았다.
-  - 샌드박스 안 root 감독 프로세스: 시연 샌드박스를 만들 때 게이트웨이가 provider 환경을 내려보냈고 샌드박스 쪽이 받았다 `[사실: artifacts/openshell/logs/20260924-x1-demo-openshell-logs.txt 7·13행]`. 샌드박스가 도는 동안 감독 프로세스가 자격 증명을 가진다 `[사실: how-it-works.mdx 116행]`. X1의 키 조회(샌드박스 사용자 UID 998 권한)는 이 프로세스를 조회하지 못했다 `[사실: artifacts/openshell/violation_tests.md 머리말 "키 조회 범위"]`.
-  - 1단계 게이트웨이 상태 저장소: provider `x1-nvidia`·`x1-nvidia-route`를 지웠는지와 키가 남았는지 모두 `[미확인]`이다. 정리 명령과 결과의 기록이 저장소에 없다 `[사실: artifacts/openshell/violation_tests.md 시험 환경 표의 "정리" 행]`.
-  - NemoClaw 사용자 설정 폴더: 이름으로 보아 키 파일인 것이 없었다. 다만 내용을 열지 않아 사본이 있는지는 `[미확인]`이다 `[사실: 오케스트레이터가 18:05 무렵 파일 이름만 확인]`.
-  - 호스트 전달 프로세스(127.0.0.1:18789): 키 래퍼 아래에서 돈 온보딩 도중에 시작했다(demo transcript [N3]). NemoClaw의 하위 프로세스 환경 허용 목록이 `NVIDIA_INFERENCE_API_KEY`를 빼므로 키를 물려받았을 가능성은 낮다 `[추론: NemoClaw v0.0.124 src/lib/subprocess-env.ts]`.
-  - 사본을 지우는 명령은 `spikes/x1/README.md` "개발 기계 되돌리기" 절의 "키 사본"에 있다.
-- 영향 범위: 규칙을 글자대로 읽으면 설계된 주입 방식이 규칙 위반이 된다. 키를 교체할 때 고쳐야 할 곳도 한 군데가 아니다.
-- 지금 풀 수 없는 이유: 절대 규칙의 문구를 바꾸는 일과, NemoClaw 게이트웨이에 남은 키를 그대로 둘지, 쓰지 않는 1단계 게이트웨이 상태 저장소를 지울지는 사용자 결정이다. 키를 지우면 시연 샌드박스가 돌지 않는다. 설정 폴더 파일에 사본이 있는지는 파일을 열어야 알 수 있어서 에이전트가 확인하지 않는다.
-- 가능한 방법: 규칙 문구를 다음처럼 고친다. "키 원본은 `.env`에 둔다. 사본은 설계된 주입 경로(샌드박스 밖 게이트웨이, 실행 중인 샌드박스 안의 root 감독 프로세스, NemoClaw 설정 폴더, 옮겨 가면 Brev(NVIDIA 원클릭 클라우드 개발 환경) 호스트)에만 둔다. 에이전트는 사본 위치도 열거나 출력하지 않는다(키 값이 드러날 수 있는 조회 출력 포함). 어느 경우에도 저장소·로그·trace(실행 추적 기록)와 샌드박스 사용자 프로세스가 읽을 수 있는 곳에는 없다." 그리고 키를 교체할 때 갱신하거나 지울 곳 목록(1단계 게이트웨이 상태 저장소 포함)을 운영 문서에 둔다. 쓰지 않는 1단계 게이트웨이 상태 저장소는 지우는 방안도 있다. 규칙이 정해지기 전에도 오케스트레이터는 같은 금지 문장을 작업 지시에 넣는다.
-
-
 ## NemoClaw `agent` 래퍼가 정상 턴(OpenClaw 결과는 성공, NemoClaw 기준으로는 미완료 표식)을 종료 코드 1로 끝낸다(`replayInvalid`)
 
 - 무엇이 깨지나: X1 시연 샌드박스에서 한 줄 경로가 통과한 턴도 `nemoclaw <이름> agent`(NemoClaw가 OpenClaw 에이전트 턴 하나를 대신 실행하는 명령)는 종료 코드 1로 끝났다. OpenClaw 결과는 `status: ok`, `stopReason: stop`, 도구 실패 0이었고 CLI 결과 JSON도 고치지 않은 채 돌아왔다. 그러나 결과 메타데이터에 `replayInvalid: true`가 있어 래퍼가 1을 냈다 `[사실: artifacts/openshell/violation_tests.md §6.3 DA2·DA4, NemoClaw v0.0.124 저장소 docs/reference/commands.mdx의 agent 명령 설명]`. NemoClaw 문서는 결과가 성공이어도 메타데이터에 `replayInvalid: true`가 있으면 래퍼가 1을 내고 미완료 턴으로 알린다고 적는다 `[사실: NemoClaw v0.0.124 docs/reference/commands.mdx 1288행]`. 이 판(OpenClaw 2026.7.1)에서 `replayInvalid`가 붙은 원인은 `[미확인]`이다.
