@@ -1,12 +1,29 @@
 """단위 I7·I10~I12 시험용 가짜 전송 자리와 가짜 시계(시험 파일 안에만 두는 대역). 네트워크를 쓰지 않는다."""
 import json
+from unittest import mock
 
 
-def ok_body(content=None, tool_calls=None, prompt_tokens=800, completion_tokens=100):
+def ok_body(content=None, tool_calls=None, prompt_tokens=800, completion_tokens=100, finish_reason="stop"):
     message = {"role": "assistant", "content": content, "tool_calls": tool_calls}
-    return json.dumps({"id": "fake", "choices": [{"index": 0, "message": message, "finish_reason": "stop"}],
+    return json.dumps({"id": "fake", "choices": [{"index": 0, "message": message, "finish_reason": finish_reason}],
                        "usage": {"prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens,
                                  "total_tokens": prompt_tokens + completion_tokens}}).encode("utf-8")
+
+
+class NoNetworkMixin:
+    """골든 쌍 밖 시험의 겹 보호: 소켓 연결(socket.socket.connect, socket.create_connection)을 실패하는 함수로 바꾼다.
+    전송 자리를 가짜로 바꾸지 못한 시험이 실제 엔드포인트에 닿지 않게 한다."""
+
+    def setUp(self):
+        super().setUp()
+
+        def refuse(*args, **kwargs):
+            raise AssertionError("시험에서 네트워크 연결을 시도했다")
+
+        for target in ("socket.socket.connect", "socket.create_connection"):
+            patcher = mock.patch(target, refuse)
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
 
 class FakeClock:
@@ -25,7 +42,8 @@ class FakeClock:
 
 
 class ScriptedTransport:
-    """정해 둔 결과를 차례로 돌려준다. 결과 하나는 {"status": 503} 또는 {"body": bytes} 또는 {"error": "connection"}."""
+    """정해 둔 결과를 차례로 돌려준다. 결과 하나는 {"status": 503} 또는 {"body": bytes} 또는 {"error": "connection"}
+    또는 {"error": "policy_denied", "status": 403, "denial": "connect"}."""
 
     def __init__(self, script, clock=None, elapsed_ms=700):
         self.script = list(script)
@@ -44,7 +62,10 @@ class ScriptedTransport:
         if self.clock is not None:
             self.clock.now += elapsed
         if "error" in step:
-            return {"http_status": None, "body": b"", "error": step["error"], "elapsed_ms": elapsed}
+            sent = {"http_status": step.get("status"), "body": b"", "error": step["error"], "elapsed_ms": elapsed}
+            if "denial" in step:
+                sent["denial"] = step["denial"]
+            return sent
         if "status" in step:
             return {"http_status": step["status"], "body": step.get("body", b""), "error": None, "elapsed_ms": elapsed}
         return {"http_status": 200, "body": step["body"], "error": None, "elapsed_ms": elapsed}

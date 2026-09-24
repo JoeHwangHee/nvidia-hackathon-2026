@@ -5,19 +5,35 @@
 - 재전송 한도를 다 쓴 5xx는 FAILED와 모델 제공자 쪽 원인 분류 코드(인프라 실패 재실행 대상)로 남는다(룰북 B5)
 - 재전송 중 모델 요청 10회에 먼저 닿으면 BUDGET_EXCEEDED로 끝나고 재실행 대상이 아니다(자료 계약 §3.3)
 - 전체 deadline이 다른 한도보다 먼저다. 4xx·연결 실패·요청 제한 시간은 재전송하지 않는다
-- 키는 전송 순간 환경변수에서만 읽고 trace·반환값·오류 문장에 없다
+- 키는 전송 순간 환경변수에서만 읽고 trace·반환값·오류 문장에 없다. 값의 글자가 틀리면 요청을 세기 전에 멈추고,
+  리디렉션은 따라가지 않으며 Authorization은 리디렉션 요청에 옮겨 가지 않는다
+- 정책 프록시 거부(CONNECT 403·407, L7 403 policy_denied)는 CODE_ERROR로 멈추고 재실행 대상이 아니다
+- 설정은 엔드포인트 호스트와 키 환경변수 이름을 허용 목록으로만 받는다
+
+전송 시험은 가짜 opener(연결 처리기 묶음)나 가짜 HTTPS 처리기를 넣어 돈다. 겹 보호로 소켓 연결도 막는다
+(NoNetworkMixin).
 """
+import email.message
+import io
 import json
 import os
+import shutil
+import tempfile
 import unittest
 import urllib.error
+import urllib.request
+import urllib.response
+from pathlib import Path
 from unittest import mock
 
 from tradesentry.runlog import cause_codes
 from tradesentry.runlog import trace as trace_log
 from tradesentry.workflow import model_client as mc
 
-from .fakes import FakeClock, ScriptedTransport, ok_body
+from .fakes import FakeClock, NoNetworkMixin, ScriptedTransport, ok_body
+
+ENDPOINT = "https://integrate.api.nvidia.com/v1/chat/completions"
+PLACEHOLDER = "placeholder-value-123"
 
 MESSAGES = [{"role": "user", "content": "초안을 써라"}]
 RID = "run_case-260925143015"
@@ -40,7 +56,7 @@ def errors_of(stop, client, clock):
     return [cause_codes.error_entry(stop.code, stop.stage, mc.budget_counters(client.budget, clock.now), [])]
 
 
-class RetransmitTest(unittest.TestCase):
+class RetransmitTest(NoNetworkMixin, unittest.TestCase):
     def test_5xx_is_resent_three_times_with_exponential_wait_then_fails_as_provider_error(self):
         client, clock, transport, sink = make_client([{"status": 500}, {"status": 502}, {"status": 503},
                                                       {"status": 504}])
@@ -152,78 +168,227 @@ class RetransmitTest(unittest.TestCase):
         self.assertEqual(sink.records[-1]["data"]["response"]["message"], answer["message"])
 
 
-class TransportKeyTest(unittest.TestCase):
+class FakeResponse:
+    status = 200
+
+    def __init__(self, body):
+        self.body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self):
+        return self.body
+
+
+class FakeOpener:
+    """opener 대역: open(request, timeout)마다 정해 둔 결과(응답 본문 bytes 또는 낼 예외)를 차례로 쓴다."""
+
+    def __init__(self, *outcomes):
+        self.outcomes = list(outcomes)
+        self.requests = []
+
+    def open(self, request, timeout):
+        self.requests.append({"auth": request.get_header("Authorization"), "timeout": timeout, "body": request.data,
+                              "redirectable": dict(request.headers), "method": request.get_method()})
+        outcome = self.outcomes.pop(0)
+        if isinstance(outcome, BaseException):
+            raise outcome
+        return FakeResponse(outcome)
+
+
+class FakeHTTPS(urllib.request.HTTPSHandler):
+    """HTTPS 처리기 대역: 표준 opener 안에서 네트워크 없이 정해 둔 (상태, 헤더, 본문)을 돌려준다."""
+
+    def __init__(self, *responses):
+        super().__init__()
+        self.responses = list(responses)
+        self.seen = []
+
+    def https_open(self, req):
+        self.seen.append({"url": req.full_url, "authorization": req.get_header("Authorization")})
+        status, headers, body = self.responses.pop(0)
+        message = email.message.Message()
+        for key, value in headers.items():
+            message[key] = value
+        response = urllib.response.addinfourl(io.BytesIO(body), message, req.full_url, status)
+        response.msg = "Found" if 300 <= status < 400 else "OK"
+        return response
+
+
+def http_error(code, body=b""):
+    return urllib.error.HTTPError(ENDPOINT, code, "err", email.message.Message(), io.BytesIO(body))
+
+
+def client_for(transport):
+    config = mc.load_model_config()
+    budget = mc.Budget(config.limits, 0, config.settings.end_reserve_ms)
+    sink = trace_log.MemoryTrace(RID, clock=trace_log.now_kst)
+    clock = FakeClock(0)
+    return mc.ModelClient(config.settings, budget, transport, sink, clock.clock_ms, clock.sleep_ms), budget, sink
+
+
+class TransportKeyTest(NoNetworkMixin, unittest.TestCase):
     def test_key_is_read_at_send_time_and_never_reaches_trace(self):
-        seen = {}
-
-        class Response:
-            status = 200
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *exc):
-                return False
-
-            def read(self):
-                return ok_body("{}")
-
-        def fake_urlopen(request, timeout):
-            seen["auth"] = request.get_header("Authorization")
-            seen["timeout"] = timeout
-            seen["body"] = request.data
-            return Response()
-
-        transport = mc.UrllibTransport("https://integrate.api.nvidia.com/v1/chat/completions", "TS_TEST_KEY_ENV")
-        with mock.patch.dict(os.environ, {"TS_TEST_KEY_ENV": "placeholder-value-123"}), \
-                mock.patch.object(mc.urllib.request, "urlopen", fake_urlopen):
-            config = mc.load_model_config()
-            budget = mc.Budget(config.limits, 0, config.settings.end_reserve_ms)
-            sink = trace_log.MemoryTrace(RID, clock=trace_log.now_kst)
-            clock = FakeClock(0)
-            answer = mc.ModelClient(config.settings, budget, transport, sink, clock.clock_ms,
-                                    clock.sleep_ms).chat(MESSAGES, stage="basic")
-        self.assertEqual(seen["auth"], "Bearer placeholder-value-123")
-        self.assertNotIn("placeholder-value-123", seen["body"].decode("utf-8"))
+        opener = FakeOpener(ok_body("{}"))
+        transport = mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=opener)
+        with mock.patch.dict(os.environ, {"TS_TEST_KEY_ENV": PLACEHOLDER}):
+            client, _, sink = client_for(transport)
+            answer = client.chat(MESSAGES, stage="basic")
+        seen = opener.requests[0]
+        self.assertEqual((seen["auth"], seen["method"]), ("Bearer " + PLACEHOLDER, "POST"))
+        self.assertNotIn("Authorization", seen["redirectable"])  # 리디렉션 요청에 옮겨 가지 않는 헤더로 실었다
+        self.assertNotIn(PLACEHOLDER, seen["body"].decode("utf-8"))
         self.assertEqual(seen["timeout"], 60)
         self.assertIn('"temperature": 1.0', seen["body"].decode("utf-8"))  # 요청 본문을 만들 때만 float
         everything = json.dumps([trace_log.dumps(r) for r in sink.records]) + json.dumps(str(answer))
-        self.assertNotIn("placeholder-value-123", everything)
+        self.assertNotIn(PLACEHOLDER, everything)
         self.assertNotIn("Bearer", everything)
 
     def test_missing_key_env_stops_as_code_error_without_counting_a_request(self):
-        transport = mc.UrllibTransport("https://integrate.api.nvidia.com/v1/chat/completions", "TS_TEST_KEY_ENV")
-        config = mc.load_model_config()
-        budget = mc.Budget(config.limits, 0, config.settings.end_reserve_ms)
-        clock = FakeClock(0)
-        sink = trace_log.MemoryTrace(RID, clock=trace_log.now_kst)
-        client = mc.ModelClient(config.settings, budget, transport, sink, clock.clock_ms, clock.sleep_ms)
+        opener = FakeOpener()
+        transport = mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=opener)
+        client, budget, sink = client_for(transport)
         with mock.patch.dict(os.environ, {}, clear=False):
             os.environ.pop("TS_TEST_KEY_ENV", None)
-            with mock.patch.object(mc.urllib.request, "urlopen", side_effect=AssertionError("보내면 안 된다")):
-                with self.assertRaises(mc.RunStop) as caught:
-                    client.chat(MESSAGES, stage="basic")
+            with self.assertRaises(mc.RunStop) as caught:
+                client.chat(MESSAGES, stage="basic")
         self.assertEqual((caught.exception.code, budget.model_requests), (cause_codes.CODE_ERROR, 0))
-        self.assertEqual(sink.records, [])  # 보내지 않은 요청은 trace에도 없다(NAT LLM 구간 수 = 모델 요청 수)
+        self.assertEqual((sink.records, opener.requests), ([], []))  # 보내지 않은 요청은 trace에도 없다
         self.assertIn("TS_TEST_KEY_ENV", caught.exception.detail)
 
+    def test_key_value_with_header_breaking_characters_stops_before_counting_without_the_value(self):
+        for bad in (PLACEHOLDER + "\r", PLACEHOLDER + "\u2019", "two words", PLACEHOLDER + "\n" + "X-Other: 1"):
+            opener = FakeOpener()
+            transport = mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=opener)
+            client, budget, sink = client_for(transport)
+            with self.subTest(bad=repr(bad)), mock.patch.dict(os.environ, {"TS_TEST_KEY_ENV": bad}):
+                with self.assertRaises(mc.RunStop) as caught:
+                    client.chat(MESSAGES, stage="basic")
+                stop = caught.exception
+                self.assertEqual((stop.code, budget.model_requests, opener.requests, sink.records),
+                                 (cause_codes.CODE_ERROR, 0, [], []))
+                for text in (stop.detail, str(stop), repr(stop)):
+                    self.assertNotIn(PLACEHOLDER, text)
+                    self.assertNotIn("two words", text)
+                self.assertIn("TS_TEST_KEY_ENV", stop.detail)
+                self.assertIsNone(stop.__cause__)
+                self.assertTrue(stop.__suppress_context__)
+                with self.assertRaises(mc.TransportConfigError):
+                    transport.send({"model": "m"}, 1000)  # 전송 자리를 바로 불러도 같다
+
+    def test_value_errors_while_sending_are_replaced_without_the_original_message(self):
+        leaked = ValueError("Invalid header value b'Bearer " + PLACEHOLDER + "'")
+        for raised in (leaked, UnicodeEncodeError("latin-1", "Bearer " + PLACEHOLDER, 0, 1, "x")):
+            transport = mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=FakeOpener(raised))
+            with self.subTest(type(raised).__name__), mock.patch.dict(os.environ, {"TS_TEST_KEY_ENV": PLACEHOLDER}):
+                with self.assertRaises(mc.TransportConfigError) as caught:
+                    transport.send({"model": "m"}, 1000)
+                error = caught.exception
+                self.assertNotIn(PLACEHOLDER, str(error) + repr(error))
+                self.assertIsNone(error.__context__)  # 원래 예외(문장에 헤더 값)를 잇지 않는다
+                self.assertIsNone(error.__cause__)
+
     def test_http_and_network_errors_map_to_transport_results(self):
-        transport = mc.UrllibTransport("https://integrate.api.nvidia.com/v1/chat/completions", "TS_TEST_KEY_ENV")
         cases = [
-            (urllib.error.HTTPError("u", 503, "busy", {}, None), (503, None)),
+            (http_error(503), (503, None)),
             (urllib.error.URLError(TimeoutError("t")), (None, "timeout")),
             (urllib.error.URLError(ConnectionRefusedError("r")), (None, "connection")),
+            (urllib.error.URLError(OSError("Tunnel connection failed: 502 Bad Gateway")), (None, "connection")),
             (TimeoutError("read"), (None, "timeout")),
             (ConnectionResetError("reset"), (None, "connection")),
         ]
         for exc, expected in cases:
-            with self.subTest(exc=type(exc).__name__), mock.patch.dict(os.environ, {"TS_TEST_KEY_ENV": "p"}), \
-                    mock.patch.object(mc.urllib.request, "urlopen", side_effect=exc):
+            transport = mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=FakeOpener(exc))
+            with self.subTest(exc=repr(exc)[:60]), mock.patch.dict(os.environ, {"TS_TEST_KEY_ENV": "p"}):
                 sent = transport.send({"model": "m"}, 1000)
                 self.assertEqual((sent["http_status"], sent["error"]), expected)
+                self.assertNotIn("denial", sent)
 
 
-class ConfigTest(unittest.TestCase):
+class RedirectTest(NoNetworkMixin, unittest.TestCase):
+    """리디렉션: 표준 urllib 처리 순서(오류 처리기 포함)를 가짜 HTTPS 처리기로 돈다. 프록시 환경변수는 쓰지 않는다."""
+
+    LOCATION = {"Location": "https://collector.example.org/steal"}
+
+    def test_redirect_is_not_followed_and_stops_as_bad_response(self):
+        https = FakeHTTPS((302, self.LOCATION, b""), (200, {}, ok_body("{}")))
+        opener = mc.build_opener(urllib.request.ProxyHandler({}), https)
+        transport = mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=opener)
+        with mock.patch.dict(os.environ, {"TS_TEST_KEY_ENV": PLACEHOLDER}):
+            sent = transport.send({"model": "m"}, 1000)
+            self.assertEqual((sent["http_status"], sent["error"], len(https.seen)), (302, None, 1))
+            self.assertEqual(https.seen[0]["url"], ENDPOINT)
+            client, budget, sink = client_for(mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=mc.build_opener(
+                urllib.request.ProxyHandler({}), FakeHTTPS((307, self.LOCATION, b"")))))
+            with self.assertRaises(mc.RunStop) as caught:
+                client.chat(MESSAGES, stage="basic")
+        self.assertEqual((caught.exception.code, budget.model_requests), (cause_codes.PROVIDER_BAD_RESPONSE, 1))
+        self.assertEqual([r["event"] for r in sink.records], ["model_request", "model_error"])
+
+    def test_authorization_does_not_move_to_a_redirected_request_even_with_a_following_opener(self):
+        # 대조: 표준 opener(리디렉션을 따라감)로 바꿔 끼워도 두 번째 요청에는 Authorization이 없다(겹 보호)
+        https = FakeHTTPS((302, self.LOCATION, b""), (200, {}, ok_body("{}")))
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), https)
+        transport = mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=opener)
+        with mock.patch.dict(os.environ, {"TS_TEST_KEY_ENV": PLACEHOLDER}):
+            sent = transport.send({"model": "m"}, 1000)
+        self.assertEqual(sent["http_status"], 200)
+        self.assertEqual([s["url"] for s in https.seen], [ENDPOINT, self.LOCATION["Location"]])
+        self.assertEqual([s["authorization"] for s in https.seen], ["Bearer " + PLACEHOLDER, None])
+
+
+class PolicyDenialTest(NoNetworkMixin, unittest.TestCase):
+    """샌드박스 정책 프록시 거부(X1 artifacts/openshell/violation_tests.md V0a·V1·V2b의 CONNECT 403, V3의 L7 403)."""
+
+    L7_BODY = json.dumps({"error": "policy_denied", "layer": "l7", "detail": "GET /v1/models not permitted by policy",
+                          "binary": "/opt/app/bin/python3.12"}).encode("utf-8")
+
+    def test_transport_marks_connect_and_l7_denials(self):
+        cases = [
+            (urllib.error.URLError(OSError("Tunnel connection failed: 403 Forbidden")), (403, "connect")),
+            (urllib.error.URLError(OSError("Tunnel connection failed: 407 Proxy Authentication Required")),
+             (407, "connect")),
+            (http_error(403, self.L7_BODY), (403, "l7")),
+        ]
+        for exc, (status, denial) in cases:
+            transport = mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=FakeOpener(exc))
+            with self.subTest(denial=denial, status=status), mock.patch.dict(os.environ, {"TS_TEST_KEY_ENV": "p"}):
+                sent = transport.send({"model": "m"}, 1000)
+                self.assertEqual((sent["http_status"], sent["error"], sent["denial"], sent["body"]),
+                                 (status, "policy_denied", denial, b""))  # 프록시 본문(실행 파일 경로)은 싣지 않는다
+        transport = mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=FakeOpener(http_error(403, b'{"x": 1}')))
+        with mock.patch.dict(os.environ, {"TS_TEST_KEY_ENV": "p"}):
+            sent = transport.send({"model": "m"}, 1000)
+        self.assertEqual((sent["http_status"], sent["error"]), (403, None))  # 제공자 쪽 403은 그대로 4xx
+
+    def test_denial_stops_as_code_error_that_is_not_rerun_eligible(self):
+        for denial in ("connect", "l7"):
+            with self.subTest(denial=denial):
+                client, clock, transport, sink = make_client([{"error": "policy_denied", "status": 403,
+                                                               "denial": denial}])
+                with self.assertRaises(mc.RunStop) as caught:
+                    client.chat(MESSAGES, stage="basic")
+                stop = caught.exception
+                self.assertEqual((stop.code, len(transport.payloads), clock.sleeps), (cause_codes.CODE_ERROR, 1, []))
+                self.assertIn(f"policy_denied({denial}) 403", stop.detail)
+                errors = errors_of(stop, client, clock)
+                self.assertFalse(cause_codes.infra_rerun_eligible(cause_codes.execution_status(stop.code), errors))
+                last = sink.records[-1]
+                self.assertEqual((last["event"], last["data"]["http_status"], last["data"]["error"],
+                                  last["data"]["denial"], last["data"]["retrying"]),
+                                 ("model_error", 403, "policy_denied", denial, False))
+        # 비교: 제공자 쪽 연결 실패는 재실행 대상이다(원인 분류가 섞이지 않는다)
+        client, clock, _, _ = make_client([{"error": "connection"}])
+        with self.assertRaises(mc.RunStop) as caught:
+            client.chat(MESSAGES, stage="basic")
+        self.assertTrue(cause_codes.infra_rerun_eligible("FAILED", errors_of(caught.exception, client, clock)))
+
+
+class ConfigTest(NoNetworkMixin, unittest.TestCase):
     def test_load_default_config_and_override_key_env(self):
         config = mc.load_model_config(api_key_env="NVIDIA_INFERENCE_API_KEY")
         self.assertEqual(config.settings.api_key_env, "NVIDIA_INFERENCE_API_KEY")
@@ -233,6 +398,33 @@ class ConfigTest(unittest.TestCase):
             mc.load_model_config(api_key_env="lower-case")
         with self.assertRaises(mc.ConfigError):
             mc.load_model_config(mc.DEFAULT_CONFIG_DIR / "없는 폴더")
+
+    def test_key_env_name_is_limited_to_the_allowlist(self):
+        self.assertEqual(mc.ALLOWED_KEY_ENVS, {"NVIDIA_API_KEY", "NVIDIA_INFERENCE_API_KEY"})
+        for name in ("DATA_GO_KR_SERVICE_KEY", "OPENCLAW_GATEWAY_TOKEN", "TS_TEST_KEY_ENV", "PATH"):
+            with self.subTest(name=name), self.assertRaises(mc.ConfigError) as caught:
+                mc.load_model_config(api_key_env=name)
+            self.assertNotIn(name, str(caught.exception))  # 오류 문장에는 허용 이름만 적는다
+
+    def test_endpoint_host_is_limited_to_the_allowlist(self):
+        bad = ["https://collector.example.org/v1/chat/completions",
+               "http://integrate.api.nvidia.com/v1/chat/completions",
+               "https://integrate.api.nvidia.com.example.org/v1/chat/completions",
+               "https://user:pw@integrate.api.nvidia.com/v1/chat/completions",
+               "https://integrate.api.nvidia.com:8443/v1/chat/completions",
+               "https://integrate.api.nvidia.com:bad/v1/chat/completions"]
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "model"
+            shutil.copytree(mc.DEFAULT_CONFIG_DIR, folder)
+            raw = json.loads((folder / "model.json").read_text(encoding="utf-8"))
+            for endpoint in bad + ["https://integrate.api.nvidia.com:443/v1/chat/completions"]:
+                (folder / "model.json").write_text(json.dumps(dict(raw, endpoint=endpoint)), encoding="utf-8")
+                with self.subTest(endpoint=endpoint):
+                    if endpoint in bad:
+                        with self.assertRaises(mc.ConfigError):
+                            mc.load_model_config(folder)
+                    else:
+                        self.assertEqual(mc.load_model_config(folder).settings.endpoint, endpoint)
 
 
 if __name__ == "__main__":

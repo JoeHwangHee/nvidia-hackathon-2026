@@ -24,16 +24,31 @@ NIM(NVIDIA 클라우드 추론 API) chat completions를 부르는 클라이언�
   NemoClaw 시연 샌드박스는 NVIDIA_INFERENCE_API_KEY)에서 읽어 헤더에만 싣는다. 샌드박스 안의 그 값은 자리표시
   값이고 감독 프로세스가 실제 키로 바꾼다(결정 기록 20260924-1556-x1-key-injection). 헤더와 키 값은 trace·오류
   문장·반환값에 나오지 않는다(자료 계약 N13).
+  - 값은 공백 없는 출력 가능 ASCII여야 한다(KEY_VALUE_RE). 아니면 요청을 세기 전에 변수 이름만 담은 오류로 멈춘다.
+    CR·LF나 라틴-1 밖 글자가 든 값을 헤더에 넣으면 표준 라이브러리 예외의 문장·repr에 값이 실리기 때문이다. 요청을
+    만들고 보내는 구간의 ValueError·UnicodeError도 원래 예외를 잇지 않은 채 같은 오류로 바꾼다.
+  - Authorization은 add_unredirected_header로 싣고, 리디렉션을 따라가지 않는 opener(build_opener)로 보낸다. 3xx는
+    HTTPError로 돌아와 PROVIDER_BAD_RESPONSE로 멈춘다(키가 다른 주소로 가지 않고, 세지 않는 HTTP 시도가 생기지
+    않는다). 프록시 설정(HTTPS_PROXY 등, 샌드박스 정책 프록시)은 표준 처리기대로 따른다.
+  - 설정은 허용 목록만 받는다: 엔드포인트 호스트 ALLOWED_ENDPOINT_HOSTS(https, 443), 키 환경변수 이름
+    ALLOWED_KEY_ENVS. 샌드박스 종류(채점용·시연용)에 따라 어느 이름을 쓸지는 CLI(로드맵 MT5)가 정한다.
+- 샌드박스 정책 프록시 거부(단위 L3 policy_denied, 잠정): CONNECT 403·407("Tunnel connection failed: 403")과 HTTP
+  403 본문 error "policy_denied"(L7 거부)를 전송 자리가 error "policy_denied"로 가른다. 재전송하지 않고 CODE_ERROR로
+  멈춘다(재실행 대상 아님). detail은 "policy_denied(connect|l7) {상태}", trace model_error에는 http_status와 denial을
+  남긴다. 프록시 응답 본문(실행 파일 경로가 들어 있다)은 어디에도 싣지 않는다.
 - 수는 int와 Decimal만 쓴다. 설정과 응답 본문은 소수를 Decimal로 읽고, HTTP 요청 본문을 만들 때만 float로 바꾼다.
 
 전송 자리 약속(단위 I8 기록 재생과 같은 모양): send(payload, timeout_ms) -> {http_status, body(bytes), error(None·
-"connection"·"timeout"), elapsed_ms}.
+"connection"·"timeout"·"policy_denied"), elapsed_ms, denial(error가 policy_denied일 때만: "connect"·"l7")}.
 """
+import http.client
 import json
 import os
+import re
 import socket
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -49,6 +64,11 @@ LIMIT_KEYS = ("model_requests", "tokens", "wall_ms", "tool_attempts", "basic_too
               "investigator_comparisons", "revision_stages", "revision_requeries", "final_verify")
 PROMPT_KEYS = ("investigator", "claims_template", "claims_freeform", "critic")
 MESSAGE_KEYS = ("role", "content", "tool_calls")
+ALLOWED_ENDPOINT_HOSTS = frozenset({"integrate.api.nvidia.com"})
+ALLOWED_KEY_ENVS = frozenset({"NVIDIA_API_KEY", "NVIDIA_INFERENCE_API_KEY"})
+KEY_VALUE_RE = re.compile(r"[\x21-\x7e]+")  # 공백 없는 출력 가능 ASCII(자리표시 값 openshell:resolve:env:… 포함)
+TUNNEL_DENIED_RE = re.compile(r"Tunnel connection failed: (403|407)(?!\d)")
+DENIAL_KINDS = ("connect", "l7")
 
 
 class ConfigError(Exception):
@@ -120,8 +140,8 @@ def load_model_config(config_dir: Path | None = None, *, api_key_env: str | None
         request, retry, timeouts, limits = raw["request"], raw["retry"], raw["timeouts"], raw["limits"]
         prompts = {key: (folder / raw["prompts"][key]).read_text(encoding="utf-8") for key in PROMPT_KEYS}
         env_name = api_key_env if api_key_env is not None else raw["api_key_env"]
-        if not isinstance(env_name, str) or not env_name.replace("_", "").isalnum() or not env_name.isupper():
-            raise ConfigError("api_key_env는 환경변수 이름(대문자·숫자·밑줄)이다")
+        if env_name not in ALLOWED_KEY_ENVS:
+            raise ConfigError(f"api_key_env는 {'·'.join(sorted(ALLOWED_KEY_ENVS))} 가운데 하나다")
         for key in ("temperature", "top_p"):
             if not isinstance(request[key], Decimal):
                 raise ConfigError(f"request.{key}는 소수다")
@@ -141,9 +161,20 @@ def load_model_config(config_dir: Path | None = None, *, api_key_env: str | None
         if isinstance(exc, ConfigError):
             raise
         raise ConfigError(f"모델 설정을 읽지 못했다({type(exc).__name__})") from None
-    if not settings.endpoint.startswith("https://"):
-        raise ConfigError("endpoint는 https 주소다")
+    _check_endpoint(settings.endpoint)
     return ModelConfig(settings=settings, limits=run_limits, prompts=prompts)
+
+
+def _check_endpoint(endpoint: str) -> None:
+    """엔드포인트는 허용 목록의 호스트에 https(443)로만 간다. 사용자 정보(user:pw@)가 든 주소는 받지 않는다."""
+    try:
+        parts = urllib.parse.urlsplit(endpoint)
+        port = parts.port
+    except ValueError:
+        raise ConfigError("endpoint를 주소로 읽지 못했다") from None
+    if parts.scheme != "https" or parts.hostname not in ALLOWED_ENDPOINT_HOSTS or port not in (None, 443) \
+            or parts.username is not None or parts.password is not None:
+        raise ConfigError(f"endpoint는 https://{'·'.join(sorted(ALLOWED_ENDPOINT_HOSTS))} 주소다")
 
 
 def _default_clock_ms() -> int:
@@ -187,44 +218,96 @@ def _json_number(value: object) -> object:
     raise TypeError(f"요청 본문에 쓸 수 없는 값: {type(value).__name__}")
 
 
-class UrllibTransport:
-    """실제 전송 자리. 키는 보내는 순간 환경변수에서 읽어 헤더에만 싣는다. 자동 재시도는 없다."""
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """3xx 리디렉션을 따라가지 않는다. 표준 처리기의 마지막 단계가 3xx를 HTTPError로 돌려준다."""
 
-    def __init__(self, endpoint: str, api_key_env: str):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ARG002 - 표준 서명
+        return None
+
+
+def build_opener(*handlers: urllib.request.BaseHandler) -> urllib.request.OpenerDirector:
+    """리디렉션을 따라가지 않는 opener. 나머지(프록시 환경변수 등)는 표준 처리기 그대로다. handlers는 시험용 교체다."""
+    return urllib.request.build_opener(_NoRedirect, *handlers)
+
+
+def _policy_denied_body(data: bytes) -> bool:
+    """정책 프록시의 L7 거부 본문인가(JSON 객체의 error가 policy_denied). 본문은 판정에만 쓰고 어디에도 싣지 않는다."""
+    try:
+        parsed = json.loads(data.decode("utf-8"), parse_float=Decimal)
+    except (ValueError, UnicodeDecodeError):
+        return False
+    return isinstance(parsed, dict) and parsed.get("error") == "policy_denied"
+
+
+def _tunnel_denied(reason: object) -> int | None:
+    """정책 프록시의 CONNECT 거부(403·407)면 그 상태를, 아니면 None을 돌려준다. 다른 터널 상태는 연결 실패로 둔다."""
+    if not isinstance(reason, OSError):
+        return None
+    match = TUNNEL_DENIED_RE.match(str(reason))
+    return int(match.group(1)) if match else None
+
+
+class UrllibTransport:
+    """실제 전송 자리. 키는 보내는 순간 환경변수에서 읽어 헤더에만 싣는다. 자동 재시도·리디렉션 따라가기는 없다."""
+
+    def __init__(self, endpoint: str, api_key_env: str, opener: urllib.request.OpenerDirector | None = None):
         self.endpoint = endpoint
         self.api_key_env = api_key_env
+        self._opener = opener if opener is not None else build_opener()
+
+    def _credential(self) -> str:
+        value = os.environ.get(self.api_key_env, "")
+        if not value:
+            raise TransportConfigError(f"키 환경변수 {self.api_key_env}가 비어 있다")
+        if KEY_VALUE_RE.fullmatch(value) is None:
+            raise TransportConfigError(f"키 환경변수 {self.api_key_env}의 값에 헤더에 쓸 수 없는 글자(공백·제어 문자·"
+                                       "ASCII 밖 글자)가 있다")
+        return value
 
     def ready(self) -> None:
-        """보낼 준비가 됐는지 본다(키 환경변수가 비었으면 TransportConfigError). 값은 읽기만 하고 돌려주지 않는다."""
-        if not os.environ.get(self.api_key_env, ""):
-            raise TransportConfigError(f"키 환경변수 {self.api_key_env}가 비어 있다")
+        """보낼 준비가 됐는지 본다(키 환경변수가 비었거나 값의 글자가 틀리면 TransportConfigError). 값은 돌려주지 않는다."""
+        self._credential()
 
     def send(self, payload: dict, timeout_ms: int) -> dict:
-        credential = os.environ.get(self.api_key_env, "")
-        if not credential:
-            raise TransportConfigError(f"키 환경변수 {self.api_key_env}가 비어 있다")
-        body = json.dumps(payload, default=_json_number, ensure_ascii=False).encode("utf-8")
-        request = urllib.request.Request(self.endpoint, data=body, method="POST", headers={
-            "Content-Type": "application/json", "Accept": "application/json",
-            "Authorization": "Bearer " + credential})
         started = _default_clock_ms()
         error = None
+        bad_request = False
         try:
-            with urllib.request.urlopen(request, timeout=timeout_ms / 1000) as response:
+            body = json.dumps(payload, default=_json_number, ensure_ascii=False).encode("utf-8")
+            request = urllib.request.Request(self.endpoint, data=body, method="POST", headers={
+                "Content-Type": "application/json", "Accept": "application/json"})
+            request.add_unredirected_header("Authorization", "Bearer " + self._credential())
+            with self._opener.open(request, timeout=timeout_ms / 1000) as response:
                 return {"http_status": response.status, "body": response.read(), "error": None,
                         "elapsed_ms": _default_clock_ms() - started}
         except urllib.error.HTTPError as exc:
             try:
                 data = exc.read() or b""
-            except OSError:
+            except (OSError, http.client.HTTPException):
                 data = b""
-            return {"http_status": exc.code, "body": data, "error": None, "elapsed_ms": _default_clock_ms() - started}
+            elapsed = _default_clock_ms() - started
+            if exc.code == 403 and _policy_denied_body(data):
+                return {"http_status": 403, "body": b"", "error": "policy_denied", "denial": "l7",
+                        "elapsed_ms": elapsed}
+            return {"http_status": exc.code, "body": data, "error": None, "elapsed_ms": elapsed}
         except urllib.error.URLError as exc:
+            denied = _tunnel_denied(exc.reason)
+            if denied is not None:
+                return {"http_status": denied, "body": b"", "error": "policy_denied", "denial": "connect",
+                        "elapsed_ms": _default_clock_ms() - started}
             error = "timeout" if isinstance(exc.reason, (TimeoutError, socket.timeout)) else "connection"
         except (TimeoutError, socket.timeout):
             error = "timeout"
-        except OSError:
+        except OSError as exc:
+            denied = _tunnel_denied(exc)
+            if denied is not None:
+                return {"http_status": denied, "body": b"", "error": "policy_denied", "denial": "connect",
+                        "elapsed_ms": _default_clock_ms() - started}
             error = "connection"
+        except (ValueError, UnicodeError):
+            bad_request = True  # 헤더·본문 값 검사 실패. 원래 예외(문장에 헤더 값이 실린다)를 잇지 않는다
+        if bad_request:
+            raise TransportConfigError("요청을 만들거나 보내지 못했다(헤더·본문 값 검사 실패)")
         return {"http_status": None, "body": b"", "error": error, "elapsed_ms": _default_clock_ms() - started}
 
 
@@ -328,6 +411,11 @@ class ModelClient:
                 if self.budget.deadline_passed(self.clock_ms()):
                     raise RunStop(cause_codes.DEADLINE, stage, "요청 중 사례 deadline에 닿았다")
                 raise RunStop(cause_codes.PROVIDER_REQUEST_TIMEOUT, stage, f"요청별 제한 시간 {timeout_ms}ms 초과")
+            if error == "policy_denied":
+                denial = sent.get("denial") if sent.get("denial") in DENIAL_KINDS else "unknown"
+                self.sink.emit("model_error", stage, dict(failure, denial=denial, retrying=False, backoff_ms=0))
+                raise RunStop(cause_codes.classify("policy_denied"), stage,
+                              f"policy_denied({denial}) {status}: 샌드박스 정책 프록시가 요청을 막았다(재실행 대상 아님)")
             if error is not None or status is None:
                 self.sink.emit("model_error", stage, dict(failure, error=error or "connection", retrying=False,
                                                           backoff_ms=0))
@@ -403,7 +491,7 @@ def run(inp: object) -> object:
         response = {key: answer[key] for key in ("message", "finish_reason", "usage", "attempts")}
     except RunStop as exc:
         stop = {"code": exc.code, "execution_status": cause_codes.execution_status(exc.code), "detail": exc.detail}
-    summary_keys = ("attempt", "http_status", "error", "retrying", "backoff_ms", "timeout_ms")
+    summary_keys = ("attempt", "http_status", "error", "denial", "retrying", "backoff_ms", "timeout_ms")
     events = [[r["event"], {k: r["data"][k] for k in summary_keys if k in r["data"]}] for r in sink.records]
     return {"response": response, "stop": stop, "budget": {"model_requests": budget.model_requests,
                                                            "tokens_in": budget.tokens_in,
