@@ -145,6 +145,51 @@ class TemplateTest(unittest.TestCase):
                          ("observation_status@8504501010", "NOT_COLLECTED", None))
         self.assertEqual(claim["text"], "2024년 1월 전체국가 하위품목 HS 8504501010 자료 상태는 NOT_COLLECTED(미수집)다.")
 
+    def test_target_format_is_checked(self):
+        # Codex 권고 3: 대상 형식(계약 §6.1·§11.4)을 R1에서도 거절한다.
+        cases = [({"partner": "cn"}, "partner가 2자리 국가코드나 ALL이 아니다"),
+                 ({"partner": "KOR"}, "partner가 2자리 국가코드나 ALL이 아니다"),
+                 ({"period": "2024-01"}, "period가 YYYYMM이 아니다"),
+                 ({"period": "202413"}, "period가 YYYYMM이 아니다"),
+                 ({"hs6": "85045"}, "hs6가 숫자 6자가 아니다"),
+                 ({"baseline_period": "2023"}, "baseline_period가 YYYYMM이 아니다")]
+        for change, reason in cases:
+            with self.subTest(change=change):
+                m = metric("m1", "r_U", Decimal("-40.0"), "%", baseline="202301")
+                m["inputs"].update(change)
+                self.assertEqual(fill_one(m)["rejected"][0]["reason"], reason)
+                status = {"status_id": "s1", "hs6": "850450", "partner": "CN", "period": "202401", "hs10": None,
+                          "observation_status": "REQUEST_FAILED", "evidence_ids": [f"{EV}9"], **change}
+                out = claims.run({"mode": "full", "case": CASE, "metrics": [], "statuses": [status],
+                                  "requests": [{"claim_id": "c1", "status_id": "s1"}]})
+                self.assertEqual(out["rejected"][0]["reason"], reason)
+
+    def test_sub_item_code_must_be_ten_digits_under_hs6(self):
+        # 무역통계 검토 권고 5: HS10 코드는 숫자 10자이고 부모 hs6로 시작한다(계약 §6.2).
+        reason = "하위품목 코드가 부모 hs6로 시작하는 숫자 10자가 아니다"
+        for symbol in ("U@85045", "w@ABCDEFGHIJ", "U@8504311010", "r_U@85045010101"):
+            with self.subTest(symbol=symbol):
+                base = claims.base_symbol(symbol)
+                m = metric("m1", symbol, Decimal("1.0"), claims.UNIT_OF[base],
+                           baseline="202301" if base in claims.CHANGE_BASES else None)
+                self.assertEqual(fill_one(m)["rejected"][0]["reason"], reason)
+        for hs10 in ("12345", "8504311010", ""):
+            with self.subTest(hs10=hs10):
+                status = {"status_id": "s1", "hs6": "850450", "partner": "CN", "period": "202401", "hs10": hs10,
+                          "observation_status": "REQUEST_FAILED", "evidence_ids": [f"{EV}9"]}
+                out = claims.run({"mode": "full", "case": CASE, "metrics": [], "statuses": [status],
+                                  "requests": [{"claim_id": "c1", "status_id": "s1"}]})
+                self.assertEqual(out["rejected"][0]["reason"], reason)
+
+    def test_hs10_request_failure_is_a_sub_item_status(self):
+        # 무역통계 검토 지적 1: 부모 HS6 행이 있는 키에서 HS10 요청만 실패(oracle C형)하면 하위품목 기호로 쓴다.
+        status = {"status_id": "s1", "hs6": "850450", "partner": "CN", "period": "202401", "hs10": "8504501010",
+                  "observation_status": "REQUEST_FAILED", "evidence_ids": [f"{EV}202"]}
+        claim = claims.run({"mode": "full", "case": CASE, "metrics": [], "statuses": [status],
+                            "requests": [{"claim_id": "c1", "status_id": "s1"}]})["claims"][0]
+        self.assertEqual((claim["metric"], claim["value"]), ("observation_status@8504501010", "REQUEST_FAILED"))
+        self.assertEqual(claim["text"], "2024년 1월 CN 하위품목 HS 8504501010 자료 상태는 REQUEST_FAILED(요청 실패)다.")
+
     def test_bad_inputs_raise(self):
         for bad in (None, [], {"mode": "draft", "case": CASE}, {"mode": "full"}, {"mode": "full", "case": {}},
                     {"mode": "freeform", "case": CASE, "claims": {}},

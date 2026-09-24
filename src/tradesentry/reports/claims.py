@@ -19,6 +19,10 @@
   - `statuses`: 자료 상태 항목 목록. 모양은 이 단위가 정한다:
     `{"status_id", "hs6", "partner", "period", "hs10"(없으면 null), "observation_status", "evidence_ids",
     "baseline_period"(생략 가능)}`. 도구 봉투의 `missingness` 항목을 이 모양으로 옮기는 일은 부르는 쪽이 한다.
+    `hs10`이 있으면 주장 기호는 `observation_status@<HS10 코드>`(하위품목 자료 상태), null이면 `observation_status`
+    (HS6 값 자체의 자료 상태)다. 부모 HS6 행이 있는 키에서 HS10 하위 자료만 빠졌으면(HS6 요청의 상태 행, oracle C형,
+    자료 계약 §2.3.2 행 규칙 4) `hs10`에 빠진 HS10 코드(예: 기준월에 관측된 하위품목)를 하나씩 적는다. 그 HS6 키의
+    값은 부모 행에서 오므로 HS6 수준 기호로 쓰면 같은 키의 값 주장과 어긋난다(검증기 R3가 막는다).
   - `requests`: 채울 주장 목록. 원소는 `{"claim_id", "metric_id"}` 또는 `{"claim_id", "status_id"}`다. 조사자(모델)나
     `checklist` 규칙은 어떤 검증된 값을 주장할지만 고르고, 숫자·단위·근거·방향·문장은 이 단위가 채운다.
 - `freeform`: `claims`(모델이 쓴 typed claim 목록)를 그대로 돌려준다. 값·단위·근거를 채우거나 고치지 않는다.
@@ -26,8 +30,10 @@
 출력: `{"claims": [typed claim, ...], "rejected": [{"claim_id", "reason"}, ...]}`
 - typed claim은 계약 필드 12개만 담는다. 수 `value`는 §11.3 표시 자릿수의 십진 표기(끝자리 0 포함)이고, 정수 자릿수
   기호(`V`, `Q`)는 int다. 반올림은 Decimal `ROUND_HALF_UP`이고 음수 0은 0으로 적는다. 방향은 표시 값의 부호다.
-- 채울 수 없는 요청(없는 `metric_id`, 값이 null인 지표, 계약과 다른 단위, 근거 없는 지표 등)은 주장을 만들지 않고
-  `rejected`에 사유를 적는다. 계산 불가는 자료 상태(`data_status`) 주장으로 쓴다(룰북 B3-1).
+- 채울 수 없는 요청(없는 `metric_id`, 값이 null인 지표, 계약과 다른 단위, 근거 없는 지표, 형식이 틀린 대상 등)은
+  주장을 만들지 않고 `rejected`에 사유를 적는다. 계산 불가는 자료 상태(`data_status`) 주장으로 쓴다(룰북 B3-1).
+- 대상 형식(계약 §6.1·§11.4): `hs6`는 숫자 6자, `partner`는 2자리 국가코드나 `ALL`, `period`·`baseline_period`는
+  `YYYYMM`, HS10 하위품목 코드는 숫자 10자이고 주장의 `hs6`로 시작한다(계약 §6.2 "하위품목 주장의 hs6는 부모 HS6").
 - 입력을 바꾸지 않는다.
 
 해석(계약이 정하지 않아 이 단위가 정한 것. 조립(AS2)에서 확인한다)
@@ -37,9 +43,14 @@
   점검에서 그쪽 import로 바꾼다(단위 표 docs/plan/UNITS.md §6 조립 부산물 4).
 """
 import copy
+import re
 from decimal import ROUND_HALF_UP, Decimal
 
 MODES = ("checklist", "agent", "full", "freeform")
+HS6_RE = re.compile(r"\d{6}")
+HS10_RE = re.compile(r"\d{10}")
+PARTNER_RE = re.compile(r"[A-Z]{2}|ALL")
+PERIOD_RE = re.compile(r"\d{4}(?:0[1-9]|1[0-2])")
 TEMPLATE_MODES = ("checklist", "agent", "full")
 CLAIM_FIELDS = ("claim_id", "claim_type", "hs6", "partner", "period", "baseline_period", "metric", "value", "unit",
                 "direction", "evidence_ids", "text")
@@ -190,6 +201,22 @@ def claim_type_of(symbol: str, partner: str, case_partner: str) -> str:
     return "value"
 
 
+def check_target(hs6: str, partner: str, period: str) -> None:
+    """대상 형식(계약 §6.1·§11.4): hs6는 숫자 6자, partner는 2자리 국가코드나 ALL, period는 YYYYMM."""
+    if not HS6_RE.fullmatch(hs6):
+        raise _Reject("hs6가 숫자 6자가 아니다")
+    if not PARTNER_RE.fullmatch(partner):
+        raise _Reject("partner가 2자리 국가코드나 ALL이 아니다")
+    if not PERIOD_RE.fullmatch(period):
+        raise _Reject("period가 YYYYMM이 아니다")
+
+
+def check_sub_item(code: str, hs6: str) -> None:
+    """HS10 하위품목 코드는 숫자 10자이고 부모 hs6로 시작한다(계약 §6.2)."""
+    if not (HS10_RE.fullmatch(code) and code.startswith(hs6)):
+        raise _Reject("하위품목 코드가 부모 hs6로 시작하는 숫자 10자가 아니다")
+
+
 def claim_from_metric(claim_id: str, metric: dict, case_partner: str) -> dict:
     """검증된 metric 객체 하나로 typed claim 하나를 채운다."""
     symbol = _metric_symbol(metric)
@@ -200,6 +227,9 @@ def claim_from_metric(claim_id: str, metric: dict, case_partner: str) -> dict:
     hs6, partner, period = inputs.get("hs6"), inputs.get("partner"), inputs.get("period")
     if not all(isinstance(v, str) and v for v in (hs6, partner, period)):
         raise _Reject("지표의 대상(hs6·partner·period)이 없다")
+    check_target(hs6, partner, period)
+    if "@" in symbol:
+        check_sub_item(symbol.partition("@")[2], hs6)
     if metric.get("unit") != UNIT_OF[base]:
         raise _Reject("지표 단위가 계약 §11.2의 단위와 다르다")
     if metric.get("value") is None:
@@ -215,6 +245,8 @@ def claim_from_metric(claim_id: str, metric: dict, case_partner: str) -> dict:
     baseline = inputs.get("baseline_period") if changes else None
     if changes and not (isinstance(baseline, str) and baseline):
         raise _Reject("변화 지표에 기준월(baseline_period)이 없다")
+    if changes and not PERIOD_RE.fullmatch(baseline):
+        raise _Reject("baseline_period가 YYYYMM이 아니다")
     claim = {"claim_id": claim_id, "claim_type": claim_type_of(symbol, partner, case_partner), "hs6": hs6,
              "partner": partner, "period": period, "baseline_period": baseline, "metric": symbol, "value": shown,
              "unit": UNIT_OF[base], "direction": direction_of(shown) if changes else "NA",
@@ -228,18 +260,21 @@ def claim_from_status(claim_id: str, status: dict) -> dict:
     hs6, partner, period = status.get("hs6"), status.get("partner"), status.get("period")
     if not all(isinstance(v, str) and v for v in (hs6, partner, period)):
         raise _Reject("자료 상태 항목의 대상(hs6·partner·period)이 없다")
+    check_target(hs6, partner, period)
     code = status.get("observation_status")
     if code not in OBSERVATION_STATUSES:
         raise _Reject("관측 상태 코드가 계약 §3.4의 다섯 값이 아니다")
     hs10 = status.get("hs10")
-    if hs10 is not None and not (isinstance(hs10, str) and hs10 and "@" not in hs10):
-        raise _Reject("hs10이 문자열 코드가 아니다")
+    if hs10 is not None:
+        if not isinstance(hs10, str):
+            raise _Reject("hs10이 문자열 코드가 아니다")
+        check_sub_item(hs10, hs6)
     evidence = status.get("evidence_ids")
     if not isinstance(evidence, list) or not evidence or not all(isinstance(e, str) and e for e in evidence):
         raise _Reject("근거 ID가 없는 자료 상태 항목이다")
     baseline = status.get("baseline_period")
-    if baseline is not None and not (isinstance(baseline, str) and baseline):
-        raise _Reject("baseline_period가 문자열이 아니다")
+    if baseline is not None and not (isinstance(baseline, str) and PERIOD_RE.fullmatch(baseline)):
+        raise _Reject("baseline_period가 YYYYMM이 아니다")
     claim = {"claim_id": claim_id, "claim_type": "data_status", "hs6": hs6, "partner": partner, "period": period,
              "baseline_period": baseline,
              "metric": "observation_status" if hs10 is None else f"observation_status@{hs10}",

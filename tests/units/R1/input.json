@@ -63,7 +63,7 @@
      "comparability_flags": [], "tolerance": null}
   ],
   "statuses": [
-    {"status_id": "st-hs10", "hs6": "850450", "partner": "CN", "period": "202401", "hs10": null,
+    {"status_id": "st-hs10", "hs6": "850450", "partner": "CN", "period": "202401", "hs10": "8504501010",
      "observation_status": "REQUEST_FAILED", "evidence_ids": ["ev:controlled_fixture_v0:observation:202"]}
   ],
   "requests": [
