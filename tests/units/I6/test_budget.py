@@ -3,7 +3,7 @@
 MVP 합격 체크리스트 2번(docs/plan/ROADMAP.md §3)의 도구 쪽 증거다. 골든 쌍(input.json·expected.json)은 예산을 쓴 시도
 8건 뒤의 9번째 시도 차단이고, 이 파일은 나머지 규칙을 하나씩 본다.
 - 9번째 시도 차단(실패·캐시 적중·verify_evidence·같은 도구 다른 인자 재호출도 예산을 쓴다)
-- 막힌 시도는 기록(tool_attempts)에만 들고 예산을 쓰지 않는다(예약된 최종 검증 몫을 지킨다)
+- 막힌 시도는 기록(recorded)에만 들고 예산을 쓰지 않는다(예약된 최종 검증 몫을 지킨다)
 - 수정 단계의 세 번째 재조회 차단, 두 번째 수정 단계 차단, Critic 차례의 도구 차단, deadline 우선
 - 같은 인자 재호출 차단(인자 정규화)과 verify_evidence 예외, 기본 경로의 verify_evidence 몫, 최종 단계 규칙
 - 흐름 조정(단위 I12)의 지금 호출 모양({"attempts": 실행한 시도, "candidate", "limits": {"tool_attempts"}})
@@ -42,13 +42,13 @@ class NinthAttemptTest(unittest.TestCase):
             verdict = tb.gate(tool, args, stage)
             self.assertTrue(verdict["allowed"], (tool, stage, verdict["reason"]))
             tb.record(tool, args, stage, outcome)
-        self.assertEqual((tb.consumed, tb.tool_attempts), (8, 8))
+        self.assertEqual((tb.consumed, tb.recorded), (8, 8))
         for tool, stage in (("get_history", "revision"), ("verify_evidence", "final"), ("check_comparability", "basic"),
                             ("decompose_hs", "revision")):
             verdict = tb.gate(tool, {"n": stage}, stage)
             self.assertEqual((verdict["allowed"], verdict["reason"]), (False, budget.TOOL_ATTEMPTS_LIMIT), (tool, stage))
             self.assertEqual(verdict["remaining"], 0)
-        self.assertEqual((tb.consumed, tb.tool_attempts), (8, 12))  # 막힌 시도는 기록에만 든다
+        self.assertEqual((tb.consumed, tb.recorded), (8, 12))  # 막힌 시도는 기록(recorded)에만 들고 예산은 안 쓴다
 
     def test_failure_cache_hit_verify_and_same_tool_recall_all_consume(self):
         attempts = [attempt("check_comparability", "basic", "failed"),
@@ -122,7 +122,7 @@ class StageTest(unittest.TestCase):
             verdict = tb.gate("compare_partners", {"partners": partners}, "revision")
             if verdict["allowed"]:
                 tb.record("compare_partners", {"partners": partners}, "revision", "ok")
-        self.assertEqual((tb.consumed, tb.tool_attempts), (7, 8))
+        self.assertEqual((tb.consumed, tb.recorded), (7, 8))
         final = tb.gate("verify_evidence", VERIFY_ARGS, "final")
         self.assertTrue(final["allowed"], final["reason"])
 
@@ -144,7 +144,7 @@ class DeadlineTest(unittest.TestCase):
         tb = budget.ToolBudget(LIMITS, deadline_ms=1_000)
         self.assertTrue(tb.gate("check_comparability", {}, "basic", now_ms=999)["allowed"])
         self.assertEqual(tb.gate("get_history", {}, "basic", now_ms=1_000)["reason"], budget.DEADLINE)
-        self.assertEqual(tb.tool_attempts, 1)
+        self.assertEqual(tb.recorded, 1)
 
     def test_now_and_deadline_come_together(self):
         with self.assertRaises(ValueError):
@@ -225,7 +225,7 @@ class InputTest(unittest.TestCase):
         tb = budget.ToolBudget(LIMITS)
         tb.record(None, {"raw": "not json"}, "basic", "blocked")
         tb.record("drop_table", {}, "basic", "blocked")
-        self.assertEqual((tb.tool_attempts, tb.consumed), (2, 0))
+        self.assertEqual((tb.recorded, tb.consumed), (2, 0))
         with self.assertRaises(ValueError):
             tb.record("drop_table", {}, "basic", "ok")
 

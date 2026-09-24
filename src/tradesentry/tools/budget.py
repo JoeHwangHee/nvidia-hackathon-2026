@@ -19,10 +19,11 @@
 예산을 쓰는 결과(해석. 보고서에 적는다)
 - ok·failed·cache_hit는 예산을 쓴다. 같은 도구를 다른 인자로 다시 부른 시도와 verify_evidence도 똑같이 쓴다
   (§5.3 "실패·같은 도구 재호출·캐시 적중·verify_evidence를 모두 센다").
-- blocked는 기록(실행 결과 기록의 tool_attempts는 막힌 시도까지 센다, §8.1 "넘은 실행은 실제 값")에만 들고 예산은
-  쓰지 않는다. 단계별 몫(기본 5, 재조회 2, 최종 검증 1)의 합이 한도 8과 같으므로, 막힌 시도가 예산을 쓰면 한 차례에
-  도구 호출을 여럿 낸 모델이 예약된 최종 검증 몫을 빼앗을 수 있기 때문이다.
+- blocked는 예산을 쓰지 않는다. 단계별 몫(기본 5, 재조회 2, 최종 검증 1)의 합이 한도 8과 같으므로, 막힌 시도가 예산을
+  쓰면 한 차례에 도구 호출을 여럿 낸 모델이 예약된 최종 검증 몫을 빼앗을 수 있기 때문이다.
 - 그래서 "9번째 시도 차단"은 예산을 쓴 시도가 8건이면 그 뒤의 모든 시도를 막는다는 뜻으로 구현했다.
+- 실행 결과 기록의 tool_attempts(§8.1)에 예산을 쓴 시도 수(consumed)를 적을지, 막힌 시도까지 센 기록 수(recorded)를
+  적을지는 이 단위가 정하지 않는다(열린 결정, 보고서). 이 단위는 두 수를 모두 돌려준다.
 
 판정 순서(앞에서 걸리면 멈춘다. 사유 이름은 흐름 조정의 budget_block 종류와 맞췄다)
 1. deadline: now_ms와 deadline_ms를 받았고 now_ms ≥ deadline_ms면 막는다(전체 deadline이 먼저다).
@@ -45,7 +46,7 @@ revision_stages, revision_requeries, final_verify를 읽는다. 빠진 키는 �
 run 입력: {"attempts": [시도 기록…], "candidate": {"tool", "args", "stage"}, "limits"?, "now_ms"?, "deadline_ms"?}
 run 출력: {"allowed": 참거짓, "reason": 사유 또는 null, "same_as": 같은 인자 시도의 순번(0부터) 또는 null,
           "counts": {"recorded", "consumed", "basic", "revision", "final", "revision_stages"}, "remaining": 남은 예산}
-counts는 후보를 더하기 전의 값이다. recorded는 막힌 시도까지 센 기록 수(실행 결과 기록의 tool_attempts)다.
+counts는 후보를 더하기 전의 값이다. recorded는 막힌 시도까지 센 기록 수, consumed는 예산을 쓴 시도 수다.
 """
 import json
 
@@ -209,7 +210,8 @@ class ToolBudget:
 
     - gate: 판정하고, 막히면 그 시도를 blocked로 기록한다. 허용이면 기록하지 않는다(부른 뒤 결과로 기록한다).
     - record: 도구를 부른 결과(ok·failed·cache_hit)나 흐름이 막은 시도(blocked)를 기록한다.
-    - tool_attempts: 막힌 시도까지 센 기록 수. 실행 결과 기록의 tool_attempts로 쓴다.
+    - recorded: 막힌 시도까지 센 기록 수. consumed: 예산을 쓴 시도 수. 실행 결과 기록의 tool_attempts에 어느 쪽을
+      적을지는 열린 결정이다(머리 설명).
     - deadline_ms를 주면 check·gate에 now_ms를 함께 줘야 deadline을 본다.
     """
 
@@ -235,7 +237,7 @@ class ToolBudget:
         self.attempts.append(entry)
 
     @property
-    def tool_attempts(self) -> int:
+    def recorded(self) -> int:
         return len(self.attempts)
 
     @property
