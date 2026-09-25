@@ -20,8 +20,8 @@ docs/plan/SCAFFOLD_BRIEF.md §4.7). 여기서는 값의 형식만 본다. 그 �
   - 정책 버전 이름(--policy): 영문 소문자로 시작하고 영문 소문자·숫자·밑줄을 쓴다. 하이픈은 조각 사이에만, 점은 숫자
     사이에만 둔다. 예: policy_v1, dev-0.1. 파일 경로도 파일 이름(예: policy_v1.json)도 아니다.
   - 모드(--mode): checklist, agent, full, freeform 가운데 하나(자료 계약 docs/rules/DATA_CONTRACT_V1.md §4.1).
-  - 사례 인자(--case): 영문자·숫자로 시작하고 끝나며 그 사이에는 영문자·숫자·밑줄·하이픈만 쓴다. 예: A-composition.
-    문자 집합과 길이만 본다. 이 값이 case_id인지 (HS6, 상대국, 비교월) 조합인지는 run-case 배선(AS2)이 정한다(자문 명세서
+  - 사례 인자(--case): 영문자·숫자로 시작하고 끝나며 그 사이에는 영문자·숫자·밑줄·하이픈만 쓴다. 예: 850450-XA-202412.
+    문자 집합과 길이만 본다. run-case 배선(AS2)은 사례 식별자 {hs6}-{partner}-{month}만 받는다(합성 사례도 같은 꼴, 자문 명세서
     Q18). case_id의 문자열 형식은 자료 계약이 정하지 않았으므로(§4.5) 여기서도 정하지 않는다.
   - 경로 구분자, '..', 절대경로, '~'로 시작하는 값은 모두 거부한다. 위 형식이 이미 막지만 오류 문장을 따로 낸다.
 - 같은 옵션을 두 번 적으면 값이 같아도, --옵션=값 꼴이 섞여도 인자 오류다. argparse 기본 동작(마지막 값이 이김)은 쓰지 않는다.
@@ -101,7 +101,7 @@ SNAPSHOT_RULE = "스냅샷 ID는 영문 소문자로 시작하고 영문 소문�
 POLICY_RULE = ("정책 버전 이름은 영문 소문자로 시작하고 영문 소문자·숫자·밑줄을 쓰며, 하이픈은 조각 사이에만, 점은 숫자 "
                "사이에만 두고 64자 이하다(예: policy_v1, dev-0.1). 파일 경로나 파일 이름이 아니다")
 CASE_RULE = ("사례 인자는 영문자·숫자로 시작하고 끝나며 그 사이에는 영문자·숫자·밑줄·하이픈만 쓰고 64자 이하다"
-             "(예: A-composition)")
+             "(예: 850450-XA-202412. run-case는 사례 식별자 {hs6}-{partner}-{month}를 받는다)")
 
 
 def _omit_unrecognized(token: str) -> str:
@@ -181,7 +181,8 @@ OPTIONS = {
     "policy": {"metavar": "POLICY_VERSION", "type": check_policy_version,
                "help": "정책 버전 이름(예: policy_v1, dev-0.1). 파일 경로가 아니다"},
     "mode": {"choices": MODES, "help": "실행 모드. " + ", ".join(MODES) + " 가운데 하나"},
-    "case": {"metavar": "CASE", "type": check_case, "help": "조사할 사례(예: A-composition)"},
+    "case": {"metavar": "CASE", "type": check_case,
+             "help": "조사할 사례의 식별자 {hs6}-{partner}-{month}(예: 850450-XA-202412). 합성 사례도 같은 꼴이다"},
 }
 
 

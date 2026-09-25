@@ -46,6 +46,20 @@ checklist: 모델 없이 check_comparability → get_history → decompose_hs(�
   참을 남긴다. 몫(특히 최종 verify_evidence 1회)을 쓰지 않는다. 도구 봉투의 retryable_error는 도구 쪽 결과라 모델
   제공자 원인 코드(PROVIDER_*)가 되지 않는다(결정 기록 ⑯).
 - 코드는 모델의 틀린 상태를 고치지 않는다. 형식·검증기 문제는 수정 단계로 보내거나 INVALID로 끝낸다.
+- 필수 조회(Ports.required_tools, 조립 AS2가 넘긴다. 없으면 강제하지 않는다): 도구를 주는 조사자 차례에 필수 도구의 결과를
+  받지 않고 초안을 쓰면, 그 초안을 받지 않고 차례마다 한 번 필수 조회 메시지(단위 I10 REQUIRED_TOOLS_REQUEST, 모든 모드
+  같음)로 돌려보낸다. trace에는 state_change draft_refused(missing_tools)로 남는다.
+- 규칙 참고값(Ports.reference_status, 조립 AS2가 근거 상태 변환을 넘길 때만): 모델 모드에서 필수 도구 결과를 받은 뒤 첫
+  조사자 요청 앞에 코드가 계산한 P3 신호별 판정·판정 근거를 고정 문구로 한 번 싣고 Critic에게도 준다(MT1 결정 ⑬의
+  "모델 상태와 나란히 적는 참고값"). 모델 상태를 덮어쓰지 않는다. trace state_change rule_reference. 계산할 수 없었으면
+  필수 도구 결과가 갖춰진 뒤, 계산된 뒤에도 새 봉투를 받으면(수정 단계 재조회) 다시 계산해 싣는다(계산할 때마다 trace).
+  계산 불가는 입력 검사 오류(ValueError)만이고, 배선 오류(WiringError 등)는 흐름의 CODE_ERROR로 올린다.
+- 초안은 도구 없는 차례에서만(Ports.drafts_only_without_tools, 조립 AS2가 켠다): 도구를 준 차례에 온 초안 본문은 버리고
+  (state_change draft_discarded) 곧바로 도구 없는 초안 요청(구조화 출력 json_object)으로 다시 받는다.
+- 차례 규칙(조립이 위 둘을 켰을 때, AS2 ⑲): 필수 결과(필수 도구 + 수정 단계의 Critic 재조회 요청)가 빠졌고 그 차례에 예산이
+  있을 때만 도구 차례다(도구 목록은 전부, tool_choice "required", 알림 한 줄 PENDING_TOOLS_REQUEST). 아니면 곧바로 도구 없는
+  초안 차례다. Critic(full·freeform) 뒤에도 필수 결과가 빠졌고 재조회 예산이 있으면 코드 지적(code_finding)을 Critic
+  결과(agent는 수정 지시)에 덧붙이고 수정 1회로 간다. 스키마 실패 초안이 Critic을 건너뛰는 규칙(개발 플랜 §6.6)은 그대로다.
 
 다른 작업 단위를 부르는 자리(Ports). unit_ports가 그 단위들의 run을 부르는 얇은 배선을 한곳에 모았다. 보고서·
 검증기(MT3 R1~R4)와 정책(MT1 P3~P5)은 각 작업 브랜치에 커밋된 입출력에 맞췄고(병합 전 대조), 도구 5개·도구 예산(MT2)은
@@ -101,7 +115,12 @@ class Ports:
     tool(이름, 인자) -> 봉투 / budget(실행한 시도 목록, 후보) -> {"allowed", "reason"} /
     build_report({"case","mode","run_id","draft","evidence"}) -> {"report": 보고서, "rejected": 버린 요청 목록} /
     check_report({"case","mode","report","evidence","revision_used"}) -> {"schema_ok", "validator_ok", "findings"} /
-    checklist_draft({"case","evidence"}) -> 초안 / required_evidence(사례) -> 필수 근거(단위 P5 출력, 없으면 None)
+    checklist_draft({"case","evidence"}) -> 초안 / required_evidence(사례) -> 필수 근거(단위 P5 출력, 없으면 None) /
+    required_tools(사례) -> 조사자가 초안 전에 받아야 하는 도구 이름 목록(없으면 None: 강제하지 않음. 조립 AS2가 넘긴다) /
+    reference_status(봉투 목록) -> 판정 정책 P3 출력(신호별 판정·판정 근거). 모델 모드의 규칙 참고값(없으면 None: 싣지 않음.
+    unit_ports가 근거 상태 변환 evidence_state를 받았을 때만 만든다). 계산할 수 없으면 예외를 낸다 /
+    drafts_only_without_tools: 참이면 초안은 도구를 주지 않는 차례(초안 요청 메시지, 구조화 출력 json_object)에서만 받는다.
+    도구를 준 차례에 도구 호출 없이 온 본문은 버리고 곧바로 도구 없는 초안 요청으로 다시 받는다(조립 AS2가 켠다)
     """
 
     tool: Callable[[str, dict], dict]
@@ -110,6 +129,9 @@ class Ports:
     check_report: Callable[[dict], dict]
     checklist_draft: Callable[[dict], dict]
     required_evidence: Callable[[dict], object] | None = None
+    required_tools: Callable[[dict], list] | None = None
+    reference_status: Callable[[list], dict] | None = None
+    drafts_only_without_tools: bool = False
 
 
 @dataclass(frozen=True)
@@ -157,21 +179,30 @@ def _statuses_of(evidence: list) -> list:
     """봉투의 missingness 항목을 단위 R1의 자료 상태 항목으로 옮긴다(근거 ID 하나에 항목 하나, status_id = 근거 ID).
 
     항목의 상대국 키는 partner_code, 근거 ID는 evidence_id(하나)다(단위 K3·MT2 도구 공통 틀). 옛 모양(partner·
-    evidence_ids 목록)도 읽는다. hs_code가 10자리면 hs10이다. 부모 HS6 행이 있는 키에서 HS10 하위 자료만 빠진 경우
-    (C형, 빠진 HS10 코드마다 observation_status@<HS10>)를 가려 hs10을 채우는 일은 조립(AS2)의 몫이다 `[미확인]`."""
+    evidence_ids 목록)도 읽는다. hs_code가 10자리면 hs10이다.
+    C형(부모 HS6 행이 있는 달에 HS10 하위 자료만 빠짐. MT2 도구가 항목에 hs10_codes·hs10_codes_source를 붙인다)은
+    hs10_codes의 코드마다 항목 하나로 펼친다(조립 AS2): hs10 = 그 코드, status_id = "{근거 ID}@{코드}"(코드마다 다르다),
+    근거 ID는 그 상태 행 하나다. 그래서 R1이 코드마다 observation_status@<HS10> 주장을 만든다(MT3 결정 ⑨). 코드 목록이
+    비면(출처 none) 쓸 수 있는 주장이 없어 항목을 만들지 않는다(HS6 수준 기호로 쓰면 같은 키의 값 주장과 어긋난다)."""
     statuses, seen = [], set()
     for item in _missing_items(evidence):
         code = str(item.get("hs_code") or item.get("hs6") or "")
         refs = item.get("evidence_ids") if isinstance(item.get("evidence_ids"), list) else [item.get("evidence_id")]
+        codes = item.get("hs10_codes") if isinstance(item.get("hs10_codes"), list) else None
         for ev in refs:
-            if isinstance(ev, str) and ev not in seen:
-                seen.add(ev)
-                statuses.append({"status_id": ev, "hs6": item.get("hs6") or code[:6],
-                                 "partner": item.get("partner_code") or item.get("partner"),
-                                 "period": item.get("month") or item.get("period"),
-                                 "hs10": item.get("hs10") or (code if len(code) == 10 else None),
-                                 "observation_status": item.get("observation_status"), "evidence_ids": [ev],
-                                 "baseline_period": item.get("baseline_period")})
+            if not isinstance(ev, str) or ev in seen:
+                continue
+            seen.add(ev)
+            base = {"hs6": item.get("hs6") or code[:6], "partner": item.get("partner_code") or item.get("partner"),
+                    "period": item.get("month") or item.get("period"),
+                    "observation_status": item.get("observation_status"), "evidence_ids": [ev],
+                    "baseline_period": item.get("baseline_period")}
+            if codes is None:
+                statuses.append({"status_id": ev, **base,
+                                 "hs10": item.get("hs10") or (code if len(code) == 10 else None)})
+            else:
+                statuses += [{"status_id": f"{ev}@{hs10}", **base, "hs10": hs10} for hs10 in codes
+                             if isinstance(hs10, str)]
     return statuses
 
 
@@ -225,8 +256,16 @@ def _unresolved_triggered(signals: dict | None, signal_status: object) -> bool:
     return "MAINTAIN" in judged and "HOLD" in judged
 
 
-def _requests_of(draft: dict) -> list:
-    """틀 채우기 모드 초안의 주장 참조(metric_id·evidence_id)를 단위 R1의 요청({claim_id, metric_id|status_id})으로."""
+def _requests_of(draft: dict, statuses: list | None = None) -> list:
+    """틀 채우기 모드 초안의 주장 참조(metric_id·evidence_id)를 단위 R1의 요청({claim_id, metric_id|status_id})으로.
+
+    evidence_id가 C형 상태 행이면(자료 상태 항목이 코드마다 펼쳐져 있으면) 그 코드마다 요청 하나를 만든다(claim_id
+    c{번호}-{k}). 초안은 실제 근거 ID만 가리키고, 펼친 status_id는 R1 입력 안에서만 쓴다(verify_evidence에는 근거 ID가 간다)."""
+    expanded: dict[str, list[str]] = {}
+    for status in statuses or []:
+        ids = status.get("evidence_ids") if isinstance(status, dict) else None
+        if isinstance(ids, list) and ids and isinstance(ids[0], str) and isinstance(status.get("status_id"), str):
+            expanded.setdefault(ids[0], []).append(status["status_id"])
     requests = []
     for number, claim in enumerate(draft.get("claims") or [], start=1):
         if not isinstance(claim, dict):
@@ -234,7 +273,12 @@ def _requests_of(draft: dict) -> list:
         if isinstance(claim.get("metric_id"), str):
             requests.append({"claim_id": f"c{number}", "metric_id": claim["metric_id"]})
         elif isinstance(claim.get("evidence_id"), str):
-            requests.append({"claim_id": f"c{number}", "status_id": claim["evidence_id"]})
+            targets = expanded.get(claim["evidence_id"]) or [claim["evidence_id"]]
+            if len(targets) == 1:
+                requests.append({"claim_id": f"c{number}", "status_id": targets[0]})
+            else:
+                requests += [{"claim_id": f"c{number}-{k}", "status_id": target}
+                             for k, target in enumerate(targets, start=1)]
     return requests
 
 
@@ -250,7 +294,8 @@ def checklist_claims(case: dict, evidence: list) -> list:
                          for s in triggered)
         if family_hit and inputs.get("period") == case.get("month") and isinstance(metric.get("metric_id"), str):
             claims.append({"claim_type": "value", "metric_id": metric["metric_id"]})
-    claims += [{"claim_type": "data_status", "evidence_id": s["status_id"]} for s in _statuses_of(evidence)]
+    status_evidence = dict.fromkeys(s["evidence_ids"][0] for s in _statuses_of(evidence))  # C형은 근거 ID 하나로(펼치기는 R1 요청)
+    claims += [{"claim_type": "data_status", "evidence_id": ev} for ev in status_evidence]
     return claims
 
 
@@ -285,8 +330,9 @@ def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimit
         if mode == "freeform":
             filled = report_claims.run({"mode": mode, "case": case, "claims": draft.get("claims") or []})
         else:
+            statuses = _statuses_of(evidence)
             filled = report_claims.run({"mode": mode, "case": case, "metrics": _metrics_of(evidence),
-                                        "statuses": _statuses_of(evidence), "requests": _requests_of(draft)})
+                                        "statuses": statuses, "requests": _requests_of(draft, statuses)})
         try:
             unresolved = policy_case_aggregate.run({"signals": case.get("signals"),
                                                     "signal_status": draft.get("signal_status")})["unresolved_evidence"]
@@ -333,8 +379,14 @@ def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimit
     def required(case_obj: dict) -> object:
         return policy_required_evidence.run({"signals": case_obj.get("signals")})
 
+    def reference(evidence: list) -> dict:
+        # 모델 모드의 규칙 참고값(MT1 결정 ⑬: 모델 상태와 나란히 적는 참고값). P3을 그대로 부르고 모델 상태를 고치지 않는다.
+        state = evidence_state(case, evidence)
+        return policy_signal_decide.run({"policy": policy, "case": case, "evidence": state})
+
     return Ports(tool=tool, budget=budget, build_report=build_report, check_report=check_report,
-                 checklist_draft=checklist_draft, required_evidence=required)
+                 checklist_draft=checklist_draft, required_evidence=required,
+                 reference_status=reference if evidence_state is not None and policy is not None else None)
 
 
 def _unresolved(signal_status: dict, signals: dict | None = None) -> bool:
@@ -383,6 +435,9 @@ class _Flow:
         self.required = None  # 필수 근거(P5)는 orchestrate의 try 안에서 채운다(실패도 기록으로 남게)
         self.rejected: list = []
         self.verify_skipped = False  # 바로 앞 verify_evidence를 대조할 것이 없어 건너뛰었나(다음 validator_result에 남긴다)
+        self.reference_text: str | None = None  # 모델 모드에 실은 규칙 참고값 문구(Critic에도 준다)
+        self.reference_available = False  # 마지막으로 실은 참고값이 계산된 값이었나(계산 불가였으면 근거가 갖춰질 때 다시 싣는다)
+        self.reference_seen = 0  # 마지막 참고값을 계산할 때의 봉투 수(수정 단계에서 새 봉투를 받으면 다시 계산한다)
 
     # 한도와 도구 시도 ---------------------------------------------------------------------------------------------
     @property
@@ -469,18 +524,57 @@ class _Flow:
                 "requeries": max(0, self._allowance_left("requery")) if tools_enabled else 0,
                 "model_requests": max(0, self.limits.model_requests - self.budget.model_requests)}
 
-    def investigate(self, messages: list[dict], *, allowance: str, max_tool_turns: int, tools_enabled: bool) -> dict:
+    def directed(self) -> bool:
+        """조립(AS2)이 켠 차례 규칙: 초안은 도구 없는 차례에서만, 도구 차례는 필수 결과가 빠지고 예산이 있을 때만."""
+        return self.ports.drafts_only_without_tools and self.ports.required_tools is not None
+
+    def pending_tools(self, requested: list) -> list:
+        """이 차례에 아직 없는 필수 결과: 필수 도구 가운데 결과를 받지 못한 것 + Critic이 재조회를 요청했는데 이 단계에서
+        아직 부르지 않은 도구(나온 순서, 중복 없음)."""
+        called = {c.get("tool") for c in self.executed if c.get("stage") == self.stage}
+        names = self.missing_required_tools() + [name for name in requested if name not in called]
+        return list(dict.fromkeys(names))
+
+    def investigate(self, messages: list[dict], *, allowance: str, max_tool_turns: int, tools_enabled: bool,
+                    requested: list | None = None) -> dict:
         """조사자 차례를 도구 호출이 끝날 때까지 돈다.
 
         {"draft": 초안 또는 None, "problems": 형식 문제, "status_notes": 허용 상태 관찰, "message": 마지막 모델 메시지,
         "was_draft": 마지막 답이 초안 글이었나}를 돌려준다. tools_enabled가 거짓(비교 불가)이면 도구를 주지 않고, 모델이
         불러도 not_comparable로 막는다."""
-        tool_turns, refused_turns = 0, 0
+        tool_turns, refused_turns, nudged, force_draft = 0, 0, False, False
+        directed = self.directed()
         while True:
             self.check_deadline()
-            allow = tools_enabled and tool_turns < max_tool_turns and self._allowance_left(allowance) > 0
+            can_call = tools_enabled and tool_turns < max_tool_turns and self._allowance_left(allowance) > 0
+            pending = self.pending_tools(requested or []) if directed else []
+            # 차례 규칙(AS2 ⑲): 필수 결과가 빠졌고 예산이 있으면 도구 차례(tool_choice required, 도구 목록은 전부),
+            # 아니면 곧바로 도구 없는 초안 차례(초안 요청 메시지 + json_object). 조립이 켜지 않으면 전과 같다.
+            allow = (can_call and bool(pending) if directed else can_call) and not force_draft
+            if self.ports.reference_status is not None and (not allow or nudged or not self.missing_required_tools()) \
+                    and (self.reference_text is None
+                         or (not self.missing_required_tools()
+                             and (not self.reference_available or self.lookup_count() > self.reference_seen))):
+                messages.append(self.reference_message())
+            if directed and allow:
+                messages.append(investigator.pending_tools_message(pending))
             result = investigator.step(self.client, messages, stage=self.stage, mode=self.mode,
-                                       signals=self.signals, allow_tools=allow)
+                                       signals=self.signals, allow_tools=allow,
+                                       tool_choice="required" if directed and allow else "auto")
+            missing = self.missing_required_tools() if result["kind"] == "draft" and allow and not nudged \
+                and not directed else []
+            if missing:
+                # 공개 판정 규칙에 필요한 도구를 받지 않고 쓴 초안: 받지 않고 한 번만 돌려보낸다(차례마다 1회, 모든 모드 같음)
+                nudged = True
+                self.state("draft_refused", result["draft"], missing_tools=missing)
+                messages.append(investigator.assistant_message({"content": result["message"].get("content") or ""}))
+                messages.append(investigator.required_tools_message(missing))
+                continue
+            if result["kind"] == "draft" and allow and self.ports.drafts_only_without_tools:
+                # 도구를 준 차례의 초안 본문은 구조화 출력이 실리지 않은 답이다. 버리고 도구 없는 초안 요청으로 다시 받는다
+                force_draft = True
+                self.state("draft_discarded", result["draft"], problems=result["problems"])
+                continue
             if result["kind"] == "draft":
                 return {"draft": result["draft"], "problems": result["problems"],
                         "status_notes": result["status_notes"], "message": result["message"], "was_draft": True}
@@ -502,6 +596,38 @@ class _Flow:
             if refused_turns >= 2:
                 return {"draft": None, "problems": ["도구 없이 초안을 쓰라는 요청에 두 번 도구를 불렀다"],
                         "status_notes": [], "message": result["message"], "was_draft": False}
+
+    def lookup_count(self) -> int:
+        """받은 조회 봉투 수(verify_evidence 빼고). 참고값을 계산한 뒤 새 조회 결과가 왔는지 가른다."""
+        return len([e for e in self.evidence if isinstance(e, dict) and e.get("tool") != "verify_evidence"])
+
+    def reference_message(self) -> dict:
+        """규칙 참고값 메시지(모든 모델 모드에 같은 문구·같은 시점): 필수 도구 결과를 받은 뒤(또는 도구를 더 줄 수 없는
+        차례, 필수 조회를 한 번 돌려보낸 뒤) 첫 조사자 요청 앞에 한 번 싣는다. P3을 돌릴 수 없으면 계산 불가 문구다.
+        trace에는 state_change rule_reference로 남긴다. 모델 상태를 고치지 않는다(MT1 결정 ⑬)."""
+        self.reference_seen = self.lookup_count()
+        try:
+            decided = self.ports.reference_status(list(self.evidence))
+        except ValueError as exc:  # P3·근거 상태 변환의 입력 검사 오류만 계산 불가로 둔다(배선 오류 등은 CODE_ERROR로 올린다)
+            statuses, basis, reason = None, None, type(exc).__name__
+            detail = str(exc)[:300]
+            self.reference_text = investigator.reference_unavailable_text(self.missing_required_tools())
+        else:
+            statuses, basis = decided["signal_status"], decided["basis"]
+            reason, detail = None, None
+            self.reference_text = investigator.reference_text(self.signals, statuses, basis)
+        self.reference_available = statuses is not None
+        self.sink.emit("state_change", self.stage, {"phase": "rule_reference", "available": statuses is not None,
+                                                    "signal_status": statuses, "basis": basis, "error": reason,
+                                                    "error_detail": detail})
+        return {"role": "user", "content": self.reference_text}
+
+    def missing_required_tools(self) -> list:
+        """조사자가 초안 전에 받아야 하는데 아직 결과를 받지 못한 도구(Ports.required_tools, 없으면 강제하지 않는다)."""
+        if self.ports.required_tools is None:
+            return []
+        received = {e.get("tool") for e in self.evidence if isinstance(e, dict) and e.get("retryable_error") is None}
+        return [name for name in self.ports.required_tools(self.case) or [] if name not in received]
 
     # 보고서와 판정 ----------------------------------------------------------------------------------------------
     def build(self, draft: dict) -> dict:
@@ -616,21 +742,30 @@ class _Flow:
                 self.sink.emit("stage_start", "critic", {"stage": "critic"})
                 self.critic_used = True  # Critic 단계를 연 때 참(요청 중에 멈춰도 Critic을 쓴 실행으로 센다)
                 review = critic.review(self.client, prompts, self.case, draft, self.evidence,
-                                       self.limits.revision_requeries)
+                                       self.limits.revision_requeries, reference=self.reference_text)
                 self.state("after_critic", draft, needs_revision=review["needs_revision"],
                            findings=len(review["findings"]), requery=len(review["requery"]),
                            problems=review["problems"])
                 self.sink.emit("stage_end", "critic", {"stage": "critic"})
                 self.stage = "basic"
+            code_missing = self.missing_required_tools() if self.directed() and comparable \
+                and self._allowance_left("requery") > 0 else []
+            if code_missing:  # 코드 지적(AS2 ⑲): 빠진 필수 결과를 Critic 결과(agent는 수정 지시)에 덧붙이고 수정 1회
+                finding = investigator.code_finding(code_missing)
+                if review is not None:
+                    review = dict(review, findings=list(review["findings"]) + [finding], needs_revision=True)
+                self.state("code_finding", draft, missing_tools=code_missing)
             self.verify(draft, "verify")
             check = self.check(report, "verify")
             if not check["schema_ok"]:
                 problems, findings = ["보고서 스키마 검사 실패"], check["findings"]
             elif self.mode != "freeform" and not check["validator_ok"]:
                 findings = check["findings"]
-            elif not (review and review["needs_revision"]):
+            elif not (review and review["needs_revision"]) and not code_missing:
                 self.stage = "final"
                 return self.complete(report, draft, check)
+            if code_missing and review is None:
+                findings = list(findings) + [investigator.code_finding(code_missing)]
         # 수정 단계(1회). 비교 불가 사례는 여기서도 도구를 주지 않는다(조기 종료, 개발 플랜 §6.6).
         self.stage = "revision"
         self.revision_used = True
@@ -639,7 +774,8 @@ class _Flow:
             messages.append(investigator.assistant_message({"content": turn["message"].get("content") or ""}))
         messages.append(investigator.feedback_message(problems, review, findings, self.remaining(comparable)))
         turn = self.investigate(messages, allowance="requery", max_tool_turns=self.limits.revision_requeries,
-                                tools_enabled=comparable)
+                                tools_enabled=comparable,
+                                requested=[q["tool"] for q in (review or {}).get("requery") or []])
         draft, problems = turn["draft"], turn["problems"]
         self.state("revised", draft, problems=len(problems), problem_list=problems, status_notes=turn["status_notes"])
         self.sink.emit("stage_end", "revision", {"stage": "revision"})

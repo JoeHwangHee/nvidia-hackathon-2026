@@ -28,7 +28,8 @@ from . import harness as h
 from . import sized_envelopes as se
 
 ASCII_PER_TOKEN, OTHER_PER_TOKEN = 3, 1.3
-LIMIT = 32_000
+LIMIT = mc.load_model_config().limits.tokens  # 설정 값(model-1.2부터 128,000, 사용자 결정 4)
+OLD_LIMIT = 32_000  # 결정 전 한도(이 값에 대한 추정은 남은 위험의 기록으로 둔다)
 
 
 def estimate(payload: dict) -> int:
@@ -120,18 +121,37 @@ class CumulativeTokenTest(unittest.TestCase):
         self.assertEqual(record["execution_status"], "COMPLETED")
         self.assertLess(total, LIMIT)
 
+    def test_directed_single_turn_comparison_path_has_room(self):
+        """AS2 2회차(model-0.3): 지침이 비교국·분해를 한 차례에 함께 부르게 한다. 그 경로(full, Critic, 수정 없음)는 두
+        차례로 나눠 부르는 경로보다 조사자 요청이 하나 적어 한도 아래 여유가 크다(나눠 부르는 경로는 한도에 거의 닿는다)."""
+        record, one_turn = run_path("full", [(None, calls("compare_partners", "decompose_hs"), 60), (DRAFT, None, 1200),
+                                             (CRITIC_OK, None, 400)], [h.PASS, h.PASS])
+        self.assertEqual(record["execution_status"], "COMPLETED")
+        self.assertLess(one_turn, LIMIT * 85 // 100)
+        _, two_turns = run_path("full", [(None, calls("compare_partners"), 60), (None, calls("decompose_hs"), 60),
+                                         (DRAFT, None, 1200), (CRITIC_OK, None, 400)], [h.PASS, h.PASS])
+        self.assertLess(one_turn, two_turns)
+
     def test_decomposition_path_with_critic_fits_but_a_revision_after_it_does_not(self):
-        # full: 추가 비교 2(비교국·분해), Critic, 수정 없음 → 한도 안
-        record, total = run_path("full", [(None, calls("compare_partners"), 60), (None, calls("decompose_hs"), 60),
-                                          (DRAFT, None, 1200), (CRITIC_OK, None, 400)], [h.PASS, h.PASS])
+        # full: 추가 비교 2(비교국·분해)를 지침대로 한 차례에, Critic, 수정 없음 → 한도 안
+        record, total = run_path("full", [(None, calls("compare_partners", "decompose_hs"), 60), (DRAFT, None, 1200),
+                                          (CRITIC_OK, None, 400)], [h.PASS, h.PASS])
         self.assertEqual(record["execution_status"], "COMPLETED")
         self.assertLess(total, LIMIT)
-        # 같은 경로에 검증기 차단으로 수정 단계(재조회 1)가 붙으면 한도를 넘는다(모든 모드에 같은 한도, 남은 위험)
+        # 같은 비교를 두 차례로 나눠 부르면(모델이 지침을 따르지 않은 경우) model-0.4 지침으로는 한도에 닿는다(남은 위험,
+        # AS2 3회차. 2026-09-25(금) 09:00 한도 결정 대상)
+        _, split = run_path("full", [(None, calls("compare_partners"), 60), (None, calls("decompose_hs"), 60),
+                                     (DRAFT, None, 1200), (CRITIC_OK, None, 400)], [h.PASS, h.PASS])
+        self.assertGreater(split, total)
+        # 같은 경로에 검증기 차단으로 수정 단계(재조회 1)가 붙으면 옛 한도 32,000은 넘지만(남은 위험이던 경로),
+        # 사용자 결정 4의 한도 128,000 안이다
         record, total = run_path("full", [(None, calls("compare_partners"), 60), (None, calls("decompose_hs"), 60),
                                           (DRAFT, None, 1200), (CRITIC_OK, None, 400),
                                           (None, calls("check_comparability"), 60), (DRAFT, None, 1200)],
                                  [h.PASS, h.BLOCK, h.PASS])
-        self.assertEqual((record["execution_status"], record["errors"][0]["code"]), ("BUDGET_EXCEEDED", "BUDGET_TOKENS"))
+        self.assertEqual(record["execution_status"], "COMPLETED")
+        self.assertGreater(total, OLD_LIMIT)
+        self.assertLess(total, LIMIT)
 
 
 if __name__ == "__main__":

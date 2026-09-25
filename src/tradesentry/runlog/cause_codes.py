@@ -21,7 +21,7 @@
 | PROVIDER_REQUEST_TIMEOUT | FAILED | 아니오 | 사례 deadline 전의 요청별 제한 시간(최대 60초) 초과. 재실행 여부는 결정 D12의 입력 |
 | PROVIDER_BAD_RESPONSE | FAILED | 아니오 | HTTP 200인데 본문(JSON·choices·usage)을 읽을 수 없음 |
 | BUDGET_MODEL_REQUESTS | BUDGET_EXCEEDED | 아니오 | 모델 요청 한도(10회, 재전송 포함) |
-| BUDGET_TOKENS | BUDGET_EXCEEDED | 아니오 | 누적 토큰 한도(32,000, 입력 + 출력) |
+| BUDGET_TOKENS | BUDGET_EXCEEDED | 아니오 | 누적 토큰 한도(설정 limits.tokens, 128,000, 입력 + 출력) |
 | DEADLINE | TIMEOUT | 아니오 | 사례당 wall time 한도(300초). 다른 한도보다 먼저 본다 |
 | SCHEMA_INVALID | INVALID | 아니오 | 수정 1회 뒤에도 스키마 검사 실패(모델 출력 형식 문제 포함) |
 | VALIDATOR_BLOCKED | INVALID | 아니오 | 수정 1회 뒤에도 검증기 차단(checklist는 수정 없이 곧바로, 결정 D1) |
