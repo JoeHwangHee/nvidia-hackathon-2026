@@ -32,7 +32,7 @@
 |---|---|
 | `docs/plan/ROADMAP.md` | 두 트랙 동시 진행 로드맵, 날짜별 도착점, MVP 시험(전체 경로가 최소 범위로 끝까지 도는지 보는 중간 시험) 합격 체크리스트, 작업별 담당·검토 에이전트, 줄이는 순서, 사용자 확인 항목 |
 | `docs/plan/SCAFFOLD_BRIEF.md` | 앱 스캐폴딩(프로젝트 뼈대 생성) 외부 자문용 명세서 |
-| `docs/rules/DATA_CONTRACT_V1.md` | 두 트랙 공용 자료 계약 v1. 상태값·ID·모드 이름의 정본 |
+| `docs/rules/DATA_CONTRACT_V1.md` | 두 트랙 공용 자료 계약(현행 `schema_version=2`, 파일 이름의 V1은 처음 버전 표시). 상태값·ID·모드 이름의 정본 |
 | `docs/rules/PARALLEL_DEV_RULES.md` | 병렬 개발 규칙: 파일 소유, 합성 시험자료 먼저 넘기기, 공용 약속(두 트랙이 함께 기대는 형식·값) 변경 절차, 봉인 자료(개발 중에 보지 않도록 저장소 밖에 두는 평가 자료) 규칙 |
 | `docs/rules/AGENT_OPS.md` | 에이전트 운용 규칙: 보조 에이전트·Codex headless(화면 없이 명령으로 실행하는 Codex)·도메인 검토자(작업 성격별 검토 에이전트), 검토 반복, 작업별 PR(변경을 main에 합치는 병합 요청) |
 | `docs/eval/RULEBOOK.md` | 평가 룰북. Part A 프로젝트 자기채점, Part B TradeSentry 성능 평가 |
@@ -726,7 +726,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 | 대만 | BACI 490(S19, "Asia n.e.s.")에 대응한다. 주석 내용: BACI 490(Other Asia, nes)에는 대만 외 기타 아시아 미상분이 섞일 수 있다. 기록 위치는 분담 §3·D3의 국가 코드 대응표(country_map)이며, 그 파일 위치는 §10.1 표에 없어 S0에서 정한다 |
 
 - 결과는 `data/reference/peer_group_g1.csv`(M 계산·D 검수)이고, 계산 패키지는 `src/tradesentry/grouping/`(M)다.
-- 객체 필드는 분담 문서 §4의 `peer_group`을 그대로 쓴다(`schema_version=1`). 정본은 `docs/rules/DATA_CONTRACT_V1.md`다.
+- 객체 필드는 분담 문서 §4의 `peer_group`을 그대로 쓴다(`schema_version=2`). 정본은 `docs/rules/DATA_CONTRACT_V1.md`다.
 
 ### 8.3 쓰는 곳과 쓰지 않는 곳
 
@@ -955,7 +955,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 
 - **합성 시험자료 먼저 넘기기**: D가 `controlled_fixture_v0`를 먼저 넘기고, M은 실자료를 기다리지 않고 이것으로 개발한다. 구성은 분담 D6을 따른다(3 HS6 × 10국 × 36개월 + HS10 2개월 + `peer_group` + 수집 기록 + A/B/C, 규모는 조정값). 실스냅샷은 코드 변경 없이 교체된다.
 - **D → M 인수 조건**(넘겨받는 쪽이 확인하는 완료 기준)
-  - 인수물마다 `schema_version=1` 표시가 있어야 한다.
+  - 인수물마다 `schema_version=2` 표시가 있어야 한다.
   - 자료 계약 검사 명령이 통과해야 한다.
   - 자료 접근층(`dal/` 패키지)으로 읽혀야 한다.
   - `metrics/` 패키지가 oracle A/B/C를 재현해야 한다.

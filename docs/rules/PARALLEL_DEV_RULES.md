@@ -126,7 +126,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 | 수집 기록 | `collection_receipt`(수집 요청마다 성공·오류·미수집을 남기는 계약 객체). 성공·실패·미수집을 함께 담는다 |
 | 관측 상태 | 관측치마다 붙는 수집·거래 상태 5종 `OBSERVED`, `NOT_COLLECTED`, `REQUEST_FAILED`, `UNRESOLVED_ZERO`, `CONFIRMED_NO_TRADE`가 각각 한 번 이상 나온다 |
 | 사례 | oracle A/B/C(합성 시연 사례 A 구성변화·B 잔존변화·C 자료누락과 그 정답표 `eval/dev/oracle_ABC.json`). A는 `MONITOR`(모니터링), B는 `MAINTAIN`(검토 유지), C는 `HOLD`(자료 보류)로 끝나야 한다 |
-| 표시 | `snapshot_id`(스냅샷 식별자)는 `controlled_fixture_v0`, `source_kind`(출처 종류)는 `controlled`, 자료 계약 버전 표시는 `schema_version=1` |
+| 표시 | `snapshot_id`(스냅샷 식별자)는 `controlled_fixture_v0`, `source_kind`(출처 종류)는 `controlled`, 자료 계약 버전 표시는 `schema_version=2` |
 | 위치 | `data/snapshots/controlled_fixture_v0/`(D 소유) |
 
 ### 2.2 넘기는 시점
@@ -145,7 +145,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 
 - 모든 자료 조회는 `snapshot_id`를 받아 `dal/`을 거친다. 코드에 스냅샷 이름이나 파일 경로를 박아 두지 않는다.
 - 실스냅샷으로 바꿀 때는 CLI 공통 옵션 `--snapshot`의 값만 `controlled_fixture_v0`에서 `kcs_202201_202412_v2`로 바꾼다. 코드는 고치지 않는다.
-- 두 스냅샷은 같은 자료 계약(`schema_version=1`)을 따르고 `source_kind`만 다르다(`controlled`와 `real`).
+- 두 스냅샷은 같은 자료 계약(`schema_version=2`)을 따르고 `source_kind`만 다르다(`controlled`와 `real`).
 - 바꿀 때 코드를 고쳐야 한다면 그것은 자료 계약이나 자료 접근층의 결함이다. M은 우회 코드를 쓰지 않고 D에게 돌려보낸다. 계약 필드를 바꿔야 하면 §4 절차를 거친다.
 
 ### 2.5 합성 숫자의 표기
@@ -172,7 +172,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 
 | # | 조건 | 확인 방법 |
 |---|---|---|
-| 1 | 인수물마다 `schema_version=1` 표시가 있다 | 스냅샷 정보나 모듈의 계약 버전 표시에서 값을 읽는다 |
+| 1 | 인수물마다 `schema_version=2` 표시가 있다 | 스냅샷 정보나 모듈의 계약 버전 표시에서 값을 읽는다 |
 | 2 | 자료 계약 검사 명령이 통과한다 | 종료 코드 0. 검사 명령의 이름은 계획 경로·명령 표에 아직 없다 `[미확인]`. 정해지면 그 표와 이 문서를 함께 고친다 |
 | 3 | 자료 접근층(`dal/`)으로 읽힌다 | `dal/`로 인수물을 열어 계약 객체를 읽는 시험이 통과한다 |
 | 4 | `metrics/` 패키지가 oracle A/B/C를 재현한다 | `eval/dev/oracle_ABC.json`의 `expected`에서 아래 목록의 수치 필드가 모두 일치한다 |
@@ -294,7 +294,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 | `grouping_version` 동결 뒤 변경 | 평가 구성 | `g1` 동결 뒤 바꾸려면 새 `grouping_version`과 사유가 필요하다 |
 | 평가 20/40 구성 | 평가 구성 | dev20과 holdout40. 구 개발계획(`Pasted markdown.md`) §8.1의 10개 시나리오 분류와 배분을 따른다 |
 | 마감·적격성 주장 문구 | 제출서 주장 문구 | 마감 2026-09-28(월) 23:59 KST |
-| 데이터 계약 필드 추가·삭제 | 자료 형식 | `schema_version=1` |
+| 데이터 계약 필드 추가·삭제 | 자료 형식 | `schema_version=2` |
 
 ### 5.3 사용자에게 올리는 그 밖의 결정
 
@@ -629,7 +629,7 @@ D가 합성 시험자료 `controlled_fixture_v0`를 먼저 넘기고, M은 실�
 | 스냅샷, `snapshot_id` | 한 시점에 수집해 동결한 원자료 묶음과 그 식별자 |
 | manifest | 스냅샷 폴더에 있는 수집 요청 목록 기록(`manifest.json`) |
 | 자료 계약 | 두 트랙이 공유하는 객체·필드·상태값·ID 형식 약속(`docs/rules/DATA_CONTRACT_V1.md`) |
-| `schema_version` | 자료 계약의 버전 표시. 현행은 `schema_version=1` |
+| `schema_version` | 자료 계약의 버전 표시. 현행은 `schema_version=2` |
 | `policy_version` | 정책 수치의 버전 표시 |
 | `grouping_version` | 그룹핑 방법의 버전 표시. 2026-09-25(금) MVP 시험까지는 `g0`를 쓰고, `g1`이 동결되는 즉시 `g1`이 기본이 된다. 룰북 동결 시한(2026-09-26(토) 18:00)까지 `g1`이 동결되지 않으면 `g0`로 채점하고 제출서에 사실대로 적는다 |
 | `params_hash` | 그룹핑 계산에 쓴 설정값의 해시. 같은 설정으로 계산했는지 확인할 때 쓴다 |

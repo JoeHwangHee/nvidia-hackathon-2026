@@ -368,7 +368,7 @@ eval/scorer/(샌드박스 밖, tradesentry 패키지·eval/datagen import 금지
 
 - D가 먼저 넘기는 인수물(한 트랙이 다른 트랙에 넘기는 자료나 모듈): 자료 접근층 `dal/`과 자료 계약 구현(커널 `contract/`), 지표 계산 `metrics/`, 합성 시험자료 `controlled_fixture_v0`. 이어서 dev20(입력 + 정답표).
 - 인수 조건 다섯 가지(넘겨받는 M이 확인한다)
-  1. 인수물마다 `schema_version=1` 표시가 있다.
+  1. 인수물마다 `schema_version=2` 표시가 있다.
   2. 자료 계약 검사 명령이 통과한다. 명령 이름은 정하지 않았다(Q19).
   3. 자료 접근층 `dal/`로 읽힌다.
   4. `metrics/`가 oracle A/B/C를 재현한다(`eval/dev/oracle_ABC.json`의 수치 필드가 모두 일치).
@@ -384,15 +384,15 @@ eval/scorer/(샌드박스 밖, tradesentry 패키지·eval/datagen import 금지
 
 #### 3.4.1 계약 버전과 버전 축
 
-- 계약 버전은 `schema_version=1`이다.
+- 계약 버전은 `schema_version=2`이다.
 - 인수물에 버전을 적는 곳
-  - 스냅샷: `snapshot` 객체에 `schema_version` 값 1을 담는다.
-  - 그 밖의 JSON 인수물: 최상위 키 `schema_version`에 1을 담는다.
+  - 스냅샷: `snapshot` 객체에 `schema_version` 값 2를 담는다.
+  - 그 밖의 JSON 인수물: 최상위 키 `schema_version`에 2를 담는다.
   - 줄 단위 기록(채점 결과 `scorer_results-{시각}.jsonl`, 주장 채점 기록 `scorer_claims-{시각}.jsonl`): 정해진 키 목록을 늘리지 않는다. 계약 버전은 같은 채점 실행 폴더의 요약 `scorer_summary-{시각}.md`에 적는다.
 
 | 키 | 무엇의 버전인가 | 값 |
 |---|---|---|
-| `schema_version` | 자료 계약 | 1 |
+| `schema_version` | 자료 계약 | 2 |
 | `policy_version` | 탐지·판정 정책 | `policy_v1`(승인 전에는 개발용 정책 `dev-0.1`, `configs/policy_dev.json`) |
 | `grouping_version` | 비교 대상 집합 | `g0`(2026-09-25(금) MVP 시험까지), `g1`(동결 뒤 기본) |
 | `rulebook_version` | 평가 룰북 | `RB-1` |
@@ -405,7 +405,7 @@ eval/scorer/(샌드박스 밖, tradesentry 패키지·eval/datagen import 금지
 
 **명세 §4.7 원문**
 
-기존 개발계획 §3 "최소 데이터 계약" 5개 객체(`snapshot`, `observation`, `collection_receipt`, `metric`, `case`)의 필수 필드와 팀 분담 문서 §4의 `peer_group` 객체 필드를 그대로 쓴다. `schema_version=1`이다.
+기존 개발계획 §3 "최소 데이터 계약" 5개 객체(`snapshot`, `observation`, `collection_receipt`, `metric`, `case`)의 필수 필드와 팀 분담 문서 §4의 `peer_group` 객체 필드를 그대로 쓴다. `schema_version=2`이다.
 
 **필수 필드 원문**(구 개발계획 §3 "최소 데이터 계약" 표. 자료 계약 §2.1이 옮긴 것)
 
@@ -856,7 +856,7 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "files": [
     {
       "dataset": "holdout40",
@@ -1293,7 +1293,7 @@ CLI(명령줄 실행 도구)는 `tradesentry <명령>` 하나로 모은다.
 |---|---|
 | `metrics/` | oracle A/B/C 수치 재현: 단가 쪽 `U0`·`U1`·`r_U`·`within`·`mix`·`residual`, 점유율 쪽 `V_country_0`·`V_country_1`·`V_world_0`·`V_world_1`·`s0_pp`·`s1_pp`·`d_s_pp`. 분해할 수 없는 C 사례의 `within`·`mix`는 `null` 그대로 일치해야 한다 |
 | `policy/` | oracle에 적힌 개발용 정책(`dev-0.1`) 기준값(단가 변화율 절댓값 30% 이상, 점유율 변화 절댓값 10pp 이상)으로 발동 여부 대조 |
-| 자료 계약 | 봉투 키 11개 상시 존재, 상태값 집합, 근거 ID 풀림 규칙, `schema_version=1` 표시 |
+| 자료 계약 | 봉투 키 11개 상시 존재, 상태값 집합, 근거 ID 풀림 규칙, `schema_version=2` 표시 |
 | `dal/` | 합성 시험자료를 계약 객체로 읽는다 |
 | 예산 강제 | 9번째 도구 시도 차단, 두 번째 수정 단계 차단, 수정 단계의 세 번째 재조회 차단, 전체 deadline 우선 종료 |
 | 5xx 재전송 | 모의 응답으로 NIM 5xx 명시 재전송의 요청당 상한과 지수 대기, 재전송도 모델 요청 한도에 세는 것, 재전송 한도(요청당 3회)를 다 쓴 5xx가 `FAILED`와 모델 제공자 쪽 원인 분류 코드로 남는 것, 재전송 중 모델 요청 10회에 먼저 닿으면 `BUDGET_EXCEEDED`로 끝나는 것을 확인한다(평가 룰북 A2 `3e`·B2·B5) |
@@ -1320,7 +1320,7 @@ CLI(명령줄 실행 도구)는 `tradesentry <명령>` 하나로 모은다.
 | 수집 기록 | `collection_receipt`. 성공·실패·미수집을 함께 담는다 |
 | 관측 상태 | `OBSERVED`, `NOT_COLLECTED`, `REQUEST_FAILED`, `UNRESOLVED_ZERO`, `CONFIRMED_NO_TRADE`가 각각 한 번 이상 나온다 |
 | 사례 | oracle A/B/C. A는 `MONITOR`, B는 `MAINTAIN`, C는 `HOLD`로 끝나야 한다 |
-| 표시 | `snapshot_id`=`controlled_fixture_v0`, `source_kind`=`controlled`, `schema_version=1` |
+| 표시 | `snapshot_id`=`controlled_fixture_v0`, `source_kind`=`controlled`, `schema_version=2` |
 
 - 합성 자료로 낸 숫자는 개발용이다. 대표 숫자로 쓰지 않는다. A/B/C는 합성 시연 사례이며 실제 사건이 아니다.
 - 픽스처 전략은 Q5, 전달 방식은 Q11이다.
@@ -1357,7 +1357,7 @@ CLI(명령줄 실행 도구)는 `tradesentry <명령>` 하나로 모은다.
 |---|---|---|---|
 | 1 | 제품의 결과는 담당자의 다음 업무(`MAINTAIN`/`MONITOR`/`HOLD`) 제시다. 부정·위법 여부를 판정하지 않는다 | 명세 §3.1(제품 목적)·§2-10(금지 서술) | 하드 조건. 자문으로 바꾸지 않는다 |
 | 2 | 동결 자료 범위: `kcs_202201_202412_v2`, HS4 `8504` 아래 HS6 4개, 상대국 16개 + `ALL`, 2022-01~2024-12. 추가 수집 없음 | `[DESIGN]` | 공용 약속(품목·국가 확정) 변경. 사용자 승인 |
-| 3 | 자료 계약 v1의 값: 객체·필드, 상태값, 모드·이름, ID 형식, 봉투 키, typed claim 필드, 실행·보고서·주장 채점 기록 키, 표시 자릿수(§3.4) | `docs/rules/DATA_CONTRACT_V1.md` | 계약 버전 올림과 사용자 승인 |
+| 3 | 자료 계약의 값: 객체·필드, 상태값, 모드·이름, ID 형식, 봉투 키, typed claim 필드, 실행·보고서·주장 채점 기록 키, 표시 자릿수(§3.4) | `docs/rules/DATA_CONTRACT_V1.md` | 계약 버전 올림과 사용자 승인 |
 | 4 | 계획 경로·명령 표(§2.3)의 경로와 명령, 그리고 이름·출력 규칙(§2.3 아래). 이름은 조정값이지만, 바꾸면 표와 참조 문서를 같은 PR에서 함께 고친다. 기존 파일 3개의 위치는 바꾸지 않는다 | 명세 §4.12, 2026-09-24(목) 사용자 결정(도메인 재편 A안, 결정 기록 `docs/tracking/decisions/20260924-1720-user-decision-domain-restructure.md`) | 사용자 승인 |
 | 5 | 실행 사슬(§4 머리)과 두 경로: 조사 흐름을 NAT로 감싸 실행·추적·프로파일러·사후 평가를 맡긴다. 채점 대상 실행은 OpenShell 샌드박스 안에서 CLI로 직접 돌리고 NemoClaw를 거치지 않는다. 정답 대조 채점은 샌드박스 밖에서 한다 | `[DESIGN]` | 사용자 승인 |
 | 6 | 모델 `nvidia/nemotron-3-super-120b-a12b`, 엔드포인트 `https://integrate.api.nvidia.com/v1/chat/completions`. 엔드포인트는 upstream(정책 프록시가 요청을 넘기는 실제 목적지) 기준이다. `inference.local`을 채택하면 샌드박스가 보는 주소는 `inference.local`이다. 조사자와 Critic은 같은 모델을 별도 문맥으로 쓴다 | `[DESIGN]` | 사용자 승인 |
@@ -1676,7 +1676,7 @@ CLI(명령줄 실행 도구)는 `tradesentry <명령>` 하나로 모은다.
 - **정한 것**: D → M 인수 조건 2번은 "자료 계약 검사 명령이 통과한다"이다. 명령 이름은 계획 경로·명령 표에 없다 `[미확인]`. CLI에는 `snapshot-verify`가 있다.
 - **묻는 것**
   1. 자료 계약 검사를 `tradesentry snapshot-verify`에 넣을까, `tests/` 아래 시험으로 둘까, 별도 명령으로 둘까?
-  2. 검사 범위 제안을 봐 달라: `schema_version=1` 표시, 봉투 키 11개, 상태값 집합, 근거 ID 풀림, 관측치 행 규칙(분모 중복 제거, 총계 행 취급), rowid 결정성. 빠진 것이 있는가?
+  2. 검사 범위 제안을 봐 달라: `schema_version=2` 표시, 봉투 키 11개, 상태값 집합, 근거 ID 풀림, 관측치 행 규칙(분모 중복 제거, 총계 행 취급), rowid 결정성. 빠진 것이 있는가?
 
 #### Q20. 표에 없는 그 밖의 위치
 
@@ -1805,7 +1805,7 @@ Q2. OpenShell 안 파이썬 실행 환경 구성
 | 도메인 검토자 | 작업 성격에 맞춰 띄우는 검토 에이전트. 무역통계·관세, 평가 방법론, NVIDIA 스택, 보안 네 종류 |
 | 공용 약속 | 두 트랙이 함께 기대는 약속 일곱 가지(자료 형식, 상태값, 기준값, 도구 한도, 품목·국가 확정, 평가 구성, 제출서 주장 문구). 바꾸려면 사용자 승인이 필요하다 |
 | 자료 계약 | 두 트랙이 주고받는 객체·필드·값의 형식을 미리 정한 약속. 정본은 `docs/rules/DATA_CONTRACT_V1.md` |
-| `schema_version` | 자료 계약의 버전 번호. 현행은 `schema_version=1` |
+| `schema_version` | 자료 계약의 버전 번호. 현행은 `schema_version=2` |
 | 인수물·인수 조건 | 한 트랙이 다른 트랙에 넘기는 자료나 모듈과, 넘겨받는 쪽이 확인하는 완료 기준 다섯 가지 |
 | 임시 대역(stub) | 진짜 자료 대신 정해진 값을 돌려주는 가짜 함수. M의 시험 파일 안에만 둔다 |
 | 조정값 | 지금 정한 출발값. 정해진 절차로만 바꾸고, 바꾸면 기록한다 |
