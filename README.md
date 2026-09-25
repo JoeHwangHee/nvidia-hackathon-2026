@@ -1,6 +1,6 @@
 # TradeSentry
 
-관세청 수입통계 경보를 Nemotron 조사자와 검수자(Critic)가 정해진 조회 도구로 반증해 보고, 담당자의 다음 업무를 제안하는 에이전트 시스템. 2026 NVIDIA Korea Agentic AI Hackathon 예선 제출물(팀 `<팀명>`).
+관세청 수입통계 경보를 Nemotron 조사자와 검수자(Critic)가 정해진 조회 도구로 반증해 보고, 담당자의 다음 업무를 제안하는 에이전트 시스템. 2026 NVIDIA Korea Agentic AI Hackathon 예선 제출물.
 
 ## 1. 무엇인가
 
@@ -41,7 +41,7 @@ TradeSentry는 관세청 수출입통계 공개 API를 한 시점에 수집해 �
 | 구성요소 | 어디에 쓰는가 | 저장소 안 근거 |
 |---|---|---|
 | **NIM / Nemotron** | 조사자·Critic 추론. 모델 `nvidia/nemotron-3-super-120b-a12b`, 엔드포인트 `https://integrate.api.nvidia.com/v1/chat/completions`, native tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능)로 도구 5개를 부름 | `configs/model/model.json`(모델 ID·엔드포인트·요청 설정·사례당 한도), `configs/model/*.txt`(조사자·Critic 지침), `scripts/g4_nim_toolcall_probe.py`(tool call 왕복 확인) |
-| **OpenShell** | 채점 대상 실행을 격리. 커스텀 정책으로 정답·봉인 경로 차단, 외부 전송은 NVIDIA 추론 엔드포인트의 `POST /v1/chat/completions` 하나만 허용, 실행 파일은 CLI의 Python 하나만, 샌드박스 안 키 비보유. 의도적 위반 시험표와 감사 로그 발췌를 커밋 | `configs/openshell/policy.yaml`(정책), `configs/openshell/image/`(샌드박스 이미지 정의), `scripts/openshell_violation_tests.py`, 증거 `artifacts/openshell/openshell_violation_tests-*/`(예측·실측 대조표 `.md`, `audit_log-*.txt`, `live_policy-*.yaml`), X1 기록 `artifacts/openshell/violation_tests.md`·`artifacts/openshell/logs/` |
+| **OpenShell** | 채점 대상 실행을 격리. 커스텀 정책으로 정답·봉인 경로 차단, 외부 전송은 NVIDIA 추론 엔드포인트의 `POST /v1/chat/completions` 하나만, 그것도 정책에 지정한 실행 파일에서만 허용(목록은 `configs/openshell/policy.yaml`), 샌드박스 안 키 비보유. 의도적 위반 시험표와 감사 로그 발췌를 커밋 | `configs/openshell/policy.yaml`(정책), `configs/openshell/image/`(샌드박스 이미지 정의), `scripts/openshell_violation_tests.py`, 증거 `artifacts/openshell/openshell_violation_tests-*/`(예측·실측 대조표 `.md`, `audit_log-*.txt`, `live_policy-*.yaml`), X1 기록 `artifacts/openshell/violation_tests.md`·`artifacts/openshell/logs/` |
 | **NemoClaw** | 시연 경로. OpenClaw 에이전트가 런타임 스킬을 읽고 샌드박스 안 CLI를 부른다 | `skills/tradesentry/SKILL.md`, `configs/openshell/policy_demo_network.yaml`(시연 샌드박스 네트워크 정책), 결정 기록 `docs/tracking/decisions/20260925-0530-model-decision-mt5-sandbox.md`, `spikes/x1/README.md`(첫날 통합 시험 X1 재현 절차) |
 | **NAT** (`nvidia-nat` 1.9.0, `nvidia-nat-profiler`) | 사례 조사 흐름 1건을 NAT 함수로 등록해 실행·추적·프로파일. 추적은 파일로만 남긴다 | `configs/nat/workflow.yml`, `src/tradesentry/workflow/nat_wrap.py`, 실행마다 `outputs/{실행명}/workflow_nat_wrap-*/`(`nat_trace.jsonl`, `workflow_profiling_metrics.json` 등) |
 | **Agent Skills** | 공식 스킬(`NVIDIA/OpenShell`의 `generate-sandbox-policy`·`openshell-cli`·`debug-inference`, `NVIDIA/skills`의 `nemoclaw-user-guide`)을 개발 환경에 설치해 참고했고(스킬별 사용 기록은 스킬 사전 상태 열), 자체 스킬 3개를 둔다 | `docs/eval/SKILL_DICTIONARY.md`(이름·설치 명령·사용 기록·상태), 자체 스킬 `skills/tradesentry/`(런타임), `skills/tradesentry-eval/`(성능 평가 절차), `skills/tradesentry-scorecard/`(자기채점 절차) |
@@ -165,9 +165,9 @@ outputs/                       ← 실행별 출력(커밋하지 않는다)
 - **동결 스냅샷**: `kcs_202201_202412_v1`·`_v2`에 수집기를 다시 돌리지 않는다.
 - 정본: `CLAUDE.md` 절대 규칙, `docs/security.md`, `docs/rules/PARALLEL_DEV_RULES.md` §6·§10, `docs/plan/DEV_PLAN.md` §4.
 
-## 10. 팀
+## 10. 팀과 만든 방법
 
-- 팀: `<팀명>` — 팀원: `<팀원>` (사용자가 채운다)
+- 팀 정보는 대회 신청 폼(Section 01·02)에 적는다. 이 README에는 두지 않는다.
 - 구현은 Claude 보조 에이전트가 모델 트랙(판정 정책·조사 흐름·NVIDIA 연동)과 데이터 트랙(수집·지표·평가 자료·채점기)으로 나눠 동시에 했고, 작업 성격별 도메인 검토 에이전트와 Codex(OpenAI의 코딩 에이전트 CLI)가 검토했다. 결정은 `docs/tracking/decisions/`에 남아 있다.
 
 ## English summary
