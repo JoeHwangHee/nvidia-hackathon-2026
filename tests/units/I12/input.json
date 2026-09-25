@@ -174,7 +174,7 @@
     "request_no": 1,
     "attempt": 1,
     "model_requests": 1,
-    "request_sha256": "c41a4ce4c2ca065065083c289ac411388720d3e64ec7bd2456398b5683588a12",
+    "request_sha256": "510e858867165d868a681fc123385446620cc5906bbccdae0ffa6c5b58117d12",
     "timeout_ms": 60000,
     "messages": 2,
     "tools": 4
@@ -269,7 +269,7 @@
     "request_no": 2,
     "attempt": 1,
     "model_requests": 2,
-    "request_sha256": "b447925f5a86ef03eea2dd5879a8d6e78aaa6f3c8e703bc5a8e49786ca68e465",
+    "request_sha256": "61652406ee92783fb58e2abaf88b57a46f50f6c42ef09f519afd9d1fe0a48369",
     "timeout_ms": 60000,
     "messages": 2,
     "tools": 0

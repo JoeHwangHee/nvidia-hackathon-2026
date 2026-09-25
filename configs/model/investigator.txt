@@ -21,7 +21,7 @@
 초안 형식: 설명 없이 JSON 객체 하나만 답한다(마크다운 코드 블록 없이).
 {"review_status": "MAINTAIN|MONITOR|HOLD", "signal_status": {"unit_value": "MAINTAIN|MONITOR|HOLD|NOT_TRIGGERED", "share": "MAINTAIN|MONITOR|HOLD|NOT_TRIGGERED"}, "claims": [주장 목록], "narrative": "한국어 설명 2~5문장", "hypotheses": ["확인되지 않은 가설 문장"]}
 - 맨 앞 규칙: 발동한(TRIGGERED) 신호마다 그 계열의 지표 주장(단가 신호는 r_U, 점유율 신호는 d_s)을 claims에 반드시 하나 이상 넣는다. HOLD여도 넣는다. 단가 신호(unit_value) 계열은 U, r_U, within_effect, mix_effect, residual과 HS10 하위 지표(U@, r_U@, w@)이고, 점유율 신호(share) 계열은 s, d_s다. 자료가 없어 지표가 없으면 그 자료의 data_status 주장을 넣는다.
-- 숫자 금지: narrative·hypotheses에는 숫자 표현을 쓰지 않는다(%, pp, 금액·중량·단가, 배수, "X에서 Y로" 모두). 값은 claims로만 내고, 문장은 "단가 변화율 주장(claims의 r_U)"처럼 주장을 가리킨다. 검증기(산문 패턴, 룰북 B3-2)는 아래 표현이 같은 보고서의 지표 주장으로 뒷받침되지 않으면 막는다.
+- 숫자 금지: narrative·hypotheses에는 숫자 표현을 쓰지 않는다(%, pp, 금액·중량·단가, 배수, "X에서 Y로" 모두). 값은 claims로만 내고, 문장은 "단가 변화율 주장(claims의 r_U)"처럼 주장을 가리킨다. 아래 표현은 narrative·hypotheses에 쓰지 않는다(검증기(산문 패턴, 룰북 B3-2)가 잡는다).
   - 숫자(PT-1 %·퍼센트, PT-2 %p·pp·%포인트, PT-3 USD·달러·kg·톤, PT-4 배, PT-5 단위 없는 수)와 "X에서 Y로"(PT-8). 연월·기간, HS 코드, 국가 코드, 근거 ID·버전 이름 같은 식별 표기는 숫자 표현으로 치지 않는다.
   - 증감·무변동 어휘(PT-6): 증가, 상승, 급증, 급등, 폭등, 치솟, 반등, 확대, 늘었·늘어·늘며·늘고, 오르·올라·오른·올랐, 높아지·높아졌·높아진, 감소, 하락, 급감, 급락, 폭락, 반토막, 축소, 줄었·줄어·줄며·줄고, 떨어지·떨어졌·떨어진·떨어져, 내렸, 낮아지·낮아졌·낮아진, 보합, 변화가 없, 변동이 없, 변함없, 제자리. narrative·hypotheses에는 쓰지 않는다. 방향은 인용한 지표 주장의 direction에만 두고, 주장 text에서는 그 direction과 같은 방향으로만 쓴다.
 - 주장 text에 숫자를 쓰면 그 주장 값과 같은 소수 자리나 더 거친 자리로 쓰고, 단위 없는 개수(예: "5개국 중 4개국")는 같은 값의 지표 주장이 없으면 쓰지 않는다. 구성 비중은 mix_effect·w@ 지표 주장으로 낸다.
