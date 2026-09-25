@@ -38,6 +38,9 @@ docs/plan/SCAFFOLD_BRIEF.md §4.7). 여기서는 값의 형식만 본다. 그 �
   결과 등)을 담은 JSON 파일의 상대 경로다. 값 검사는 여기서 모양만 본다: 비어 있지 않고, 공백·제어 문자가 없으며(재현 명령에
   한 조각으로 적힌다), 절대 경로·드라이브 문자·'~'로 시작하지 않는다(로컬 절대경로는 실행 조건 입력 파일 N13 검사가 막으므로
   상대 경로만 받는다). 파일 내용의 검사는 명령 배선 F2와 단위 E1이 한다.
+- --replay(run-case만의 선택 옵션, 조립 AS3. 결정 기록 model-decision-smoke-replay): 키 없는 스모크 재현의 재생 파일
+  (eval/dev/smoke/{case_id}.json) 상대 경로다. 값 검사는 --conditions-extra와 같은 모양 검사다(상대 경로 한 조각). 파일 내용의
+  검사와 재생은 명령 배선 F2(load_replay)와 단위 I8이 한다.
 - 같은 옵션을 두 번 적으면 값이 같아도, --옵션=값 꼴이 섞여도 인자 오류다. argparse 기본 동작(마지막 값이 이김)은 쓰지 않는다.
 - 옵션 줄임(예: --snap)은 받지 않는다. '@파일' 인자 펼치기(fromfile_prefix_chars)도 켜지 않는다.
 - 오류 문장은 받은 값을 되풀이하지 않는다(자료 계약 §10.3 N13, 결정 기록 20260924-2356 ⑧). CLI 자신의 문장(형식 오류,
@@ -229,11 +232,31 @@ CONDITIONS_EXTRA_RULE = ("운영자 실행 조건 파일 경로는 비어 있지
 CONDITIONS_EXTRA_BAD_START_RE = re.compile(r"^(?:[\\/]|~|[A-Za-z]:[\\/])")
 
 
+def _is_relative_path_piece(value: str) -> bool:
+    """비어 있지 않고, 공백·제어 문자(유니코드 Cc·Cf·Zl·Zp)가 없고, `/`·`\\`·`~`·드라이브 문자로 시작하지 않는 상대 경로 한 조각."""
+    return bool(value) and not any(ch.isspace() or unicodedata.category(ch) in ("Cc", "Cf", "Zl", "Zp") for ch in value) \
+        and CONDITIONS_EXTRA_BAD_START_RE.match(value) is None
+
+
 def check_conditions_extra(value: str) -> str:
     """--conditions-extra 값의 모양 검사(상대 경로 한 조각). 값은 오류 문장에 되풀이하지 않는다(N13)."""
-    if not value or any(ch.isspace() or unicodedata.category(ch) in ("Cc", "Cf", "Zl", "Zp") for ch in value) \
-            or CONDITIONS_EXTRA_BAD_START_RE.match(value):
+    if not _is_relative_path_piece(value):
         raise argparse.ArgumentTypeError(CONDITIONS_EXTRA_RULE)
+    return value
+
+
+REPLAY_OPTION = "replay"  # run-case만 받는 선택 옵션(COMMAND_OPTIONS 밖, --run-name과 같은 자리). 키 없는 스모크 재현
+REPLAY_HELP = ("기록된 모델 응답을 재생하는 재생 파일의 상대 경로(예: eval/dev/smoke/850450-XA-202412.json). 주면 NIM을 "
+               "부르지 않고 기록된 응답을 차례로 내주며 요청 해시를 대조한다(키 없이 돈다). 재생 실행은 점수표 근거가 아니다. "
+               "로컬 절대 경로·'~'는 받지 않는다")
+REPLAY_RULE = ("재생 파일 경로는 비어 있지 않은 상대 경로이고, 공백·제어 문자가 없으며, 절대 경로·드라이브 문자·'~'로 "
+               "시작하지 않는다(로컬 절대 경로는 출력에 남기지 않는다, N13)")
+
+
+def check_replay(value: str) -> str:
+    """--replay 값의 모양 검사(상대 경로 한 조각). 값은 오류 문장에 되풀이하지 않는다(N13)."""
+    if not _is_relative_path_piece(value):
+        raise argparse.ArgumentTypeError(REPLAY_RULE)
     return value
 
 
@@ -284,7 +307,8 @@ class Request:
     필드 이름은 자료 계약의 키 이름(snapshot_id, policy_version, mode)을 따른다. 적지 않은 옵션은 None이다. 명령이 쓰지
     않는 공통 옵션(예: detect의 --mode)도 받은 값을 그대로 둔다. 쓸지 말지는 처리 함수가 COMMAND_OPTIONS대로 정한다.
     case는 --case 값 그대로이고 run-case만 받는다(뜻은 run-case 배선이 정한다). run_name은 --run-name 값 그대로다(없으면
-    None. 다섯 명령이 받는다). conditions_extra는 --conditions-extra 값 그대로다(없으면 None. evaluate만 받는다).
+    None. 다섯 명령이 받는다). conditions_extra는 --conditions-extra 값 그대로다(없으면 None. evaluate만 받는다). replay는
+    --replay 값 그대로다(없으면 None. run-case만 받는다. 키 없는 스모크 재현).
     """
 
     command: str
@@ -294,6 +318,7 @@ class Request:
     case: str | None = None
     run_name: str | None = None
     conditions_extra: str | None = None
+    replay: str | None = None
 
 
 def option_help(command: str, option: str) -> str:
@@ -324,6 +349,9 @@ def build_parser() -> argparse.ArgumentParser:
         if name == "evaluate":
             command.add_argument(f"--{CONDITIONS_EXTRA_OPTION}", dest="conditions_extra", action=_Once,
                                  metavar="JSON_PATH", type=check_conditions_extra, help=CONDITIONS_EXTRA_HELP)
+        if name == "run-case":
+            command.add_argument(f"--{REPLAY_OPTION}", dest="replay", action=_Once, metavar="REPLAY_PATH",
+                                 type=check_replay, help=REPLAY_HELP)
     return parser
 
 
@@ -336,7 +364,8 @@ def parse(argv: list[str] | None = None) -> Request:
     return Request(command=namespace.command, snapshot_id=namespace.snapshot,
                    policy_version=getattr(namespace, "policy", None), mode=getattr(namespace, "mode", None),
                    case=getattr(namespace, "case", None), run_name=getattr(namespace, "run_name", None),
-                   conditions_extra=getattr(namespace, "conditions_extra", None))
+                   conditions_extra=getattr(namespace, "conditions_extra", None),
+                   replay=getattr(namespace, "replay", None))
 
 
 def run(inp: object) -> object:
