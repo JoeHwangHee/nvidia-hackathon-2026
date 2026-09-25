@@ -15,6 +15,7 @@
 - `config_version` `model-1.2`: `limits.tokens` 128,000(2026-09-25(금) 사용자 결정 4). 지침 규칙 요약에 U4 반올림 불안정 → HOLD를 더했다(사용자 결정 1의 policy_v1 승인, 근거 상태 변환의 스위치를 켬. AS2 마무리, 같은 결정 기록 ㉒).
 - `config_version` `model-1.3`: 숫자 금지 — narrative·가설과 Critic 지적 문장에는 숫자 표현(%, pp, 금액·중량·단가, 배수, "X에서 Y로")을 쓰지 않고 값은 claims로만 낸다. "발동한 신호마다 그 계열의 지표 주장(r_U·d_s)을 하나 이상" 규칙을 초안 규칙의 맨 앞으로 올렸다(real_dev 사례로 조정, 같은 결정 기록 ㉓).
 - `config_version` `model-1.4`: HTTP 429도 5xx와 같은 재전송 고리로 다시 보내고(요청당 최대 3회, 같은 횟수 세기), 재전송 대기 `backoff_base_ms`를 1000에서 5000으로 올렸다(인자 2 그대로 → 5·10·20초, 5xx·429 같음). 한도를 다 쓴 429는 `PROVIDER_HTTP_4XX`로 멈추고 묶음 끝 인프라 실패 재실행 대상이다. 지침 글과 요청 본문은 그대로다(2026-09-25(금) 15:52 사용자 결정, 결정 기록 `docs/tracking/decisions/20260925-1552-user-decision-429-retry.md`).
+- `config_version` `model-1.5`: 사례당 모델 요청 한도(`limits.model_requests` 10회)와 실행 결과 기록 `model_requests`는 재전송을 빼고 센다(요청 하나의 첫 전송만). 재전송(5xx·429)은 요청당 3회와 사례당 wall time 300초로만 묶여, 재전송 때문에 `BUDGET_MODEL_REQUESTS`로 멈추지 않는다. 설정 값과 지침 글은 그대로다. 요청 본문은 재전송한 요청 뒤의 요청에서 조사자에게 알리는 "[남은 횟수] … 모델 요청 N회"만 달라진다(재전송을 빼므로 N이 커진다)(2026-09-25(금) 18:05 사용자 결정, 결정 기록 `docs/tracking/decisions/20260925-1805-user-decision-retry-budget.md`).
 - `investigator.txt`: 조사자 공통 지침(판정 뜻과 신호별 판정 규칙, 금지 문구, 도구 사용과 인자, 초안 JSON 형식). 금지 낱말 목록은 검증기(단위 R3)의 금지 문구 목록(한국어 62개, 영문 앞부분 9개)과 같아야 한다(시험 `tests/test_model_config.py`).
 - `claims_template.txt` / `claims_freeform.txt`: 주장(claims) 쓰는 법. `freeform`만 값을 직접 쓰고, 나머지 모드는 metric_id·근거 ID로 가리킨다(코드가 검증된 지표로 채운다).
 - `critic.txt`: Critic(별도 문맥의 검수자) 지침. 도구 없음, 구조화된 지적과 재조회 요청.

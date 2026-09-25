@@ -247,8 +247,17 @@ class ModeRuleTest(unittest.TestCase):
         self.assertEqual((record["execution_status"], error["code"], error["stage"]),
                          ("FAILED", cause_codes.PROVIDER_HTTP_5XX, "critic"))
         self.assertEqual(error["last_good_evidence"], h.EV[:2])
-        self.assertEqual(error["attempts"]["model_requests"], 5)
+        self.assertEqual(error["attempts"]["model_requests"], 2)  # 초안 + Critic(재전송 3회는 세지 않는다, 결정 1805)
         self.assertTrue(cause_codes.infra_rerun_eligible(record["execution_status"], record["errors"]))
+
+    def test_resent_request_is_not_counted_in_the_record_or_the_remaining_count(self):
+        # 결정 1805: 503 뒤 재전송한 초안 요청도 모델 요청 1회다. 수정 지시의 남은 모델 요청은 10 - 2(초안·Critic) = 8회
+        script = [{"status": 503}, h.draft_answer(), h.critic_answer(needs_revision=True), h.draft_answer()]
+        result, _, _, transport = h.run_case("full", script)
+        self.assertEqual((result["record"]["execution_status"], result["record"]["model_requests"],
+                          len(transport.payloads)), (cause_codes.COMPLETED, 3, 4))
+        revision = transport.payloads[-1]["messages"][-1]["content"]
+        self.assertIn("[남은 횟수] 재조회 2회, 모델 요청 8회", revision)
 
     def test_unexpected_exception_is_code_error_with_class_name_only(self):
         fake = h.FakePorts()

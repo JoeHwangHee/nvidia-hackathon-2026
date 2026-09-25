@@ -2,9 +2,9 @@
 
 - 요청당 재전송 상한(3회)과 지수 대기(5초·10초·20초, model-1.4). HTTP 429도 5xx와 같은 고리·같은 횟수로 재전송하고,
   한도를 다 쓴 429는 PROVIDER_HTTP_4XX(재실행 대상, 2026-09-25 15:52 사용자 결정)
-- 재전송도 모델 요청 10회 한도에 센다(룰북 B2)
+- 모델 요청 10회 한도는 재전송을 빼고 센다(요청 하나의 첫 전송만, model-1.5, 2026-09-25 18:05 사용자 결정). 재전송이
+  많아도 BUDGET_EXCEEDED가 되지 않고, 새 요청은 한도에서 멈춘다
 - 재전송 한도를 다 쓴 5xx는 FAILED와 모델 제공자 쪽 원인 분류 코드(인프라 실패 재실행 대상)로 남는다(룰북 B5)
-- 재전송 중 모델 요청 10회에 먼저 닿으면 BUDGET_EXCEEDED로 끝나고 재실행 대상이 아니다(자료 계약 §3.3)
 - 전체 deadline이 다른 한도보다 먼저다. 429 밖 4xx·연결 실패·요청 제한 시간은 재전송하지 않는다
 - 키는 전송 순간 환경변수에서만 읽고 trace·반환값·오류 문장에 없다. 값의 글자가 틀리면 요청을 세기 전에 멈추고,
   리디렉션은 따라가지 않으며 Authorization은 리디렉션 요청에 옮겨 가지 않는다
@@ -69,7 +69,7 @@ class RetransmitTest(NoNetworkMixin, unittest.TestCase):
         stop = caught.exception
         self.assertEqual(stop.code, cause_codes.PROVIDER_HTTP_5XX)
         self.assertEqual(clock.sleeps, [5000, 10000, 20000])
-        self.assertEqual(client.budget.model_requests, 4)  # 첫 요청 + 재전송 3회
+        self.assertEqual(client.budget.model_requests, 1)  # 요청 하나(재전송 3회는 세지 않는다, 결정 1805)
         self.assertEqual(len(transport.payloads), 4)
         self.assertEqual(len({trace_log.canonical_sha256(p) for p in transport.payloads}), 1)  # 같은 요청 재전송
         errors = errors_of(stop, client, clock)
@@ -82,7 +82,7 @@ class RetransmitTest(NoNetworkMixin, unittest.TestCase):
     def test_429_is_resent_like_5xx_then_succeeds(self):
         client, clock, transport, sink = make_client([{"status": 429}, {"body": ok_body("{}")}])
         client.chat(MESSAGES, stage="basic")
-        self.assertEqual((clock.sleeps, client.budget.model_requests, len(transport.payloads)), ([5000], 2, 2))
+        self.assertEqual((clock.sleeps, client.budget.model_requests, len(transport.payloads)), ([5000], 1, 2))
         errors = [r["data"] for r in sink.records if r["event"] == "model_error"]
         self.assertEqual([(e["http_status"], e["retrying"], e["backoff_ms"]) for e in errors], [(429, True, 5000)])
 
@@ -93,7 +93,7 @@ class RetransmitTest(NoNetworkMixin, unittest.TestCase):
         stop = caught.exception
         self.assertEqual((stop.code, stop.stage, stop.detail), (cause_codes.PROVIDER_HTTP_4XX, "critic",
                                                                 "HTTP 429(재전송 3회 뒤)"))
-        self.assertEqual((clock.sleeps, client.budget.model_requests), ([5000, 10000, 20000], 4))
+        self.assertEqual((clock.sleeps, client.budget.model_requests), ([5000, 10000, 20000], 1))
         errors = [cause_codes.error_entry(stop.code, stop.stage, mc.budget_counters(client.budget, clock.now), [],
                                           stop.detail)]
         self.assertEqual(cause_codes.execution_status(stop.code), "FAILED")
@@ -115,32 +115,58 @@ class RetransmitTest(NoNetworkMixin, unittest.TestCase):
                 self.assertEqual((clock.sleeps, len(transport.payloads)), ([5000, 10000, 20000], 4))
         client, clock, _, _ = make_client([{"status": 503}, {"status": 429}, {"body": ok_body("{}")}])
         client.chat(MESSAGES, stage="basic")
-        self.assertEqual((clock.sleeps, client.budget.model_requests), ([5000, 10000], 3))
+        self.assertEqual((clock.sleeps, client.budget.model_requests), ([5000, 10000], 1))
 
-    def test_429_resend_respects_deadline_and_model_request_limit(self):
+    def test_429_resend_respects_deadline_but_not_the_model_request_limit(self):
         reserve = mc.load_model_config().settings.end_reserve_ms
         client, clock, _, _ = make_client([{"status": 429}], elapsed_before=300_000 - reserve - 4_000, elapsed_ms=0)
         with self.assertRaises(mc.RunStop) as caught:
             client.chat(MESSAGES, stage="basic")
         self.assertEqual((caught.exception.code, clock.sleeps), (cause_codes.DEADLINE, []))
-        client, clock, _, sink = make_client([{"status": 429}, {"status": 429}], used_requests=8)
-        with self.assertRaises(mc.RunStop) as caught:
-            client.chat(MESSAGES, stage="revision")
-        self.assertEqual((caught.exception.code, clock.sleeps, client.budget.model_requests),
-                         (cause_codes.BUDGET_MODEL_REQUESTS, [5000], 10))
-        self.assertIs(sink.records[-1]["data"]["retrying"], False)
+        # 한도의 마지막(10번째) 요청이어도 429 재전송은 한도에 막히지 않는다(결정 1805)
+        client, clock, transport, _ = make_client([{"status": 429}, {"status": 429}, {"body": ok_body("{}")}],
+                                                  used_requests=9)
+        client.chat(MESSAGES, stage="revision")
+        self.assertEqual((clock.sleeps, client.budget.model_requests, len(transport.payloads)),
+                         ([5000, 10000], 10, 3))
 
-    def test_resends_count_toward_the_model_request_limit_and_stop_as_budget_exceeded(self):
-        client, clock, transport, sink = make_client([{"status": 503}, {"status": 503}], used_requests=8)
+    def test_resends_do_not_count_toward_the_model_request_limit(self):
+        # 10번째 요청이 재전송 3회를 다 써도 BUDGET_EXCEEDED가 아니라 원래 원인 코드(재실행 대상)로 멈춘다
+        for status, code in ((503, cause_codes.PROVIDER_HTTP_5XX), (429, cause_codes.PROVIDER_HTTP_4XX)):
+            with self.subTest(status=status):
+                client, clock, transport, sink = make_client([{"status": status}] * 4, used_requests=9)
+                with self.assertRaises(mc.RunStop) as caught:
+                    client.chat(MESSAGES, stage="revision")
+                stop = caught.exception
+                self.assertEqual((stop.code, stop.detail), (code, f"HTTP {status}(재전송 3회 뒤)"))
+                self.assertEqual((client.budget.model_requests, len(transport.payloads)), (10, 4))
+                self.assertEqual(clock.sleeps, [5000, 10000, 20000])
+                self.assertEqual(cause_codes.execution_status(stop.code), "FAILED")
+                errors = [cause_codes.error_entry(stop.code, stop.stage, mc.budget_counters(client.budget, clock.now),
+                                                  [], stop.detail)]
+                self.assertTrue(cause_codes.infra_rerun_eligible("FAILED", errors))
+                # trace: 시도(attempt)는 1~4, 모델 요청 수는 네 시도 모두 10(재전송은 늘리지 않는다)
+                sent = [r["data"] for r in sink.records if r["event"] == "model_request"]
+                self.assertEqual([(d["attempt"], d["model_requests"], d["request_no"]) for d in sent],
+                                 [(1, 10, 1), (2, 10, 1), (3, 10, 1), (4, 10, 1)])
+
+    def test_resent_requests_leave_room_and_new_requests_still_stop_at_the_limit(self):
+        # 재전송이 섞인 요청 뒤에도 모델 요청 수는 요청 수만큼이고, 새 요청은 한도(10회)에서 보내지 않고 멈춘다
+        client, clock, transport, sink = make_client([{"status": 503}, {"body": ok_body("{}")},
+                                                      {"status": 429}, {"status": 429}, {"body": ok_body("{}")}],
+                                                     used_requests=8)
+        client.chat(MESSAGES, stage="basic")
+        client.chat(MESSAGES, stage="critic")
+        self.assertEqual((client.budget.model_requests, len(transport.payloads)), (10, 5))
         with self.assertRaises(mc.RunStop) as caught:
             client.chat(MESSAGES, stage="revision")
         stop = caught.exception
-        self.assertEqual(stop.code, cause_codes.BUDGET_MODEL_REQUESTS)
-        self.assertEqual(client.budget.model_requests, 10)
-        self.assertEqual(clock.sleeps, [5000])  # 10번째 뒤에는 기다리지 않고 멈춘다
+        self.assertEqual((stop.code, len(transport.payloads)), (cause_codes.BUDGET_MODEL_REQUESTS, 5))
         self.assertEqual(cause_codes.execution_status(stop.code), "BUDGET_EXCEEDED")
         self.assertFalse(cause_codes.infra_rerun_eligible("BUDGET_EXCEEDED", errors_of(stop, client, clock)))
-        self.assertIs(sink.records[-1]["data"]["retrying"], False)
+        sent = [(r["data"]["request_no"], r["data"]["attempt"], r["data"]["model_requests"])
+                for r in sink.records if r["event"] == "model_request"]
+        self.assertEqual(sent, [(1, 1, 9), (1, 2, 9), (2, 1, 10), (2, 2, 10), (2, 3, 10)])
 
     def test_no_request_is_sent_when_the_model_request_limit_is_already_used(self):
         client, clock, transport, _ = make_client([], used_requests=10)
