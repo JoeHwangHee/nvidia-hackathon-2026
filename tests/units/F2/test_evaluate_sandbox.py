@@ -162,9 +162,61 @@ class SandboxRunnerTest(FakeOpenShell, unittest.TestCase):
         self.assertEqual(len(runner.incidents), 2)
         link_case = by_case[CASES[0]["case_id"]]
         self.assertTrue(any(link_case["run_id"] in incident for incident in runner.incidents))
-        self.assertTrue(any("겹친 층" in incident for incident in runner.incidents))
+        self.assertTrue(any("겹친 층 1" in incident for incident in runner.incidents))
         for incident in runner.incidents:
             self.assertNotIn(str(self.root), incident)  # 사건 문장에 로컬 절대경로가 없다
+
+    def test_unreadable_folders_hardlinks_and_misplaced_items_are_refused(self):
+        """보안 검토 권고 1·4·5: 읽을 수 없는 하위 폴더(그 아래 링크를 훑지 못한다), 하드링크, N6·N7 배치 밖 항목은 옮기지
+        않고 격리한다. .download-* 임시 폴더는 남지 않는다."""
+        plan = {CASES[0]["case_id"]: "unreadable", CASES[1]["case_id"]: "hardlink", CASES[2]["case_id"]: "misplaced"}
+        try:
+            result, runner = self.run_batch(plan)
+            by_case = {line["case_id"]: line for line in hf.read_jsonl(result.batch_file)}
+            for case in CASES:
+                line = by_case[case["case_id"]]
+                with self.subTest(case=case["case_id"]):
+                    self.assertEqual(line["errors"][0]["detail"], "harness:DownloadRejected")
+                    self.assertEqual(list((self.outputs / line["run_id"]).iterdir()), [])
+            self.assertEqual([p for p in self.outputs.iterdir() if p.name.startswith(".download-")], [])
+            self.assertEqual(len([p for p in self.outputs.iterdir() if p.name.startswith(".quarantine-")]), 3)
+            text = "\n".join(runner.incidents)
+            self.assertIn("읽을 수 없는 폴더 1개", text)
+            self.assertIn("특수 항목(하드링크 포함) 2개", text)  # 하드링크 두 이름
+            self.assertIn("배치 밖 항목 1개", text)
+        finally:
+            for hidden in self.outputs.glob(".quarantine-*/workflow_nat_wrap-*/hidden"):
+                os.chmod(hidden, 0o700)  # 임시 폴더 정리가 되게
+
+    def test_missing_nat_files_leave_an_incident_but_keep_the_record(self):
+        result, runner = self.run_batch({CASES[0]["case_id"]: "nat_missing"})
+        line = [x for x in hf.read_jsonl(result.batch_file) if x["case_id"] == CASES[0]["case_id"]][0]
+        self.assertEqual(line["execution_status"], "COMPLETED")
+        self.assertEqual(runner.incidents, [f"{line['run_id']}: NAT 프로파일 파일 5개가 없다"])
+
+    def test_scan_errors_quarantine_the_temporary_folder(self):
+        with mock.patch.object(dispatch, "_scan_download", side_effect=OSError("경쟁")):
+            result, runner = self.run_batch({})
+        lines = hf.read_jsonl(result.batch_file)
+        self.assertEqual({x["errors"][0]["detail"] for x in lines}, {"harness:DownloadRejected"})
+        self.assertEqual([p for p in self.outputs.iterdir() if p.name.startswith(".download-")], [])
+        self.assertEqual(len(runner.incidents), 3)
+
+    def test_move_conflict_quarantines_the_rest(self):
+        real_rename = os.rename
+
+        def rename(src, dst):
+            real_rename(src, dst)
+            if Path(dst).name.startswith("runlog_run_record-"):  # 첫 항목을 옮긴 뒤 같은 이름을 받는 곳에 만든다
+                (Path(dst).parent / "workflow_nat_wrap-x").touch()
+
+        with mock.patch.object(dispatch.os, "rename", side_effect=rename), \
+                mock.patch.object(dispatch.os.path, "lexists",
+                                  side_effect=lambda path: Path(path).name.startswith("workflow_nat_wrap-")):
+            result, runner = self.run_batch({})
+        lines = hf.read_jsonl(result.batch_file)
+        self.assertEqual({x["errors"][0]["detail"] for x in lines}, {"harness:DownloadMoveConflict"})
+        self.assertEqual([p for p in self.outputs.iterdir() if p.name.startswith(".download-")], [])
 
     def test_special_files_are_refused(self):
         result, _ = self.run_batch({CASES[0]["case_id"]: "fifo"})
