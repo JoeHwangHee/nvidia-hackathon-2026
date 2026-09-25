@@ -654,48 +654,123 @@ class DatasetEntryError(Exception):
     """봉인용 탐지 입구가 탐지하지 않고 끝내는 까닭(묶음·출력 폴더·출처 종류·출력 모양). 문장에 받은 값·경로를 넣지 않는다(N13)."""
 
 
+def _git_common_dir(root: Path) -> Path | None:
+    """작업 폴더 root의 git 공용 폴더(.git이 폴더면 그것, worktree의 .git 파일이면 gitdir → commondir). 없으면 None."""
+    git = root / ".git"
+    if git.is_dir():
+        return git
+    if not git.is_file():
+        return None
+    pointer = git.read_text(encoding="utf-8").strip()
+    if not pointer.startswith("gitdir:"):
+        return None
+    gitdir = Path(pointer[len("gitdir:"):].strip())
+    gitdir = gitdir if gitdir.is_absolute() else root / gitdir
+    if (gitdir / "commondir").is_file():
+        common = Path((gitdir / "commondir").read_text(encoding="utf-8").strip())
+        return (common if common.is_absolute() else gitdir / common).resolve()
+    return gitdir.resolve()
+
+
 def _repo_roots() -> list[Path]:
-    """출력 폴더로 받지 않는 저장소 뿌리: 이 코드의 작업 폴더(dal.query.REPO_ROOT)와, 그것이 git worktree(한 저장소에서
-    브랜치마다 따로 여는 작업 폴더)이면 본 작업 폴더(.git 파일의 gitdir → commondir의 부모). 하위 프로세스 없이 git 메타만 읽는다.
+    """출력 폴더로 받지 않는 저장소 뿌리: 이 코드의 작업 폴더(dal.query.REPO_ROOT), 본 작업 폴더(공용 폴더 .git의 부모), git이
+    아는 모든 worktree(한 저장소에서 브랜치마다 따로 여는 작업 폴더. 공용 폴더의 worktrees/*/gitdir가 가리키는 .git 파일의
+    부모). `git worktree list --porcelain`이 읽는 것과 같은 메타 파일이다. 이 모듈의 하위 프로세스는 openshell 호출뿐이라
+    git을 부르지 않고 파일을 읽는다(시험이 그 명령의 목록과 같음을 확인한다). 경로를 돌려주고, 정체성 비교는 부르는 쪽이 한다.
     """
     from tradesentry.dal import query
 
-    root = Path(query.REPO_ROOT).resolve()
+    root = Path(query.REPO_ROOT)
     roots = [root]
     try:
-        git = root / ".git"
-        if git.is_file():
-            pointer = git.read_text(encoding="utf-8").strip()
-            if pointer.startswith("gitdir:"):
-                gitdir = Path(pointer[len("gitdir:"):].strip())
-                gitdir = gitdir if gitdir.is_absolute() else root / gitdir
-                common = gitdir
-                if (gitdir / "commondir").is_file():
-                    pointer = Path((gitdir / "commondir").read_text(encoding="utf-8").strip())
-                    common = pointer if pointer.is_absolute() else gitdir / pointer
-                common = common.resolve()
-                if common.name == ".git":
-                    roots.append(common.parent)
+        common = _git_common_dir(root)
+        if common is not None:
+            if common.name == ".git":
+                roots.append(common.parent)
+            listing = common / "worktrees"
+            for entry in sorted(listing.iterdir()) if listing.is_dir() else []:
+                pointer = entry / "gitdir"
+                if pointer.is_file():
+                    target = Path(pointer.read_text(encoding="utf-8").strip())
+                    target = target if target.is_absolute() else entry / target
+                    roots.append(target.parent)
     except (OSError, UnicodeError):
         pass
-    return roots
+    unique: list[Path] = []
+    for item in roots:
+        if item not in unique:
+            unique.append(item)
+    return unique
 
 
-def _entry_out_dir(out_dir: object) -> Path:
-    """부르는 쪽이 준 출력 폴더를 확인한다: 이미 있는 폴더이고(만들지 않는다), 심볼릭 링크를 푼 실제 위치가 저장소
-    (_repo_roots)의 안이 아니어야 한다. 봉인 폴더나 저장소 밖 임시 폴더만 받는다(병렬 개발 규칙 §7.3의 1, 자료 계약 §10.3 N10)."""
+def _repo_identities() -> set[tuple[int, int]]:
+    """저장소 뿌리마다 파일 정체성 (st_dev, st_ino). 없는 뿌리(지운 worktree)는 건너뛴다. 이 코드의 작업 폴더는 반드시 있다."""
+    found = set()
+    for root in _repo_roots():
+        try:
+            info = os.stat(root)
+        except OSError:
+            continue
+        found.add((info.st_dev, info.st_ino))
+    return found
+
+
+def _entry_out_dir(out_dir: object) -> tuple[Path, tuple[int, int]]:
+    """부르는 쪽이 준 출력 폴더를 확인하고 (실제 위치, 그 폴더의 (st_dev, st_ino))를 돌려준다. 봉인 폴더나 저장소 밖 임시 폴더만
+    받는다(병렬 개발 규칙 §7.3의 1, 자료 계약 §10.3 N10).
+
+    이미 있는 폴더여야 하고(만들지 않는다), 그 폴더와 모든 상위 폴더 가운데 하나라도 저장소 뿌리(_repo_roots)와 파일
+    정체성 (st_dev, st_ino)가 같으면 거부한다. 경로 글자로 비교하지 않으므로 대소문자를 바꾼 경로(대소문자를 구별하지 않는
+    파일 시스템), macOS firmlink(/System/Volumes/Data 아래의 같은 폴더), 심볼릭 링크, 상대경로·..가 같은 폴더로 판정된다.
+    """
     if not isinstance(out_dir, (str, os.PathLike)):
         raise DatasetEntryError("출력 폴더는 경로여야 한다")
     try:
         resolved = Path(out_dir).resolve(strict=True)
+        if not resolved.is_dir():
+            raise DatasetEntryError("출력 폴더가 폴더가 아니다")
+        chain = [os.stat(folder) for folder in (resolved, *resolved.parents)]
     except (OSError, RuntimeError):
         raise DatasetEntryError("출력 폴더가 없다(입구는 폴더를 만들지 않는다)") from None
-    if not resolved.is_dir():
-        raise DatasetEntryError("출력 폴더가 폴더가 아니다")
-    for root in _repo_roots():
-        if resolved == root or root in resolved.parents:
-            raise DatasetEntryError("출력 폴더가 저장소 안이다(봉인 폴더나 저장소 밖 임시 폴더만 받는다)")
-    return resolved
+    repo = _repo_identities()
+    if not repo or any((info.st_dev, info.st_ino) in repo for info in chain):
+        raise DatasetEntryError("출력 폴더가 저장소 안이다(봉인 폴더나 저장소 밖 임시 폴더만 받는다)")
+    return resolved, (chain[0].st_dev, chain[0].st_ino)
+
+
+def _write_all(fd: int, payload: bytes) -> None:
+    """파일 기술자에 바이트를 끝까지 쓴다."""
+    view = memoryview(payload)
+    while view:
+        view = view[os.write(fd, view):]
+
+
+def _write_entry_file(out_dir: object, identity: tuple[int, int], name: str, payload: bytes) -> None:
+    """쓰기 직전에 출력 폴더를 다시 확인하고(_entry_out_dir), 처음 확인한 폴더와 정체성이 같을 때만 그 폴더를 열어(dir_fd)
+    배타 생성(O_CREAT|O_EXCL|O_NOFOLLOW)으로 파일 하나를 쓴다. 쓰다 실패하면 그 파일을 지운다."""
+    folder, again = _entry_out_dir(out_dir)
+    if again != identity:
+        raise DatasetEntryError("출력 폴더가 확인한 뒤 바뀌었다")
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    dir_fd = os.open(folder, flags)
+    try:
+        opened = os.fstat(dir_fd)
+        if (opened.st_dev, opened.st_ino) != identity:
+            raise DatasetEntryError("출력 폴더가 확인한 뒤 바뀌었다")
+        try:
+            fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o644, dir_fd=dir_fd)
+        except FileExistsError:
+            raise DatasetEntryError("출력 폴더에 같은 이름의 파일이 이미 있다(덮어쓰지 않는다)") from None
+        try:
+            try:
+                _write_all(fd, payload)
+            finally:
+                os.close(fd)
+        except BaseException:
+            os.unlink(name, dir_fd=dir_fd)  # 쓰다 만 파일을 남기지 않는다
+            raise
+    finally:
+        os.close(dir_fd)
 
 
 def detect_dataset_cases(snapshot_id: str, policy_version: str, dataset: str, out_dir) -> dict:
@@ -707,10 +782,14 @@ def detect_dataset_cases(snapshot_id: str, policy_version: str, dataset: str, ou
       전) → detection_rows(K3 조회 → X1·X2) → P1 → P2(dataset과 분할 기록 전체의 배정). dataset이 real_dev면 출력 바이트가
       CLI detect의 출력 파일과 같다.
     - 출력은 out_dir 하나에만 쓴다. outputs/에는 아무것도 쓰지 않고 실행명도 확보하지 않는다(자료 계약 §10.3 N10 "봉인 자료
-      생성 중의 명령 출력"). out_dir은 이미 있는 폴더여야 하고, 저장소(본 작업 폴더와 이 worktree) 안이면 거부한다.
-      봉인 폴더 위치(TRADESENTRY_SEALED_DIR)는 이 함수가 읽지 않는다. 부르는 쪽이 정한다.
-    - 확인을 모두 마치고 출력 바이트를 다 만든 뒤에 파일 하나를 이미 있으면 실패하는 방식("xb")으로 쓴다. 실패하면 파일을
-      남기지 않는다(봉인 폴더에 목록 밖 파일이 생기지 않게). 표준 출력·표준 오류에 아무것도 쓰지 않는다.
+      생성 중의 명령 출력"). out_dir은 이미 있는 폴더여야 하고, 그 폴더나 상위 폴더가 저장소 뿌리(본 작업 폴더와 git이 아는
+      모든 worktree)와 파일 정체성이 같으면 거부한다(_entry_out_dir). 봉인 폴더 위치(TRADESENTRY_SEALED_DIR)는 이 함수가
+      읽지 않는다. 부르는 쪽이 정한다.
+    - 확인을 모두 마치고 출력 바이트를 다 만든 뒤, 쓰기 직전에 출력 폴더를 다시 확인하고 처음과 같은 폴더를 열어 파일 하나를
+      배타 생성(O_EXCL)으로 쓴다. 실패하면 파일을 남기지 않는다(봉인 폴더에 목록 밖 파일이 생기지 않게). 표준 출력·표준
+      오류에 아무것도 쓰지 않는다.
+    - 부르는 쪽 신원으로 real_sealed 호출을 막지 않는다(같은 OS 사용자 권한으로는 막을 수 없다, 병렬 개발 규칙 §6.4·§7.2 끝).
+      real_sealed로는 격리된 봉인 생성 에이전트(로드맵 DT7 ③)만 부른다(결정 기록의 "한계와 운용 규칙").
     - 출력 파일에는 code_version을 넣지 않는다(P2 출력 키 다섯 개 그대로. AS1 두 번째 기록 ⑤). 돌려주는 값에 그 커밋을 담아
       부르는 쪽이 결정 기록에 적게 한다. code_version은 작업 트리의 고치지 않은 변경을 표시하지 않는다.
     - 오류는 예외로 알린다: DatasetEntryError(묶음·출력 폴더·출처 종류·출력 모양), policy_load.PolicyError, query.SnapshotError,
@@ -723,7 +802,7 @@ def detect_dataset_cases(snapshot_id: str, policy_version: str, dataset: str, ou
 
     if dataset not in ENTRY_DATASETS:  # 스냅샷·정책을 열기 전에 확인한다
         raise DatasetEntryError("묶음은 real_dev나 real_sealed여야 한다")
-    folder = _entry_out_dir(out_dir)
+    _, identity = _entry_out_dir(out_dir)
     policy = policy_load.load_policy(policy_version)
     with query.open_snapshot(snapshot_id) as snap:
         if snap.source_kind != "real":  # 분할 기록이 있는 실자료만. 값을 읽기 전에 거부한다
@@ -735,17 +814,7 @@ def detect_dataset_cases(snapshot_id: str, policy_version: str, dataset: str, ou
     payload = json_output_bytes(DETECT_DOMAIN, result)
     version = code_version()
     name = f"{DETECT_DOMAIN}-{now_kst().strftime(STAMP_FORMAT)}.json"
-    target = folder / name
-    try:
-        handle = open(target, "xb")
-    except FileExistsError:
-        raise DatasetEntryError("출력 폴더에 같은 이름의 파일이 이미 있다(덮어쓰지 않는다)") from None
-    try:
-        with handle:
-            handle.write(payload)
-    except BaseException:
-        target.unlink(missing_ok=True)  # 쓰다 만 파일을 남기지 않는다
-        raise
+    _write_entry_file(out_dir, identity, name, payload)
     return {"file_name": name, "code_version": version}
 
 
