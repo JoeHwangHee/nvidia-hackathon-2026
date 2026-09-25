@@ -319,8 +319,8 @@ def tool_result_message(call_id: str | None, tool: str, result: object) -> dict:
     return {"role": "tool", "tool_call_id": call_id or "", "name": tool, "content": dumps_for_model(result)}
 
 
-PROSE_FIX = ("[검증기가 막은 산문 표현] {items}. 이 표현이 든 문장을 지우거나, 같은 값·같은 방향의 지표 주장(claims)을 "
-             "인용하는 문장으로 바꾼다. 같은 표현을 다른 곳에 다시 쓰지 않는다.")
+PROSE_FIX = ("[검증기가 막은 산문 표현] {items}. 이 표현이 든 문장을 지우거나, 숫자·증감 어휘 없이 지표 주장(claims)을 "
+             "가리키는 문장으로 바꾼다(값과 방향은 claims에만 둔다). 같은 표현을 다른 곳에 다시 쓰지 않는다.")
 QUOTED_RE = re.compile(r"'([^']*)'")
 
 
