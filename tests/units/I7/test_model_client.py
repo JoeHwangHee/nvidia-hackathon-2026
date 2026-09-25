@@ -10,6 +10,8 @@
   리디렉션은 따라가지 않으며 Authorization은 리디렉션 요청에 옮겨 가지 않는다
 - 정책 프록시 거부(CONNECT 403·407, L7 403 policy_denied)는 CODE_ERROR로 멈추고 재실행 대상이 아니다
 - 설정은 엔드포인트 호스트와 키 환경변수 이름을 허용 목록으로만 받는다
+- Retry-After 존중(model-1.7): 재전송 대기 = max(지수 대기, min(Retry-After, 60초)). 초 정수·HTTP-date·없음·깨진 값·상한·
+  deadline·5xx 같은 규칙. trace model_error에 retry_after_ms·허용 목록 headers·가린 body_excerpt(2026-09-25 22:22 사용자 결정 ④)
 - 도구 없는 요청에는 tools·tool_choice 키가 없다. 구조화 출력(response_format json_object)은 설정이 json_object이고,
   도구가 없고, 부르는 쪽이 청할 때만 실린다. guided_json은 설정 값으로 받지 않는다(결정 기록 ⑯)
 
@@ -18,6 +20,7 @@
 """
 import dataclasses
 import email.message
+import email.utils
 import io
 import json
 import os
@@ -553,6 +556,222 @@ class StructuredOutputTest(NoNetworkMixin, unittest.TestCase):
                     else:
                         with self.assertRaises(mc.ConfigError):
                             mc.load_model_config(folder)
+
+
+class HeaderTransport(ScriptedTransport):
+    """ScriptedTransport에 응답 헤더·본문 요지를 더한 대역. 결과 하나에 "headers"(dict)·"body_excerpt"가 있으면 그대로 싣는다.
+    실제 전송 자리(UrllibTransport)가 HTTP 응답에서 허용 목록 헤더만 모아 주는 모양을 흉내 낸다."""
+
+    def send(self, payload, timeout_ms):
+        step = self.script[0]
+        sent = super().send(payload, timeout_ms)
+        if "headers" in step:
+            sent["headers"] = step["headers"]
+        if "body_excerpt" in step:
+            sent["body_excerpt"] = step["body_excerpt"]
+        return sent
+
+
+SENT_EPOCH = 1_790_000_000  # 고정한 전송 시각(epoch 초). HTTP-date Retry-After는 이 시각 기준 남은 초로 푼다
+RA_FIELDS = ("retry_after_ms", "headers", "body_excerpt")
+KEY = mc.KEY_PREFIX + "abc"  # 짧은 가짜 키 표시(실제 키 모양의 긴 문자열은 쓰지 않는다). 가림만 확인한다
+MASKED = mc.SECRET_MASK
+
+
+def make_header_client(script, *, elapsed_before=0, elapsed_ms=700):
+    config = mc.load_model_config()
+    clock = FakeClock()
+    budget = mc.Budget(config.limits, clock.now - elapsed_before, config.settings.end_reserve_ms)
+    sink = trace_log.MemoryTrace(RID, clock=trace_log.now_kst)
+    transport = HeaderTransport(script, clock, elapsed_ms=elapsed_ms)
+    client = mc.ModelClient(config.settings, budget, transport, sink, clock_ms=clock.clock_ms,
+                            sleep_ms=clock.sleep_ms, wall_s=lambda: SENT_EPOCH)
+    return client, clock, transport, sink
+
+
+def http_date(epoch_s):
+    return email.utils.formatdate(epoch_s, usegmt=True)
+
+
+def model_errors(sink):
+    return [r["data"] for r in sink.records if r["event"] == "model_error"]
+
+
+def transport_send(transport):
+    with mock.patch.dict(os.environ, {"TS_TEST_KEY_ENV": "p"}):
+        return transport.send({"model": "m"}, 1000)
+
+
+class RetryAfterTest(NoNetworkMixin, unittest.TestCase):
+    """Retry-After 존중과 헤더·본문 요지 기록(model-1.7, 2026-09-25 22:22 사용자 결정 ④). 대기 = max(지수 대기,
+    min(Retry-After, 60초)). 재전송 횟수(3회)·한도 세기(첫 전송만)·deadline 규칙은 그대로다."""
+
+    def test_seconds_larger_than_backoff_wins_and_smaller_keeps_backoff(self):
+        client, clock, _, sink = make_header_client([{"status": 429, "headers": {"retry-after": "8"}},
+                                                     {"status": 429, "headers": {"retry-after": "2"}},
+                                                     {"body": ok_body("{}")}])
+        client.chat(MESSAGES, stage="basic")
+        self.assertEqual(clock.sleeps, [8000, 10000])  # 8초 > 5초 → 8초. 2초 < 10초 → 지수 대기 10초
+        self.assertEqual([(e["retry_after_ms"], e["backoff_ms"], e["retrying"]) for e in model_errors(sink)],
+                         [(8000, 8000, True), (2000, 10000, True)])
+        self.assertEqual(client.budget.model_requests, 1)
+
+    def test_http_date_is_resolved_against_the_send_time_and_past_dates_count_as_zero(self):
+        future, past = http_date(SENT_EPOCH + 30), http_date(SENT_EPOCH - 90)
+        client, clock, _, sink = make_header_client([{"status": 429, "headers": {"retry-after": future}},
+                                                     {"status": 429, "headers": {"retry-after": past}},
+                                                     {"body": ok_body("{}")}])
+        client.chat(MESSAGES, stage="basic")
+        self.assertEqual(clock.sleeps, [30000, 10000])
+        self.assertEqual([e["retry_after_ms"] for e in model_errors(sink)], [30000, 0])
+
+    def test_missing_or_broken_value_keeps_the_exponential_wait(self):
+        scripts = ([{"status": 429}, {"body": ok_body("{}")}],  # 헤더 키 자체가 없는 전송 결과
+                   [{"status": 429, "headers": {}}, {"body": ok_body("{}")}],
+                   [{"status": 429, "headers": {"x-request-id": "req-1"}}, {"body": ok_body("{}")}],
+                   [{"status": 429, "headers": {"retry-after": "soon"}}, {"body": ok_body("{}")}],
+                   [{"status": 429, "headers": {"retry-after": "-3"}}, {"body": ok_body("{}")}],
+                   [{"status": 429, "headers": {"retry-after": "1.5"}}, {"body": ok_body("{}")}])
+        for script in scripts:
+            with self.subTest(headers=script[0].get("headers")):
+                client, clock, _, sink = make_header_client(script)
+                client.chat(MESSAGES, stage="basic")
+                error = model_errors(sink)[0]
+                self.assertEqual((clock.sleeps, error["retry_after_ms"], error["backoff_ms"]), ([5000], None, 5000))
+                self.assertEqual(error["headers"], script[0].get("headers") or {})
+                self.assertIsNone(error["body_excerpt"])
+
+    def test_cap_limits_the_wait_to_sixty_seconds_but_the_trace_keeps_the_parsed_value(self):
+        self.assertEqual(mc.load_model_config().settings.retry_after_cap_ms, 60000)
+        client, clock, _, sink = make_header_client([{"status": 429, "headers": {"retry-after": "120"}},
+                                                     {"body": ok_body("{}")}])
+        client.chat(MESSAGES, stage="basic")
+        self.assertEqual(clock.sleeps, [60000])
+        self.assertEqual([(e["retry_after_ms"], e["backoff_ms"]) for e in model_errors(sink)], [(120000, 60000)])
+
+    def test_wait_beyond_the_deadline_stops_as_deadline_without_sleeping(self):
+        reserve = mc.load_model_config().settings.end_reserve_ms
+        # 남은 시간 50초: 지수 대기 5초는 들어가지만 Retry-After 55초(상한 60초 안)는 넘는다
+        client, clock, _, sink = make_header_client([{"status": 429, "headers": {"retry-after": "55"}}],
+                                                    elapsed_before=300_000 - reserve - 50_000, elapsed_ms=0)
+        with self.assertRaises(mc.RunStop) as caught:
+            client.chat(MESSAGES, stage="basic")
+        self.assertEqual((caught.exception.code, clock.sleeps), (cause_codes.DEADLINE, []))
+        self.assertEqual([(e["retrying"], e["backoff_ms"], e["retry_after_ms"]) for e in model_errors(sink)],
+                         [(False, 0, 55000)])
+
+    def test_5xx_follows_the_same_rule_and_the_resend_count_is_unchanged(self):
+        client, clock, transport, sink = make_header_client([{"status": 503, "headers": {"retry-after": "7"}},
+                                                             {"status": 500, "headers": {"retry-after": "1"}},
+                                                             {"status": 502},
+                                                             {"status": 503, "headers": {"retry-after": "9"}}])
+        with self.assertRaises(mc.RunStop) as caught:
+            client.chat(MESSAGES, stage="basic")
+        self.assertEqual((caught.exception.code, caught.exception.detail),
+                         (cause_codes.PROVIDER_HTTP_5XX, "HTTP 503(재전송 3회 뒤)"))
+        self.assertEqual((clock.sleeps, len(transport.payloads), client.budget.model_requests),
+                         ([7000, 10000, 20000], 4, 1))
+        # 마지막(재전송하지 않는) 오류에도 세 필드가 남는다
+        self.assertEqual([(e["retrying"], e["retry_after_ms"]) for e in model_errors(sink)],
+                         [(True, 7000), (True, 1000), (True, None), (False, 9000)])
+
+    def test_trace_carries_the_three_fields_with_the_masked_excerpt_and_other_events_keep_their_shape(self):
+        headers = {"retry-after": "6", "x-ratelimit-remaining-requests": "0", "x-request-id": "req-9"}
+        client, _, _, sink = make_header_client([{"status": 429, "headers": headers,
+                                                  "body_excerpt": '{"error": "quota", "hint": "' + MASKED + '"}'},
+                                                 {"body": ok_body("{}")}])
+        client.chat(MESSAGES, stage="basic")
+        error = model_errors(sink)[0]
+        self.assertEqual({k: error[k] for k in RA_FIELDS},
+                         {"retry_after_ms": 6000, "headers": headers,
+                          "body_excerpt": '{"error": "quota", "hint": "' + MASKED + '"}'})
+        for record in sink.records:
+            if record["event"] != "model_error":
+                self.assertFalse(set(RA_FIELDS) & set(record["data"]))
+        # 재전송 고리 밖 오류(다른 4xx)의 model_error 모양은 바뀌지 않는다
+        client, _, _, sink = make_header_client([{"status": 400, "headers": headers, "body_excerpt": "bad"}])
+        with self.assertRaises(mc.RunStop):
+            client.chat(MESSAGES, stage="basic")
+        self.assertFalse(set(RA_FIELDS) & set(model_errors(sink)[0]))
+
+    def test_parse_retry_after_handles_seconds_dates_and_garbage(self):
+        cases = {"12": 12000, " 0 ": 0, "": None, None: None, "abc": None, "1.5": None, "-1": None,
+                 http_date(SENT_EPOCH + 45): 45000, http_date(SENT_EPOCH - 1): 0}
+        for value, expected in cases.items():
+            with self.subTest(value=value):
+                self.assertEqual(mc.parse_retry_after(value, SENT_EPOCH), expected)
+        bare = http_date(SENT_EPOCH + 20).replace(" GMT", "")  # 시간대 없는 날짜는 GMT로 본다
+        self.assertEqual(mc.parse_retry_after(bare, SENT_EPOCH), 20000)
+
+    def test_transport_collects_allowlisted_headers_and_masks_the_error_body(self):
+        message = email.message.Message()
+        for key, value in (("Retry-After", "30"), ("X-RateLimit-Remaining-Requests", "0"), ("X-Request-Id", "r-1"),
+                           ("Content-Type", "application/json"), ("Set-Cookie", "session=nope"),
+                           ("Authorization", "Bearer " + KEY)):
+            message[key] = value
+        body = ('{"error": "rate limited", "key": "' + KEY + '", "pad": "').encode("utf-8") + b"x" * 300 + b'"}'
+        error = urllib.error.HTTPError(ENDPOINT, 429, "err", message, io.BytesIO(body))
+        sent = transport_send(mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=FakeOpener(error)))
+        self.assertEqual((sent["http_status"], sent["error"]), (429, None))
+        self.assertEqual(sent["headers"], {"retry-after": "30", "x-ratelimit-remaining-requests": "0",
+                                           "x-request-id": "r-1"})  # 허용 목록 밖 헤더는 없다
+        self.assertEqual(len(sent["body_excerpt"]), 200)
+        self.assertIn(MASKED, sent["body_excerpt"])
+        self.assertNotIn(KEY, sent["body_excerpt"])
+        self.assertEqual(sent["body"], body)  # 원본 본문은 그대로다
+        # 본문이 없는 오류 응답은 body_excerpt가 None, 헤더가 없으면 {}
+        empty = transport_send(mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=FakeOpener(http_error(503))))
+        self.assertEqual((empty["headers"], empty["body_excerpt"]), ({}, None))
+        # 깨진 UTF-8은 대체 문자로 푼다
+        broken = transport_send(mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV",
+                                                   opener=FakeOpener(http_error(500, b"\xff\xfe oops"))))
+        self.assertEqual(broken["body_excerpt"], "�� oops")
+
+    def test_success_response_carries_headers_and_other_transport_results_keep_their_shape(self):
+        handler = FakeHTTPS((200, {"X-Request-Id": "ok-1", "Content-Length": "5", "retry-after": "1"}, ok_body("{}")))
+        sent = transport_send(mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=mc.build_opener(handler)))
+        self.assertEqual((sent["http_status"], sent["headers"]), (200, {"x-request-id": "ok-1", "retry-after": "1"}))
+        self.assertNotIn("body_excerpt", sent)
+        for exc in (urllib.error.URLError(TimeoutError("t")), ConnectionResetError("reset"),
+                    urllib.error.URLError(OSError("Tunnel connection failed: 403 Forbidden"))):
+            with self.subTest(exc=repr(exc)[:40]):
+                sent = transport_send(mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV", opener=FakeOpener(exc)))
+                self.assertFalse({"headers", "body_excerpt"} & set(sent))
+        denied = transport_send(mc.UrllibTransport(ENDPOINT, "TS_TEST_KEY_ENV",
+                                                   opener=FakeOpener(http_error(403, b'{"error": "policy_denied"}'))))
+        self.assertEqual(denied["error"], "policy_denied")
+        self.assertFalse({"headers", "body_excerpt"} & set(denied))
+
+    def test_header_values_are_masked_and_repeated_names_are_joined(self):
+        message = email.message.Message()
+        message["X-Request-Id"] = KEY
+        message["Retry-After"] = "3"
+        message["retry-after"] = "4"
+        self.assertEqual(mc.collect_headers(message), {"x-request-id": MASKED, "retry-after": "3, 4"})
+        self.assertEqual(mc.collect_headers(None), {})
+        self.assertIsNone(mc.body_excerpt(b""))
+        self.assertEqual(mc.body_excerpt((KEY + " " + mc.KEY_PREFIX + "def_9-x tail").encode("utf-8")),
+                         MASKED + " " + MASKED + " tail")
+
+    def test_retry_after_cap_is_a_required_non_negative_integer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "model"
+            shutil.copytree(mc.DEFAULT_CONFIG_DIR, folder)
+            raw = json.loads((folder / "model.json").read_text(encoding="utf-8"))
+            for value in (0, 60000, -1, "60000", 1.5, None, "missing"):
+                retry = dict(raw["retry"])
+                if value == "missing":
+                    retry.pop("retry_after_cap_ms")
+                else:
+                    retry["retry_after_cap_ms"] = value
+                (folder / "model.json").write_text(json.dumps(dict(raw, retry=retry)), encoding="utf-8")
+                with self.subTest(value=value):
+                    if value in (0, 60000):
+                        self.assertEqual(mc.load_model_config(folder).settings.retry_after_cap_ms, value)
+                    else:
+                        with self.assertRaises(mc.ConfigError):
+                            mc.load_model_config(folder)
+
 
 if __name__ == "__main__":
     unittest.main()
