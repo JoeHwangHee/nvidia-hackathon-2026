@@ -770,6 +770,11 @@ class ScorerAlignmentTest(unittest.TestCase):
         self.assertEqual(self.kinds("△4.0%p", self.D_CLAIM), [])
         self.assertEqual(self.kinds("4% p 하락", self.D_CLAIM), ["PT-1"])
         self.assertEqual(self.kinds("4%p 하락", self.D_CLAIM), [])
+        # Codex 2회차: 부정형 구간 공백도 0개 이상(채점기 `\s*`). 공백 2~3개를 넣어도 부정형으로 읽는다.
+        for text in ("증가   가   없다.", "증가  는  없었다.", "증가   없이 유지됐다.", "증가하지   않았다.", "증가하지  못했다."):
+            with self.subTest(text=text):
+                self.assertEqual(self.kinds(text, rate_claims("-40.0")), [])
+                self.assertEqual(self.kinds(text, rate_claims("40.0")), ["PT-6"])
 
 
 class TemplateConsistencyTest(unittest.TestCase):
