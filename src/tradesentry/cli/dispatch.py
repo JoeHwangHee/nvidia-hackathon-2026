@@ -312,6 +312,16 @@ def _json_default(value: object) -> object:
     raise TypeError(f"JSON으로 쓸 수 없는 값: {type(value).__name__}")
 
 
+def json_output_bytes(domain: str, value: object) -> bytes:
+    """출력 값의 JSON 바이트(들여쓰기 2, 한국어 그대로, Decimal은 글자 그대로의 문자열, 끝 줄바꿈). write_output과 봉인용
+    탐지 입구(detect_dataset_cases)가 같이 쓴다. JSON으로 쓸 수 없으면 배선 계약 위반(4)이다."""
+    try:
+        return (json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False, default=_json_default)
+                + "\n").encode("utf-8")
+    except (TypeError, ValueError) as exc:
+        raise WiringError(f"{domain} 출력을 JSON으로 쓸 수 없다({type(exc).__name__})") from None
+
+
 def write_output(run_dir: Path, run_id: str, domain: str, stamp: str, ext: str, value: object) -> str:
     """출력 값을 {도메인명}-{시각}.{확장자}로 쓰고 표준 출력에 적을 상대경로를 돌려준다.
 
@@ -320,11 +330,7 @@ def write_output(run_dir: Path, run_id: str, domain: str, stamp: str, ext: str, 
     """
     if ext != "json":
         raise WiringError(f"배선이 모르는 출력 확장자다({ext})")
-    try:
-        payload = (json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False, default=_json_default)
-                   + "\n").encode("utf-8")
-    except (TypeError, ValueError) as exc:
-        raise WiringError(f"{domain} 출력을 JSON으로 쓸 수 없다({type(exc).__name__})") from None
+    payload = json_output_bytes(domain, value)
     name = f"{domain}-{stamp}.{ext}"
     with open(run_dir / name, "xb") as handle:
         handle.write(payload)
@@ -455,15 +461,17 @@ def detect_pairs(months: tuple[str, ...] | list[str]) -> list[tuple[str, str]]:
     return [(month, trigger.baseline_of(month)) for month in months if trigger.baseline_of(month) in present]
 
 
-def detect_series(snap, split: dict[tuple[str, str], str] | None = None) -> list[tuple[str, str]]:
+def detect_series(snap, split: dict[tuple[str, str], str] | None = None,
+                  dataset: str = DETECT_DATASET) -> list[tuple[str, str]]:
     """탐지할 계열 (HS6, 상대국): 수집 설정의 HS6 × 상대국. 비교국 표가 가리키는 계획 밖 국가는 넣지 않는다.
 
-    split(load_real_split의 표)을 주면 그 가운데 real_dev 계열만 남긴다. 관측 값은 읽지 않는다(메타만 쓴다).
+    split(load_real_split의 표)을 주면 그 가운데 묶음 dataset의 계열만 남긴다. dataset의 기본값은 real_dev이고 CLI detect는
+    이 값만 쓴다. real_sealed는 봉인용 탐지 입구(detect_dataset_cases)만 넘긴다. 관측 값은 읽지 않는다(메타만 쓴다).
     """
     series = [(hs6, partner) for hs6 in snap.hs6_codes for partner in snap.partners]
     if split is None:
         return series
-    return [key for key in series if split.get(key) == DETECT_DATASET]
+    return [key for key in series if split.get(key) == dataset]
 
 
 def _status_rows(value: dict) -> list[dict]:
@@ -584,20 +592,22 @@ def detection_rows(snap, series: list[tuple[str, str]] | None = None) -> list[di
     return rows
 
 
-def build_case_list(snap, policy: dict) -> object:
-    """스냅샷 하나의 경보 사례 목록(단위 P2 출력). detect와 evaluate(real_dev 사례 목록, AS3 두 번째 PR)가 같이 쓴다.
+def build_case_list(snap, policy: dict, dataset: str = DETECT_DATASET) -> object:
+    """스냅샷 하나의 경보 사례 목록(단위 P2 출력). detect와 evaluate(real_dev 사례 목록, AS3 두 번째 PR)와 봉인용 탐지
+    입구(detect_dataset_cases, AS1 세 번째 PR)가 같이 쓴다.
 
-    실자료는 분할 기록(load_real_split)을 먼저 읽어 real_dev 계열만 남긴 뒤에 관측 값을 읽는다(병렬 개발 규칙 §7.2의 5).
-    분할 기록을 쓸 수 없으면 SplitError(관측 값을 읽기 전). 출처 종류 확인은 부르는 쪽이 먼저 한다.
+    실자료는 분할 기록(load_real_split)을 먼저 읽어 묶음 dataset의 계열만 남긴 뒤에 관측 값을 읽는다(병렬 개발 규칙 §7.2의
+    5). dataset의 기본값은 real_dev이고 detect·evaluate는 이 값만 쓴다. real_sealed는 봉인용 탐지 입구만 넘긴다. 분할 기록을
+    쓸 수 없으면 SplitError(관측 값을 읽기 전). 출처 종류 확인은 부르는 쪽이 먼저 한다.
     """
     from tradesentry.policy import case_build, trigger
 
     case_input: dict[str, object] = {"snapshot_id": snap.snapshot_id, "source_kind": snap.source_kind}
     split = None
-    if snap.source_kind == "real":  # 값을 읽기 전에 real_dev 계열로 좁힌다
+    if snap.source_kind == "real":  # 값을 읽기 전에 묶음 계열로 좁힌다
         split = load_real_split(snap)
-        case_input.update(dataset=DETECT_DATASET, series_assignment=series_assignment(split))
-    rows = detection_rows(snap, detect_series(snap, split))
+        case_input.update(dataset=dataset, series_assignment=series_assignment(split))
+    rows = detection_rows(snap, detect_series(snap, split, dataset))
     detection = trigger.run({"policy": policy, "rows": rows})
     return case_build.run({**case_input, "detection": detection})
 
@@ -634,6 +644,180 @@ def _detect(request: args.Request) -> int:
         raise WiringError("단위 P2(case_build)의 출력이 snapshot_id·dataset·policy_version·cases·data_quality 객체가 아니다")
     _emit(write_output(run_dir, run_id, DETECT_DOMAIN, stamp, "json", result))
     return EXIT_OK
+
+
+# ------------------------------------------------------------------------------ 봉인용 탐지 입구(조립 작업 AS1 세 번째 PR)
+# 결정 기록 docs/tracking/decisions/20260925-1250-model-decision-as1-sealed-entry.md. CLI 명령이 아니라 파이썬 함수 하나다
+# (명령 표는 공용 약속이라 옵션을 더하지 않는다). 부르는 쪽은 로드맵 DT7 ③의 격리된 생성 에이전트(단위 V6)다.
+ENTRY_DATASETS = ("real_dev", "real_sealed")  # 입구가 받는 묶음(자료 계약 §4.2의 실자료 두 묶음)
+
+
+class DatasetEntryError(Exception):
+    """봉인용 탐지 입구가 탐지하지 않고 끝내는 까닭(묶음·출력 폴더·출처 종류·출력 모양). 문장에 받은 값·경로를 넣지 않는다(N13)."""
+
+
+def _git_common_dir(root: Path) -> Path | None:
+    """작업 폴더 root의 git 공용 폴더(.git이 폴더면 그것, worktree의 .git 파일이면 gitdir → commondir). 없으면 None."""
+    git = root / ".git"
+    if git.is_dir():
+        return git
+    if not git.is_file():
+        return None
+    pointer = git.read_text(encoding="utf-8").strip()
+    if not pointer.startswith("gitdir:"):
+        return None
+    gitdir = Path(pointer[len("gitdir:"):].strip())
+    gitdir = gitdir if gitdir.is_absolute() else root / gitdir
+    if (gitdir / "commondir").is_file():
+        common = Path((gitdir / "commondir").read_text(encoding="utf-8").strip())
+        return (common if common.is_absolute() else gitdir / common).resolve()
+    return gitdir.resolve()
+
+
+def _repo_roots() -> list[Path]:
+    """출력 폴더로 받지 않는 저장소 뿌리: 이 코드의 작업 폴더(dal.query.REPO_ROOT), 본 작업 폴더(공용 폴더 .git의 부모), git이
+    아는 모든 worktree(한 저장소에서 브랜치마다 따로 여는 작업 폴더. 공용 폴더의 worktrees/*/gitdir가 가리키는 .git 파일의
+    부모). `git worktree list --porcelain`이 읽는 것과 같은 메타 파일이다. 이 모듈의 하위 프로세스는 openshell 호출뿐이라
+    git을 부르지 않고 파일을 읽는다(시험이 그 명령의 목록과 같음을 확인한다). 경로를 돌려주고, 정체성 비교는 부르는 쪽이 한다.
+    """
+    from tradesentry.dal import query
+
+    root = Path(query.REPO_ROOT)
+    roots = [root]
+    try:
+        common = _git_common_dir(root)
+        if common is not None:
+            if common.name == ".git":
+                roots.append(common.parent)
+            listing = common / "worktrees"
+            for entry in sorted(listing.iterdir()) if listing.is_dir() else []:
+                pointer = entry / "gitdir"
+                if pointer.is_file():
+                    target = Path(pointer.read_text(encoding="utf-8").strip())
+                    target = target if target.is_absolute() else entry / target
+                    roots.append(target.parent)
+    except (OSError, UnicodeError):
+        pass
+    unique: list[Path] = []
+    for item in roots:
+        if item not in unique:
+            unique.append(item)
+    return unique
+
+
+def _repo_identities() -> set[tuple[int, int]]:
+    """저장소 뿌리마다 파일 정체성 (st_dev, st_ino). 없는 뿌리(지운 worktree)는 건너뛴다. 이 코드의 작업 폴더는 반드시 있다."""
+    found = set()
+    for root in _repo_roots():
+        try:
+            info = os.stat(root)
+        except OSError:
+            continue
+        found.add((info.st_dev, info.st_ino))
+    return found
+
+
+def _entry_out_dir(out_dir: object) -> tuple[Path, tuple[int, int]]:
+    """부르는 쪽이 준 출력 폴더를 확인하고 (실제 위치, 그 폴더의 (st_dev, st_ino))를 돌려준다. 봉인 폴더나 저장소 밖 임시 폴더만
+    받는다(병렬 개발 규칙 §7.3의 1, 자료 계약 §10.3 N10).
+
+    이미 있는 폴더여야 하고(만들지 않는다), 그 폴더와 모든 상위 폴더 가운데 하나라도 저장소 뿌리(_repo_roots)와 파일
+    정체성 (st_dev, st_ino)가 같으면 거부한다. 경로 글자로 비교하지 않으므로 대소문자를 바꾼 경로(대소문자를 구별하지 않는
+    파일 시스템), macOS firmlink(/System/Volumes/Data 아래의 같은 폴더), 심볼릭 링크, 상대경로·..가 같은 폴더로 판정된다.
+    """
+    if not isinstance(out_dir, (str, os.PathLike)):
+        raise DatasetEntryError("출력 폴더는 경로여야 한다")
+    try:
+        resolved = Path(out_dir).resolve(strict=True)
+        if not resolved.is_dir():
+            raise DatasetEntryError("출력 폴더가 폴더가 아니다")
+        chain = [os.stat(folder) for folder in (resolved, *resolved.parents)]
+    except (OSError, RuntimeError):
+        raise DatasetEntryError("출력 폴더가 없다(입구는 폴더를 만들지 않는다)") from None
+    repo = _repo_identities()
+    if not repo or any((info.st_dev, info.st_ino) in repo for info in chain):
+        raise DatasetEntryError("출력 폴더가 저장소 안이다(봉인 폴더나 저장소 밖 임시 폴더만 받는다)")
+    return resolved, (chain[0].st_dev, chain[0].st_ino)
+
+
+def _write_all(fd: int, payload: bytes) -> None:
+    """파일 기술자에 바이트를 끝까지 쓴다."""
+    view = memoryview(payload)
+    while view:
+        view = view[os.write(fd, view):]
+
+
+def _write_entry_file(out_dir: object, identity: tuple[int, int], name: str, payload: bytes) -> None:
+    """쓰기 직전에 출력 폴더를 다시 확인하고(_entry_out_dir), 처음 확인한 폴더와 정체성이 같을 때만 그 폴더를 열어(dir_fd)
+    배타 생성(O_CREAT|O_EXCL|O_NOFOLLOW)으로 파일 하나를 쓴다. 쓰다 실패하면 그 파일을 지운다."""
+    folder, again = _entry_out_dir(out_dir)
+    if again != identity:
+        raise DatasetEntryError("출력 폴더가 확인한 뒤 바뀌었다")
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    dir_fd = os.open(folder, flags)
+    try:
+        opened = os.fstat(dir_fd)
+        if (opened.st_dev, opened.st_ino) != identity:
+            raise DatasetEntryError("출력 폴더가 확인한 뒤 바뀌었다")
+        try:
+            fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o644, dir_fd=dir_fd)
+        except FileExistsError:
+            raise DatasetEntryError("출력 폴더에 같은 이름의 파일이 이미 있다(덮어쓰지 않는다)") from None
+        try:
+            try:
+                _write_all(fd, payload)
+            finally:
+                os.close(fd)
+        except BaseException:
+            os.unlink(name, dir_fd=dir_fd)  # 쓰다 만 파일을 남기지 않는다
+            raise
+    finally:
+        os.close(dir_fd)
+
+
+def detect_dataset_cases(snapshot_id: str, policy_version: str, dataset: str, out_dir) -> dict:
+    """봉인용 탐지 입구: 실자료 스냅샷에서 묶음 dataset(real_dev·real_sealed)의 계열로만 경보 사례 목록을 만들어, 부르는 쪽이
+    준 폴더 out_dir에 단위 P2 출력 그대로 한 파일(policy_case_build-{시각}.json)을 쓴다.
+
+    - 경로는 CLI detect의 실자료 경로와 같다: K4 load_policy → K3 open_snapshot(정본 빌드, 읽기 전용) → 출처 종류 real 확인 →
+      build_case_list(snap, policy, dataset): 분할 기록(load_real_split) → detect_series로 그 묶음 계열만 남긴다(관측 값을 읽기
+      전) → detection_rows(K3 조회 → X1·X2) → P1 → P2(dataset과 분할 기록 전체의 배정). dataset이 real_dev면 출력 바이트가
+      CLI detect의 출력 파일과 같다.
+    - 출력은 out_dir 하나에만 쓴다. outputs/에는 아무것도 쓰지 않고 실행명도 확보하지 않는다(자료 계약 §10.3 N10 "봉인 자료
+      생성 중의 명령 출력"). out_dir은 이미 있는 폴더여야 하고, 그 폴더나 상위 폴더가 저장소 뿌리(본 작업 폴더와 git이 아는
+      모든 worktree)와 파일 정체성이 같으면 거부한다(_entry_out_dir). 봉인 폴더 위치(TRADESENTRY_SEALED_DIR)는 이 함수가
+      읽지 않는다. 부르는 쪽이 정한다.
+    - 확인을 모두 마치고 출력 바이트를 다 만든 뒤, 쓰기 직전에 출력 폴더를 다시 확인하고 처음과 같은 폴더를 열어 파일 하나를
+      배타 생성(O_EXCL)으로 쓴다. 실패하면 파일을 남기지 않는다(봉인 폴더에 목록 밖 파일이 생기지 않게). 표준 출력·표준
+      오류에 아무것도 쓰지 않는다.
+    - 부르는 쪽 신원으로 real_sealed 호출을 막지 않는다(같은 OS 사용자 권한으로는 막을 수 없다, 병렬 개발 규칙 §6.4·§7.2 끝).
+      real_sealed로는 격리된 봉인 생성 에이전트(로드맵 DT7 ③)만 부른다(결정 기록의 "한계와 운용 규칙").
+    - 출력 파일에는 code_version을 넣지 않는다(P2 출력 키 다섯 개 그대로. AS1 두 번째 기록 ⑤). 돌려주는 값에 그 커밋을 담아
+      부르는 쪽이 결정 기록에 적게 한다. code_version은 작업 트리의 고치지 않은 변경을 표시하지 않는다.
+    - 오류는 예외로 알린다: DatasetEntryError(묶음·출력 폴더·출처 종류·출력 모양), policy_load.PolicyError, query.SnapshotError,
+      SplitError, WiringError. 문장에 받은 값과 경로를 넣지 않는다(N13).
+
+    돌려주는 값: {"file_name": 쓴 파일 이름(out_dir 기준), "code_version": 탐지 코드의 git 커밋}.
+    """
+    from tradesentry.contract import policy_load
+    from tradesentry.dal import query
+
+    if dataset not in ENTRY_DATASETS:  # 스냅샷·정책을 열기 전에 확인한다
+        raise DatasetEntryError("묶음은 real_dev나 real_sealed여야 한다")
+    _, identity = _entry_out_dir(out_dir)
+    policy = policy_load.load_policy(policy_version)
+    with query.open_snapshot(snapshot_id) as snap:
+        if snap.source_kind != "real":  # 분할 기록이 있는 실자료만. 값을 읽기 전에 거부한다
+            raise DatasetEntryError("봉인용 탐지 입구는 실자료 스냅샷(source_kind가 real)만 탐지한다")
+        result = build_case_list(snap, policy, dataset)  # detect와 같은 조립. 분할 기록은 관측 값을 읽기 전(SplitError)
+    if not isinstance(result, dict) or set(result) != CASE_BUILD_KEYS or result["dataset"] != dataset:
+        raise WiringError("단위 P2(case_build)의 출력이 요청한 묶음의 snapshot_id·dataset·policy_version·cases·data_quality "
+                          "객체가 아니다")
+    payload = json_output_bytes(DETECT_DOMAIN, result)
+    version = code_version()
+    name = f"{DETECT_DOMAIN}-{now_kst().strftime(STAMP_FORMAT)}.json"
+    _write_entry_file(out_dir, identity, name, payload)
+    return {"file_name": name, "code_version": version}
 
 
 # ------------------------------------------------------------------------------ run-case(조립체 3, 조립 작업 AS2)
