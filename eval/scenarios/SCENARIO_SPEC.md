@@ -8,11 +8,11 @@
 | 적지 않는 것 | 사례별 기대 상태와 생성 계열(사례마다 어떤 기본 계열·사건으로 만들었는지). 구 개발계획(`Pasted markdown.md`) §5.2가 숨길 대상으로 정한 것이다 `[사실: 병렬 개발 규칙 docs/rules/PARALLEL_DEV_RULES.md §6.8]` |
 | 값의 정본 | 상태값·필드·ID·경로는 자료 계약 `docs/rules/DATA_CONTRACT_V1.md`, 분류와 배분은 룰북 `docs/eval/RULEBOOK.md` B1(구 개발계획 §8.1 유지). 이 문서는 그 값을 글자 그대로 옮겨 쓴다 |
 | 검사 명령 | `uv run --locked python -m eval.datagen.holdout40_check --cases <사례 목록> --answers <정답표>`(단위 V4, §8) |
-| 사용자 결정 반영(2026-09-25(금) 08:41) | 이 문서가 "사용자 확인 대기"·"잠정"으로 적은 항목 가운데 U1·U2·U4는 이 문서가 전제한 권장안대로 승인됐고(`policy_v1` 승인, 결정 기록 `docs/tracking/decisions/20260925-0846-user-decision-policy-v1-approval.md`), 새 필수 근거 이름(§5.3)은 평가 구성(공용 약속)으로 승인됐으며, `hold_inconsistent`(§5.2)는 이 문서의 규칙대로 확정됐다(결정 기록 `20260925-0847-user-decision-morning-shared-promises.md` 결정 9·14). 본문 문구 정리와 판정 정책·채점기 맞춤은 뒤따르는 D17 PR이 한다 |
+| 사용자 결정 반영 | 2026-09-25(금) 08:41 사용자 결정을 본문에 반영했다(D17 PR): U1·U2·U4 승인(`docs/tracking/decisions/20260925-0846-user-decision-policy-v1-approval.md`)은 §2.1과 분류 1·2·6, 새 필수 근거 이름 승인(결정 9)과 보류 사유별 필수 근거(결정 14, `docs/tracking/decisions/20260925-0847-user-decision-morning-shared-promises.md`)는 §5.1~§5.3과 분류 5·7 |
 
 TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율이 전년 같은 달보다 크게 바뀐 경우를 경보로 잡고, 조사자와 검수자(Critic)가 제한된 조회 도구로 반증을 시도해 담당자의 다음 업무를 검토 유지(`MAINTAIN`)·모니터링(`MONITOR`)·자료 보류(`HOLD`) 가운데 하나로 제안하는 에이전트 시스템이다. 부정·위법 판정이 아니다. 이 문서의 합성 자료는 정답을 알고 규칙대로 만든 가짜 자료이고 실제 거래가 아니다.
 
-**근거 태그.** `[사실]` 저장소 파일에서 직접 확인, `[추론]` 근거 있는 판단, `[DESIGN]` 팀 설계 규칙(대회 공식 규칙이 아니다), `[미확인]` 검증하지 않음. 따로 적지 않은 규칙은 `[DESIGN]`이다. **잠정**은 사용자나 오케스트레이터(작업을 나누고 병합하는 주관 에이전트)의 확인을 기다리는 규칙이다.
+**근거 태그.** `[사실]` 저장소 파일에서 직접 확인, `[추론]` 근거 있는 판단, `[DESIGN]` 팀 설계 규칙(대회 공식 규칙이 아니다), `[미확인]` 검증하지 않음. 따로 적지 않은 규칙은 `[DESIGN]`이다. 오케스트레이터는 작업을 나누고 병합하는 주관 에이전트다.
 
 ## 1. 한눈에 보기
 
@@ -31,11 +31,11 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 | 묶음 | 건수 | 위치 | 정책 버전 | 숫자 등급 |
 |---|---|---|---|---|
 | `dev20` | 20 | `eval/dev/dev20/`(입력 `input/`, 정답 `answers/`) | `dev-0.1`(개발용 정책 `configs/policy_dev.json`: 단가 변화율 절댓값 30% 이상, 점유율 변화 절댓값 10pp 이상) | D(개선 과정에 노출됨) |
-| `holdout40` | 40 | 봉인 폴더(환경변수 `TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`, 저장소 밖) | `policy_v1`(사용자 승인 뒤. 생성 규칙에 `policy_version`을 적는다) | C(보조 지표) |
+| `holdout40` | 40 | 봉인 폴더(환경변수 `TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`, 저장소 밖) | `policy_v1`(2026-09-25(금) 사용자 승인. 생성 규칙에 `policy_version`을 적는다) | C(보조 지표) |
 
 - 두 묶음 모두 `source_kind`=`controlled`(합성)이다 `[사실: 자료 계약 §4.1]`.
 - 발동 여부와 기대 상태는 그 묶음의 정책 버전 기준값으로 정한다. 기준값이 바뀌면(예: `policy_v1` 승인, `min_amount`·`min_weight` 도입) 발동 여부와 기대 상태가 달라질 수 있으므로 dev20은 다시 검증하고, holdout40은 다시 만든다 `[사실: 병렬 개발 규칙 §4.2 3, §6.7]`.
-- `policy_v1` 제안값(사용자 승인 전)과도 같은 결과가 나오게 만든다. 제안은 단가 신호에 최소 기준 `min_amount` 100 USD·`min_weight` 10 kg을 두 달 모두의 부모 HS6 행에 걸고, 미달이면 사례가 아니라 데이터 품질 목록으로 보낸다(U2). 그래서 단가 신호를 발동시키는 사례는 두 달 모두 부모 행 금액 100 USD 이상·중량 10 kg 이상으로 만든다. 반올림 불안정 규칙 후보(U4, §4 분류 6)도 모든 단가 발동 사례에 적용해, `rounding_unstable` 사례만 불안정이고 나머지는 안정이게 만든다. 생성 도구의 자체 검산이 둘을 본다.
+- `policy_v1`(2026-09-25(금) 승인, 결정 기록 `docs/tracking/decisions/20260925-0846-user-decision-policy-v1-approval.md`)과도 같은 결과가 나오게 만든다. `policy_v1`은 단가 신호에 최소 기준 `min_amount` 100 USD·`min_weight` 10 kg을 두 달 모두의 부모 HS6 행에 걸고, 미달이면 사례가 아니라 데이터 품질 목록으로 보낸다(U2). 그래서 단가 신호를 발동시키는 사례는 두 달 모두 부모 행 금액 100 USD 이상·중량 10 kg 이상으로 만든다. 반올림 불안정 규칙(U4, 승인, §4 분류 6)도 모든 단가 발동 사례에 적용해, `rounding_unstable` 사례만 불안정이고 나머지는 안정이게 만든다. 생성 도구의 자체 검산이 둘을 본다.
 
 ### 2.2 합성 세계
 
@@ -92,13 +92,13 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 ### 분류 1 — 하위 단가 고정, 구성비만 변화
 
 - 자료 구성: 단가 신호만 발동. 기준월과 비교월의 대상국 HS10 하위품목 집합이 같고, 모든 하위품목의 단가(금액÷중량)가 **정확히 같다**(하위 단가 변화 0). 중량 비중만 바뀌어 부모 단가가 기준 이상 변한다. 부모 금액 = 하위 금액 합(정확히), 부모 중량 = 하위 중량 합(허용오차 0.5 kg×(행수+1) 안). 그래서 `within_effect`(하위 단가 변화 효과) = 0, `residual`(분해 잔차) = 0이다.
-- 이유: "개별 하위변동·잔차가 기준 안"의 기준이 아직 정해지지 않았다(판정 정책 결정 기록 ④, 사용자 확인 U1 대기). 하위 변화 0이면 두 해석 모두 같은 답(`MONITOR`)을 낸다.
+- 이유: 승인된 U1은 "개별 하위변동·잔차가 기준 안"의 기준을 단가 탐지 임계값 θ로 정했다(판정 정책 결정 기록 ④, `policy_v1` 승인 기록). 하위 변화 0·잔차 0이면 이 기준을 넉넉히 만족한다. 승인 전에 검토한 두 해석도 같은 답(`MONITOR`)을 내게 만들었다.
 - 기대 처리: 단가 `composition_explained` → `MONITOR`.
 
 ### 분류 2 — 구성효과를 뺀 뒤 남는 변화
 
 - 자료 구성: 단가 신호만 발동. 하위 자료가 완전하고(같은 HS10 집합, 부모 대조 일치, 모든 중량 > 0) 구성효과를 뺀 변화 |`within_effect` + `residual`|이 기준월 단가 U0의 θ 이상(θ는 단가 탐지 기준, `dev-0.1`에서 30%)이다. 비교국의 비교월·기준월 부모 값이 모두 관측돼 비교국 비교를 마칠 수 있다.
-- 이유: U1 확인 전에도 두 해석이 같은 답(`MAINTAIN`)을 내게 한다(판정 정책 결정 기록 "영향과 넘길 곳").
+- 이유: 승인된 U1(기준 θ)에서 `MAINTAIN`이다. 승인 전에 검토한 두 해석도 같은 답을 내게 만들었다(판정 정책 결정 기록 "영향과 넘길 곳").
 - 기대 처리: 단가 `unexplained` → `MAINTAIN`.
 
 ### 분류 3 — 비교국 동반 변화, 구성 설명 미성립
@@ -110,7 +110,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 ### 분류 4 — 월 누락·API 실패·미수집
 
 - 자료 구성: 대상국의 부모 HS6 행은 비교월·기준월 모두 있어 신호는 발동한다. 판정에 필요한 대상국 HS10 하위 자료를 맡은 요청(HS6 조회)이 실패(`REQUEST_FAILED`: 수신 기록 `FAILED`)했거나 수집되지 않았다(`NOT_COLLECTED`: 수신 기록 없음). 비교월 연도나 기준월 연도 구간 어느 쪽이든 된다.
-- 잠정 제외: 요청은 성공했는데 그 달 행만 없는 변형(`UNRESOLVED_ZERO`만 있는 경우)과 비교국 자료만 빠진 변형은 만들지 않는다. 독립 채점기(로드맵 DT8)의 필수 근거 판정이 지금 대상국·`ALL`의 `REQUEST_FAILED`·`NOT_COLLECTED` 주장만 세기 때문이다 `[사실: 독립 채점기 PR #30(병합 전)의 eval/scorer/results.py 필수 근거 판정]`. 채점기 판정 조건이 정해지면(판정 정책 결정 기록 D17) 다시 연다.
+- 만들지 않는 변형: 요청은 성공했는데 그 달 행만 없는 변형(`UNRESOLVED_ZERO`만 있는 경우)과 비교국 자료만 빠진 변형. 두 변형의 필수 근거도 §5.3 판정 조건표로 판정할 수는 있다(인용할 행이 없는 키는 값으로 구분하고, 비교국 누락은 `missingness_listed`의 대체 조건으로 채운다) `[사실: eval/scorer/results.py _tag_ok, tests/test_scorer_results.py]`. 다만 비교국만 빠진 변형에서는 `failure_vs_not_collected_distinguished`가 대상국·`ALL`의 빠진 키만 보므로 빈 조건으로 채워져 요청 실패와 미수집의 구분을 재지 못하고, 두 변형 모두 dev20에 확인 사례가 없다. 그래서 이 판에서는 만들지 않고, holdout40에서 열지는 holdout40 생성(로드맵 DT6) 전에 오케스트레이터가 정한다.
 - 기대 처리: 발동한 모든 신호가 `hold_missing` → `HOLD`.
 
 ### 분류 5 — 단위·HS 버전·하위 합계 불일치
@@ -119,22 +119,22 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
   - 부모 HS6 행과 HS10 하위 합이 맞지 않다: 금액이 정확히 같지 않거나, 중량 차이가 허용오차 0.5 kg×(행수+1)을 넘는다.
   - 기준월과 비교월의 HS10 코드 집합이 다르다. 분해식은 같은 HS10 집합에서만 쓰므로 분해가 성립하지 않는다 `[사실: 자료 계약 §11.2]`. 신설·소멸 코드의 단가를 0으로 채워 분해하지 않는다 `[사실: 개발 플랜 §6.1]`. HSK 10단위 개정 흔적으로 만들려면 실제 개정처럼 구 코드 소멸·신 코드 신설이 그해 1월부터 이어지게 한다(한 달짜리 교체는 개정이 아니라 "그 달 그 세번 거래 없음 + 다른 세번 거래"로 읽힌다).
 - 만들 수 없는 변형: 단위나 HS 버전 표기가 다른 변형. 수집기 형식은 스냅샷 전체의 단위(`USD`·`kg`)와 관측 행의 `hs_version`(`HSK`)을 하나로 고정한다 `[사실: 단위 S2 build.py, 수집기 store_result]`.
-- 기대 처리: 단가 `hold_inconsistent` → `HOLD`(잠정 근거 규칙, §5.2).
+- 기대 처리: 단가 `hold_inconsistent` → `HOLD`(불일치 보류, §5.2).
 
 ### 분류 6 — 작은 기준월 값·반올림 불확실·중량 0
 
 - 자료 구성(단가 신호만 발동): 다음 가운데 하나.
-  - 반올림 불안정: 두 달 부모 HS6 행이 최소 기준(100 USD·10 kg, §2.1) 이상이면서 중량이 작아 반올림에 민감하다. 규칙 후보(U4, 사용자 승인 전): 발동한 단가 신호에만, 금액은 그대로 두고 두 달 부모 중량을 Q ± 0.5 kg로 움직일 때의 단가 변화율 r_U 구간이 r_U ≥ 0이면 하한 < θ, r_U < 0이면 상한 > −θ일 때 불안정이다(구간 끝이 기준과 같으면 안정). 구간 끝도 기준에서 0.05 이상 떨어지게 한다. 사건 달의 앞뒤 비교(e, e+12)가 사례 밖 경보를 만들지 않게 기준월을 기간 첫해에 둘 수 있다.
+  - 반올림 불안정: 두 달 부모 HS6 행이 최소 기준(100 USD·10 kg, §2.1) 이상이면서 중량이 작아 반올림에 민감하다. 규칙(U4, 2026-09-25(금) 승인): 발동한 단가 신호에만, 금액은 그대로 두고 두 달 부모 중량을 Q ± 0.5 kg로 움직일 때의 단가 변화율 r_U 구간이 r_U ≥ 0이면 하한 < θ, r_U < 0이면 상한 > −θ일 때 불안정이다(구간 끝이 기준과 같으면 안정). 구간 끝도 기준에서 0.05 이상 떨어지게 한다. 사건 달의 앞뒤 비교(e, e+12)가 사례 밖 경보를 만들지 않게 기준월을 기간 첫해에 둘 수 있다.
   - 중량 0: 하위품목 하나가 금액 > 0, 중량 0이라 그 품목 단가를 계산할 수 없어 분해가 성립하지 않는다(부모 대조는 맞다).
 - 기대 처리: 반올림 불안정은 단가 `rounding_unstable` → `HOLD`, 중량 0은 단가 `hold_inconsistent` → `HOLD`.
-- 한계: 반올림 불안정의 판정 규칙(U4)과 최소 기준(U2)은 사용자 확인 대기다. 위 제안과 다르게 승인되면(예: 최소 기준이 이 사례의 값보다 커지거나, 구간 규칙이 달라지면) 이 분류의 사례를 다시 검증하고 필요하면 다시 만든다(판정 정책 결정 기록 ③·⑤).
+- 승인 뒤: 반올림 불안정 규칙(U4)과 최소 기준(U2)은 이 분류가 전제한 제안대로 승인됐다(`policy_v1` 승인 기록 결정 1). dev20의 `policy_v1` 재검증은 DT5 결정 기록 ⑪대로 한다. 뒤에 기준값이 바뀌면(새 정책 버전) 이 분류의 사례를 다시 검증하고 필요하면 다시 만든다.
 
 ### 분류 7 — 분모 완전성 부족·국가 집합 변경
 
 - 자료 구성(점유율 신호만 발동): 비교월이나 기준월의 전체국가(`ALL`) 분모가 **대상국 금액보다 작다**(점유율 100% 초과). 공식 분모가 전체 국가를 담지 못해(국가 범위가 줄어) 전체 점유율을 확인할 수 없다. 대상국 단가는 기준 아래로 둔다. 분모를 줄이면 그 HS6의 다른 나라 점유율도 바뀌므로, 대상국이 그 HS6의 대부분을 차지하게 만들어 다른 나라 점유율 변화가 기준 아래에 머물게 한다.
 - 주의: 실제 관세청 API에서 전체국가(`itemtrade`) 값은 같은 통관 자료의 합이라 한 나라 값보다 작게 나오지 않는다. 이 변형은 분모가 전체 국가를 담지 못한(부분집합이 된) 경우를 흉내 낸 **주입된 불일치**다. 보고서나 발표에서 관세청 자료의 실제 현상으로 쓰지 않는다.
 - 근거: 점유율 분모는 공식 전체국가 합계다. 선택국 합계를 전체 분모로 쓰지 않는다 `[사실: 자료 계약 §11.1]`. 공식 분모가 없으면 전체 점유율 경보의 결론은 보류한다 `[사실: 구 개발계획 §4 4]`. 필요한 분모가 없어 검증할 수 없으면 `HOLD` `[사실: 개발 플랜 §6.3 1행]`.
-- 기대 처리: 점유율 `hold_inconsistent` → `HOLD`(잠정, §5.2). 분모 관측이 빠진 변형(`hold_missing`)도 규칙상 허용하지만, 분모가 없으면 점유율이 계산되지 않아 신호가 발동하지 않는다는 점에 주의한다.
+- 기대 처리: 점유율 `hold_inconsistent` → `HOLD`(분모 불완전 보류, §5.2). 분모 관측이 빠진 변형(`hold_missing`)도 규칙상 허용하지만, 분모가 없으면 점유율이 계산되지 않아 신호가 발동하지 않는다는 점에 주의한다.
 
 ### 분류 8 — 정상 점유율 계산에서 남는 급변
 
@@ -163,25 +163,27 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 | 단가 | `composition_explained` | `MONITOR` | `parent_child_match_V_and_Q`, `weight_share_decomposition`, `per_child_unit_value_stable`, `comparability_ok` | `composition_explained` |
 | 단가 | `unexplained` | `MAINTAIN` | `parent_child_match_V_and_Q`, `weight_share_decomposition`, `partner_comparison_done`, `comparability_ok` | `unexplained` |
 | 단가 | `hold_missing` | `HOLD` | `missingness_listed`, `failure_vs_not_collected_distinguished`, `no_zero_fill` | `data_insufficient`(빠진 관측)·`comparison_incomplete` |
-| 단가 | `hold_inconsistent`(잠정) | `HOLD` | `parent_child_match_V_and_Q`, `comparability_ok`, `no_zero_fill` | `data_insufficient`(부모·하위 불일치, 분해 불가) |
+| 단가 | `hold_inconsistent` | `HOLD` | `parent_child_match_V_and_Q`, `comparability_ok`, `no_zero_fill` | `data_insufficient`의 불일치 사유(부모·하위 불일치, 분해 불가. 이름은 판정 정책 짝 PR이 정한다) |
 | 단가 | `rounding_unstable` | `HOLD` | `precision_sensitivity_shown` | `rounding_unstable` |
 | 점유율 | `unexplained` | `MAINTAIN` | `country_and_world_change_shown`, `partner_comparison_done`, `comparability_ok` | `unexplained` |
 | 점유율 | `hold_missing` | `HOLD` | `missingness_listed`, `failure_vs_not_collected_distinguished`, `no_zero_fill` | `data_insufficient`·`comparison_incomplete` |
-| 점유율 | `hold_inconsistent`(잠정) | `HOLD` | `country_and_world_change_shown`, `comparability_ok`, `no_zero_fill` | 없음(분모 불완전 규칙이 아직 없다) |
+| 점유율 | `hold_inconsistent` | `HOLD` | `country_and_world_change_shown`, `comparability_ok`, `no_zero_fill` | 분모 불완전 보류(이름은 판정 정책 짝 PR이 정한다) |
 
-- 필수 근거의 모양: 발동한 신호가 하나면 그 규칙의 근거 목록이다. 두 신호가 모두 발동하면 신호별 목록 객체 `{"unit_value": [...], "share": [...]}`다(두 신호에 함께 쓰이는 코드, 예: `comparability_ok`가 어느 신호의 근거인지 드러나게. 독립 채점기의 정답표 형식과 같다 `[사실: 브랜치 data/DT8-scorer 46f85ac의 eval/scorer/results.py _required_evidence]`).
+- 필수 근거의 모양: 발동한 신호가 하나면 그 규칙의 근거 목록이다. 두 신호가 모두 발동하면 신호별 목록 객체 `{"unit_value": [...], "share": [...]}`다(두 신호에 함께 쓰이는 코드, 예: `comparability_ok`가 어느 신호의 근거인지 드러나게. 독립 채점기의 정답표 형식과 같다 `[사실: eval/scorer/results.py _required_evidence]`).
+- "단위 P5 판정 근거" 열은 참고다. 채점기는 정답표의 필수 근거 목록만 읽고 판정 근거 이름을 읽지 않는다 `[사실: eval/scorer/results.py read_answer_table]`. 불일치 보류의 판정 근거 이름은 판정 정책 P3·P5를 고치는 짝 PR(모델 트랙 `model/MT1-d17-hold-split`)이 정하고, 병합 뒤 이 열을 그 이름으로 맞춘다.
 - 사례 상태 `review_status`는 신호별 상태의 집계다: 우선순위 `MAINTAIN > HOLD > MONITOR`, 발동한 신호가 모두 `MONITOR`일 때만 `MONITOR`, `MAINTAIN`과 `HOLD`가 섞이면 `MAINTAIN`에 `unresolved_evidence`=true, 그 밖에는 false `[사실: 자료 계약 §3.1]`.
 - `resolved_after_correction`(교정 전후 스냅샷, `MONITOR`)은 스냅샷 하나로 도는 합성 묶음에서 쓰지 않는다.
 
-### 5.2 잠정 규칙 `hold_inconsistent`
+### 5.2 불일치 보류 `hold_inconsistent`
 
-- 뜻: 필요한 관측은 모두 `OBSERVED`인데 부모·하위 대조, 구성 분해, 전체국가 분모가 성립하지 않아 검증할 수 없는 자료 보류. 분류 5, 분류 6의 중량 0 변형, 분류 7이 쓴다.
-- P5 규칙표는 이런 보류에도 빠진 관측용 근거(`missingness_listed`, `failure_vs_not_collected_distinguished`)를 요구하지만, 빠진 관측이 없으면 그 근거를 남길 수 없다. 판정 정책 결정 기록 "영향과 넘길 곳"의 D17은 보류를 사유별로 나누면 불일치 보류에 `parent_child_match_V_and_Q`와 `comparability_ok`가 맞는다고 적었다. 이 명세는 그 제안에 `no_zero_fill`(계산할 수 없는 값을 0이나 수로 채우지 않음: 신설·소멸 코드와 중량 0 하위품목의 단가, 성립하지 않는 분해 값)을 더했다. 점유율 분모 불완전에는 해당국 금액과 분모의 변화를 보여 주는 `country_and_world_change_shown`을 대조 근거로 쓴다.
-- 확정은 D17(필수 근거 판정 조건표, 기한 `RB-1` 동결 전) 결정으로 한다. 바뀌면 dev20 정답표와 이 절을 함께 고친다.
+- 뜻: 필요한 관측은 모두 `OBSERVED`인데 부모·하위 대조, 구성 분해(같은 HS10 집합이 아니거나 하위 중량 0), 전체국가 분모가 성립하지 않아 검증할 수 없는 자료 보류. 분류 5, 분류 6의 중량 0 변형, 분류 7이 쓴다.
+- 확정: 사용자 결정 14(`docs/tracking/decisions/20260925-0847-user-decision-morning-shared-promises.md`)가 자료 보류(`HOLD`)를 사유별로 나눴다. 빠진 관측이 있는 보류는 `hold_missing`의 근거(`missingness_listed`, `failure_vs_not_collected_distinguished`, `no_zero_fill`) 그대로이고, 불일치 보류는 단가 `parent_child_match_V_and_Q`·`comparability_ok`·`no_zero_fill`, 점유율 `country_and_world_change_shown`·`comparability_ok`·`no_zero_fill`이다. holdout40도 이 규칙으로 만든다.
+- 나눈 이유: 나누기 전 판정 정책 P5 규칙표는 이런 보류에도 빠진 관측용 근거를 요구했는데, 빠진 관측이 없으면 그 근거는 비교국 누락이나 계산 불가 값의 null 표기 같은 대체 조건으로만 채워져 보류 사유를 보이지 못한다. 불일치 보류에는 대조한 양쪽 행(`parent_child_match_V_and_Q`), 계열 지표의 비교 점검(`comparability_ok`), 계산할 수 없는 값을 0이나 수로 채우지 않음(`no_zero_fill`: 신설·소멸 코드와 중량 0 하위품목의 단가, 성립하지 않는 분해 값)이 맞다. 점유율 분모 불완전에는 해당국 금액과 `ALL` 분모의 두 시점 값(`country_and_world_change_shown`)을 대조 근거로 쓴다.
+- 판정 조건과 채울 수 있는지의 확인은 §5.3이다.
 
-### 5.3 필수 근거의 뜻
+### 5.3 필수 근거의 뜻과 판정 조건표
 
-뜻은 단위 P5의 설명을 옮겼다. 채점기가 보고서에서 각 근거를 어떻게 확인하는지는 D17의 판정 조건표가 정한다. 독립 채점기(DT8, 브랜치 `data/DT8-scorer` 26d2fd2)는 dev20이 쓰는 필수 근거 이름에 모두 판정 조건을 두고 있다 `[사실: eval/scorer/results.py TAG_RULES]`. 교정 전후 스냅샷이 필요한 셋(`correction_snapshots_before_after`·`recalculated_values`·`change_reason`)은 합성 묶음에서 쓰지 않는다. 두 이름(`country_and_world_change_shown`·`precision_sensitivity_shown`)이 공용 약속(평가 구성)인지는 사용자 확인 대기다.
+필수 근거 이름 13개는 판정 정책 단위 P5의 어휘이고, 새 이름 다섯(`precision_sensitivity_shown`, `correction_snapshots_before_after`, `recalculated_values`, `change_reason`, `country_and_world_change_shown`)은 평가 구성(공용 약속)으로 승인됐다(사용자 결정 9, `docs/tracking/decisions/20260925-0847-user-decision-morning-shared-promises.md`). 뜻은 단위 P5의 설명을 옮겼다.
 
 | 이름 | 뜻 |
 |---|---|
@@ -198,6 +200,40 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 | `recalculated_values` | 교정 뒤 동결 정책으로 재계산한 값 |
 | `change_reason` | 변경 사유 |
 | `country_and_world_change_shown` | 해당국 금액 변화와 전체국가(`ALL`) 분모 변화 |
+
+**판정 조건표(판정 정책 결정 기록 D17의 공개 정본).** 보고서가 필수 근거 하나를 "남겼다"고 보는 조건이다. 독립 채점기(`eval/scorer/results.py`의 `TAG_RULES`·`_tag_ok`)와 판정 정책의 검증기(단위 R3)가 이 표를 각자 구현한다. 채점기 구현이 이 표와 다르면 채점기의 결함이다. 룰북 `RB-1` 동결 뒤에는 이 표도 채점 규칙이라 새 룰북 버전과 사유로만 바꾼다 `[사실: 룰북 B5]`.
+
+표에서 쓰는 말:
+
+- 사례 문맥: 사례 HS6 h, 대상국 P, 비교월 t, 기준월 b(= t−12, 전년 같은 달), 실행 기록의 `grouping_version`.
+- typed claim: 보고서의 정해진 필드(자료 계약 §6의 `claim_type`·`hs6`·`partner`·`period`·`baseline_period`·`metric`·`value`·`unit`·`direction`·`evidence_ids` 등)를 가진 사실 주장. 표의 claim은 모두 사례 품목 h의 것이다.
+- 유효한 claim: 대상(`claim_type`·`metric`·`partner`·`period`·`baseline_period`)이 풀리고, 근거 ID가 채점기가 그 값을 계산하는 데 쓰는 원본 행 묶음을 모두 인용한 claim. 값이 맞는지는 보지 않는다(값은 채점 키 `numeric_ok`가 본다). 변화 claim은 `period` t·`baseline_period` b이고, "두 시점 수준 claim"은 `period`가 t인 것과 b인 것 둘이다.
+- 보고서 근거: 보고서의 `evidence_ids`와 claim마다의 `evidence_ids`를 합친 근거 ID(`ev:<snapshot_id>:<table>:<rowid>`, 자료 계약 §4.4)가 가리키는 관측 행. 총계 행(`month`가 `RAW:`로 시작)은 뺀다.
+- 빠진 키: 신호 계열의 대상 범위에서 관측 상태가 `OBSERVED`·`CONFIRMED_NO_TRADE`가 아닌 키. 단가는 P의 부모 HS6 키와, 부모 행이 있는데 그 HS6 조회가 상태 행을 남긴 HS10 하위 자료(C형)이고, 점유율은 P의 부모 HS6 키와 `ALL` 분모다. 두 시점을 모두 본다.
+- 비교집합: 실행 기록의 `grouping_version`으로 고른 스냅샷 비교국 표의 P 비교국(가장 좁은 범위 hs6 → hs4 → hs2).
+- 기대값이 null인 claim: 채점기가 원본 행에서 계산하지 않는 대상(값 행이 없는 달, 중량 0의 단가, 자료 계약 §11.2 조건이 성립하지 않는 분해 등).
+
+| 코드 | 충족 조건(보고서에 이것이 있으면 남긴 것으로 본다) |
+|---|---|
+| `parent_child_match_V_and_Q` | 두 시점 모두 P의 HS10 하위 행이 있고, 보고서 근거가 두 시점마다 P의 부모 HS6 행과 그 시점 HS10 하위 코드마다의 행을 모두 인용한다(한 시점에만 있는 코드도 그 시점에서 인용한다). 대조 결과(일치·불일치)를 담는 typed claim 종류가 없으므로, 대조를 보였다는 것은 대조한 양쪽 행을 모두 근거로 남긴 것으로 판정한다. 대조 결과가 일치인지 불일치인지는 조건이 아니다 |
+| `weight_share_decomposition` | `decomposition` claim `within_effect`·`mix_effect`·`residual` 셋(P, t, b)이 모두 유효하다 |
+| `per_child_unit_value_stable` | 두 시점에 나오는 P의 HS10 하위 코드마다 `change` claim `r_U@코드`나 두 시점 `value` claim `U@코드`가 유효하다 |
+| `comparability_ok` | 단가 계열은 P의 `change` claim `r_U`나 두 시점 `value` claim `U`, 점유율 계열은 P의 `share_change` claim `d_s`나 두 시점 `share` claim `s`가 유효하다. 다른 계열의 지표는 세지 않는다 |
+| `partner_comparison_done` | 비교집합 안 비교국 하나 이상의 `comparison` claim이 유효하다: 단가 계열은 `r_U`나 두 시점 `U`, 점유율 계열은 `d_s`나 두 시점 `s` |
+| `missingness_listed` | 빠진 키마다 그 키를 `OBSERVED`가 아닌 값으로 적은 `data_status` claim이 대상이 풀리고 근거가 맞다(HS6 키는 `metric` `observation_status`, C형은 `observation_status@<그 HS6 아래 HS10 코드>` 하나. 인용할 행이 없는 키는 대상만 풀리면 된다). 빠진 키가 없으면 둘 중 하나: 비교집합 비교국의 h·두 시점 키를 `OBSERVED`가 아닌 값으로 적은 유효한 `data_status` claim, 또는 P(점유율은 P나 `ALL`)의 두 시점 계열 지표(단가 V·Q·U·r_U·w·분해 셋, 점유율 V·s·d_s) 가운데 계산할 수 없는 것을 null로 적어 `CORRECT`를 받은 claim |
+| `failure_vs_not_collected_distinguished` | 빠진 키마다 그 상태를 맞게 적은 `data_status` claim이 있고(`CORRECT`. 인용할 행이 없는 키는 대상이 풀리고 값이 기대 상태와 같으면 된다), h·두 시점의 `data_status` claim에 `WRONG_VALUE`가 없다. 빠진 키가 없으면 `WRONG_VALUE`가 없기만 하면 채운다(빈 조건). 이 코드는 늘 `missingness_listed`와 함께 요구되므로 둘을 함께 보면 빈 조건이 아니다 |
+| `no_zero_fill` | 대상이 풀렸고 기대값이 null인 수 claim(`data_status` 제외)에 수(0 포함)를 적은 claim이 하나도 없다. 첫 판정이 단위·방향 오류여도 센다. "채우지 않았음"을 보는 부정 조건이라 해당 claim이 없는 보고서도 채운다 |
+| `precision_sensitivity_shown` | P의 두 시점 부모 `V`·`Q` `value` claim 네 개가 유효하다. 반올림 민감도를 적는 typed claim 지표가 없어 그 계산의 입력값으로 대신한다 |
+| `country_and_world_change_shown` | P의 `V`와 `ALL`의 `V`(그 HS6 아래 `ALL` HS10 행 합)의 두 시점 `value` claim 네 개가 유효하다 |
+| `correction_snapshots_before_after`, `recalculated_values`, `change_reason` | v1에서는 판정하지 않는다. 교정 전후 스냅샷이 있어야 하는데 v1은 동결 스냅샷 하나로 돌아 해당 사례가 없다. 정답표에 적으면 채점기 입력 오류다 |
+
+- 계열별로 쓸 수 있는 코드: 단가는 `parent_child_match_V_and_Q`, `weight_share_decomposition`, `per_child_unit_value_stable`, `comparability_ok`, `partner_comparison_done`, `missingness_listed`, `failure_vs_not_collected_distinguished`, `no_zero_fill`, `precision_sensitivity_shown`이고, 점유율은 `country_and_world_change_shown`, `partner_comparison_done`, `comparability_ok`, `missingness_listed`, `failure_vs_not_collected_distinguished`, `no_zero_fill`이다. 계열 밖 코드를 적은 정답표는 채점기 입력 오류다 `[사실: eval/scorer/results.py FAMILY_TAGS]`.
+- 사례의 `required_evidence_ok`는 발동한 신호마다 정답표가 정한 코드를 모두 채웠을 때 참이다. 실자료 묶음(`real_dev`·`real_sealed`)은 정답표가 없어 null이다(사용자 결정 7).
+
+**불일치 보류에서 채울 수 있는지(확인).** 관측은 모두 있는데 대조·분해·분모가 성립하지 않는 보고서도 각 코드를 채울 수 있다. dev20의 불일치 보류 5건 모양으로 채우는 보고서와 코드 하나씩 깨뜨린 보고서를 시험한다 `[사실: tests/test_scorer_dev20_hold.py]`.
+
+- 단가(분류 5, 분류 6의 중량 0): 두 시점 모두 P의 HS10 하위 행이 있으므로, `parent_child_match_V_and_Q`는 금액이 맞지 않거나 HS10 집합이 달라도 부모·하위 행을 모두 인용하면 채운다. 부모 행 중량이 0보다 크므로 부모 단가 변화 `r_U`가 계산돼 `comparability_ok`를 채운다. `no_zero_fill`은 성립하지 않는 분해 셋, 중량 0 하위품목의 `U@`·`r_U@`, 한 시점에만 있는 코드의 없는 달 값을 null로 두면 채운다.
+- 점유율(분류 7): 분모가 대상국 금액보다 작아도 `ALL` 금액과 점유율(100% 초과)은 계산되므로, `country_and_world_change_shown`은 네 `value` claim으로, `comparability_ok`는 `d_s` claim으로 채운다. 이 값들은 기대값이 null이 아니어서 수로 적어도 `no_zero_fill`을 어기지 않는다. 런타임 지표 계산도 분모가 0이 아니면 점유율을 계산한다 `[사실: src/tradesentry/metrics/share.py share_value]`.
 
 ## 6. 부모 원본 계열 ID
 
@@ -263,7 +299,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
             "note": "<선택: 검토용 한 줄>"}]}
 ```
 
-- `expected`의 키와 값은 독립 채점기가 읽는 형식(`eval/dev/oracle_ABC.json`의 사례 구조, 상태는 계약 코드)과 같다. `rule`·`scenario_class`·`parent_series_id`·`note`는 검사와 검토용이고 채점기는 쓰지 않는다 `[사실: 독립 채점기 PR #30(병합 전)의 eval/scorer/results.py read_answer_table]`.
+- `expected`의 키와 값은 독립 채점기가 읽는 형식(`eval/dev/oracle_ABC.json`의 사례 구조, 상태는 계약 코드)과 같다. `rule`·`scenario_class`·`parent_series_id`·`note`는 검사와 검토용이고 채점기는 쓰지 않는다 `[사실: eval/scorer/results.py read_answer_table]`.
 - `thresholds`는 선택이며 그 묶음 정책 버전의 탐지 기준을 옮겨 적는다.
 - `required_evidence`는 발동한 신호가 하나면 목록, 두 신호가 모두 발동하면 `{"unit_value": [...], "share": [...]}`다(§5.1).
 
@@ -294,13 +330,11 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 ## 9. 한계와 열린 항목
 
 - 합성 자료는 같은 정책 안의 제한된 구조 변화 시험이며 현실 분포를 대표하지 않는다 `[사실: 구 개발계획 §8.1]`. dev20 숫자는 등급 D다.
-- dev20 점수는 방향 확인용이다. 20건에서는 모든 사례를 보류한 기준 점수와 Wilson 95% 구간(룰북 B4)이 겹치지 않게 이기기 어렵고, 잠정 규칙(U4·D17)과 현재 런타임이 낼 수 없는 기대 상태 때문에 도달 가능한 점수에 상한이 있다. 수치(상태 정확도·근거 충족의 상한, 모든 사례 보류 점수와 필요한 점수)는 DT5 결정 기록 "영향과 넘길 곳"에 적었다.
+- dev20 점수는 방향 확인용이다. 20건에서는 모든 사례를 보류한 기준 점수와 Wilson 95% 구간(룰북 B4)이 겹치지 않게 이기기 어렵고, 현재 런타임이 낼 수 없는 기대 상태(예: 판정 정책 짝 PR이 보류 사유를 나누기 전의 불일치 보류) 때문에 도달 가능한 점수에 상한이 있을 수 있다. 수치(상태 정확도·근거 충족의 상한, 모든 사례 보류 점수와 필요한 점수)는 DT5 결정 기록 "영향과 넘길 곳"에 적었다.
 - 열린 항목(확정되면 이 문서·dev20·검사를 함께 고친다)
-  - U1: "개별 하위변동·잔차가 기준 안"의 기준(분류 1·2는 두 해석이 같은 답을 내게 만들었다).
-  - U4: 반올림 불안정 판정 규칙과 계산 위치(분류 6).
-  - U2: `min_amount`·`min_weight`의 적용 신호(분류 6의 작은 값 사례에 닿는다).
-  - D17: 필수 근거별 판정 조건표와 보류의 사유별 근거(§5.2 `hold_inconsistent`, 분류 4의 잠정 제외 변형).
+  - 분류 4에서 만들지 않은 두 변형(`UNRESOLVED_ZERO`만 있는 경우, 비교국 자료만 빠진 경우)을 holdout40에서 열지(오케스트레이터, holdout40 생성 전).
   - 합성 묶음의 비교 대상을 `g1` 동결 뒤 어떻게 둘지(§2.2).
+- 닫힌 항목: U1·U2·U4는 `policy_v1` 승인(2026-09-25(금))으로, D17(필수 근거 판정 조건표와 보류의 사유별 근거)은 사용자 결정 14와 §5.2·§5.3으로 닫았다.
 
 ## 용어 설명
 
@@ -313,4 +347,6 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 - **부모 원본 계열 ID**: 사례의 기본 계열 값으로 만든 지문. dev20과 holdout40이 같은 기본 계열을 쓰지 않았는지 확인하는 데 쓴다.
 - **수집기 형식 원천**: 실자료 수집기가 남기는 파일 모양(수집 계획, 응답 XML, 수신 기록)으로 만든 합성 자료의 원본.
 - **θ**: 단가 탐지 기준(단가 변화율 절댓값, %). `dev-0.1`에서 30.
-- **U1·U2·U4·D17**: 판정 정책 결정 기록이 사용자·오케스트레이터 확인으로 넘긴 항목(기준 해석, 최소 금액·중량, 반올림 불안정, 필수 근거 판정 조건).
+- **U1·U2·U4·D17**: 판정 정책 결정 기록이 사용자·오케스트레이터 확인으로 넘긴 항목(기준 해석, 최소 금액·중량, 반올림 불안정, 필수 근거 판정 조건). 모두 닫혔다(§9).
+- **판정 조건표**: 필수 근거 코드마다 보고서에 어떤 typed claim·근거 ID가 있으면 그 근거를 남긴 것으로 보는지 정한 표(§5.3). 채점기와 검증기가 각자 구현한다.
+- **불일치 보류**: 관측은 모두 있는데 부모·하위 대조, 구성 분해, 전체국가 분모가 성립하지 않아 내리는 자료 보류(`hold_inconsistent`, §5.2).
