@@ -45,6 +45,25 @@ class ReplayRuleTest(unittest.TestCase):
         plain = replay.ReplayTransport([rec(1, "model_error", "basic", {"http_status": None, "error": "connection"})])
         self.assertNotIn("denial", plain.send({}, 1000))  # 거부가 아닌 오류에는 denial 키가 없다
 
+    def test_error_records_without_headers_replay_as_empty_headers_and_recorded_headers_come_back(self):
+        # model-1.7 전 기록(headers 없음)은 {}로, 있는 기록은 그대로 돌려준다(Retry-After 대기는 재생 실행이 다시 계산)
+        old = [rec(1, "model_request", "basic", {}),
+               rec(2, "model_error", "basic", {"http_status": 503, "error": None, "elapsed_ms": 30, "retrying": True,
+                                               "backoff_ms": 5000})]
+        self.assertEqual(replay.ReplayTransport(old).send({}, 1000)["headers"], {})
+        recorded = {"retry-after": "8", "x-request-id": "r-1"}
+        new = [rec(1, "model_request", "basic", {}),
+               rec(2, "model_error", "basic", {"http_status": 429, "error": None, "elapsed_ms": 30, "retrying": True,
+                                               "backoff_ms": 8000, "retry_after_ms": 8000, "headers": recorded,
+                                               "body_excerpt": "quota"})]
+        sent = replay.ReplayTransport(new).send({}, 1000)
+        self.assertEqual((sent["headers"], sent["body"]), (recorded, b""))
+        self.assertNotIn("body_excerpt", sent)
+        success = replay.ReplayTransport([rec(1, "model_response", "basic", {
+            "http_status": 200, "elapsed_ms": 5, "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+            "response": {"message": {"role": "assistant", "content": "x"}, "finish_reason": "stop"}})])
+        self.assertEqual(success.send({}, 1000)["headers"], {})
+
     def test_tools_replay_in_order_and_check_name_and_args(self):
         envelope = {"tool": "get_history", "metrics": []}
         records = [rec(1, "tool_call", "basic", {"tool": "get_history", "args": {"period": "202401"}}),

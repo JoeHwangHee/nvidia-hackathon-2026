@@ -13,7 +13,8 @@
 전송 자리(transport) 약속. 단위 I7(모델 호출)의 실제 전송과 ReplayTransport가 같은 모양이다.
 - send(payload: dict, timeout_ms: int) -> dict. payload는 chat completions 요청 본문(Decimal 허용)이다.
 - 돌려주는 키: http_status(int 또는 None), body(bytes, 응답 본문), error(None, "connection", "timeout",
-  "policy_denied"), elapsed_ms(int). 연결 실패·제한 시간 초과는 http_status가 None이고 error가 채워진다.
+  "policy_denied"), elapsed_ms(int), headers(dict. model_error 기록의 허용 목록 응답 헤더를 그대로 돌려주고, 기록에
+  없으면(model-1.7 전 기록) {}). 연결 실패·제한 시간 초과는 http_status가 None이고 error가 채워진다.
 - error가 "policy_denied"(샌드박스 정책 프록시 거부)면 http_status는 프록시가 준 상태(403·407)이고, 키 denial이
   거부 자리("connect": CONNECT 터널 거부, "l7": HTTP 요청 거부)를 알린다. 재생은 trace model_error의 denial을 그대로
   돌려준다(그래야 재생한 실행의 원인 분류 detail이 기록과 같다).
@@ -86,6 +87,8 @@ def response_items(records: list[dict]) -> list[dict]:
                     "error": data.get("error"), "elapsed_ms": int(data.get("elapsed_ms", 0))}
             if data.get("denial") is not None:
                 item["denial"] = data["denial"]
+            if isinstance(data.get("headers"), dict):  # model-1.7부터 기록되는 허용 목록 응답 헤더. 옛 기록에는 없다
+                item["headers"] = dict(data["headers"])
             items.append(item)
             pending_sha = None
     return items
@@ -131,7 +134,7 @@ class ReplayTransport:
         if self._clock is not None:
             self._clock.advance(item["elapsed_ms"])
         sent = {"http_status": item["http_status"], "body": item["body"], "error": item["error"],
-                "elapsed_ms": item["elapsed_ms"]}
+                "elapsed_ms": item["elapsed_ms"], "headers": dict(item.get("headers") or {})}
         if "denial" in item:
             sent["denial"] = item["denial"]
         return sent

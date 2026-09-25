@@ -18,6 +18,13 @@ NIM(NVIDIA 클라우드 추론 API) chat completions를 부르는 클라이언�
   20260925-1805-user-decision-retry-budget). 재전송은 trace model_request·model_error에 attempt로 남는다. 한도를 다 쓴 5xx는 PROVIDER_HTTP_5XX, 429는 PROVIDER_HTTP_4XX이고 detail은 둘 다
   "HTTP {상태}(재전송 N회 뒤)"다(마지막 응답의 상태로 가른다). 둘 다 인프라 실패 재실행 대상이다(단위 L3, 2026-09-25
   15:52 사용자 결정 기록 20260925-1552-user-decision-429-retry).
+- Retry-After 존중(model-1.7, 2026-09-25 22:22 사용자 결정 기록 20260925-2225-user-decision-code-boundaries ④): 재전송
+  고리(429·5xx 같음)에서 응답 헤더 Retry-After(초 정수 또는 HTTP-date)를 ms로 풀어 대기 = max(지수 대기,
+  min(Retry-After, retry.retry_after_cap_ms 60초))다. 헤더가 없거나 풀 수 없으면 지수 대기 그대로다. HTTP-date는 전송
+  시각(wall_s, 기본 time.time) 기준 남은 초이고 음수면 0으로 본다(해석). 재전송 횟수·한도 세기·deadline 규칙은 그대로다
+  (대기가 deadline을 넘으면 DEADLINE). trace model_error(429·5xx, 재전송 여부와 무관)에 retry_after_ms(푼 값, 상한 적용
+  전. 없으면 null)·headers(허용 목록 RESPONSE_HEADER_ALLOWLIST의 응답 헤더만 소문자 이름으로, 없으면 {})·body_excerpt
+  (오류 본문 앞 200자, NVIDIA 키 접두어 KEY_PREFIX로 시작하는 문자열은 KEY_PREFIX + "***"로 가림, 없으면 null)를 더 남긴다. backoff_ms는 실제 대기다.
 - 다른 4xx(400·401·403·404·422 등)·정책 프록시 거부·연결 실패·요청별 제한 시간 초과·읽을 수 없는 본문은 재전송하지
   않고 실행을 멈춘다(원인 분류 코드는 단위 L3).
 - 한도 확인 순서: 사례 deadline이 먼저다(전체 deadline 우선). 그다음 모델 요청 10회, 그다음 누적 토큰(설정 limits.tokens, 128,000).
@@ -50,8 +57,11 @@ NIM(NVIDIA 클라우드 추론 API) chat completions를 부르는 클라이언�
 - 수는 int와 Decimal만 쓴다. 설정과 응답 본문은 소수를 Decimal로 읽고, HTTP 요청 본문을 만들 때만 float로 바꾼다.
 
 전송 자리 약속(단위 I8 기록 재생과 같은 모양): send(payload, timeout_ms) -> {http_status, body(bytes), error(None·
-"connection"·"timeout"·"policy_denied"), elapsed_ms, denial(error가 policy_denied일 때만: "connect"·"l7")}.
+"connection"·"timeout"·"policy_denied"), elapsed_ms, denial(error가 policy_denied일 때만: "connect"·"l7"),
+headers(HTTP 응답을 받았을 때만, 허용 목록 헤더의 dict. 없으면 키가 없거나 {}), body_excerpt(4xx·5xx 응답에만, 가린
+본문 앞 200자)}. 정책 거부·연결 실패·timeout 결과의 모양은 그대로다.
 """
+import email.utils
 import http.client
 import json
 import os
@@ -62,6 +72,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
+from datetime import timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Callable
@@ -81,6 +92,16 @@ ALLOWED_KEY_ENVS = frozenset({"NVIDIA_API_KEY", "NVIDIA_INFERENCE_API_KEY"})
 KEY_VALUE_RE = re.compile(r"[\x21-\x7e]+")  # 공백 없는 출력 가능 ASCII(자리표시 값 openshell:resolve:env:… 포함)
 TUNNEL_DENIED_RE = re.compile(r"Tunnel connection failed: (403|407)(?!\d)")
 DENIAL_KINDS = ("connect", "l7")
+# trace에 싣는 응답 헤더 허용 목록(소문자). 그 밖의 헤더는 싣지 않는다(결정 기록 20260925-2225 ④).
+RESPONSE_HEADER_ALLOWLIST = frozenset({
+    "retry-after", "x-ratelimit-limit-requests", "x-ratelimit-remaining-requests", "x-ratelimit-reset-requests",
+    "x-ratelimit-limit-tokens", "x-ratelimit-remaining-tokens", "x-ratelimit-reset-tokens", "x-request-id"})
+KEY_PREFIX = "nv" + "api" + "-"  # NVIDIA 키 접두어(scripts/secret_scan.py와 같은 모양. 글자 그대로 적지 않는다)
+SECRET_SHAPE_RE = re.compile(re.escape(KEY_PREFIX) + r"[A-Za-z0-9_-]+")  # 키 모양. 본문 요지·헤더 값에서 가린다
+SECRET_MASK = KEY_PREFIX + "***"
+BODY_EXCERPT_CHARS = 200
+HEADER_VALUE_CHARS = 200
+RETRY_AFTER_SECONDS_RE = re.compile(r"[0-9]{1,9}")
 
 
 class ConfigError(Exception):
@@ -116,6 +137,7 @@ class ModelSettings:
     backoff_factor: int
     request_cap_ms: int
     end_reserve_ms: int
+    retry_after_cap_ms: int  # Retry-After 존중 상한(model-1.7, 60초)
     structured_output: str = "off"
     tool_turn_max_tokens: int | None = None  # tool_choice required 차례의 max_tokens(없으면 max_tokens. AS2 ㉑)
 
@@ -173,6 +195,7 @@ def load_model_config(config_dir: Path | None = None, *, api_key_env: str | None
             backoff_factor=_int(retry["backoff_factor"], "retry.backoff_factor"),
             request_cap_ms=_int(timeouts["request_cap_ms"], "timeouts.request_cap_ms"),
             end_reserve_ms=_int(timeouts["end_reserve_ms"], "timeouts.end_reserve_ms"),
+            retry_after_cap_ms=_int(retry["retry_after_cap_ms"], "retry.retry_after_cap_ms"),
             structured_output=structured,
             tool_turn_max_tokens=None if request.get("tool_turn_max_tokens") is None
             else _int(request["tool_turn_max_tokens"], "request.tool_turn_max_tokens"))
@@ -259,6 +282,56 @@ def _policy_denied_body(data: bytes) -> bool:
     return isinstance(parsed, dict) and parsed.get("error") == "policy_denied"
 
 
+def mask_secrets(text: str) -> str:
+    """NVIDIA 키 모양(KEY_PREFIX 뒤 문자열)을 SECRET_MASK(KEY_PREFIX + "***")로 가린다. 본문 요지와 헤더 값에 쓴다."""
+    return SECRET_SHAPE_RE.sub(SECRET_MASK, text)
+
+
+def collect_headers(message: object) -> dict:
+    """응답 헤더 가운데 허용 목록(RESPONSE_HEADER_ALLOWLIST)만 소문자 이름으로 모은다. 같은 이름이 여럿이면 ", "로 잇고,
+    값은 가린 뒤 앞 200자만 둔다. 헤더 객체가 없거나 items()가 없으면 {}다."""
+    items = getattr(message, "items", None)
+    if message is None or items is None:
+        return {}
+    collected: dict[str, str] = {}
+    for name, value in items():
+        key = str(name).strip().lower()
+        if key not in RESPONSE_HEADER_ALLOWLIST:
+            continue
+        text = mask_secrets(str(value).strip())[:HEADER_VALUE_CHARS]
+        collected[key] = text if key not in collected else collected[key] + ", " + text
+    return collected
+
+
+def body_excerpt(data: bytes) -> str | None:
+    """오류 응답 본문의 요지: UTF-8로 풀고(못 푸는 바이트는 대체 문자), 비밀값 형태를 가린 뒤 앞 200자. 빈 본문은 None."""
+    if not data:
+        return None
+    return mask_secrets(data.decode("utf-8", errors="replace"))[:BODY_EXCERPT_CHARS]
+
+
+def parse_retry_after(value: object, sent_epoch_s: float) -> int | None:
+    """Retry-After 헤더를 ms로 푼다. 초 정수(delay-seconds)는 그대로, HTTP-date는 전송 시각 sent_epoch_s 기준 남은 초이고
+    음수면 0이다(해석). 없거나 풀 수 없으면 None."""
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    if RETRY_AFTER_SECONDS_RE.fullmatch(text):
+        return int(text) * 1000
+    try:
+        moment = email.utils.parsedate_to_datetime(text)
+    except (TypeError, ValueError, IndexError, OverflowError):
+        return None
+    if moment is None:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)  # 시간대 없는 날짜는 GMT로 본다(HTTP-date 규약)
+    remaining_s = moment.timestamp() - sent_epoch_s
+    return max(0, int(remaining_s * 1000))
+
+
 def _tunnel_denied(reason: object) -> int | None:
     """정책 프록시의 CONNECT 거부(403·407)면 그 상태를, 아니면 None을 돌려준다. 다른 터널 상태는 연결 실패로 둔다."""
     if not isinstance(reason, OSError):
@@ -299,7 +372,8 @@ class UrllibTransport:
             request.add_unredirected_header("Authorization", "Bearer " + self._credential())
             with self._opener.open(request, timeout=timeout_ms / 1000) as response:
                 return {"http_status": response.status, "body": response.read(), "error": None,
-                        "elapsed_ms": _default_clock_ms() - started}
+                        "elapsed_ms": _default_clock_ms() - started,
+                        "headers": collect_headers(getattr(response, "headers", None))}
         except urllib.error.HTTPError as exc:
             try:
                 data = exc.read() or b""
@@ -309,7 +383,11 @@ class UrllibTransport:
             if exc.code == 403 and _policy_denied_body(data):
                 return {"http_status": 403, "body": b"", "error": "policy_denied", "denial": "l7",
                         "elapsed_ms": elapsed}
-            return {"http_status": exc.code, "body": data, "error": None, "elapsed_ms": elapsed}
+            sent = {"http_status": exc.code, "body": data, "error": None, "elapsed_ms": elapsed,
+                    "headers": collect_headers(getattr(exc, "headers", None))}
+            if 400 <= exc.code <= 599:
+                sent["body_excerpt"] = body_excerpt(data)
+            return sent
         except urllib.error.URLError as exc:
             denied = _tunnel_denied(exc.reason)
             if denied is not None:
@@ -366,14 +444,23 @@ class ModelClient:
     """사례 1건 동안 쓰는 NIM 클라이언트. 조사자와 Critic이 같은 Budget을 나눠 쓴다(별도 문맥은 메시지로 나눈다)."""
 
     def __init__(self, settings: ModelSettings, budget: Budget, transport, sink: trace_log.Sink,
-                 clock_ms: Callable[[], int] = _default_clock_ms, sleep_ms: Callable[[int], None] = _default_sleep_ms):
+                 clock_ms: Callable[[], int] = _default_clock_ms, sleep_ms: Callable[[int], None] = _default_sleep_ms,
+                 wall_s: Callable[[], float] = time.time):
         self.settings = settings
         self.budget = budget
         self.transport = transport
         self.sink = sink
         self.clock_ms = clock_ms
         self.sleep_ms = sleep_ms
+        self.wall_s = wall_s  # Retry-After HTTP-date를 풀 때의 전송 시각(epoch 초). 시험은 고정 값을 준다
         self.request_no = 0
+
+    def _retry_wait_ms(self, retries: int, retry_after_ms: int | None) -> int:
+        """재전송 대기 = max(지수 대기, min(Retry-After, retry_after_cap_ms)). Retry-After가 없으면 지수 대기다."""
+        backoff = self.settings.backoff_base_ms * self.settings.backoff_factor ** retries
+        if retry_after_ms is None:
+            return backoff
+        return max(backoff, min(retry_after_ms, self.settings.retry_after_cap_ms))
 
     def _precheck(self, stage: str | None, *, new_request: bool = True) -> int:
         """보내기 전 한도 확인. 재전송(new_request 거짓)은 모델 요청 한도를 보지 않는다(결정 1805)."""
@@ -433,6 +520,7 @@ class ModelClient:
                                                         request_sha256=request_sha, timeout_ms=timeout_ms,
                                                         messages=len(messages), tools=len(tools or []),
                                                         **({"tool_choice": tool_choice} if tools else {})))
+            sent_epoch_s = self.wall_s()
             try:
                 sent = self.transport.send(payload, timeout_ms)
             except TransportConfigError as exc:
@@ -441,6 +529,7 @@ class ModelClient:
                 raise RunStop(cause_codes.CODE_ERROR, stage, str(exc)) from None
             status, error, elapsed = sent.get("http_status"), sent.get("error"), int(sent.get("elapsed_ms", 0))
             failure = dict(base, attempt=attempt, http_status=status, error=error, elapsed_ms=elapsed)
+            headers = sent.get("headers") if isinstance(sent.get("headers"), dict) else {}
             if error == "timeout":
                 self.sink.emit("model_error", stage, dict(failure, retrying=False, backoff_ms=0))
                 if self.budget.deadline_passed(self.clock_ms()):
@@ -456,17 +545,21 @@ class ModelClient:
                                                           backoff_ms=0))
                 raise RunStop(cause_codes.PROVIDER_CONNECTION, stage, "연결 실패")
             if 500 <= status <= 599 or status == 429:  # 429도 5xx와 같은 재전송 고리·같은 횟수 세기(결정 1552)
+                retry_after_ms = parse_retry_after(headers.get("retry-after"), sent_epoch_s)
+                # Retry-After·허용 목록 헤더·본문 요지는 재전송 여부와 무관하게 남긴다(결정 2225 ④)
+                failure = dict(failure, retry_after_ms=retry_after_ms, headers=headers,
+                               body_excerpt=sent.get("body_excerpt"))
                 if retries < self.settings.max_5xx_retries:
-                    backoff = self.settings.backoff_base_ms * self.settings.backoff_factor ** retries
+                    wait_ms = self._retry_wait_ms(retries, retry_after_ms)
                     now = self.clock_ms()
                     stop = None
-                    if self.budget.remaining_ms(now) <= backoff:
+                    if self.budget.remaining_ms(now) <= wait_ms:
                         stop = RunStop(cause_codes.DEADLINE, stage, f"HTTP {status} 재전송 대기가 deadline을 넘는다")
                     self.sink.emit("model_error", stage, dict(failure, retrying=stop is None,
-                                                              backoff_ms=backoff if stop is None else 0))
+                                                              backoff_ms=wait_ms if stop is None else 0))
                     if stop is not None:
                         raise stop
-                    self.sleep_ms(backoff)
+                    self.sleep_ms(wait_ms)
                     retries += 1
                     continue
                 self.sink.emit("model_error", stage, dict(failure, retrying=False, backoff_ms=0))
