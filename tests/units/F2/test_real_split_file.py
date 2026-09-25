@@ -12,8 +12,10 @@ import json
 import unittest
 from decimal import Decimal
 from pathlib import Path
+from types import SimpleNamespace
 
 from eval.datagen import split
+from tradesentry.cli import dispatch
 
 ROOT = Path(__file__).resolve().parents[3]
 SPLIT_FILE = ROOT / "data" / "reference" / "real_split_kcs_202201_202412_v2.json"  # 사용자 결정 8의 글자 그대로
@@ -44,6 +46,27 @@ class RealSplitFileTest(unittest.TestCase):
         dev = {(item["hs6"], item["partner"]) for item in record["real_dev"]}
         sealed = {(item["hs6"], item["partner"]) for item in record["real_sealed"]}
         self.assertEqual((len(dev), len(sealed), len(dev & sealed)), (21, 43, 0))
+
+
+class DetectReadsTheSplitFileTest(unittest.TestCase):
+    """detect의 대응표가 이 파일을 가리키고, 수집 설정의 계열 64개와 맞는다. 스냅샷(관측 값)은 열지 않는다."""
+
+    def test_detect_maps_v2_to_this_file(self):
+        self.assertEqual(dispatch.REAL_SPLIT_FILES,
+                         {"kcs_202201_202412_v2": "data/reference/real_split_kcs_202201_202412_v2.json"})
+        self.assertEqual(ROOT / dispatch.REAL_SPLIT_FILES["kcs_202201_202412_v2"], SPLIT_FILE)
+
+    def test_loader_gives_21_real_dev_series_of_the_collection_plan(self):
+        plan = json.loads((ROOT / "configs" / "collection_plan.json").read_text(encoding="utf-8"))
+        snap = SimpleNamespace(snapshot_id=plan["snapshot_id"], hs6_codes=tuple(plan["hs6"]),
+                               partners=tuple(plan["partners"]))  # K3 Snapshot의 메타 속성만 흉내 낸다
+        table = dispatch.load_real_split(snap)
+        record = json.loads(SPLIT_FILE.read_text(encoding="utf-8"))
+        dev = [(item["hs6"], item["partner"]) for item in record["real_dev"]]
+        self.assertEqual(sorted(dispatch.detect_series(snap, table)), dev)
+        assignment = dispatch.series_assignment(table)
+        self.assertEqual(len(assignment), 64)
+        self.assertEqual(sum(item["dataset"] == "real_dev" for item in assignment), 21)
 
 
 if __name__ == "__main__":
