@@ -9,14 +9,14 @@
 
 ## 1. 대회 요건 — 두 시나리오에 공통
 
-제출물은 제품의 크기와 무관하게 아래로 정해져 있다 `[사실: 대회 조사 문서 §4 Section 02]`.
+제출물은 제품의 크기와 무관하게 아래로 정해져 있다 `[사실: 대회 조사 문서 §3·§4 Section 02]`. 형식 요건과 별도로 "Skill API 활용 데모 프로젝트"라는 내용 요건이 있고, 두 시나리오 모두 이를 이미 채운다(아래 참가 조건 행).
 
 | 요건 | 내용 |
 |---|---|
 | 파일 | 1개, 최대 100MB, 양식 제한 없음. GitHub 링크는 pdf·word 문서 안에 기입. 파일명 `[NVIDIA 해커톤_팀명_프로젝트명]` |
 | 글 | Problem Definition 300자 내외, Solution 500자 내외, Tech Stack(제한 없음. NVIDIA 모델명·라이브러리·프레임워크와 전체 스택을 구체적으로 나열) |
 | 불필요 | 데모 영상·배포 URL(선택 항목) |
-| 참가 조건 | 2~5인 팀만(개인 불가), 팀원 전원이 같은 팀명으로 각자 폼 제출, 팀장만 Section 02 작성, 2007년 이후 출생자 포함 시 팀 전체 무효, 지정 교육 미션(DLI "Securing Agents with NemoClaw and OpenShell") 선행 `[사실: 같은 문서 §3]` |
+| 참가 조건 | 2~5인 팀만(개인 불가), 팀원 전원이 같은 팀명으로 각자 폼 제출, 팀장만 Section 02 작성, 2007년 이후 출생자 포함 시 팀 전체 무효, 지정 교육 미션(DLI "Securing Agents with NemoClaw and OpenShell") 선행, 그리고 **build.nvidia.com의 "Skill API"를 활용한 데모 프로젝트 제출**(공식 제품명이 아니라 Agent Skills(`build.nvidia.com/skills`)와 NIM 추론 API(`integrate.api.nvidia.com/v1`) 두 가지를 뜻하며 둘 다 쓰는 것이 안전하다. TradeSentry는 둘 다 쓴다: 공식 스킬 3개와 자체 SKILL.md, NIM의 Nemotron 호출) `[사실: 같은 문서 §3·§7]` |
 | 심사 기준(순서 그대로) | ① NVIDIA Agent 기술 활용 심도 ② 실용성·산업가치·혁신성 ③ 완성도 ④ 커스터마이징 수준·독창성 등 `[사실: 같은 문서 §5]` |
 
 참가 조건은 저장소에서 확인할 수 없는 사항이라 사용자가 직접 확인한다. 이 문서의 어느 시나리오도 참가 조건을 대신하지 못한다.
