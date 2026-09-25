@@ -6,7 +6,7 @@
   "attempts": 3
  },
  "stop": null,
- "budget": {"model_requests": 3, "tokens_in": 812, "tokens_out": 96},
+ "budget": {"model_requests": 1, "tokens_in": 812, "tokens_out": 96},
  "events": [
   ["model_request", {"attempt": 1, "timeout_ms": 60000}],
   ["model_error", {"attempt": 1, "http_status": 503, "error": null, "retrying": true, "backoff_ms": 5000}],

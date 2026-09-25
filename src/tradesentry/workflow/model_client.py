@@ -13,15 +13,17 @@ NIM(NVIDIA 클라우드 추론 API) chat completions를 부르는 클라이언�
 규칙(개발 플랜 §3.5·§6.6, 룰북 B2·B5, 자료 계약 §3.3·§8.1)
 - 자동 재시도는 없다(urllib 직접 호출). HTTP 5xx와 429(호출 한도 초과)만 코드가 명시적으로 재전송한다: 같은 고리에서
   둘을 합쳐 요청당 최대 3회(설정 retry.max_5xx_retries, 이름은 그대로 두고 429도 이 한도를 쓴다), 지수 대기
-  (backoff_base_ms × backoff_factor^회차, model-1.4부터 5초·10초·20초, 조정값). 재전송도 HTTP 시도 한 번이므로 모델
-  요청 수(model_requests)에 센다. 한도를 다 쓴 5xx는 PROVIDER_HTTP_5XX, 429는 PROVIDER_HTTP_4XX이고 detail은 둘 다
+  (backoff_base_ms × backoff_factor^회차, model-1.4부터 5초·10초·20초, 조정값). 모델 요청 수(model_requests)는 요청
+  하나의 첫 전송만 센다. 같은 요청의 재전송은 세지 않는다(model-1.5, 2026-09-25 18:05 사용자 결정 기록
+  20260925-1805-user-decision-retry-budget). 재전송은 trace model_request·model_error에 attempt로 남는다. 한도를 다 쓴 5xx는 PROVIDER_HTTP_5XX, 429는 PROVIDER_HTTP_4XX이고 detail은 둘 다
   "HTTP {상태}(재전송 N회 뒤)"다(마지막 응답의 상태로 가른다). 둘 다 인프라 실패 재실행 대상이다(단위 L3, 2026-09-25
   15:52 사용자 결정 기록 20260925-1552-user-decision-429-retry).
 - 다른 4xx(400·401·403·404·422 등)·정책 프록시 거부·연결 실패·요청별 제한 시간 초과·읽을 수 없는 본문은 재전송하지
   않고 실행을 멈춘다(원인 분류 코드는 단위 L3).
 - 한도 확인 순서: 사례 deadline이 먼저다(전체 deadline 우선). 그다음 모델 요청 10회, 그다음 누적 토큰(설정 limits.tokens, 128,000).
-  재전송하기 전에도 같은 순서로 본다. 대기가 deadline을 넘으면 DEADLINE(TIMEOUT), 재전송 중 모델 요청 10회에 먼저
-  닿으면 BUDGET_MODEL_REQUESTS(BUDGET_EXCEEDED)로 멈춘다. 후자는 인프라 실패 재실행 대상이 아니다.
+  새 요청을 보내기 전에 이 순서로 본다. 재전송은 요청당 3회와 사례 deadline으로만 묶는다: 재전송 전에는 deadline과
+  누적 토큰만 보고 모델 요청 한도는 보지 않는다(재전송 때문에 BUDGET_MODEL_REQUESTS가 되지 않는다, 결정 1805). 대기가
+  deadline을 넘으면 DEADLINE(TIMEOUT)으로 멈춘다.
 - 요청별 제한 시간은 min(60초, deadline까지 남은 시간 − 종료 기록 예약 시간)이다. 남은 시간이 없으면 보내지 않는다.
 - 토큰: 요청마다 max_tokens를 min(설정값, 남은 토큰)으로 줄여 보낸다. 응답을 받은 뒤 누적(입력 + 출력)이 한도를
   넘으면 BUDGET_TOKENS로 멈춘다. 그래서 COMPLETED 실행은 토큰 한도를 넘지 않는다(해석, 조정값).
@@ -373,11 +375,12 @@ class ModelClient:
         self.sleep_ms = sleep_ms
         self.request_no = 0
 
-    def _precheck(self, stage: str | None) -> int:
+    def _precheck(self, stage: str | None, *, new_request: bool = True) -> int:
+        """보내기 전 한도 확인. 재전송(new_request 거짓)은 모델 요청 한도를 보지 않는다(결정 1805)."""
         now = self.clock_ms()
         if self.budget.deadline_passed(now):
             raise RunStop(cause_codes.DEADLINE, stage, "사례 deadline에 닿아 모델 요청을 보내지 않았다")
-        if self.budget.model_requests >= self.budget.limits.model_requests:
+        if new_request and self.budget.model_requests >= self.budget.limits.model_requests:
             raise RunStop(cause_codes.BUDGET_MODEL_REQUESTS, stage, "모델 요청 한도에 닿았다")
         if self.budget.tokens_total >= self.budget.limits.tokens:
             raise RunStop(cause_codes.BUDGET_TOKENS, stage, "누적 토큰 한도에 닿았다")
@@ -420,10 +423,11 @@ class ModelClient:
         retries = 0
         attempt = 0
         while True:
-            now = self._precheck(stage)
+            now = self._precheck(stage, new_request=attempt == 0)
             attempt += 1
             timeout_ms = min(self.settings.request_cap_ms, self.budget.remaining_ms(now))
-            self.budget.model_requests += 1
+            if attempt == 1:
+                self.budget.model_requests += 1  # 첫 전송만 센다. 재전송은 세지 않는다(결정 1805)
             self.sink.emit("model_request", stage, dict(base, attempt=attempt,
                                                         model_requests=self.budget.model_requests,
                                                         request_sha256=request_sha, timeout_ms=timeout_ms,
@@ -432,7 +436,8 @@ class ModelClient:
             try:
                 sent = self.transport.send(payload, timeout_ms)
             except TransportConfigError as exc:
-                self.budget.model_requests -= 1  # 보내지 않은 요청은 세지 않는다
+                if attempt == 1:
+                    self.budget.model_requests -= 1  # 보내지 않은 요청은 세지 않는다
                 raise RunStop(cause_codes.CODE_ERROR, stage, str(exc)) from None
             status, error, elapsed = sent.get("http_status"), sent.get("error"), int(sent.get("elapsed_ms", 0))
             failure = dict(base, attempt=attempt, http_status=status, error=error, elapsed_ms=elapsed)
@@ -457,9 +462,6 @@ class ModelClient:
                     stop = None
                     if self.budget.remaining_ms(now) <= backoff:
                         stop = RunStop(cause_codes.DEADLINE, stage, f"HTTP {status} 재전송 대기가 deadline을 넘는다")
-                    elif self.budget.model_requests >= self.budget.limits.model_requests:
-                        stop = RunStop(cause_codes.BUDGET_MODEL_REQUESTS, stage,
-                                       f"HTTP {status} 재전송 전에 모델 요청 한도에 닿았다")
                     self.sink.emit("model_error", stage, dict(failure, retrying=stop is None,
                                                               backoff_ms=backoff if stop is None else 0))
                     if stop is not None:
