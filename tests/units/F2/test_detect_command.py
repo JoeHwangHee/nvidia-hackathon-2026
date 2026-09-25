@@ -6,10 +6,11 @@
   configs/policy_dev.json, dev-0.1) → 단위 K3(정본 빌드를 읽기 전용으로 연다) → 어댑터 → 단위 X1·X2(X4) → 단위 P1 → 단위 P2
   → 출력 파일.
 - 자료: tests/units/F2/detect_fixture.py가 수집기 코드와 단위 S2로 만든 합성 스냅샷(source_kind controlled). 실제 통계가
-  아니다. 실자료 거부 시험은 같은 본 스냅샷을 source_kind real로 만든 것(값은 합성, 출처 종류만 real)을 쓴다. 실자료 스냅샷
-  v1·v2로는 돌리지 않는다.
-- 바꾸는 것은 위치 셋뿐이다: 스냅샷들의 뿌리(dal.query.SNAPSHOTS_ROOT), CLI 실행 폴더의 부모(dispatch.OUTPUT_PARENT, detect를
-  부를 때마다 새 폴더), 최소 기준 시험의 정책 폴더(contract.policy_load.CONFIGS_DIR). 모두 임시 폴더다. 저장소의 data/·
+  아니다. 실자료 시험(real_dev 좁히기·분할 기록 거부)은 같은 본 스냅샷을 source_kind real로 만든 것(값은 합성, 출처 종류만
+  real)과 임시 파일의 합성 분할 기록을 쓴다. 실자료 스냅샷 v1·v2로는 돌리지 않는다.
+- 바꾸는 것은 위치 넷뿐이다: 스냅샷들의 뿌리(dal.query.SNAPSHOTS_ROOT), CLI 실행 폴더의 부모(dispatch.OUTPUT_PARENT, detect를
+  부를 때마다 새 폴더), 최소 기준 시험의 정책 폴더(contract.policy_load.CONFIGS_DIR), 실자료 시험의 분할 기록 대응표
+  (dispatch.REAL_SPLIT_FILES). 모두 임시 폴더다. 저장소의 data/·
   outputs/·configs/는 건드리지 않는다.
 - 경계(DT2 결정 ②·AS1 항목, MT1 결정 ②): r_U 정확값 −29.96%(표시 −30.0)는 미발동, 정확히 −30%는 발동, d_s 정확값
   9.96pp(표시 10.0)는 미발동, 정확히 10pp는 발동이다. 단위 P1은 반올림 전 정확값(Fraction)을 받는다.
@@ -340,38 +341,282 @@ class OtherPartnerTest(DetectCase):
                          {"CN"})
 
 
-class RealSnapshotRefusalTest(DetectCase):
-    """실자료 스냅샷(source_kind가 controlled가 아님)은 K3로 관측 값을 읽거나 지표를 계산하기 전에 거부하고 1로 끝난다.
+VALUE_READS = ("_rows", "row", "parent_series", "parent", "world_series", "world", "children", "peers", "resolve")
 
-    자료는 본 스냅샷(202301~202402의 14개월, 비교월 쌍이 있다)을 source_kind real로 만든 것이다. 값은 합성이고 수집기 메타의 출처
-    종류만 real이다. 거부가 없었다면 탐지할 계열·비교월 쌍이 있음을 먼저 단언해 "호출 0"이 공허하지 않게 한다.
-    """
+
+def value_read_spies() -> dict:
+    """K3로 관측 값을 읽는 메서드와 조립체 2 단위의 호출을 세는 감시(spy). 진짜를 부르면서 호출만 센다."""
+    spies = {f"K3 {name}": mock.patch.object(query.Snapshot, name, autospec=True, side_effect=getattr(query.Snapshot, name))
+             for name in VALUE_READS}
+    spies.update({"X1 run": mock.patch.object(unit_value, "run", wraps=unit_value.run),
+                  "X2 run": mock.patch.object(share, "run", wraps=share.run),
+                  "P1 run": mock.patch.object(trigger, "run", wraps=trigger.run),
+                  "P2 run": mock.patch.object(case_build, "run", wraps=case_build.run)})
+    return spies
+
+
+# 실자료 모양 시험의 합성 분할 기록(본 스냅샷의 계열 10개). real_sealed 쪽에 합성 기대 출력(EXPECTED)에서 사례를 내는
+# JP·DE·TW를 두어 "real_sealed 계열 접근 0"이 공허하지 않게 한다. 값과 배정은 모두 합성이다.
+SPLIT_DEV = ["CN", "FI", "FR", "US", "VN"]
+SPLIT_SEALED = ["DE", "JP", "PH", "SE", "TW"]
+
+
+def split_record(snapshot_id: str = MAIN_ID, dev: list[str] = SPLIT_DEV, sealed: list[str] = SPLIT_SEALED) -> dict:
+    """단위 V5 출력 모양(키 여섯 개)의 합성 분할 기록."""
+    return {"snapshot_id": snapshot_id, "seed": 1, "ratio": {"real_dev": 1, "real_sealed": 1},
+            "method": "hs6_stratified_sha256_rank",
+            "real_dev": [{"hs6": df.HS6, "partner": p} for p in dev],
+            "real_sealed": [{"hs6": df.HS6, "partner": p} for p in sealed]}
+
+
+class RealSnapshotCase(DetectCase):
+    """본 스냅샷(202301~202402의 14개월, 비교월 쌍 2개, 계열 10개)을 source_kind real로 빌드한 것. 값은 합성이고 수집기 메타의
+    출처 종류만 real이다. 분할 기록 대응표(dispatch.REAL_SPLIT_FILES)는 시험마다 임시 파일로 바꾼다."""
 
     SOURCE_KIND = "real"
 
-    def test_real_snapshot_is_refused_before_any_value_is_read(self):
+    def use_split(self, record: object, *, raw: str | None = None) -> None:
+        """이 스냅샷의 분할 기록을 임시 파일에 쓰고 대응표를 그 파일 하나로 바꾼다."""
+        path = self.root / "real_split.json"
+        path.write_text(raw if raw is not None else json.dumps(record, ensure_ascii=False, indent=2) + "\n",
+                        encoding="utf-8")
+        patcher = mock.patch.dict(dispatch.REAL_SPLIT_FILES, {MAIN_ID: str(path)}, clear=True)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def assert_not_vacuous(self) -> None:
+        """좁히기나 거부가 없었다면 탐지할 비교월 쌍·계열이 있다(호출 0이 공허하지 않다)."""
         with query.open_snapshot(MAIN_ID) as snap:
             self.assertEqual(snap.source_kind, "real")
             pairs, series = dispatch.detect_pairs(snap.months), dispatch.detect_series(snap)
-        self.assertEqual(pairs, [("202401", "202301"), ("202402", "202302")])  # 거부가 없으면 탐지할 비교월 쌍
-        self.assertEqual(len(series), 10)  # 거부가 없으면 탐지할 계열(계열 10 × 비교월 2 = P1 행 20)
-        # 진짜를 부르면서 호출만 센다(spy). 거부 순서가 틀리면 실제 호출 횟수가 0이 아니게 나온다.
-        spies = {f"K3 {name}": mock.patch.object(query.Snapshot, name, autospec=True,
-                                                 side_effect=getattr(query.Snapshot, name))
-                 for name in ("_rows", "row", "parent_series", "parent", "world_series", "world", "children", "peers",
-                              "resolve")}
-        spies.update({"X1 run": mock.patch.object(unit_value, "run", wraps=unit_value.run),
-                      "X2 run": mock.patch.object(share, "run", wraps=share.run),
-                      "P1 run": mock.patch.object(trigger, "run", wraps=trigger.run),
-                      "P2 run": mock.patch.object(case_build, "run", wraps=case_build.run)})
+        self.assertEqual(pairs, [("202401", "202301"), ("202402", "202302")])
+        self.assertEqual(len(series), 10)  # 계열 10 × 비교월 2 = P1 행 20
+
+    def assert_refused_before_values(self, message: str) -> None:
+        self.assert_not_vacuous()
+        spies = value_read_spies()
         with contextlib.ExitStack() as stack:
             mocks = {name: stack.enter_context(patcher) for name, patcher in spies.items()}
             code, out, err, run_dir = self.detect()
         self.assertEqual((code, out), (dispatch.EXIT_FAILED, ""))
-        self.assertEqual(err, dispatch.DETECT_REFUSAL + "\n")
+        self.assertEqual(err, message + "\n")
         self.assertNotIn(MAIN_ID, err)  # 받은 값을 되풀이하지 않는다
+        self.assertNotIn(str(self.root), err)  # 로컬 절대경로를 쓰지 않는다(N13)
         self.assertEqual({name: m.call_count for name, m in mocks.items()}, dict.fromkeys(spies, 0))
         self.assertEqual(list(run_dir.iterdir()), [])  # 확보한 빈 실행 폴더만 남는다
+
+
+class RealSplitRefusalTest(RealSnapshotCase):
+    """분할 기록을 쓸 수 없는 실자료 스냅샷은 K3로 관측 값을 읽거나 지표를 계산하기 전에 거부하고 1로 끝난다(SplitError)."""
+
+    def test_real_snapshot_without_a_split_file_is_refused(self):
+        # 대응표는 저장소 값 그대로다(v2 하나). 이 스냅샷 ID는 대응표에 없다. v1 같은 다른 실자료 스냅샷도 이 길이다.
+        self.assertNotIn(MAIN_ID, dispatch.REAL_SPLIT_FILES)
+        self.assert_refused_before_values(dispatch.DETECT_SPLIT_REFUSAL)
+
+    def test_missing_or_broken_split_file_is_refused(self):
+        for label, raw in (("없는 파일", None), ("JSON 아님", "{not json"), ("목록", "[]")):
+            with self.subTest(label):
+                if raw is None:
+                    patcher = mock.patch.dict(dispatch.REAL_SPLIT_FILES, {MAIN_ID: str(self.root / "no_such.json")})
+                    patcher.start()
+                    self.addCleanup(patcher.stop)
+                else:
+                    self.use_split(None, raw=raw)
+                self.assert_refused_before_values(dispatch.DETECT_SPLIT_REFUSAL)
+
+    def test_split_record_that_does_not_fit_the_snapshot_is_refused(self):
+        good = split_record()
+        bad = {
+            "다른 스냅샷 ID": split_record(snapshot_id="kcs_202201_202412_v2"),
+            "키 빠짐": {k: v for k, v in good.items() if k != "method"},
+            "키 더함": {**good, "extra": 1},
+            "키 순서": dict(reversed(list(good.items()))),
+            "계열 빠짐": split_record(dev=SPLIT_DEV[:-1]),
+            "계획 밖 계열": split_record(dev=SPLIT_DEV + ["GB"]),
+            "두 묶음에 같은 계열": split_record(dev=SPLIT_DEV + ["JP"]),
+            "한 묶음에 두 번": split_record(dev=SPLIT_DEV + ["CN"]),
+            "real_dev 비어 있음": split_record(dev=[], sealed=SPLIT_DEV + SPLIT_SEALED),
+            "ALL 계열": split_record(dev=SPLIT_DEV + ["ALL"]),
+            "항목 키 더함": {**good, "real_dev": [dict(item, dataset="real_dev") for item in good["real_dev"]]},
+        }
+        for label, record in bad.items():
+            with self.subTest(label):
+                self.use_split(record)
+                self.assert_refused_before_values(dispatch.DETECT_SPLIT_REFUSAL)
+
+
+class UnknownSourceKindRefusalTest(RealSnapshotCase):
+    """출처 종류가 허용 목록(controlled·real) 밖이면 값을 읽기 전에 거부한다(분할 기록이 있어도)."""
+
+    def test_unknown_source_kind_is_refused_before_any_value_is_read(self):
+        self.use_split(split_record())
+        self.assert_not_vacuous()
+        with mock.patch.object(query.Snapshot, "source_kind", new_callable=mock.PropertyMock, return_value="other"), \
+                mock.patch.object(dispatch, "load_real_split", wraps=dispatch.load_real_split) as loader:
+            spies = value_read_spies()
+            with contextlib.ExitStack() as stack:
+                mocks = {name: stack.enter_context(patcher) for name, patcher in spies.items()}
+                code, out, err, run_dir = self.detect()
+        self.assertEqual((code, out, err), (dispatch.EXIT_FAILED, "", dispatch.DETECT_REFUSAL + "\n"))
+        self.assertEqual(loader.call_count, 0)
+        self.assertEqual({name: m.call_count for name, m in mocks.items()}, dict.fromkeys(spies, 0))
+        self.assertEqual(list(run_dir.iterdir()), [])
+
+
+class RealDevNarrowingTest(RealSnapshotCase):
+    """실자료 스냅샷은 분할 기록의 real_dev 계열만 남긴 뒤에 관측 값을 읽고 지표·신호 발동을 부른다. real_sealed 계열의 관측
+    행은 읽지 않는다(병렬 개발 규칙 §7.2의 5). P2는 dataset=real_dev와 분할 기록 전체의 배정을 받는다."""
+
+    def setUp(self):
+        super().setUp()
+        self.use_split(split_record())
+
+    def test_sealed_series_would_trigger_without_narrowing(self):
+        # 공허하지 않다: 같은 값의 합성 스냅샷(EXPECTED)에서 real_sealed 쪽 JP·DE·TW는 사례를, SE는 데이터 품질 행을 낸다
+        self.assertTrue({"JP", "DE", "TW"} <= {c["partner"] for c in EXPECTED["cases"]})
+        self.assertIn("SE", {q["partner"] for q in EXPECTED["data_quality"]})
+
+    def test_output_is_the_real_dev_cases(self):
+        code, out, err, run_dir = self.detect()
+        self.assertEqual((code, err), (0, ""))
+        dev = set(SPLIT_DEV)
+        self.assertEqual(self.output(run_dir, out), {
+            "snapshot_id": MAIN_ID, "dataset": "real_dev", "policy_version": "dev-0.1",
+            "cases": [c for c in EXPECTED["cases"] if c["partner"] in dev],
+            "data_quality": [q for q in EXPECTED["data_quality"] if q["partner"] in dev]})
+
+    def test_real_sealed_rows_are_never_read(self):
+        """좁히기가 관측 값을 읽기 전에 일어나고, real_sealed 상대국의 관측 행은 조회 조건에도 결과에도 나오지 않는다."""
+        sealed = set(SPLIT_SEALED)
+        events: list[str] = []
+        read_params: list[tuple] = []
+        read_rows: list[dict] = []
+        real_rows, real_row = query.Snapshot._rows, query.Snapshot.row
+        real_loader = dispatch.load_real_split
+
+        def rows_spy(snap, where, params):
+            events.append("K3 _rows")
+            found = real_rows(snap, where, params)
+            read_params.append(tuple(params))
+            read_rows.extend(found)
+            return found
+
+        def row_spy(snap, table, rowid):
+            found = real_row(snap, table, rowid)
+            if found is not None:
+                read_rows.append(found)
+            return found
+
+        def loader_spy(snap):
+            events.append("load_real_split")
+            return real_loader(snap)
+
+        with mock.patch.object(query.Snapshot, "_rows", autospec=True, side_effect=rows_spy), \
+                mock.patch.object(query.Snapshot, "row", autospec=True, side_effect=row_spy), \
+                mock.patch.object(query.Snapshot, "parent_series", autospec=True,
+                                  side_effect=query.Snapshot.parent_series) as parent_series, \
+                mock.patch.object(query.Snapshot, "world_series", autospec=True,
+                                  side_effect=query.Snapshot.world_series) as world_series, \
+                mock.patch.object(dispatch, "load_real_split", side_effect=loader_spy), \
+                mock.patch.object(unit_value, "run", wraps=unit_value.run) as x1, \
+                mock.patch.object(share, "run", wraps=share.run) as x2, \
+                mock.patch.object(trigger, "run", wraps=trigger.run) as p1, \
+                mock.patch.object(case_build, "run", wraps=case_build.run) as p2:
+            code, out, err, run_dir = self.detect()
+        self.assertEqual((code, err), (0, ""))
+        # 순서: 분할 기록을 먼저 읽고, 그 뒤에만 관측 행을 읽는다
+        self.assertEqual(events[0], "load_real_split")
+        self.assertEqual(events.count("load_real_split"), 1)
+        self.assertGreater(len(events), 1)
+        # 관측 행: 조회 조건과 돌려받은 행 어디에도 real_sealed 상대국이 없다(ALL 분모 행은 두 묶음이 함께 쓴다)
+        self.assertTrue(read_rows)
+        self.assertEqual([p for p in read_params if sealed & set(p)], [])
+        self.assertEqual([r for r in read_rows if r.get("partner_code") in sealed], [])
+        self.assertEqual(sorted(c.args[2] for c in parent_series.call_args_list), SPLIT_DEV)
+        self.assertEqual(world_series.call_count, 1)
+        # 지표·신호 발동: real_dev 계열만(계열 5 × 비교월 2 = 10번)
+        self.assertEqual(sorted({c.args[0]["partner"] for c in x1.call_args_list}), SPLIT_DEV)
+        self.assertEqual(sorted({c.args[0]["partner"] for c in x2.call_args_list}), SPLIT_DEV)
+        self.assertEqual((x1.call_count, x2.call_count), (10, 10))
+        [p1_call] = p1.call_args_list
+        self.assertEqual(sorted({row["partner"] for row in p1_call.args[0]["rows"]}), SPLIT_DEV)
+        # P2: dataset=real_dev와 분할 기록 전체(10개)의 배정
+        [p2_call] = p2.call_args_list
+        given = p2_call.args[0]
+        self.assertEqual((given["source_kind"], given["dataset"]), ("real", "real_dev"))
+        self.assertEqual(given["series_assignment"],
+                         [{"hs6": df.HS6, "partner": p, "dataset": "real_dev" if p in SPLIT_DEV else "real_sealed"}
+                          for p in sorted(SPLIT_DEV + SPLIT_SEALED)])
+        self.assertEqual(self.output(run_dir, out)["dataset"], "real_dev")
+
+
+class TwoHs6PairNarrowingTest(DetectCase):
+    """좁히기는 상대국이 아니라 (hs6, partner) 쌍 단위다. HS6 두 개 × 상대국 두 개에서 같은 상대국이 한 HS6에서는 real_dev,
+    다른 HS6에서는 real_sealed다. real_sealed 쌍의 관측 행은 읽지 않고, 지표·P1·출력은 real_dev 쌍뿐이다."""
+
+    SPEC = df.TWO_HS6
+    BUILD_POLICY = None
+    SOURCE_KIND = "real"
+    TWO_ID = df.TWO_HS6["config"]["snapshot_id"]
+    DEV = [(df.HS6, "CN"), (df.SIBLING_HS6, "JP")]
+    SEALED = [(df.HS6, "JP"), (df.SIBLING_HS6, "CN")]
+
+    def setUp(self):
+        super().setUp()
+        record = {"snapshot_id": self.TWO_ID, "seed": 1, "ratio": {"real_dev": 1, "real_sealed": 1},
+                  "method": "hs6_stratified_sha256_rank",
+                  "real_dev": [{"hs6": h, "partner": p} for h, p in self.DEV],
+                  "real_sealed": [{"hs6": h, "partner": p} for h, p in self.SEALED]}
+        path = self.root / "real_split.json"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        patcher = mock.patch.dict(dispatch.REAL_SPLIT_FILES, {self.TWO_ID: str(path)}, clear=True)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_sealed_pairs_would_trigger_without_narrowing(self):
+        # 공허하지 않다: 출처 종류만 controlled로 보이게 하면(분할 기록을 쓰지 않음) 네 쌍 모두 202401에 사례를 낸다
+        with mock.patch.object(query.Snapshot, "source_kind", new_callable=mock.PropertyMock,
+                               return_value="controlled"):
+            code, out, err, run_dir = self.detect()
+        self.assertEqual((code, err), (0, ""))
+        self.assertEqual(sorted((c["hs6"], c["partner"]) for c in self.output(run_dir, out)["cases"]),
+                         sorted(self.DEV + self.SEALED))
+
+    def test_narrowing_is_by_hs6_partner_pair(self):
+        sealed = set(self.SEALED)
+        read_params: list[tuple] = []
+        read_rows: list[dict] = []
+        real_rows = query.Snapshot._rows
+
+        def rows_spy(snap, where, params):
+            found = real_rows(snap, where, params)
+            read_params.append(tuple(params))
+            read_rows.extend(found)
+            return found
+
+        with mock.patch.object(query.Snapshot, "_rows", autospec=True, side_effect=rows_spy), \
+                mock.patch.object(query.Snapshot, "parent_series", autospec=True,
+                                  side_effect=query.Snapshot.parent_series) as parent_series, \
+                mock.patch.object(unit_value, "run", wraps=unit_value.run) as x1, \
+                mock.patch.object(trigger, "run", wraps=trigger.run) as p1:
+            code, out, err, run_dir = self.detect()
+        self.assertEqual((code, err), (0, ""))
+        self.assertEqual(sorted(c.args[1:3] for c in parent_series.call_args_list), sorted(self.DEV))
+        # 상대국 행 조회 조건 (partner, hs6, hs4)에 real_sealed 쌍이 없다
+        self.assertEqual([p for p in read_params if len(p) >= 2 and (p[1], p[0]) in sealed], [])
+        # 돌려받은 상대국 행(HS6 이상 자릿수)에 real_sealed 쌍이 없다. ALL 분모 행은 두 묶음이 함께 쓴다
+        self.assertTrue(read_rows)
+        self.assertEqual([r for r in read_rows if len(r["hs_code"]) >= 6
+                          and (r["hs_code"][:6], r["partner_code"]) in sealed], [])
+        self.assertEqual(sorted({(c.args[0]["hs6"], c.args[0]["partner"]) for c in x1.call_args_list}), sorted(self.DEV))
+        [p1_call] = p1.call_args_list
+        self.assertEqual(sorted({(r["hs6"], r["partner"]) for r in p1_call.args[0]["rows"]}), sorted(self.DEV))
+        result = self.output(run_dir, out)
+        self.assertEqual(result["dataset"], "real_dev")
+        self.assertEqual(sorted((c["hs6"], c["partner"]) for c in result["cases"]), sorted(self.DEV))
+        self.assertEqual([q for q in result["data_quality"] if (q["hs6"], q["partner"]) in sealed], [])
+
 
 if __name__ == "__main__":
     unittest.main()

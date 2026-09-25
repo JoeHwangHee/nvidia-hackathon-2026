@@ -1,0 +1,25 @@
+{
+ "schema_version": 1,
+ "snapshot_id": "kcs_202201_202412_v2",
+ "normalized_sha256": "b439909a3c894dc773f26eb9e0f53c873cce2ceedcad9bdbdd6c849fa4af4639",
+ "raw_sha256": "afc76401431f02b4d8d5e848b197faaa197ce3dd037d66fd7ca719d7ce7bb017",
+ "policy_version": "policy_v1",
+ "confirmed_no_trade_rule": "ingest_verify_candidates",
+ "confirmed_no_trade_rows": 208,
+ "peer_group_files": [
+  {
+   "file_name": "peer_group_g0.csv",
+   "sha256": "d712a189dda1cdc8452a713e30034f6cf045489f1562e140216a54cd965a534b"
+  }
+ ],
+ "row_counts": {
+  "collection_receipt": 357,
+  "observation": 50132,
+  "peer_group": 320,
+  "snapshot_meta": 14
+ },
+ "build_file": "snapshot_build.sqlite",
+ "built_at": "2026-09-25T09:16:43+09:00",
+ "installed_from": "snapshot_build-260925091642.sqlite",
+ "installed_at": "2026-09-25T09:18:02+09:00"
+}

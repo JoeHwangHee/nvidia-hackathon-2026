@@ -164,7 +164,8 @@ class EarlyStopByFamilyTest(unittest.TestCase):
         self.assertEqual({k: state["unit_value"][k] for k in ("U_baseline", "decomposition", "children")},
                          {"U_baseline": None, "decomposition": None, "children": []})
         out = signal_decide.run({"policy": POLICY, "case": unit_case(), "evidence": state})
-        self.assertEqual((out["signal_status"]["unit_value"], out["basis"]["unit_value"]), ("HOLD", "data_insufficient"))
+        # zero_weight는 빠진 관측이 아니라 관측은 있는데 단가가 성립하지 않는 사유다(MT1 D17 기록 ①·⑥)
+        self.assertEqual((out["signal_status"]["unit_value"], out["basis"]["unit_value"]), ("HOLD", "data_inconsistent"))
         gap = dispatch.evidence_state(unit_case(), [envelope("check_comparability", comparability=checked()[
             "comparability"], missingness=[missing("XA", "850450", "202412")])], POLICY)
         self.assertIsNone(gap["unit_value"]["decomposition"])  # 대상국 빠진 관측도 사유다
