@@ -109,6 +109,15 @@ class ExtractTest(unittest.TestCase):
         self.assertTrue((self.outputs / "sealed" / run_id).is_dir())  # fail-closed: 사례 식별자 목록은 봉인 자리로
         self.assertFalse((self.outputs / run_id).exists())
 
+    def test_rerun_targets_include_http_429_only_among_4xx(self):
+        """2026-09-25 15:52 사용자 결정: 429로 끝난 PROVIDER_HTTP_4XX 줄은 재실행 대상이다(단위 L3 하나로 가른다)."""
+        def line(n, detail):
+            return {"run_id": f"run_case-26092507000{n}", "case_id": f"c{n}", "mode": "full",
+                    "execution_status": "FAILED", "errors": [{"code": "PROVIDER_HTTP_4XX", "detail": detail}]}
+        lines = [line(1, "HTTP 429(재전송 3회 뒤)"), line(2, "HTTP 400"), line(3, "HTTP 403"), line(4, "HTTP 429")]
+        self.assertEqual([t["case_id"] for t in extract.rerun_targets(lines)], ["c1", "c4"])
+        self.assertEqual(extract.summarize(lines)["infra_rerun"], 2)
+
     def test_upper_case_sealed_name_counts_as_sealed(self):
         self.assertTrue(extract.sealed_place(self.outputs / "Sealed" / "evaluate-260925100000"))
         self.assertTrue(extract.sealed_place(self.outputs / "sealed" / "holdout40" / "evaluate-260925100000"))

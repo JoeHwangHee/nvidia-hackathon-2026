@@ -4,16 +4,21 @@
 도메인명: workflow_model_client
 소유: M
 입력: 메시지
-출력: 응답(5xx 재전송 3회, 제한 시간, 토큰)
+출력: 응답(5xx·429 재전송 3회, 제한 시간, 토큰)
 허용 import: 표준 라이브러리, tradesentry.contract, tradesentry.runlog
 
 NIM(NVIDIA 클라우드 추론 API) chat completions를 부르는 클라이언트다. 요청 형식은 X1과 구 개발계획 G4 관문 시험에서
 확인한 모양(tools·tool_choice, chat_template_kwargs의 enable_thinking)을 따른다.
 
 규칙(개발 플랜 §3.5·§6.6, 룰북 B2·B5, 자료 계약 §3.3·§8.1)
-- 자동 재시도는 없다(urllib 직접 호출). HTTP 5xx만 코드가 명시적으로 재전송한다: 요청당 최대 3회, 지수 대기
-  (1초부터 2배, 조정값). 재전송도 HTTP 시도 한 번이므로 모델 요청 수(model_requests)에 센다.
-- 4xx·연결 실패·요청별 제한 시간 초과·읽을 수 없는 본문은 재전송하지 않고 실행을 멈춘다(원인 분류 코드는 단위 L3).
+- 자동 재시도는 없다(urllib 직접 호출). HTTP 5xx와 429(호출 한도 초과)만 코드가 명시적으로 재전송한다: 같은 고리에서
+  둘을 합쳐 요청당 최대 3회(설정 retry.max_5xx_retries, 이름은 그대로 두고 429도 이 한도를 쓴다), 지수 대기
+  (backoff_base_ms × backoff_factor^회차, model-1.4부터 5초·10초·20초, 조정값). 재전송도 HTTP 시도 한 번이므로 모델
+  요청 수(model_requests)에 센다. 한도를 다 쓴 5xx는 PROVIDER_HTTP_5XX, 429는 PROVIDER_HTTP_4XX이고 detail은 둘 다
+  "HTTP {상태}(재전송 N회 뒤)"다(마지막 응답의 상태로 가른다). 둘 다 인프라 실패 재실행 대상이다(단위 L3, 2026-09-25
+  15:52 사용자 결정 기록 20260925-1552-user-decision-429-retry).
+- 다른 4xx(400·401·403·404·422 등)·정책 프록시 거부·연결 실패·요청별 제한 시간 초과·읽을 수 없는 본문은 재전송하지
+  않고 실행을 멈춘다(원인 분류 코드는 단위 L3).
 - 한도 확인 순서: 사례 deadline이 먼저다(전체 deadline 우선). 그다음 모델 요청 10회, 그다음 누적 토큰(설정 limits.tokens, 128,000).
   재전송하기 전에도 같은 순서로 본다. 대기가 deadline을 넘으면 DEADLINE(TIMEOUT), 재전송 중 모델 요청 10회에 먼저
   닿으면 BUDGET_MODEL_REQUESTS(BUDGET_EXCEEDED)로 멈춘다. 후자는 인프라 실패 재실행 대상이 아니다.
@@ -445,7 +450,7 @@ class ModelClient:
                 self.sink.emit("model_error", stage, dict(failure, error=error or "connection", retrying=False,
                                                           backoff_ms=0))
                 raise RunStop(cause_codes.PROVIDER_CONNECTION, stage, "연결 실패")
-            if 500 <= status <= 599:
+            if 500 <= status <= 599 or status == 429:  # 429도 5xx와 같은 재전송 고리·같은 횟수 세기(결정 1552)
                 if retries < self.settings.max_5xx_retries:
                     backoff = self.settings.backoff_base_ms * self.settings.backoff_factor ** retries
                     now = self.clock_ms()
@@ -463,7 +468,8 @@ class ModelClient:
                     retries += 1
                     continue
                 self.sink.emit("model_error", stage, dict(failure, retrying=False, backoff_ms=0))
-                raise RunStop(cause_codes.PROVIDER_HTTP_5XX, stage, f"HTTP {status}(재전송 {retries}회 뒤)")
+                raise RunStop(cause_codes.classify("http_status", http_status=status), stage,
+                              f"HTTP {status}(재전송 {retries}회 뒤)")
             if status != 200:
                 self.sink.emit("model_error", stage, dict(failure, retrying=False, backoff_ms=0))
                 raise RunStop(cause_codes.classify("http_status", http_status=status), stage, f"HTTP {status}")

@@ -143,7 +143,8 @@ class Dev20ShapeBatchTest(TempOutputs, unittest.TestCase):
 
 
 class InfraRerunTest(TempOutputs, unittest.TestCase):
-    """룰북 B5: 원인이 PROVIDER_HTTP_5XX·PROVIDER_CONNECTION뿐인 FAILED만 첫 실행이 끝난 뒤 한 번 다시 돈다."""
+    """룰북 B5: 원인이 PROVIDER_HTTP_5XX·PROVIDER_CONNECTION·HTTP 429인 PROVIDER_HTTP_4XX뿐인 FAILED만 첫 실행이 끝난 뒤
+    한 번 다시 돈다(429는 2026-09-25 15:52 사용자 결정)."""
 
     def test_only_infra_failures_rerun_once_after_the_first_pass(self):
         cases = hf.dev20_cases(4)
@@ -173,6 +174,33 @@ class InfraRerunTest(TempOutputs, unittest.TestCase):
         rerun_full = [x for x in extra if x["mode"] == "full" and x["case_id"] == cases[0]["case_id"]]
         self.assertEqual(rerun_full[0]["execution_status"], "COMPLETED")
         self.assertTrue(all(x["run_id"] > y["run_id"] for x in extra for y in first))  # 새 실행명, 더 늦은 시각
+
+    def test_http_429_lines_rerun_but_other_4xx_do_not(self):
+        cases = hf.dev20_cases(2)
+        seen: dict = {}
+
+        def failed_4xx(call, detail):
+            record = hf.failed_record(call, cause_codes.PROVIDER_HTTP_4XX)
+            return {**record, "errors": [dict(record["errors"][0], detail=detail)]}
+
+        def runner(call):
+            key = (call.case["case_id"], call.mode)
+            seen[key] = seen.get(key, 0) + 1
+            if key == (cases[0]["case_id"], "full"):
+                return failed_4xx(call, "HTTP 429(재전송 3회 뒤)") if seen[key] == 1 else hf.completed_record(call)
+            if key == (cases[1]["case_id"], "agent"):
+                return failed_4xx(call, "HTTP 400")
+            if key == (cases[1]["case_id"], "full"):
+                return failed_4xx(call, "policy_denied(l7) 403: 샌드박스 정책 프록시가 요청을 막았다(재실행 대상 아님)")
+            return hf.completed_record(call)
+
+        result = self.execute(runner, spec(cases))
+        lines = hf.read_jsonl(result.batch_file)
+        self.assertEqual((result.rerun_targets, result.reruns), (1, 1))
+        self.assertEqual([(x["case_id"], x["mode"], x["execution_status"]) for x in lines[6:]],
+                         [(cases[0]["case_id"], "full", "COMPLETED")])
+        self.assertEqual(seen[(cases[1]["case_id"], "agent")], 1)
+        self.assertEqual(seen[(cases[1]["case_id"], "full")], 1)
 
     def test_no_targets_means_zero_reruns(self):
         result = self.execute(hf.FakeRunner(self.clock), spec(hf.dev20_cases(2)))
@@ -229,9 +257,13 @@ class PacingTest(TempOutputs, unittest.TestCase):
         first_end = starts[0][2] + timedelta(milliseconds=20000)
         self.assertGreaterEqual((starts[1][2] - first_end).total_seconds(), 120)
         self.assertEqual(result.rate_limit_waits, 1)
+        # 2026-09-25 15:52 사용자 결정(사용자 결정 5 변경): 429로 끝난 줄은 묶음 끝에 한 번 다시 돈다. 이 대역은 재실행도
+        # 429로 끝나게 두었다. 재실행 줄은 다시 돌리지 않고 두 줄 모두 실패로 남는다(분모, 룰북 B5)
         failed = [x for x in result.lines if x["execution_status"] == "FAILED"]
-        self.assertEqual(len(failed), 1)  # 429는 실패로 남고 재실행하지 않는다(사용자 결정 5)
-        self.assertEqual((result.rerun_targets, result.reruns), (0, 0))
+        self.assertEqual([(x["case_id"], x["mode"]) for x in failed], [order[0], order[0]])
+        self.assertEqual((result.rerun_targets, result.reruns, len(result.lines)), (1, 1, 5))
+        self.assertEqual((starts[-1][0], starts[-1][1]), order[0])
+        self.assertGreaterEqual((starts[-1][2] - starts[-2][2]).total_seconds(), 60)  # 재실행도 속도 조절을 받는다
 
     def test_no_pacing_means_no_wait(self):
         run, starts = self.runner({}, set())
@@ -253,6 +285,8 @@ class PacingTest(TempOutputs, unittest.TestCase):
         entry = cause_codes.error_entry(cause_codes.PROVIDER_HTTP_4XX, "basic",
                                         {k: 0 for k in cause_codes.ATTEMPT_KEYS}, [], "HTTP 429")
         self.assertTrue(batch_run.rate_limited({"errors": [entry]}))
+        self.assertTrue(batch_run.rate_limited({"errors": [dict(entry, detail="HTTP 429(재전송 3회 뒤)")]}))
+        self.assertFalse(batch_run.rate_limited({"errors": [dict(entry, detail="HTTP 4290")]}))
         self.assertFalse(batch_run.rate_limited({"errors": [dict(entry, detail="HTTP 400")]}))
         self.assertFalse(batch_run.rate_limited({"errors": [dict(entry, code=cause_codes.CODE_ERROR)]}))
 

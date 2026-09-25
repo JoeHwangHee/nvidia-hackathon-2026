@@ -1,10 +1,11 @@
 """단위 I7(workflow_model_client) 5xx 재전송 시험과 한도 규칙 시험(로드맵 MT4 완료 기준, 룰북 A2 `3e`).
 
-- 요청당 재전송 상한(3회)과 지수 대기(1초·2초·4초)
+- 요청당 재전송 상한(3회)과 지수 대기(5초·10초·20초, model-1.4). HTTP 429도 5xx와 같은 고리·같은 횟수로 재전송하고,
+  한도를 다 쓴 429는 PROVIDER_HTTP_4XX(재실행 대상, 2026-09-25 15:52 사용자 결정)
 - 재전송도 모델 요청 10회 한도에 센다(룰북 B2)
 - 재전송 한도를 다 쓴 5xx는 FAILED와 모델 제공자 쪽 원인 분류 코드(인프라 실패 재실행 대상)로 남는다(룰북 B5)
 - 재전송 중 모델 요청 10회에 먼저 닿으면 BUDGET_EXCEEDED로 끝나고 재실행 대상이 아니다(자료 계약 §3.3)
-- 전체 deadline이 다른 한도보다 먼저다. 4xx·연결 실패·요청 제한 시간은 재전송하지 않는다
+- 전체 deadline이 다른 한도보다 먼저다. 429 밖 4xx·연결 실패·요청 제한 시간은 재전송하지 않는다
 - 키는 전송 순간 환경변수에서만 읽고 trace·반환값·오류 문장에 없다. 값의 글자가 틀리면 요청을 세기 전에 멈추고,
   리디렉션은 따라가지 않으며 Authorization은 리디렉션 요청에 옮겨 가지 않는다
 - 정책 프록시 거부(CONNECT 403·407, L7 403 policy_denied)는 CODE_ERROR로 멈추고 재실행 대상이 아니다
@@ -67,7 +68,7 @@ class RetransmitTest(NoNetworkMixin, unittest.TestCase):
             client.chat(MESSAGES, stage="basic")
         stop = caught.exception
         self.assertEqual(stop.code, cause_codes.PROVIDER_HTTP_5XX)
-        self.assertEqual(clock.sleeps, [1000, 2000, 4000])
+        self.assertEqual(clock.sleeps, [5000, 10000, 20000])
         self.assertEqual(client.budget.model_requests, 4)  # 첫 요청 + 재전송 3회
         self.assertEqual(len(transport.payloads), 4)
         self.assertEqual(len({trace_log.canonical_sha256(p) for p in transport.payloads}), 1)  # 같은 요청 재전송
@@ -78,6 +79,57 @@ class RetransmitTest(NoNetworkMixin, unittest.TestCase):
         self.assertEqual(kinds, [("model_request", None), ("model_error", True)] * 3
                          + [("model_request", None), ("model_error", False)])
 
+    def test_429_is_resent_like_5xx_then_succeeds(self):
+        client, clock, transport, sink = make_client([{"status": 429}, {"body": ok_body("{}")}])
+        client.chat(MESSAGES, stage="basic")
+        self.assertEqual((clock.sleeps, client.budget.model_requests, len(transport.payloads)), ([5000], 2, 2))
+        errors = [r["data"] for r in sink.records if r["event"] == "model_error"]
+        self.assertEqual([(e["http_status"], e["retrying"], e["backoff_ms"]) for e in errors], [(429, True, 5000)])
+
+    def test_429_after_three_resends_stops_as_4xx_with_retry_count_and_is_a_rerun_target(self):
+        client, clock, transport, sink = make_client([{"status": 429}] * 4)
+        with self.assertRaises(mc.RunStop) as caught:
+            client.chat(MESSAGES, stage="critic")
+        stop = caught.exception
+        self.assertEqual((stop.code, stop.stage, stop.detail), (cause_codes.PROVIDER_HTTP_4XX, "critic",
+                                                                "HTTP 429(재전송 3회 뒤)"))
+        self.assertEqual((clock.sleeps, client.budget.model_requests), ([5000, 10000, 20000], 4))
+        errors = [cause_codes.error_entry(stop.code, stop.stage, mc.budget_counters(client.budget, clock.now), [],
+                                          stop.detail)]
+        self.assertEqual(cause_codes.execution_status(stop.code), "FAILED")
+        self.assertTrue(cause_codes.infra_rerun_eligible("FAILED", errors))
+        traced = [(r["data"]["retrying"], r["data"]["backoff_ms"]) for r in sink.records if r["event"] == "model_error"]
+        self.assertEqual(traced, [(True, 5000), (True, 10000), (True, 20000), (False, 0)])
+
+    def test_5xx_and_429_share_one_resend_count_and_the_last_status_names_the_code(self):
+        for script, code, detail in (
+                ([{"status": 500}, {"status": 429}, {"status": 503}, {"status": 429}], cause_codes.PROVIDER_HTTP_4XX,
+                 "HTTP 429(재전송 3회 뒤)"),
+                ([{"status": 429}, {"status": 502}, {"status": 429}, {"status": 500}], cause_codes.PROVIDER_HTTP_5XX,
+                 "HTTP 500(재전송 3회 뒤)")):
+            with self.subTest(last=script[-1]["status"]):
+                client, clock, transport, _ = make_client(script)
+                with self.assertRaises(mc.RunStop) as caught:
+                    client.chat(MESSAGES, stage="basic")
+                self.assertEqual((caught.exception.code, caught.exception.detail), (code, detail))
+                self.assertEqual((clock.sleeps, len(transport.payloads)), ([5000, 10000, 20000], 4))
+        client, clock, _, _ = make_client([{"status": 503}, {"status": 429}, {"body": ok_body("{}")}])
+        client.chat(MESSAGES, stage="basic")
+        self.assertEqual((clock.sleeps, client.budget.model_requests), ([5000, 10000], 3))
+
+    def test_429_resend_respects_deadline_and_model_request_limit(self):
+        reserve = mc.load_model_config().settings.end_reserve_ms
+        client, clock, _, _ = make_client([{"status": 429}], elapsed_before=300_000 - reserve - 4_000, elapsed_ms=0)
+        with self.assertRaises(mc.RunStop) as caught:
+            client.chat(MESSAGES, stage="basic")
+        self.assertEqual((caught.exception.code, clock.sleeps), (cause_codes.DEADLINE, []))
+        client, clock, _, sink = make_client([{"status": 429}, {"status": 429}], used_requests=8)
+        with self.assertRaises(mc.RunStop) as caught:
+            client.chat(MESSAGES, stage="revision")
+        self.assertEqual((caught.exception.code, clock.sleeps, client.budget.model_requests),
+                         (cause_codes.BUDGET_MODEL_REQUESTS, [5000], 10))
+        self.assertIs(sink.records[-1]["data"]["retrying"], False)
+
     def test_resends_count_toward_the_model_request_limit_and_stop_as_budget_exceeded(self):
         client, clock, transport, sink = make_client([{"status": 503}, {"status": 503}], used_requests=8)
         with self.assertRaises(mc.RunStop) as caught:
@@ -85,7 +137,7 @@ class RetransmitTest(NoNetworkMixin, unittest.TestCase):
         stop = caught.exception
         self.assertEqual(stop.code, cause_codes.BUDGET_MODEL_REQUESTS)
         self.assertEqual(client.budget.model_requests, 10)
-        self.assertEqual(clock.sleeps, [1000])  # 10번째 뒤에는 기다리지 않고 멈춘다
+        self.assertEqual(clock.sleeps, [5000])  # 10번째 뒤에는 기다리지 않고 멈춘다
         self.assertEqual(cause_codes.execution_status(stop.code), "BUDGET_EXCEEDED")
         self.assertFalse(cause_codes.infra_rerun_eligible("BUDGET_EXCEEDED", errors_of(stop, client, clock)))
         self.assertIs(sink.records[-1]["data"]["retrying"], False)
@@ -122,7 +174,9 @@ class RetransmitTest(NoNetworkMixin, unittest.TestCase):
         self.assertEqual(transport.timeouts, [config.settings.request_cap_ms])
 
     def test_4xx_connection_and_timeout_are_not_resent(self):
-        cases = [({"status": 429}, cause_codes.PROVIDER_HTTP_4XX),
+        cases = [({"status": 400}, cause_codes.PROVIDER_HTTP_4XX),
+                 ({"status": 403}, cause_codes.PROVIDER_HTTP_4XX),
+                 ({"status": 404}, cause_codes.PROVIDER_HTTP_4XX),
                  ({"error": "connection"}, cause_codes.PROVIDER_CONNECTION),
                  ({"error": "timeout"}, cause_codes.PROVIDER_REQUEST_TIMEOUT),
                  ({"body": b"not json"}, cause_codes.PROVIDER_BAD_RESPONSE),
