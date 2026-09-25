@@ -755,6 +755,22 @@ class ScorerAlignmentTest(unittest.TestCase):
         self.assertEqual(self.kinds("△4.0%p", self.D_CLAIM), [])
         self.assertEqual(self.kinds("△4.0%P", CASE_A_CLAIMS), ["PT-1"])  # s 10.0·6.0%와도 값이 다르다
 
+    def test_whitespace_boundaries_match_scorer(self):
+        # Codex 1회차: 숫자와 단위 사이 공백. 채점기 EX-1·EX-4 패턴은 `\s*+`(0개 이상)라 "2 주 동안"·"2  주 동안"도
+        # 기간으로 빼고, "연속" 앞 공백도 0개 이상이다. pp 단위 "%p"는 붙여 쓴 것만이다(채점기 `%p(?![A-Za-z])`).
+        for text in ("2 주 동안 하락했다.", "2  주 동안 하락했다.", "2주 동안 하락했다."):
+            with self.subTest(text=text):
+                self.assertEqual(self.kinds(text, rate_claims("-40.0")), [])
+        for text in ("2 주 연속 하락했다.", "2 주  연속 하락했다.", "3 일 연속 하락했다."):
+            with self.subTest(text=text):
+                self.assertEqual(self.kinds(text, rate_claims("-40.0")), ["PT-5"])
+        self.assertEqual(self.kinds("제 3 국과 제 2 - 1 안", []), [])
+        self.assertEqual(self.kinds("1 kg 당 3.6달러다.", CASE_A_CLAIMS), [])
+        self.assertEqual(self.kinds("△4.0% p", self.D_CLAIM), ["PT-1"])  # 띄운 "% p"는 pp가 아니라 %다
+        self.assertEqual(self.kinds("△4.0%p", self.D_CLAIM), [])
+        self.assertEqual(self.kinds("4% p 하락", self.D_CLAIM), ["PT-1"])
+        self.assertEqual(self.kinds("4%p 하락", self.D_CLAIM), [])
+
 
 class TemplateConsistencyTest(unittest.TestCase):
     """R1 문장 틀은 산문 검사에서 사유가 0건이다(틀 채우기 모드의 기본 경로)."""
