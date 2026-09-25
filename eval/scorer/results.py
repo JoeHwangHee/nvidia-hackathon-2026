@@ -20,13 +20,14 @@ provenance_ok)를 더해 실행 결과 기록(자료 계약 docs/rules/DATA_CONT
   snapshot_id·policy_version·grouping_version이 실행 기록과 같다.
 - required_evidence_ok(필수 근거): 정답표가 있는 합성 묶음에서만 채운다. COMPLETED이고 보고서를 읽었으며, 정답표가 발동
   신호마다 정한 필수 근거 코드를 모두 채운다(TAG_RULES). 실자료 묶음(real_dev·real_sealed)은 정답표가 없어 null이다
-  (사용자 확인 대기, 잠정).
+  (사용자 결정 7, 결정 기록 20260925-0847-user-decision-morning-shared-promises.md).
 - 유효한 최종 보고서가 없는 실행(COMPLETED가 아님, 보고서 없음)은 세 키가 거짓이다(실자료의 required_evidence_ok는 null).
 
 정답표는 read_answer_table 한 곳에서만 읽는다. 형식은 eval/dev/oracle_ABC.json의 사례 구조를 기준으로 하고
 required_evidence는 반드시 있어야 한다(빈 목록은 명시할 때만). 필수 근거 코드는 판정 정책(MT1 단위 P5,
 src/tradesentry/policy/required_evidence.py)의 13개와 같은 이름이고, 신호 계열마다 쓸 수 있는 코드가 정해져 있다
-(FAMILY_TAGS). 코드별 판정 조건은 잠정이다(MT1 결정 D17의 공개 판정 조건 표가 정해지면 맞춘다).
+(FAMILY_TAGS). 코드별 판정 조건의 공개 정본은 시나리오 명세 eval/scenarios/SCENARIO_SPEC.md §5.3의 판정 조건표다(MT1
+결정 D17, 결정 기록 20260925-0900-data-decision-d17-evidence-table.md). 판정 정책·검증기(R3)는 같은 표를 따로 구현한다.
 """
 import re
 
@@ -56,7 +57,8 @@ TRIGGERED = "TRIGGERED"
 KOREAN_STATUS = {"검토 유지": "MAINTAIN", "모니터링": "MONITOR", "자료 보류": "HOLD"}  # 자료 계약 §3.2
 RUN_ID_RE = re.compile(r"[a-z][a-z0-9_]*-[0-9]{12}")  # fullmatch로 쓴다(끝 줄바꿈·유니코드 숫자를 받지 않는다)
 
-# 필수 근거 코드 → 최종 보고서에서 확인하는 것(잠정, MT1 결정 ⑨의 뜻과 개발 플랜 §6.3 "반드시 남길 근거"). 사례 문맥
+# 필수 근거 코드 → 최종 보고서에서 확인하는 것(MT1 결정 ⑨의 뜻과 개발 플랜 §6.3 "반드시 남길 근거". 공개 정본은 시나리오
+# 명세 §5.3 판정 조건표이고, 이 표와 _tag_ok를 바꾸면 그 표도 함께 고친다). 사례 문맥
 # (hs6, 대상국 P, 비교월 t, 기준월 b=t−12, grouping_version)이 필요하다. "유효한 claim"은 대상이 풀리고 근거가 맞는
 # claim이다(값의 참·거짓은 numeric_ok가 본다). "빠진 키"는 신호 계열의 대상 범위(단가: P의 부모 HS6 키와 C형 HS10 하위,
 # 점유율: P의 부모 HS6 키와 ALL 분모, 두 시점)에서 관측 상태가 OBSERVED·CONFIRMED_NO_TRADE가 아닌 키다.
@@ -76,8 +78,8 @@ TAG_RULES = {
                                               "data_status claim이 있고, 사례 품목·두 시점의 data_status claim에 "
                                               "WRONG_VALUE가 없다",
     "no_zero_fill": "대상이 풀렸고 기대값이 null인 수 claim에 수(0 포함)를 적은 claim이 없다",
-    "precision_sensitivity_shown": "대상국의 두 시점 부모 V·Q value claim(4개)이 유효하게 있다(정밀도·민감도의 바탕, "
-                                   "U4 확인 전 잠정)",
+    "precision_sensitivity_shown": "대상국의 두 시점 부모 V·Q value claim(4개)이 유효하게 있다(정밀도·민감도의 바탕. "
+                                   "반올림 민감도를 적는 typed claim 지표가 없어 그 입력값으로 대신한다)",
     "country_and_world_change_shown": "대상국 V와 ALL V의 두 시점 value claim(4개)이 유효하게 있다",
 }
 CORRECTION_TAGS = ("correction_snapshots_before_after", "recalculated_values", "change_reason")
@@ -336,7 +338,7 @@ def _listed(report: _Report, gap: tuple) -> bool:
 
 
 def _tag_ok(tag: str, family: str, report: _Report) -> bool:
-    """필수 근거 코드 하나를 신호 계열 family에서 채웠는가(TAG_RULES, 잠정)."""
+    """필수 근거 코드 하나를 신호 계열 family에서 채웠는가(TAG_RULES, 시나리오 명세 §5.3 판정 조건표)."""
     p, t, b = report.partner, report.t, report.b
     if tag == "comparability_ok":
         if family == "unit_value":

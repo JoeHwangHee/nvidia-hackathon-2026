@@ -24,6 +24,15 @@
      ]
     },
     {
+     "basis": "data_inconsistent",
+     "status": "HOLD",
+     "required_evidence": [
+      "parent_child_match_V_and_Q",
+      "comparability_ok",
+      "no_zero_fill"
+     ]
+    },
+    {
      "basis": "comparison_incomplete",
      "status": "HOLD",
      "required_evidence": [
@@ -87,6 +96,15 @@
      ]
     },
     {
+     "basis": "data_inconsistent",
+     "status": "HOLD",
+     "required_evidence": [
+      "country_and_world_change_shown",
+      "comparability_ok",
+      "no_zero_fill"
+     ]
+    },
+    {
      "basis": "comparison_incomplete",
      "status": "HOLD",
      "required_evidence": [
@@ -120,14 +138,14 @@
   "missingness_listed": "부족 항목 목록",
   "failure_vs_not_collected_distinguished": "요청 실패와 미수집의 구분",
   "no_zero_fill": "빈 응답을 0으로 채우지 않음",
+  "parent_child_match_V_and_Q": "부모 HS6 행과 HS10 하위 행 합계 대조(금액 정확 일치, 중량 허용오차)",
+  "comparability_ok": "비교 조건 점검(기간·요청 완료·단위·HS 버전·분모·하위자료)",
   "precision_sensitivity_shown": "정밀도·유효범위·민감도(작은 금액 자체를 정상 근거로 쓰지 않음)",
   "correction_snapshots_before_after": "교정 전후 스냅샷",
   "recalculated_values": "교정 뒤 동결 정책으로 재계산한 값",
   "change_reason": "변경 사유",
-  "parent_child_match_V_and_Q": "부모 HS6 행과 HS10 하위 행 합계 대조(금액 정확 일치, 중량 허용오차)",
   "weight_share_decomposition": "중량 비중 구성효과 분해 수치(within_effect·mix_effect·residual)",
   "per_child_unit_value_stable": "HS10 하위품목별 단가 변화가 기준 안(하위 안정성)",
-  "comparability_ok": "비교 조건 점검(기간·요청 완료·단위·HS 버전·분모·하위자료)",
   "partner_comparison_done": "허용된 비교국과의 비교(검사한 대안 설명과 반대 근거)",
   "country_and_world_change_shown": "해당국 금액 변화와 전체국가(ALL) 분모 변화"
  }
