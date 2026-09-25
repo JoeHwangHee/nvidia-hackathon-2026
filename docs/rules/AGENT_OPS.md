@@ -269,7 +269,7 @@ echo "$CODEX_EXIT" > <종료 코드 파일>
 | X1 세로형 최소 통합 시험(`spikes/x1/`) | | | ○ | ○ | — |
 | 자료 접근층·자료 계약 구현, 지표 계산(`src/tradesentry/contract/`, `src/tradesentry/dal/`, `src/tradesentry/snapshot/`의 빌드·검증, `src/tradesentry/metrics/`) | ○ | | | | ○ 자료 계약·지표 계산 |
 | 합성 시험자료, 시나리오 명세, `dev20`, 독립 채점기(`data/snapshots/controlled_fixture_v0/`, `src/tradesentry/snapshot/fixture.py`, `eval/scenarios/SCENARIO_SPEC.md`, `eval/dev/dev20/`, 평가 자료 도구 `eval/datagen/dev20.py`·`eval/datagen/holdout40_check.py`, `eval/scorer/`) | ○ | ○ | | | ○ `dev20` 정답표·채점기만 |
-| 실자료 분할(기준값 조정용 `real_dev`·봉인용 `real_sealed`, 분할 도구 `eval/datagen/split.py`), holdout40·`real_sealed` 생성과 봉인 해시 등록(`eval/sealed_manifest.json`) | | ○ | | ○ | — (봉인 자료는 Codex에 주지 않는다) |
+| 실자료 분할(개발·조정용 `real_dev`·봉인용 `real_sealed`, 분할 도구 `eval/datagen/split.py`), holdout40·`real_sealed` 생성과 봉인 해시 등록(`eval/sealed_manifest.json`) | | ○ | | ○ | — (봉인 자료는 Codex에 주지 않는다) |
 | `policy_v1` 수치 제안과 판정 정책 코드(`configs/policy_v1.json`, `src/tradesentry/policy/`) | ○ | ○ | | | ○ 판정 정책 |
 | 도구와 예산 강제(`src/tradesentry/tools/`) | ○ | ○(비교군 공정성) | | ○ | — |
 | 검증기·보고서 틀(`src/tradesentry/validator/`, `src/tradesentry/reports/`) | ○ | ○ | | | ○ 검증기 |
@@ -599,7 +599,7 @@ S0 앱 스캐폴딩은 구현 첫 작업 단위이고 외부 자문 체크포인
 - **`controlled_fixture_v0`**: 데이터 트랙이 먼저 넘기는 합성 시험자료.
 - **`dev20`**: 모든 에이전트가 쓰는 공개 합성 개발 자료 20건.
 - **holdout40**: 격리된 에이전트가 만들어 봉인하는 합성 평가 자료 40건.
-- **`real_dev` / `real_sealed`**: 품목×국가 시계열 단위로 나눈 실자료 두 묶음. 앞은 기준값 조정용 개발 묶음, 뒤는 대표 지표 채점용 봉인 묶음이다.
+- **`real_dev` / `real_sealed`**: 품목×국가 시계열 단위로 나눈 실자료 두 묶음. 앞은 기준값 조정과 조사 지침(모델 프롬프트)·조사 흐름 조정에 쓰는 개발 묶음(조사 지침·흐름 조정은 결정 기록 `20260925-1417-user-decision-real-dev-tuning.md`), 뒤는 대표 지표 채점용 봉인 묶음이다.
 - **`policy_v1`**: 동결 판정 정책. 수치는 `configs/policy_v1.json`에 두고 사용자 승인을 받는다.
 - **평가 스킬 ① / ②**: `skills/tradesentry-scorecard/SKILL.md`(룰북 Part A 자기채점)와 `skills/tradesentry-eval/SKILL.md`(룰북 Part B 성능 평가).
 - **조정값**: 운영하면서 바꿀 수 있는 수치나 방식. 바꾸면 기록한다.
