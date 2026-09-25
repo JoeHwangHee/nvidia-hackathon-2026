@@ -12,7 +12,9 @@
 3. dev20 생성 도구(단위 V2)가 tradesentry.metrics·tradesentry.policy와 그것들을 부르는 모듈에 닿지 않는다.
 4. 샌드박스 밖 실행기(단위 E2)가 닿지 않는다: .env를 읽는 tradesentry.ingest(load_env)와 nat(NAT 1.9.0의 nat 명령
    진입점은 import 때 load_dotenv()를 부른다), 사례를 호스트에서 직접 돌릴 수 있는 tradesentry.workflow·tools·
-   policy·metrics, 묶음 실행 E1(tradesentry.evaluation.batch_run).
+   policy·metrics, CLI(tradesentry.cli), 독립 채점기(eval.scorer). 묶음 실행 E1(tradesentry.evaluation.batch_run)은
+   사례를 돌리지 않는 순수 고리라 E2가 import한다(로드맵 MT7 두 번째 PR, 결정 기록 model-decision-mt7-sealed-runner).
+   반대 방향(E1 → E2)은 9번대로 막는다.
 5. tradesentry·eval 아래 모듈은 tradesentry.units 밖에서 개발 전용 등록부·공통 실행기(tradesentry.units)를
    import하지 않는다(시험 파일은 예외).
 6. 저장소 모듈 사이에 순환 import가 없다.
@@ -448,9 +450,9 @@ def check(root: Path, rules: Rules) -> tuple[list[str], dict[str, int]]:
     return problems, stats
 
 
-# 단위 E2가 닿으면 안 되는 모듈(4번). E1은 repo_rules가 등록부에서 이름을 가져와 더한다.
+# 단위 E2가 닿으면 안 되는 모듈(4번). E1(tradesentry.evaluation.batch_run)은 E2가 import한다(머리 설명 4).
 E2_FORBIDDEN = ["tradesentry.ingest", "nat", "tradesentry.workflow", "tradesentry.tools", "tradesentry.policy",
-                "tradesentry.metrics"]
+                "tradesentry.metrics", "tradesentry.cli", "eval.scorer"]
 
 
 def repo_rules() -> Rules:
@@ -461,7 +463,7 @@ def repo_rules() -> Rules:
         Closure("2", "독립 채점기", ["eval.scorer"], allowed=["eval.scorer"], allowed_exact=["eval"],
                 tokens=SCORER_TOKENS, stdlib=SCORER_STDLIB),
         Closure("3", "단위 V2", [v2], forbidden=["tradesentry.metrics", "tradesentry.policy"]),
-        Closure("4", "단위 E2", [e2], forbidden=E2_FORBIDDEN + [e1]),
+        Closure("4", "단위 E2", [e2], forbidden=E2_FORBIDDEN),
         Closure("8", "CLI", ["tradesentry.cli"], forbidden=[e2]),
         Closure("9", "단위 E1", [e1], forbidden=[e2]),
     ]
@@ -484,12 +486,16 @@ class RepositoryBoundaryTest(unittest.TestCase):
         self.assertFalse(allowed(registry.UNITS["E2"].module, tokens))  # 호스트 전용 E2는 CLI가 부르지 않는다
         self.assertNotIn("tradesentry.evaluation", tokens)
 
-    def test_e1_and_e2_headers_do_not_allow_each_other(self):
+    def test_e1_header_does_not_allow_e2_and_e2_header_stays_narrow(self):
+        """E1 → E2는 막고(9번), E2 → E1은 연다(4번, MT7 두 번째 PR). E2의 허용 import에 사례를 돌릴 수 있는 패키지와 CLI는 없다."""
         e1, e2 = registry.UNITS["E1"], registry.UNITS["E2"]
         e1_tokens = registry.header_allowed_imports(registry.read_header((ROOT / e1.path).read_text(encoding="utf-8")))
         e2_tokens = registry.header_allowed_imports(registry.read_header((ROOT / e2.path).read_text(encoding="utf-8")))
         self.assertFalse(allowed(e2.module, e1_tokens))
-        self.assertFalse(allowed(e1.module, e2_tokens))
+        self.assertTrue(allowed(e1.module, e2_tokens))
+        self.assertTrue(allowed("tradesentry.evaluation.sandbox_exec", e2_tokens))
+        for name in E2_FORBIDDEN + ["tradesentry.evaluation", "tradesentry.dal"]:
+            self.assertFalse(allowed(name, e2_tokens), name)
 
 
 def write_tree(root: Path, files: dict[str, str]) -> None:
@@ -550,7 +556,7 @@ TREE_RULES = Rules(
     closures=[Closure("2", "독립 채점기", ["eval.scorer"], allowed=["eval.scorer"], allowed_exact=["eval"],
                       tokens=SCORER_TOKENS, stdlib=SCORER_STDLIB),
               Closure("3", "단위 V2", ["eval.datagen.dev20"], forbidden=["tradesentry.metrics", "tradesentry.policy"]),
-              Closure("4", "단위 E2", [TREE_E2], forbidden=E2_FORBIDDEN + [TREE_E1]),
+              Closure("4", "단위 E2", [TREE_E2], forbidden=E2_FORBIDDEN),
               Closure("8", "CLI", ["tradesentry.cli"], forbidden=[TREE_E2]),
               Closure("9", "단위 E1", [TREE_E1], forbidden=[TREE_E2])],
     token_files=[("단위 V2", "eval.datagen.dev20", V2_TOKENS), ("단위 E2", TREE_E2, E2_TOKENS)],
@@ -768,10 +774,16 @@ class NegativeCaseTest(unittest.TestCase):
         self.assert_caught({"eval/datagen/dev20.py": header("V2", "표준 라이브러리, eval.datagen") + call},
                            "7) 단위 V2", "하위 프로세스 호출 subprocess.run()")
 
-    def test_e2_may_not_import_e1(self):
-        self.assert_caught({E2_FILE: header("E2", "표준 라이브러리, tradesentry.contract")
-                            + "from tradesentry.evaluation import batch_run\n"},
-                           "1) 단위 E2", "4) 단위 E2", TREE_E1)
+    def test_e2_may_import_e1_but_not_cli_or_scorer(self):
+        """MT7 두 번째 PR: E2 → E1은 열렸고(머리 설명 4), CLI(tradesentry.cli)와 독립 채점기(eval.scorer)는 여전히 막는다."""
+        self.assertEqual(self.problems_with({E2_FILE: header("E2", "표준 라이브러리, " + TREE_E1)
+                                             + "from tradesentry.evaluation import batch_run\n"}), [])
+        self.assert_caught({E2_FILE: header("E2", "표준 라이브러리, tradesentry.cli")
+                            + "from tradesentry.cli import dispatch\n"},
+                           "4) 단위 E2", "tradesentry.cli")
+        self.assert_caught({E2_FILE: header("E2", "표준 라이브러리, eval.scorer")
+                            + "from eval.scorer import claims\n"},
+                           "4) 단위 E2", "eval.scorer")
 
     def test_e1_may_not_import_e2(self):
         self.assert_caught({E1_FILE: header("E1", "표준 라이브러리") + "from tradesentry.evaluation import sealed_runner\n"},

@@ -43,7 +43,8 @@ PROFILE_FILES = ("all_requests_profiler_traces.json", "inference_optimization.js
                  "workflow_profiling_metrics.json", "workflow_profiling_report.txt")  # 단위 I13 PROFILE_FILES
 TRACES_FILE = PROFILE_FILES[0]
 NAT_TRACE_NAME = "nat_trace.jsonl"  # 단위 I13 NAT_TRACE_NAME(NAT 실행 추적)
-BATCH_DOMAINS = {"evaluate": "evaluation_batch_run"}
+BATCH_DOMAINS = {"evaluate": "evaluation_batch_run",  # 단위 E1
+                 "sealed_evaluate": "evaluation_sealed_runner"}  # 단위 E2(봉인 자리라 summarize_batch는 읽지 않는다)
 STAGES = ("basic", "critic", "revision", "final")  # 단위 L1 단계 이름
 OTHER_STAGE = "other"
 MAX_FILE_BYTES = 16 << 20

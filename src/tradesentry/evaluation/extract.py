@@ -26,8 +26,9 @@
 - 믿지 않는 입력: 실행 기록은 샌드박스가 쓴 파일이다. 객체가 아니거나 두 키(execution_status·errors)의 모양이 틀린 줄은
   malformed로 세고 건너뛴다. 오류 문장에는 예외 이름만 적는다(N13).
 
-묶음 기록 이름: 평가 묶음 실행 evaluate-{시각}의 evaluation_batch_run-{시각}.jsonl(단위 E1)만 안다. 샌드박스 밖 실행기
-E2의 묶음 기록 도메인명과 봉인 묶음 실행 이름은 로드맵 MT7의 다음 PR에서 정한다(모르는 이름이면 오류).
+묶음 기록 이름(BATCH_DOMAINS): 평가 묶음 실행 evaluate-{시각}의 evaluation_batch_run-{시각}.jsonl(단위 E1)과 봉인 묶음
+실행 sealed_evaluate-{시각}의 evaluation_sealed_runner-{시각}.jsonl(단위 E2, 결정 기록 model-decision-mt7-sealed-runner).
+그 밖의 실행 이름은 오류다.
 """
 import argparse
 import os
@@ -41,7 +42,8 @@ from tradesentry.runlog import cause_codes, run_record
 from tradesentry.runlog import trace as trace_log
 
 DOMAIN = "evaluation_extract"
-BATCH_DOMAINS = {"evaluate": "evaluation_batch_run"}  # 묶음 실행 이름 → 묶음 기록 도메인명(E2는 다음 PR)
+BATCH_DOMAINS = {"evaluate": "evaluation_batch_run",  # 묶음 실행 이름 → 묶음 기록 도메인명(단위 E1)
+                 "sealed_evaluate": "evaluation_sealed_runner"}  # 봉인 묶음(단위 E2, MT7 두 번째 PR)
 VERSION_KEYS = ("policy_version", "rulebook_version", "snapshot_id", "grouping_version", "code_version")
 TARGET_KEYS = ("run_id", "case_id", "mode")
 UNKNOWN = "unknown"
@@ -104,7 +106,7 @@ def batch_file(batch_dir: Path) -> Path:
         raise ExtractError("묶음 실행 폴더 이름이 실행명 형식이 아니다")
     run_name, stamp = name.rsplit("-", 1)
     if run_name not in BATCH_DOMAINS:
-        raise ExtractError("모르는 묶음 실행 이름이다(E2의 묶음 기록 이름은 로드맵 MT7 다음 PR에서 정한다)")
+        raise ExtractError("모르는 묶음 실행 이름이다(evaluate·sealed_evaluate만 안다)")
     return batch_dir / f"{BATCH_DOMAINS[run_name]}-{stamp}.jsonl"
 
 
