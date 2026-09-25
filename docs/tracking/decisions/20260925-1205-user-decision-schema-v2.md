@@ -13,4 +13,5 @@
 | 결정 주체 | 사용자 |
 | 공용 약속 여부 | 그렇다(자료 형식). 이 기록이 사용자 승인이다(자료 계약 §13.1) |
 | 영향 | 문서: 두 번째 문서 PR(DOCS2)이 자료 계약 §1.2·§13.2와 문서에 적힌 계약 버전 값을 2로 맞춘다. 코드·자료(다른 PR `data/schema-v2`): ① 계약 커널 상수(단위 K1 `src/tradesentry/contract/types.py`의 `schema_version`) ② 정책 파일(`configs/policy_v1.json`, `configs/policy_dev.json`)의 버전 표시 ③ 합성 시험자료 `controlled_fixture_v0` 재생성(자료 계약 §13.1 절차 2) ④ dev20 입력·정답표 재생성 ⑤ 실자료 정본 빌드(v2 최종 빌드)의 재설치 ⑥ 봉인 holdout40은 처음 정한 seed 그대로 재생성하고, 봉인 해시 등록(`eval/sealed_manifest.json`)은 재생성본으로 한다. 재생성과 재검증(자료 계약 §13.1의 3 양 트랙 검토)은 그 PR이 한다 |
+| 코드·자료 쪽 범위 | 이 기록과 문서 PR(DOCS2)은 계획 문서의 버전 글과 계약 본문을 단언하는 시험 한 줄만 고친다. 코드와 자료의 `schema_version` 표기 — 계약 커널 상수(`src/tradesentry/contract/types.py`), 따로 둔 상수(`src/tradesentry/metrics/rounding.py`), 채점기 상수(`eval/scorer/`), 정책 파일 두 개(`configs/policy_dev.json`·`configs/policy_v1.json`), 합성 시험자료·dev20의 원천과 기록, 시험 골든 입력·기대값과 고정 자료(`tests/units/**`의 `input.json`·`expected.json`·fixture 파일, `tests/*.py`의 고정 값) — 는 모두 `data/schema-v2` PR이 2로 고친다. 두 PR은 이어서 병합하며, 그 사이 main의 코드·자료 표기는 1이다. 실자료 정본 빌드 기록과 봉인 holdout40은 그 PR 병합 뒤 다시 만든다 |
 | 관련 PR | 두 번째 문서 PR(DOCS2, PR #43), 코드·자료 버전 올림 PR(브랜치 `data/schema-v2`) |
