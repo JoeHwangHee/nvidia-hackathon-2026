@@ -720,7 +720,8 @@ class ScorerAlignmentTest(unittest.TestCase):
 
     def test_6_usd_per_ton_has_no_compatible_claim(self):
         # #6 "USD/톤"·"달러/톤"·"톤당": 관세청 지표(USD/kg)와 환산하지 않으므로 호환 claim이 없어 막는다(룰북 경계 14).
-        for text in ("3.6 USD/톤이다.", "3,600달러/톤이다.", "톤당 3,600달러다.", "톤당 3.6달러다."):
+        for text in ("3.6 USD/톤이다.", "3,600달러/톤이다.", "톤당 3,600달러다.", "톤당 3.6달러다.", "톤 당 3.6달러다.",
+                     "톤  당  3.6달러다."):  # 띄운 "톤 당"도 톤당 단가다(채점기 `톤\s*+당\s*+`)
             with self.subTest(text=text):
                 self.assertEqual(self.kinds(text, CASE_A_CLAIMS), ["PT-3"])
         self.assertEqual(self.kinds("kg당 3.6달러다. 3.6 USD/kg이다.", CASE_A_CLAIMS), [])
@@ -775,6 +776,26 @@ class ScorerAlignmentTest(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertEqual(self.kinds(text, rate_claims("-40.0")), [])
                 self.assertEqual(self.kinds(text, rate_claims("40.0")), ["PT-6"])
+
+
+    def test_ex2_extension_matches_scorer(self):
+        # EX-2 확장(룰북 B3-2, 사용자 결정 2026-09-26(토) 08:10 ②, 채점기 EX2 PR): 대문자 HS·HSK만, 접두 k만 대소문자 무관
+        # (VA·V·W는 대문자만), 공백 0개 이상, 앞자리 있는 숫자만 뺀다. 소문자 "hsk 10"·"16kva"는 빼지 않는다. "hs 8504"의
+        # 8504는 사례의 HS4 코드라 EX-2 코드 집합으로 빠지므로 집합 밖 8501로 본다.
+        for text in ("HSK  10단위 품목", "10  단위 품목", "16  kVA 이하", "HSK 10 단위", "HS 코드 8504", "0.5kVA 규격", "16 KVA 규격"):
+            with self.subTest(text=text):
+                self.assertEqual(self.kinds(text, []), [])
+        for text in ("hsk 10 품목", "hs 8501 품목", "16kva 규격", "16 Kva 규격", "16 kv 규격"):
+            with self.subTest(text=text):
+                self.assertEqual(self.kinds(text, []), ["PT-5"])
+        # 채점기 EX-2 경계 시험(tests/test_scorer_prose.py, EX2 브랜치)과 같은 결과: ① 공백 2개 표현은 모두 빠짐 ② 소문자
+        # "hsk 10"과 앞자리 없는 ".5kVA"의 숫자(10·5)는 채점 대상으로 남음(NUMBER_RE가 앞 글자 `.`을 막지 않는다) ③ 천 단위
+        # 쉼표가 든 규격 수 "1,000kVA"는 통째로 빠지고 쉼표 앞 1도 잡지 않는다.
+        self.assertEqual(self.kinds("HSK  10 기준, 10  단위 분류, 16  kVA 규격", []), [])
+        self.assertEqual(self.kinds("hsk 10 기준", []), ["PT-5"])
+        self.assertEqual(self.kinds(".5kVA 규격", []), ["PT-5"])
+        self.assertEqual(self.kinds("1,000kVA 규격", []), [])
+        self.assertEqual(self.kinds("1,000 kVA 규격", []), [])
 
 
 class TemplateConsistencyTest(unittest.TestCase):
