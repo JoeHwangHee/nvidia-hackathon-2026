@@ -934,7 +934,7 @@ def _render_evidence(st, model: dict) -> None:
 
 
 def main() -> None:
-    """스트림릿 진입점: uv run --locked --extra ui streamlit run src/tradesentry/app.py"""
+    """스트림릿 진입점: uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py"""
     import streamlit as st
 
     st.set_page_config(page_title="TradeSentry 사례 보기", layout="wide")

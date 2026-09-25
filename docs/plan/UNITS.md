@@ -148,7 +148,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | A1 | 모의 승인 | `approval_record` | `src/tradesentry/approval/record.py` | 앱 | M | 보고서·근거 digest → 승인 기록·`REVIEW_REQUIRED` | 유지. AS4 점검: MVP 명령에서 불리지 않음. 로드맵 AP1이 구현할 뼈대라 버리지 않음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 7 | — | — |
-| A2 | 화면 | `app` | `src/tradesentry/app.py` | 앱 | M | 실행 기록·조회 → Streamlit 화면 1개(화면 1 "사례 보기" + "사례 실행" 패널) | 유지. 화면 1개 구현(2026-09-26(토) 04:25 사용자 결정, 제출 시나리오 C = A + 화면 1개), 화면 2·3은 뺌. 구현 결정 기록 `20260926-0732-model-decision-ui-screen-1.md`. AS4 점검 때는 불리지 않은 뼈대였고 버림 후보였다 | 7 | — | 화면 3개 계획(개발 플랜 §7.7)에서 화면 1개로 줄인 것은 사용자 결정 0425다. streamlit은 선택 의존성 그룹 `ui`(`uv sync --locked --extra ui`)이고 함수 안에서만 import한다. 골든 쌍은 재생 실행 폴더 픽스처(`tests/units/A2/fixture/`), 근거 ID 풀기는 임시 합성 픽스처로 시험 |
+| A2 | 화면 | `app` | `src/tradesentry/app.py` | 앱 | M | 실행 기록·조회 → Streamlit 화면 1개(화면 1 "사례 보기" + "사례 실행" 패널) | 유지. 화면 1개 구현(2026-09-26(토) 04:25 사용자 결정, 제출 시나리오 C = A + 화면 1개), 화면 2·3은 뺌. 구현 결정 기록 `20260926-0732-model-decision-ui-screen-1.md`. AS4 점검 때는 불리지 않은 뼈대였고 버림 후보였다 | 7 | — | 화면 3개 계획(개발 플랜 §7.7)에서 화면 1개로 줄인 것은 사용자 결정 0425다. streamlit 1.64.0은 `uv.lock`에 넣지 않고 `uv run --locked --with "streamlit==1.64.0" streamlit run …`으로 실행 때만 받으며(streamlit의 `websockets<17` 요구가 기본 lock에 닿아서. 오케스트레이터 결정), 함수 안에서만 import한다. 골든 쌍은 재생 실행 폴더 픽스처(`tests/units/A2/fixture/`), 근거 ID 풀기는 임시 합성 픽스처로 시험 |
 
 ### 3.10 E — 평가 실행(4개)
 
