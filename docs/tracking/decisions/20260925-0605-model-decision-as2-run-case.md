@@ -19,7 +19,7 @@
 |---|---|
 | 날짜 | 2026-09-25(금) 06:05(기록 시각). 바탕은 `main` cf9d607 + MT4 브랜치 6dfc489(병합 02ebeb5)이고, 작업 중 AS1(#32)이 병합된 `main` d945792를 받았다(f9e5633). 코드 커밋은 c9085f8(단위 I12)·81b9df9(단위 F2) |
 | 제목 | `run-case` 배선 순서·도구 자리·근거 상태 변환·C형 펼치기·출력 파일, 실자료 스냅샷 거부(잠정), 조립 점검 1·2·5단계 결과와 단위 표 판정 갱신 |
-| 결정 | 아래 "결정 내용" ①~⑫. ⑬은 2회차(실제 NIM 실측 6회 뒤, 같은 날 06:3x), ⑭는 3회차(실측 27회 뒤, 07:0x), ⑮는 4회차(실측 20회 뒤, 07:2x), ⑯은 5회차(07:4x), ⑰은 6회차(08:0x, 오케스트레이터 판단), ⑱은 7회차(08:3x), ⑲는 8회차(09:0x), ⑳은 9회차(검토 반영, 09:3x), ㉑은 10회차(마지막 조정, 10:0x), ㉒는 병합 준비(사용자 결정 반영)에 더했다 |
+| 결정 | 아래 "결정 내용" ①~⑫. ⑬은 2회차(실제 NIM 실측 6회 뒤, 같은 날 06:3x), ⑭는 3회차(실측 27회 뒤, 07:0x), ⑮는 4회차(실측 20회 뒤, 07:2x), ⑯은 5회차(07:4x), ⑰은 6회차(08:0x, 오케스트레이터 판단), ⑱은 7회차(08:3x), ⑲는 8회차(09:0x), ⑳은 9회차(검토 반영, 09:3x), ㉑은 10회차(마지막 조정, 10:0x), ㉒는 병합 준비(사용자 결정 반영)에, ㉓은 12회차(실자료 `real_dev` 실측 뒤, 오케스트레이터 판단, 브랜치 `model/AS2-prompt-numbers`)에, ㉔는 13회차(2026-09-25(금) 14:17 사용자 결정 반영, 같은 브랜치)에 더했다 |
 | 이유와 근거 | 항목마다 적었다 |
 | 검토한 대안 | 아래 "검토한 대안" |
 | 결정 주체 | 소유 트랙(M). ⑩은 AS1 결정 ⑤와 같은 오케스트레이터 결정(작업 지시)을 따른다 |
@@ -380,6 +380,48 @@
 - **조정 종료**: 오케스트레이터 지시로 이 뒤로는 실측 결과를 보고 지침·흐름을 더 조정하지 않는다. 설정 조정은 합성 A·B·C 3건으로 했다(`model-0.2`~`1.2`, 결과 요약 공개 항목).
 - 단위 표(`docs/plan/UNITS.md`) 판정 칸은 1회차의 AS2 점검 문구 28행 그대로다. 이후 회차는 판정(유지·합침 후보)을 바꾸지 않았다. 단위 I10의 허용 import에 `tradesentry.metrics`를 더한 것(⑭)은 머리 주석과 경계 시험으로 확인한다.
 
+㉓ **산문 숫자 금지와 신호 계열 주장 규칙을 맨 앞으로(12회차, `model-1.3`, 오케스트레이터 판단)** — 잠정(재실측 전)
+
+- 까닭: `main` 1ea3c90 뒤 실자료 개발 묶음(`real_dev`, 개발용 실자료) 실측(오케스트레이터, full 모드, 실제 NIM, 호스트, 5건 + 시연 경로 1건. 실행 폴더는 `outputs/run_case-260925125318`·`-125351`·`-125409`와 STAGE 작업 폴더 `outputs/run_case-260925125001`, 커밋하지 않음) 분류 `[사실, 오케스트레이터 보고]`
+  - PH-202302: 두 번 모두 INVALID(VALIDATOR_BLOCKED). narrative의 '1.2%'·'15.9%'·'+4.0 pp'·'-11.8 pp' 같은 숫자가 막혔다. 검증기(R3) 오탐이 아니다. 모델이 비교국 d_s(점유율 변화, pp) 값을 문장에 적으면서 그 비교 주장을 claims에 넣지 않았고, 지표 번호(metric_id)도 r_U 번호에 d_s를 붙여 잘못 적었다.
+  - MY-202401: INVALID(SCHEMA_SIGNAL_CLAIM: 발동한 단가 신호의 계열 주장이 없음)와 산문 숫자.
+  - MX-202404: COMPLETED.
+  - 나머지 2건: HTTP 429(요청 한도 초과)로 실패. 지침과 무관해 따로 처리한다.
+- 바꾼 것(`configs/model/*.txt`만, 세 모델 모드에 같은 글자)
+  - 조사자 초안 규칙의 맨 앞에 "발동한(TRIGGERED) 신호마다 그 계열의 지표 주장(단가 신호는 r_U, 점유율 신호는 d_s)을 claims에 반드시 하나 이상 넣는다"를 두었다(이전에는 산문 규칙 뒤).
+  - 숫자 금지: narrative·hypotheses에는 숫자 표현(%, pp, 금액·중량·단가, 배수, "X에서 Y로")을 쓰지 않는다. 값은 claims로만 내고 문장은 "단가 변화율 주장(claims의 r_U)"처럼 주장을 가리킨다. 이전의 "같은 값의 지표 주장이 있으면 써도 된다"는 허용을 뺐다. 검증기 규칙(PT-1~PT-8)은 그대로이고, 지침의 PT-6 어휘 목록 대조 시험도 그대로다.
+  - Critic 지적 문장에도 같은 숫자 금지를 두었다(값은 claim_refs로 가리킨다). Critic에게 초안 산문의 숫자를 따로 지적하게 하지는 않았다. freeform 기준선에 두 번째 산문 검사를 더해 대표 지표 비교를 바꾸지 않으려는 것이다.
+  - freeform 주장 쓰는 법에 "narrative·hypotheses에는 숫자와 증감 어휘를 쓰지 않는다"를 맞췄다.
+- 승인 근거: 2026-09-25(금) 14:17 사용자 결정 `20260925-1417-user-decision-real-dev-tuning.md`("1.3 + 흐름 수정")가 `real_dev`로 조사 지침·흐름을 조정하는 것을 승인했다(결정 ①·②). 아래 "룰북과 어긋나는 점"은 그 결정에 따라 문서 PR(DOCS3)이 푼다.
+- 이 조정은 `real_dev` 사례로 한 조정이다. 결과 요약 공개 항목을 "모델 설정은 합성 A·B·C와 real_dev 사례로 조정"으로 바꿨다(아래 "영향과 넘길 곳"). ㉒의 "조정 종료" 뒤 오케스트레이터 판단으로 한 번 더 조정한 것이다.
+- 대표 지표에 미치는 영향: 대표 지표(룰북 B3 실자료 사실 주장 오류율, `freeform` 대 `full`)는 typed claim(`source` `claim`)과 산문 패턴으로 잡힌 표현(`source` `prose`)을 함께 센다. freeform(모델이 값을 직접 쓰는 기준선 모드)도 같은 지침으로 산문에 숫자를 쓰지 않게 돼 산문 주장(`prose`)의 기여가 줄고, 대표 지표는 주로 typed claim 값 오류를 재게 된다. 결과 요약에 이 점을 적는다.
+- 룰북과 어긋나는 점(결정 필요): 룰북 Part B 묶음 표(`docs/eval/RULEBOOK.md`의 `real_dev` 행 둘)는 `real_dev`를 "탐지 임계값·최소 기준 조정과 산문 패턴 보강에만 쓴다"고 적는다. 모델 지침 조정은 이 용도 목록에 없다. 룰북은 아직 `RB-1`(동결 전 초안, 동결 예정 2026-09-26(토) 18:00)이라 동결 전에 고칠 수 있지만, 평가 구성은 공용 약속이라 사용자 승인이 필요하다. 동결 뒤라면 새 룰북 버전과 사유가 필요하다(B5). 재실측 수치를 결과 요약에 싣기 전에 오케스트레이터·사용자가 정한다. 이 PR은 룰북을 고치지 않는다.
+- 코드 쪽 남은 불일치(이 PR 범위 밖, `configs/model/*.txt`만 고침): 수정 지시 문구 `investigator.PROSE_FIX`는 "이 표현이 든 문장을 지우거나, 같은 값·같은 방향의 지표 주장(claims)을 인용하는 문장으로 바꾼다"라서, 수정 차례에 숫자를 남긴 채 주장으로 뒷받침하라는 뜻으로 읽힐 수 있다. 새 지침과 맞추려면 "숫자 없이 주장을 가리키는 문장으로 바꾼다"로 고쳐야 한다(다음 PR 후보).
+- 보고서 한국어 렌더러 확인(단위 R4 `reports/render_ko.py`, 동결 경로라 고치지 않음) `[사실]`: `render_body`는 주장마다 `[claim_id] text (근거: …)` 줄을 쓰고 `value`·`unit`을 따로 찍지 않는다. 그래서 한국어 본문에 값이 보이는 것은 주장 text에 값을 적었을 때뿐이다. `run-case`는 보고서 객체(JSON, claims의 `value`·`unit` 포함)만 쓰고 한국어 본문(`body_ko`)은 쓰지 않는다. 산문에서 숫자를 빼면 사람이 읽는 본문의 값은 주장 text에 기댄다.
+- `config_version` `model-1.3`. I12 골든 `request_sha256`을 다시 만들었다(요청 본문의 지침 글자가 바뀜).
+- 시험: I10 `NoNumbersInProseTest` — 숫자 금지 문장이 agent·full·freeform 지침(`investigator.system_prompt`)에 글자까지 같게 한 번씩 있고, 신호 계열 규칙이 초안 규칙의 첫 줄이며, Critic 지침에 숫자 금지가 있다.
+
+㉔ **흐름 수정 두 가지: Critic 재조회 거르기와 수정 전 초안 두기(13회차, 단위 I12, `model-1.3`)** — 확정(사용자 결정)
+
+- 날짜·결정: 2026-09-25(금) 14:17 사용자 결정 `20260925-1417-user-decision-real-dev-tuning.md`의 ③ (가)·(나)를 코드로 옮겼다. 모든 모델 모드에 같은 규칙이다.
+- 근거(원인 실험, 오케스트레이터, 2026-09-25(금) 13:40~14:10, `scratchpad/ab/RESULTS.md`, 커밋하지 않은 실측) `[사실, 오케스트레이터 보고]`
+  - `real_dev` 두 사례(`850432-PH-202302`, `850450-MY-202401`)의 모델 요청 13건을 앱의 기록 재생(단위 I8)으로 다시 만들었고 요청 해시가 모두 같았다. 같은 요청도 temperature 1.0에서 결과가 갈렸다(PH 3번 중 2번, MY 4번 중 3번 `INVALID`).
+  - 점유율 신호만 발동한 PH 사례에서 검수자(Critic)는 네 번 모두 하위품목 분해(`decompose_hs`) 재조회를 요청했다. 지침에 "분해는 단가 신호일 때만"을 넣어도 네 번 중 두 번 요청했다. 그래서 코드로 거른다.
+  - PH의 첫 초안은 검증기를 통과했고 규칙 참고값과도 맞았는데, 검수자 요구로 고친 초안이 `INVALID`가 됐다. 수정 단계 지침만 바꾸면 효과가 작았다.
+- (가) 검수자 재조회 요청 거르기: `orchestrate.SIGNAL_ONLY_TOOLS`(`{"decompose_hs": ("unit_value",)}`, workflow 안의 상수 하나)에 있는 도구의 요청은, 그 사례에서 대응 신호가 하나도 발동(TRIGGERED)하지 않았으면 버린다(`split_requery`). 버린 요청은 수정 지시 메시지(`investigator.feedback_message`의 Critic 지적 칸)와 수정 단계의 필수 조회 목록(`requested`)에 들지 않는다. `needs_revision`은 바꾸지 않는다. workflow는 cli를 import하지 않으므로, 상수와 신호별 필수 도구 규칙(`dispatch.required_tools`)이 어긋나지 않는지는 시험이 네 신호 조합으로 대조한다.
+- (나) 수정본을 버리고 수정 전 초안 두기: ① 수정 단계를 연 까닭이 Critic의 수정 요구뿐이고(초안 형식 문제·스키마 실패·수정 전 검증기 막음·코드 지적이 없다) ② 수정 전 초안이 verify 단계 검사(스키마, `freeform`이 아니면 검증기까지)를 통과했고 ③ 수정본이 최종 단계에서 막히면(초안 형식 검사 실패, 스키마 검사 실패, `freeform`이 아니면 검증기 막음), `INVALID`로 끝내지 않고 수정 전 초안의 보고서와 그 verify 단계 판정으로 `complete`한다(`_Flow.blocked_revision`). 도구·모델 요청과 검사를 더 하지 않는다. `critic_used`·`revision_used`는 그대로 참이다. `agent`는 Critic이 없어 ①이 성립하지 않는다. deadline·예산·연결 오류 같은 `RunStop`은 예외로 곧바로 멈추므로 이 규칙을 거치지 않는다.
+- trace 모양(새 사건 종류 없음, 단위 L1 `EVENT_TYPES` 그대로)
+  - `state_change` `after_critic`: `requery`는 거르고 남은 요청 수, 새 필드 `requery_dropped`는 버린 요청 목록 `[{tool, args, reason: "signal_not_triggered", signals}]`(버린 것이 없으면 빈 목록).
+  - 새 `phase` 값 `revision_discarded`(`final` 단계, `final` 바로 앞): `review_status`·`signal_status`는 둔 수정 전 초안의 것, `blocked_by`(`draft_format`·`schema`·`validator`), `would_be_cause`(규칙이 없었다면 났을 원인 `SCHEMA_INVALID`·`VALIDATOR_BLOCKED`), `kept_report_id`. 수정본의 막힌 `validator_result`(phase `final`, decision `block`)는 그대로 남는다. `COMPLETED` 실행이므로 `budget_block` `revision_limit`은 내지 않는다.
+  - trace를 읽는 코드(`src`·`eval`에서 `state_change`·`phase`를 찾음): 채점기·추출기·NAT 감싸기(단위 I13) 가운데 phase 값을 읽는 곳은 없다(`eval/scorer/summary.py`는 상태 변화를 "trace 형식 미정"이라며 집계하지 않는다). 룰북 결과 요약의 공개 항목 "버린 초안 수"를 세는 코드도 아직 없다. 이 이름(`revision_discarded`)은 조사자 차례의 `draft_discarded`와 달라서, 나중에 `draft_discarded`로 세는 코드를 만들면 (나)는 그 수에 들지 않는다. 결과 요약에 따로 셀지는 AS3·R1이 정한다.
+- 시험(`tests/units/I12/test_orchestrate.py`)
+  - `RequeryFilterTest`: 상수와 `dispatch.required_tools` 대조(네 신호 조합, 상수 밖 필수 도구는 어느 신호에도 필수), `split_requery` 순서·까닭, 점유율 신호만 발동한 사례(full·freeform, 차례 규칙을 켠 흐름)에서 `decompose_hs` 재조회를 버리고 trace에 남기며 수정 지시에 없고 수정 단계에 필수 조회 요구(`tool_choice` `required`)가 없음, 단가 신호가 발동한 사례에서는 그대로 남아 수정 단계에서 부름.
+  - `RevisionFallbackTest`: 검증기 막음·수정본 형식 실패(full)와 수정본 스키마 실패(freeform)에서 `COMPLETED`이고 최종 보고서가 수정 전 초안의 것(검사·도구·모델 요청 수 그대로), 수정 전 검증기 막음·코드 지적으로 연 수정·첫 초안 스키마 실패·`agent`·`checklist`는 지금처럼 `INVALID`, 수정본 응답 중 deadline은 `TIMEOUT`.
+  - 달라진 기존 시험: `FlowBudgetTest.test_second_revision_stage_is_blocked`(로드맵 체크리스트 2번 "두 번째 수정 단계 차단"). 대본 `[PASS, PASS, BLOCK]`(Critic 수정 요구만으로 연 수정)은 이제 수정 전 초안을 두어 `COMPLETED`다. 체크리스트 2번을 계속 보도록 수정 전 검증기도 막는 대본 `[PASS, BLOCK, BLOCK]`으로 바꿨다(기대값 `INVALID`·`VALIDATOR_BLOCKED`·`revision_limit` 그대로). 이전 대본은 `RevisionFallbackTest`가 본다. I12 골든(수정 없이 끝나는 사례 A full)은 바뀌지 않았다.
+- 공개 문구: ㉒ "조정 종료"에 적은 "설정 조정은 합성 A·B·C 3건으로 했다"(결과 요약 공개 항목)는, 위 사용자 결정에 따라 문서 PR(DOCS3)이 룰북 B7에서 "합성 A·B·C 3건과 `real_dev` 두 사례의 실패 유형으로 조정"으로 고쳐 적었다. 이 기록의 ㉑·㉒ 본문은 고치지 않는다.
+- 검토 반영(오케스트레이터, 같은 날 15시 무렵, 도메인 검토 권고 ②·③과 Codex 1회차 막음): ① 수정 지시 문구 `investigator.PROSE_FIX`를 "이 표현이 든 문장을 지우거나, 숫자·증감 어휘 없이 지표 주장(claims)을 가리키는 문장으로 바꾼다(값과 방향은 claims에만 둔다)"로 고쳤다(㉓의 "코드 쪽 남은 불일치"를 닫음). ② 지침의 식별 표기 예외 문장을 검증기 빼기 규칙(`validate.EXCLUDE_RES`)과 어긋나지 않게 고쳤다: 연월·기간 표기, 근거에 나온 HS 코드 전체, 근거 ID·버전 이름 "같은" 식별 표기는 빠지지만 HS 코드의 일부·"N개월 연속"·개수·없음을 뜻하는 0은 잡히며, 확실하지 않으면 숫자를 쓰지 않는다고 적었다(원인 실험의 '1010' 조각. 빼기 목록 전체를 옮기지 않고 예시와 안전한 기본값만 둔다. Codex 2회차 지적). ③ 지침의 주장 text 숫자 규칙이 narrative·가설 숫자 금지를 풀지 않음을 밝혔다. 지침이 바뀌어 I12 골든 입력의 첫 요청 해시를 다시 만들었다(흐름·기대 출력은 그대로).
+- 남은 점: Critic 답의 재조회 요청은 `critic.parse_review`가 최대 개수(2)로 먼저 자른 뒤 (가)가 거른다. 그래서 버려질 `decompose_hs` 요청이 앞에 있으면 세 번째 유효한 요청이 이미 잘려 있을 수 있다.
+
 ## 조립 점검 결과(조립체 3, `docs/plan/UNITS.md` §5의 1·2·5단계)
 
 AS2는 합치거나 버린 단위가 없다. 동결 경로(판정 정책 P3~P5, 검증기 R3·R4) 단위의 코드는 고치지 않았다. 고친 단위는 F2(배선)와 I12(C형 펼치기)다. 3·4·6단계의 확정은 조립 점검 작업 AS4가 한다.
@@ -425,7 +467,7 @@ AS2는 합치거나 버린 단위가 없다. 동결 경로(판정 정책 P3~P5, 
 - 바꾼 파일
   - `src/tradesentry/cli/dispatch.py`: `run-case` 배선, 머리 설명의 "사례 조사 명령 run-case" 절, `detection_row` 추출, `required_tools`·`drafts_only_without_tools` 켜기(⑮·⑱)
   - `src/tradesentry/cli/args.py`: `--case` 도움말·머리 설명·`CASE_RULE` 예시(⑳·㉑)
-  - `src/tradesentry/workflow/orchestrate.py`: C형 펼치기(⑥), 필수 조회·규칙 참고값·도구 없는 차례의 초안·차례 규칙·코드 지적·참고값 재계산(⑮·⑰~⑳)
+  - `src/tradesentry/workflow/orchestrate.py`: C형 펼치기(⑥), 필수 조회·규칙 참고값·도구 없는 차례의 초안·차례 규칙·코드 지적·참고값 재계산(⑮·⑰~⑳), Critic 재조회 거르기·수정 전 초안 두기(㉔)
   - `src/tradesentry/workflow/investigator.py`: 분해 보기 `rule_view`, 필수 근거 보기 압축, 참고값·필수 조회·코드 지적 문구, `tool_choice`, `compare_partners` 설명(⑭~⑲)
   - `src/tradesentry/workflow/critic.py`: 참고값 문구 전달(⑰)
   - `src/tradesentry/workflow/model_client.py`: `tool_choice`(⑲), `tool_turn_max_tokens`(㉑)
@@ -445,7 +487,7 @@ AS2는 합치거나 버린 단위가 없다. 동결 경로(판정 정책 P3~P5, 
     - 모드별 참고값 가용률, "최종 = 참고값" 비율, 참고값 없이 끝난 실행 수(㉑)
     - `required` 차례 수, `draft_discarded`·`code_finding` 건수, Critic 생략률
     - 한도 값(누적 토큰, `max_tokens` 8192, 도구 차례 1024)
-    - 모델 설정을 합성 A·B·C로 조정한 사실(`model-0.2`~`1.1`)
+    - 모델 설정은 합성 A·B·C와 real_dev 사례로 조정한 사실(`model-0.2`~`1.2`는 합성 A·B·C, `model-1.3`은 `real_dev` 사례, ㉓)
   - B2 "모든 모드에 같은 조건"에 더할 문구(초안): "규칙 참고값과 필수 조회: 모델 모드(`agent`·`full`·`freeform`)의 조사자와 Critic은, 코드가 공개 판정 규칙(판정 정책 P3)을 그 초안을 쓸 때까지 받은 근거에 적용한 신호별 판정을 규칙 참고값으로 받는다(수정 단계에서 새 조회 결과를 받으면 다시 계산한다). 지침은 참고값을 따르게 하고, 규칙이 보지 않는 도구 결과 속 사실이 있을 때만 narrative에 반대 근거를 적고 벗어나게 한다. 코드는 모델의 판정을 덮어쓰지 않는다. 필수 도구(발동 신호가 있으면 `compare_partners`, 단가 신호가 발동했으면 `decompose_hs`)의 결과가 없고 그 단계의 도구 몫이 남은 차례에는 `tool_choice: "required"`와 빠진 도구 이름을 적은 알림을 싣는다(부를 도구를 API로 지정하지는 않는다). Critic 뒤(agent는 첫 검증 뒤)에도 필수 결과가 없으면 코드 지적을 붙여 같은 수정 1회로 보낸다. 문구·시점은 세 모델 모드에 글자까지 같다."
   - B4(또는 결과 요약 2절)에 더할 문구(초안): "holdout40에서 `agent`·`full`과 `checklist`의 판정 일치는 모델이 규칙을 스스로 적용한 정도가 아니라, 규칙 참고값을 따르거나 반대 근거로 벗어난 정도다. 두 모드가 `checklist`보다 나을 수 있는 길은 정책 규칙과 독립 정답표가 다른 사례에서 반대 근거로 옳게 벗어나는 경우와, 필수 조회·주장 작성·검증 통과의 차이뿐이다. 개선이 없으면 "이 범위에서 LLM 추가 가치 미확인"으로 보고한다."
 - dev20 개발 점수표(평 권고 3): `RB-1` 전에 이 설정(`model-1.2`)으로 dev20을 한 번 돌린다. 결과로 설정을 바꾸면 그 사실과 회차를 기록한다. 지금 `RUN_CASE_DATASETS`에 dev20이 없어 먼저 한 줄을 더해야 한다.

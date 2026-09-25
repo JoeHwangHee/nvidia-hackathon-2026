@@ -55,8 +55,10 @@ class FlowBudgetTest(unittest.TestCase):
     """체크리스트 2번(흐름 쪽)."""
 
     def test_second_revision_stage_is_blocked(self):
-        # Critic이 수정을 요청 → 수정 1회 → 최종 검증에서도 검증기가 막음 → 두 번째 수정 없이 INVALID
-        fake = h.FakePorts(checks=[h.PASS, h.PASS, h.BLOCK])
+        # Critic이 수정을 요청하고 수정 전 검증기도 막음 → 수정 1회 → 최종 검증에서도 검증기가 막음 → 두 번째 수정 없이
+        # INVALID. (AS2 ㉔ 흐름 수정 (나) 뒤: 수정 전 초안이 검증기를 통과했으면 그 초안을 두므로, 이 시험은 수정 전
+        # 검증기 막음으로 연 수정 단계를 쓴다. 이전 대본 [PASS, PASS, BLOCK]은 이제 COMPLETED다 → RevisionFallbackTest)
+        fake = h.FakePorts(checks=[h.PASS, h.BLOCK, h.BLOCK])
         script = [h.draft_answer(), h.critic_answer(needs_revision=True), h.draft_answer(status="MAINTAIN")]
         result, records, fake, transport = h.run_case("full", script, fake)
         record = result["record"]
@@ -894,6 +896,209 @@ class DirectedFlowModeParityTest(unittest.TestCase):
             raise KeyError("signal_status")
         result, _, _ = self.run_with("agent", [h.tools_answer("decompose_hs"), self.draft("agent")], reference=broken)
         self.assertEqual([e["code"] for e in result["record"]["errors"]], [cause_codes.CODE_ERROR])
+
+
+
+CASE_SHARE = dict(h.CASE_A, signals={"unit_value": "NOT_TRIGGERED", "share": "TRIGGERED"})
+SHARE_STATUS = {"unit_value": "NOT_TRIGGERED", "share": "MONITOR"}
+DECOMPOSE_REQUERY = [{"tool": "decompose_hs", "args": {}, "reason": "HS10 목록이 바뀌었다"}]
+
+
+def phases_of(records):
+    return [r["data"]["phase"] for r in h.events(records, "state_change")]
+
+
+def run_directed(mode, script, *, case=None, checks=None, required=None):
+    """차례 규칙(directed)을 켠 흐름: 필수 도구는 실제 조립 규칙(cli.dispatch.required_tools) 또는 주어진 함수."""
+    from tradesentry.cli import dispatch
+    fake = h.FakePorts(checks=checks)
+    ports = fake.ports()
+    ports.required_tools = required or dispatch.required_tools
+    ports.drafts_only_without_tools = True
+    clock = FakeClock()
+    transport = ScriptedTransport(script, clock)
+    sink = orchestrate.trace_log.MemoryTrace(h.RUN_ID)
+    ctx = orchestrate.RunContext(run_id=h.RUN_ID, case=case or h.CASE_A, mode=mode, dataset="controlled_fixture_v0",
+                                 rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
+    result = orchestrate.orchestrate(ctx, ports, mc.load_model_config(), transport=transport, sink=sink,
+                                     clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)
+    return result, sink.records, fake, transport
+
+
+def feedback_text(transport):
+    """수정 지시 메시지([수정 단계]) 글. 도구 목록·시스템 지침에는 도구 이름이 늘 있으므로 이 메시지만 본다."""
+    texts = [m["content"] for p in transport.payloads for m in p["messages"]
+             if m["role"] == "user" and isinstance(m.get("content"), str) and m["content"].startswith("[수정 단계]")]
+    return texts[-1]
+
+
+class RequeryFilterTest(unittest.TestCase):
+    """AS2 ㉔ 흐름 수정 (가): 발동하지 않은 신호에만 쓰는 도구의 Critic 재조회 요청은 코드가 버린다."""
+
+    def test_constant_agrees_with_the_signal_required_tools_rule(self):
+        from tradesentry.cli import dispatch
+        self.assertTrue(set(orchestrate.SIGNAL_ONLY_TOOLS) <= set(investigator.MODEL_TOOLS))
+        for uv in ("TRIGGERED", "NOT_TRIGGERED"):
+            for share in ("TRIGGERED", "NOT_TRIGGERED"):
+                signals = {"unit_value": uv, "share": share}
+                required = dispatch.required_tools({"signals": signals})
+                fired = {k for k, v in signals.items() if v == "TRIGGERED"}
+                with self.subTest(signals=signals):
+                    for tool, only in orchestrate.SIGNAL_ONLY_TOOLS.items():
+                        self.assertEqual(tool in required, bool(fired & set(only)))
+                    for tool in required:  # 상수 밖 도구는 어느 신호가 발동해도 필수다(신호 전용이 아니다)
+                        if tool not in orchestrate.SIGNAL_ONLY_TOOLS:
+                            self.assertTrue(fired)
+                            for other in ({"unit_value"}, {"share"}):
+                                probe = {k: "TRIGGERED" if k in other else "NOT_TRIGGERED" for k in signals}
+                                self.assertIn(tool, dispatch.required_tools({"signals": probe}))
+
+    def test_split_keeps_order_and_drops_only_signal_only_tools(self):
+        requery = [{"tool": "decompose_hs", "args": {}, "reason": "a"},
+                   {"tool": "compare_partners", "args": {"partners": ["JP"]}, "reason": "b"}]
+        kept, dropped = orchestrate.split_requery(requery, CASE_SHARE["signals"])
+        self.assertEqual(kept, requery[1:])
+        self.assertEqual(dropped, [{"tool": "decompose_hs", "args": {}, "reason": "signal_not_triggered",
+                                    "signals": ["unit_value"]}])
+        self.assertEqual(orchestrate.split_requery(requery, h.CASE_A["signals"]), (requery, []))
+
+    def test_share_only_case_drops_decompose_requery(self):
+        for mode in ("full", "freeform"):
+            with self.subTest(mode=mode):
+                claims = [dict(FREEFORM_CLAIM)] if mode == "freeform" else None
+                d = h.draft_answer(signal_status=SHARE_STATUS, claims=claims)
+                script = [h.tools_answer("compare_partners"), d,
+                          h.critic_answer(needs_revision=True, requery=DECOMPOSE_REQUERY), d]
+                result, records, fake, transport = run_directed(mode, script, case=CASE_SHARE)
+                record = result["record"]
+                self.assertEqual((record["execution_status"], record["revision_used"]), ("COMPLETED", True))
+                after = [r["data"] for r in h.events(records, "state_change") if r["data"]["phase"] == "after_critic"][0]
+                self.assertEqual((after["needs_revision"], after["requery"]), (True, 0))  # needs_revision은 그대로
+                self.assertEqual(after["requery_dropped"], [{"tool": "decompose_hs", "args": {},
+                                                             "reason": "signal_not_triggered",
+                                                             "signals": ["unit_value"]}])
+                self.assertNotIn("decompose_hs", [n for n, _ in fake.tool_calls])
+                self.assertNotIn("decompose_hs", feedback_text(transport))
+                revision = [r["data"] for r in h.events(records, "model_request") if r["stage"] == "revision"]
+                self.assertEqual([q.get("tool_choice") for q in revision], [None])  # 필수 조회 요구 없이 곧바로 초안
+                self.assertEqual(record["model_requests"], 4)
+
+    def test_unit_value_case_keeps_decompose_requery(self):
+        script = [h.tools_answer("compare_partners", "decompose_hs"), h.draft_answer(),
+                  h.critic_answer(needs_revision=True, requery=DECOMPOSE_REQUERY),
+                  h.tools_answer("decompose_hs"), h.draft_answer()]
+        result, records, fake, transport = run_directed("full", script)
+        self.assertEqual(result["record"]["execution_status"], "COMPLETED")
+        after = [r["data"] for r in h.events(records, "state_change") if r["data"]["phase"] == "after_critic"][0]
+        self.assertEqual((after["requery"], after["requery_dropped"]), (1, []))
+        self.assertIn("decompose_hs", feedback_text(transport))
+        revision = [r["data"] for r in h.events(records, "model_request") if r["stage"] == "revision"]
+        self.assertEqual(revision[0].get("tool_choice"), "required")  # Critic 재조회가 필수 결과로 남는다
+        revision_tools = [r["data"]["tool"] for r in h.events(records, "tool_result") if r["stage"] == "revision"]
+        self.assertEqual(revision_tools, ["decompose_hs"])
+
+
+class RevisionFallbackTest(unittest.TestCase):
+    """AS2 ㉔ 흐름 수정 (나): Critic의 수정 요구만으로 연 수정 단계에서 수정본이 막히고 수정 전 초안이 수정 전 검사를
+    통과했으면, 수정 전 초안의 보고서와 verify 단계 판정으로 끝낸다(도구·모델 요청·검사를 더 쓰지 않는다)."""
+
+    def assert_kept(self, result, records, blocked_by, cause):
+        record = result["record"]
+        self.assertEqual((record["execution_status"], record["errors"]), ("COMPLETED", []))
+        self.assertEqual((record["critic_used"], record["revision_used"]), (True, True))
+        # 수정 전 초안(MONITOR)의 보고서다. 수정본은 대본마다 MAINTAIN이거나 초안이 아니다
+        self.assertEqual(result["report"]["review_status"], "MONITOR")
+        self.assertEqual(record["review_status_final"], "MONITOR")
+        phases = phases_of(records)
+        self.assertEqual(phases[-2:], ["revision_discarded", "final"])
+        discarded = [r for r in h.events(records, "state_change") if r["data"]["phase"] == "revision_discarded"][0]
+        self.assertEqual(discarded["stage"], "final")
+        self.assertEqual((discarded["data"]["blocked_by"], discarded["data"]["would_be_cause"],
+                          discarded["data"]["review_status"], discarded["data"]["kept_report_id"]),
+                         (blocked_by, cause, "MONITOR", result["report"]["report_id"]))
+        self.assertEqual(blocks(records), [])  # INVALID가 아니므로 revision_limit를 내지 않는다
+        self.assertEqual(h.events(records, "run_end")[0]["data"]["cause_code"], None)
+
+    def test_blocked_revision_keeps_the_pre_revision_draft(self):
+        fake = h.FakePorts(checks=[h.PASS, h.PASS, h.BLOCK])
+        script = [h.draft_answer(), h.critic_answer(needs_revision=True), h.draft_answer(status="MAINTAIN")]
+        result, records, fake, transport = h.run_case("full", script, fake)
+        self.assert_kept(result, records, "validator", cause_codes.VALIDATOR_BLOCKED)
+        self.assertEqual(result["report"]["validator_findings"], [])  # verify 단계 판정
+        final_checks = [r["data"] for r in h.events(records, "validator_result") if r["data"]["phase"] == "final"]
+        self.assertEqual([c["decision"] for c in final_checks], ["block"])  # 막힌 최종 판정은 그대로 남는다
+        self.assertEqual(fake.check_calls, 3)  # 다시 검사하지 않는다
+        self.assertEqual([n for n, _ in fake.tool_calls],
+                         ["check_comparability", "get_history", "verify_evidence", "verify_evidence"])
+        self.assertEqual(result["record"]["model_requests"], 3)
+        self.assertEqual(transport.script, [])
+
+    def test_revised_format_failure_keeps_the_pre_revision_draft(self):
+        fake = h.FakePorts(checks=[h.PASS, h.PASS])
+        script = [h.draft_answer(), h.critic_answer(needs_revision=True), h.text_answer("고친 초안이 아니다")]
+        result, records, fake, _ = h.run_case("full", script, fake)
+        self.assert_kept(result, records, "draft_format", cause_codes.SCHEMA_INVALID)
+        self.assertEqual(fake.check_calls, 2)
+        self.assertEqual([n for n, _ in fake.tool_calls].count("verify_evidence"), 1)  # 최종 verify도 부르지 않았다
+
+    def test_pre_revision_validator_block_still_ends_invalid(self):
+        fake = h.FakePorts(checks=[h.PASS, h.BLOCK, h.BLOCK])
+        script = [h.draft_answer(), h.critic_answer(needs_revision=True), h.draft_answer()]
+        result, records, _, _ = h.run_case("full", script, fake)
+        self.assertEqual((result["record"]["execution_status"], result["record"]["errors"][0]["code"]),
+                         ("INVALID", cause_codes.VALIDATOR_BLOCKED))
+        self.assertNotIn("revision_discarded", phases_of(records))
+        self.assertEqual(blocks(records), [("final", "revision_limit")])
+
+    def test_code_finding_revision_still_ends_invalid(self):
+        # 필수 결과가 빠진 초안: Critic도 수정을 요구했지만 코드 지적이 더해져 연 수정이므로 수정 전 초안을 두지 않는다
+        script = [h.draft_answer(), h.draft_answer(), h.critic_answer(needs_revision=True),
+                  h.tools_answer("decompose_hs"), h.draft_answer()]
+        result, records, _, _ = run_directed("full", script, checks=[h.PASS, h.PASS, h.BLOCK],
+                                             required=lambda case: ["decompose_hs"])
+        self.assertIn("code_finding", phases_of(records))
+        self.assertEqual((result["record"]["execution_status"], result["record"]["errors"][0]["code"]),
+                         ("INVALID", cause_codes.VALIDATOR_BLOCKED))
+        self.assertNotIn("revision_discarded", phases_of(records))
+
+    def test_first_draft_schema_failure_is_not_kept(self):
+        fake = h.FakePorts(checks=[h.SCHEMA_FAIL, h.SCHEMA_FAIL])
+        result, records, _, _ = h.run_case("full", [h.draft_answer(), h.draft_answer()], fake)
+        self.assertEqual(result["record"]["errors"][0]["code"], cause_codes.SCHEMA_INVALID)
+        self.assertNotIn("revision_discarded", phases_of(records))
+
+    def test_freeform_revised_schema_failure_keeps_the_pre_revision_draft(self):
+        # freeform: 수정 전 검증기 지적은 기록만(통과로 본다). 수정본 스키마 실패 → 수정 전 초안(검증기 지적 기록)
+        claim = dict(FREEFORM_CLAIM)
+        fake = h.FakePorts(checks=[h.PASS, h.BLOCK, h.SCHEMA_FAIL])
+        script = [h.draft_answer(claims=[claim]), h.critic_answer(needs_revision=True),
+                  h.draft_answer(status="MAINTAIN", claims=[claim])]
+        result, records, fake, _ = h.run_case("freeform", script, fake)
+        self.assert_kept(result, records, "schema", cause_codes.SCHEMA_INVALID)
+        self.assertEqual(result["report"]["validator_findings"], h.BLOCK["findings"])
+        self.assertEqual(fake.check_calls, 3)
+
+    def test_agent_has_no_critic_so_a_blocked_revision_is_invalid(self):
+        fake = h.FakePorts(checks=[h.PASS, h.BLOCK, h.BLOCK])
+        result, records, _, _ = h.run_case("agent", [h.draft_answer(), h.draft_answer()], fake)
+        self.assertEqual(result["record"]["errors"][0]["code"], cause_codes.VALIDATOR_BLOCKED)
+        self.assertNotIn("revision_discarded", phases_of(records))
+
+    def test_checklist_is_unaffected(self):
+        fake = h.FakePorts(checks=[h.BLOCK])
+        result, records, _, _ = h.run_case("checklist", [], fake)
+        self.assertEqual(result["record"]["errors"][0]["code"], cause_codes.VALIDATOR_BLOCKED)
+        self.assertNotIn("revision_discarded", phases_of(records))
+
+    def test_run_stop_during_revision_is_not_turned_into_the_kept_draft(self):
+        # 수정본 응답 중 deadline을 넘기면 최종 verify 앞에서 TIMEOUT(수정 전 초안을 두지 않는다)
+        fake = h.FakePorts(checks=[h.PASS, h.PASS])
+        script = [h.draft_answer(), h.critic_answer(needs_revision=True), {**h.draft_answer(), "elapsed_ms": 300_000}]
+        result, records, _, _ = h.run_case("full", script, fake)
+        self.assertEqual((result["record"]["execution_status"], result["record"]["errors"][0]["code"]),
+                         ("TIMEOUT", cause_codes.DEADLINE))
+        self.assertIsNone(result["report"])
+        self.assertNotIn("revision_discarded", phases_of(records))
 
 
 if __name__ == "__main__":
