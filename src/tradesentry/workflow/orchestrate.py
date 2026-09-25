@@ -87,6 +87,15 @@ errors는 원인 분류 코드 항목 하나다(단위 L3: 원인, 누적 시도
   [{tool, args, reason "signal_not_triggered", signals}]이다. 흐름 수정 (나)로 수정본을 버리면 final 단계에
   state_change phase revision_discarded(review_status·signal_status는 둔 수정 전 초안의 것, blocked_by draft_format·
   schema·validator, would_be_cause SCHEMA_INVALID·VALIDATOR_BLOCKED, kept_report_id)가 final 앞에 나온다.
+- 필수 근거 주장 덧붙이기(사용자 결정 2026-09-25(금) 18:09, 모든 모드 같은 규칙): 보고서를 만들 때마다(초안·verify·final)
+  _Flow.build가 신호별 판정에 필요한 필수 근거 코드(evidence_codes: 판정이 규칙 참고값 Ports.evidence_reference와 같으면
+  그 판정 근거의 P5 목록, 다르거나 참고값이 없으면 그 상태를 내는 P5 목록의 합)를 build_report에 넘기고, unit_ports의
+  build_report가 코드마다 시나리오 명세 §5.3 판정 조건표를 채우는 주장이 없으면 받은 봉투의 검증된 지표·자료 상태에서 단위
+  R1 틀 채우기로 채워 모델(또는 checklist 규칙) 주장 뒤에 덧붙인다(evidence_claims). 모델 주장은 바꾸지 않고, 같은 대상은
+  다시 넣지 않으며, 검증기 R3의 DATA_STATUS_CONFLICT를 낼 주장은 넣지 않는다. 도구를 새로 부르지 않고 verify_evidence
+  인자(초안이 가리킨 근거)도 바꾸지 않는다. trace에는 보고서를 만들 때마다 state_change phase evidence_claims
+  (review_status·signal_status, required {신호: 코드}, added [{signal, code, claims: [요청 모양]}], unmet, no_action)가
+  그 보고서의 validator_result 앞에 나온다.
 """
 from dataclasses import dataclass
 from decimal import Decimal
@@ -153,7 +162,10 @@ class Ports:
     reference_status(봉투 목록) -> 판정 정책 P3 출력(신호별 판정·판정 근거). 모델 모드의 규칙 참고값(없으면 None: 싣지 않음.
     unit_ports가 근거 상태 변환 evidence_state를 받았을 때만 만든다). 계산할 수 없으면 예외를 낸다 /
     drafts_only_without_tools: 참이면 초안은 도구를 주지 않는 차례(초안 요청 메시지, 구조화 출력 json_object)에서만 받는다.
-    도구를 준 차례에 도구 호출 없이 온 본문은 버리고 곧바로 도구 없는 초안 요청으로 다시 받는다(조립 AS2가 켠다)
+    도구를 준 차례에 도구 호출 없이 온 본문은 버리고 곧바로 도구 없는 초안 요청으로 다시 받는다(조립 AS2가 켠다) /
+    evidence_reference(봉투 목록) -> P3 출력. 보고서에 덧붙일 필수 근거 코드를 고를 때 쓰는 규칙 참고값(모든 모드. 없으면
+    None: 판정 상태를 내는 판정 근거의 목록을 모두 합친다). unit_ports가 reference_status와 같은 계산으로 넘긴다. 모델에게
+    싣는 참고값(reference_status)과 따로 두어 checklist에도 쓰고 참고값 문구의 계산 횟수를 바꾸지 않는다
     """
 
     tool: Callable[[str, dict], dict]
@@ -165,6 +177,7 @@ class Ports:
     required_tools: Callable[[dict], list] | None = None
     reference_status: Callable[[list], dict] | None = None
     drafts_only_without_tools: bool = False
+    evidence_reference: Callable[[list], dict] | None = None
 
 
 @dataclass(frozen=True)
@@ -332,6 +345,328 @@ def checklist_claims(case: dict, evidence: list) -> list:
     return claims
 
 
+# --- 필수 근거 주장 덧붙이기(사용자 결정 2026-09-25(금) 18:09, 결정 기록 *-model-decision-evidence-claims.md) ----------
+# 보고서를 만들 때마다(초안·verify·final, 모든 모드) 코드가 신호별 판정에 필요한 필수 근거 코드(단위 P5)마다 시나리오 명세
+# eval/scenarios/SCENARIO_SPEC.md §5.3 판정 조건표를 채우는 주장이 있는지 보고, 없으면 이미 받은 봉투의 검증된 지표·자료
+# 상태로 채울 주장을 덧붙인다. 모델(또는 checklist 규칙)이 쓴 주장은 바꾸거나 지우지 않고, 같은 대상의 주장은 다시 넣지
+# 않는다. 채점기(eval/scorer)는 import하지 않고 이 표를 여기서 따로 구현한다(검증기 R3에는 이 표의 구현이 없다).
+EVIDENCE_CLAIM_ID = "e{n}"  # 덧붙인 주장의 claim_id(모델·틀 채우기 claim_id와 겹치면 번호를 건너뛴다)
+# 덧붙일 것이 없는 코드: 부정 조건(no_zero_fill: 주장을 더해서 채울 수 없다)과 v1에서 판정하지 않는 교정 근거 셋(§5.3).
+NO_ACTION_CODES = ("no_zero_fill", "correction_snapshots_before_after", "recalculated_values", "change_reason")
+_MISSING_STATES = ("OBSERVED", "CONFIRMED_NO_TRADE")  # 빠진 키가 아닌 관측 상태(§5.3 "빠진 키")
+
+
+def evidence_codes(signals: dict | None, signal_status: object, reference: object) -> dict:
+    """발동한 신호마다 보고서가 남겨야 할 필수 근거 코드(단위 P5 규칙표 순서, 겹치지 않게).
+
+    그 신호의 판정(초안의 signal_status)이 규칙 참고값(P3 출력)의 판정과 같으면 참고값 판정 근거(basis)의 목록이고, 다르거나
+    참고값이 없으면 그 판정 상태를 내는 모든 판정 근거의 목록을 합친 것이다. 판정이 값 집합 밖이면 빈 목록이다."""
+    stated = signal_status if isinstance(signal_status, dict) else {}
+    ref_status = reference.get("signal_status") if isinstance(reference, dict) else None
+    ref_basis = reference.get("basis") if isinstance(reference, dict) else None
+    out: dict = {}
+    for family in policy_required_evidence.SIGNAL_CODES:
+        if (signals or {}).get(family) != policy_required_evidence.TRIGGERED:
+            continue
+        status = stated.get(family)
+        codes: list = []
+        if isinstance(ref_status, dict) and isinstance(ref_basis, dict) and ref_status.get(family) == status:
+            try:
+                codes = list(policy_required_evidence.rule_evidence(family, ref_basis.get(family)))
+            except ValueError:
+                codes = []
+        else:
+            for _basis, rule_status, evidence in policy_required_evidence.RULES[family]:
+                if rule_status == status:
+                    codes += [code for code in evidence if code not in codes]
+        out[family] = codes
+    return out
+
+
+def _target(claim: dict) -> tuple | None:
+    """주장의 대상(§5.3 "유효한 claim"의 대상). 자료 상태는 기준월을 보지 않는다(채점기와 같이 상대국·품목·월·기호).
+    대상 필드가 문자열·null이 아닌 주장(freeform의 형식이 틀린 주장)은 None이다."""
+    if claim.get("claim_type") == "data_status":
+        key = ("data_status", claim.get("metric"), claim.get("hs6"), claim.get("partner"), claim.get("period"), None)
+    else:
+        key = (claim.get("claim_type"), claim.get("metric"), claim.get("hs6"), claim.get("partner"),
+               claim.get("period"), claim.get("baseline_period"))
+    return key if all(v is None or isinstance(v, str) for v in key) else None
+
+
+class _EvidenceView:
+    """보고서 주장(R1 출력)과 받은 봉투로 §5.3 조건을 보고, 채울 주장을 고른다."""
+
+    def __init__(self, case: dict, claims: list, evidence: list):
+        self.hs6, self.partner = case.get("hs6"), case.get("partner")
+        self.t, self.b = case.get("month"), case.get("baseline_month")
+        self.evidence = [e for e in evidence if isinstance(e, dict)]
+        self.claims = [c for c in claims if isinstance(c, dict)]
+        self.ids = {c.get("claim_id") for c in self.claims if isinstance(c.get("claim_id"), str)}
+        self.added: list = []  # (주장, 요청 모양)
+        metrics = [m for m in _metrics_of(self.evidence) if isinstance(m.get("metric_id"), str)]
+        statuses = _statuses_of(self.evidence)
+        # 후보: 검증된 지표와 자료 상태를 단위 R1로 채운 typed claim(값이 없는 지표 등 R1이 버리는 것은 후보가 아니다)
+        filled = report_claims.fill(case, metrics, [], [{"claim_id": m["metric_id"], "metric_id": m["metric_id"]}
+                                                        for m in metrics])["claims"]
+        status_ev = {s["status_id"]: s["evidence_ids"][0] for s in statuses}
+        filled += report_claims.fill(case, [], statuses, [{"claim_id": sid, "status_id": sid}
+                                                          for sid in status_ev])["claims"]
+        self.candidates = [c for c in filled if c.get("hs6") == self.hs6]
+        self.request_of = {}
+        for claim in self.candidates:
+            if claim["claim_type"] == "data_status":
+                self.request_of[id(claim)] = {"claim_type": "data_status", "evidence_id": status_ev[claim["claim_id"]]}
+            else:
+                self.request_of[id(claim)] = {"claim_type": claim["claim_type"], "metric_id": claim["claim_id"]}
+        self.by_target: dict = {}
+        for claim in self.candidates:
+            self.by_target.setdefault(_target(claim), []).append(claim)
+
+    # 유효성과 후보 ---------------------------------------------------------------------------------------------
+    def valid(self, claim: dict) -> bool:
+        """대상이 같은 후보가 있고 그 근거를 모두 인용한 주장(자료 상태는 값도 같아야 한다). 값의 참·거짓은 보지 않는다."""
+        cited = claim.get("evidence_ids")
+        cited = {e for e in cited if isinstance(e, str)} if isinstance(cited, list) else set()
+        return any(set(c["evidence_ids"]) <= cited
+                   and (c["claim_type"] != "data_status" or c["value"] == claim.get("value"))
+                   for c in self.by_target.get(_target(claim), []))
+
+    def has(self, target: tuple, value: object = None) -> bool:
+        return target is not None and any(_target(c) == target and (value is None or c.get("value") == value)
+                                          and self.valid(c) for c in self.claims)
+
+    def taken(self, target: tuple) -> bool:
+        """같은 대상의 주장이 이미 있다(유효하지 않아도 다시 넣지 않는다)."""
+        return any(_target(c) == target for c in self.claims)
+
+    def candidate(self, target: tuple, value: object = None) -> dict | None:
+        for claim in self.by_target.get(target, []):
+            if value is None or claim["value"] == value:
+                return claim
+        return None
+
+    def option_group(self, option: list) -> list | None:
+        """선택지(대상 목록)를 채우려면 더할 후보. 이미 유효하면 빈 목록, 채울 수 없으면 None."""
+        group: list = []
+        for target, value in option:
+            if self.has(target, value) or any(_target(c) == target for c in group):
+                continue
+            found = self.candidate(target, value)
+            if found is None or self.taken(target):  # 받은 근거에 없거나, 같은 대상의 (유효하지 않은) 주장이 이미 있다
+                return None
+            group.append(found)
+        return group
+
+    def part_met(self, options: list) -> bool:
+        return any(all(self.has(target, value) for target, value in option) for option in options)
+
+    def fill_parts(self, parts: list) -> str:
+        """parts = [[선택지, ...], ...]. 모든 부분을 채우면 met. 채울 수 있으면 더하고 added, 아니면 unmet."""
+        if all(self.part_met(options) for options in parts):
+            return "met"
+        group: list = []
+        for options in parts:
+            if self.part_met(options):
+                continue
+            chosen = None
+            for option in options:
+                found = self.option_group(option)
+                if found is not None:
+                    chosen = found
+                    break
+            if chosen is None:
+                return "unmet"
+            group += [c for c in chosen if all(c is not g for g in group)]
+        return "added" if self.add(group) else "unmet"
+
+    def add(self, group: list) -> bool:
+        """후보들을 덧붙인다. 같은 대상의 자료 상태·값 주장끼리 어긋나게 되면(검증기 R3 DATA_STATUS_CONFLICT) 넣지 않는다."""
+        if not group:
+            return False
+        before = len(self.conflicts(self.claims))
+        new = []
+        for claim in group:
+            n = len(self.ids) + len(new) + 1
+            while EVIDENCE_CLAIM_ID.format(n=n) in self.ids or any(c["claim_id"] == EVIDENCE_CLAIM_ID.format(n=n)
+                                                                   for c in new):
+                n += 1
+            new.append(dict(claim, claim_id=EVIDENCE_CLAIM_ID.format(n=n)))
+        if len(self.conflicts(self.claims + new)) > before:
+            return False
+        for original, claim in zip(group, new):
+            self.claims.append(claim)
+            self.ids.add(claim["claim_id"])
+            self.added.append((claim, dict(self.request_of[id(original)], claim_id=claim["claim_id"])))
+        return True
+
+    @staticmethod
+    def conflicts(claims: list) -> list:
+        # 검증기 R3의 규칙을 그대로 쓴다(R3처럼 형식이 맞는 주장만 넘긴다)
+        typed = [(i, c) for i, c in enumerate(claims) if not validator_validate.claim_problems(c)]
+        return validator_validate._data_status_conflicts(typed)
+
+    # §5.3 조건(계열 family) ----------------------------------------------------------------------------------
+    def level(self, claim_type: str, metric: str, partner: str, period: str, baseline: str | None = None) -> tuple:
+        return ((claim_type, metric, self.hs6, partner, period, baseline), None)
+
+    def change_or_levels(self, family: str, partner: str, peer: bool) -> list:
+        """계열 지표의 전년동월 변화 주장 하나, 또는 두 시점 수준 주장 둘(§5.3 comparability_ok·partner_comparison_done)."""
+        change, level = ("r_U", "U") if family == "unit_value" else ("d_s", "s")
+        change_type, level_type = ("change", "value") if family == "unit_value" else ("share_change", "share")
+        if peer:
+            change_type = level_type = "comparison"
+        return [[self.level(change_type, change, partner, self.t, self.b)],
+                [self.level(level_type, level, partner, self.t), self.level(level_type, level, partner, self.b)]]
+
+    def peers(self) -> list:
+        """비교집합의 비교국: compare_partners 봉투(스냅샷 비교 대상 표, 실행의 grouping_version)가 돌려준 상대국."""
+        found = set()
+        for envelope in self.evidence:
+            if envelope.get("tool") != "compare_partners" or envelope.get("retryable_error") is not None:
+                continue
+            for metric in envelope.get("metrics") or []:
+                partner = (metric.get("inputs") or {}).get("partner") if isinstance(metric, dict) else None
+                if isinstance(partner, str) and partner not in (self.partner, "ALL"):
+                    found.add(partner)
+        return sorted(found)
+
+    def decompose(self) -> dict | None:
+        found = [e for e in self.evidence if e.get("tool") == "decompose_hs" and e.get("retryable_error") is None]
+        return found[-1] if found else None
+
+    def children(self) -> list:
+        """두 시점의 대상국 HS10 하위 코드(decompose_hs 봉투 comparability.hs10, 나온 순서)."""
+        envelope = self.decompose()
+        entries = ((envelope or {}).get("comparability") or {}).get("hs10") or []
+        codes: list = []
+        for entry in entries if isinstance(entries, list) else []:
+            if isinstance(entry, dict) and entry.get("month") in (self.t, self.b):
+                codes += [c for c in entry.get("codes") or [] if isinstance(c, str) and c not in codes]
+        return codes
+
+    def gaps(self, family: str) -> dict:
+        """빠진 키(§5.3): 단가는 대상국 부모 HS6 키와 C형 HS10 하위 자료, 점유율은 대상국 부모 HS6 키와 ALL 분모.
+        {(상대국, hs6|hs10, 월): [그 키의 자료 상태 후보]}."""
+        found: dict = {}
+        for claim in self.candidates:
+            if claim["claim_type"] != "data_status" or claim["value"] in _MISSING_STATES \
+                    or claim["period"] not in (self.t, self.b):
+                continue
+            level = "hs10" if "@" in claim["metric"] else "hs6"
+            if claim["partner"] == self.partner and (family == "unit_value" or level == "hs6"):
+                found.setdefault((claim["partner"], level, claim["period"]), []).append(claim)
+            elif claim["partner"] == "ALL" and family == "share":
+                found.setdefault(("ALL", level, claim["period"]), []).append(claim)
+        return found
+
+    def status_options(self, claims: list) -> list:
+        return [[(_target(c), c["value"])] for c in claims]
+
+    def wrong_status(self) -> bool:
+        """사례 품목·두 시점의 자료 상태 주장 가운데 값이 받은 자료 상태와 다른 것(WRONG_VALUE)이 있다."""
+        for claim in self.claims:
+            if claim.get("claim_type") != "data_status" or claim.get("period") not in (self.t, self.b):
+                continue
+            known = self.by_target.get(_target(claim), [])
+            if known and all(c["value"] != claim.get("value") for c in known):
+                return True
+        return False
+
+    def cited(self) -> set:
+        """보고서 근거: 주장마다의 evidence_ids를 합친 것(보고서 evidence_ids도 단위 R2가 이것으로 만든다)."""
+        found: set = set()
+        for claim in self.claims:
+            ids = claim.get("evidence_ids")
+            found |= {e for e in ids if isinstance(e, str)} if isinstance(ids, list) else set()
+        return found
+
+    def parent_child(self) -> str:
+        """두 시점 모두 대상국 HS10 하위 행이 있으면, 두 시점의 부모 HS6 행과 HS10 하위 행(decompose_hs가 읽은 행, 상태 행
+        제외)을 모두 인용하게 한다. 대조 결과(일치·불일치)는 조건이 아니다."""
+        envelope = self.decompose()
+        entries = ((envelope or {}).get("comparability") or {}).get("hs10") or []
+        months = {e.get("month"): e.get("codes") for e in entries if isinstance(e, dict)} \
+            if isinstance(entries, list) else {}
+        if envelope is None or not months.get(self.t) or not months.get(self.b):
+            return "unmet"
+        status_rows = {item.get("evidence_id") for item in envelope.get("missingness") or [] if isinstance(item, dict)}
+        target = {e for e in envelope.get("evidence_ids") or [] if isinstance(e, str)} - status_rows
+        missing = target - self.cited()
+        if not missing:
+            return "met"
+        pool = [c for c in self.candidates if c["claim_type"] != "data_status" and c["partner"] == self.partner
+                and c["period"] in (self.t, self.b) and not self.taken(_target(c))]
+        group, seen_targets = [], set()
+        while missing:
+            best = max(pool, key=lambda c: len(missing & set(c["evidence_ids"])), default=None)
+            if best is None or not missing & set(best["evidence_ids"]):
+                return "unmet"
+            group.append(best)
+            seen_targets.add(_target(best))
+            missing -= set(best["evidence_ids"])
+            pool = [c for c in pool if _target(c) not in seen_targets]
+        return "added" if self.add(group) else "unmet"
+
+    def code(self, family: str, code: str) -> str:
+        """코드 하나: met(이미 채움) | added(덧붙여 채움) | unmet(받은 근거로 채울 수 없음) | no_action(덧붙일 것이 없음)."""
+        p, t, b = self.partner, self.t, self.b
+        if code in NO_ACTION_CODES:
+            return "no_action"
+        if code == "comparability_ok":
+            return self.fill_parts([self.change_or_levels(family, p, peer=False)])
+        if code == "partner_comparison_done":
+            options = [option for peer in self.peers() for option in self.change_or_levels(family, peer, peer=True)]
+            return self.fill_parts([options]) if options else "unmet"
+        if code == "weight_share_decomposition":
+            return self.fill_parts([[[self.level("decomposition", m, p, t, b) for m in report_claims.DECOMPOSITION]]])
+        if code == "per_child_unit_value_stable":
+            kids = self.children()
+            if not kids:
+                return "unmet"
+            return self.fill_parts([[[self.level("change", f"r_U@{k}", p, t, b)],
+                                     [self.level("value", f"U@{k}", p, t), self.level("value", f"U@{k}", p, b)]]
+                                    for k in kids])
+        if code == "precision_sensitivity_shown":
+            return self.fill_parts([[[self.level("value", m, p, month) for m in ("V", "Q") for month in (t, b)]]])
+        if code == "country_and_world_change_shown":
+            return self.fill_parts([[[self.level("value", "V", who, month) for who in (p, "ALL") for month in (t, b)]]])
+        if code == "parent_child_match_V_and_Q":
+            return self.parent_child()
+        if code in ("missingness_listed", "failure_vs_not_collected_distinguished"):
+            gaps = self.gaps(family)
+            if gaps:
+                return self.fill_parts([self.status_options(claims) for claims in gaps.values()])
+            if code == "failure_vs_not_collected_distinguished":
+                return "unmet" if self.wrong_status() else "met"
+            peers = set(self.peers())
+            peer_status = [c for c in self.candidates if c["claim_type"] == "data_status" and c["partner"] in peers
+                           and c["period"] in (t, b) and c["value"] != "OBSERVED"]
+            return self.fill_parts([self.status_options(peer_status)]) if peer_status else "unmet"
+        return "unmet"
+
+
+def evidence_claims(case: dict, codes: dict, claims: list, evidence: list) -> dict:
+    """필수 근거 코드(evidence_codes 출력)마다 §5.3 조건을 보고 채울 주장을 덧붙인다.
+
+    돌려주는 값: {"claims": 덧붙인 typed claim(claim_id e{번호}), "log": trace state_change evidence_claims에 싣는 값
+    {"required": codes, "added": [{"signal", "code", "claims": [요청 모양]}], "unmet": [{"signal", "code"}],
+    "no_action": [{"signal", "code"}]}}. 요청 모양은 checklist_claims와 같은 {claim_id, claim_type, metric_id} 또는
+    {claim_id, claim_type: data_status, evidence_id}다. claims(보고서의 주장)와 입력을 바꾸지 않는다."""
+    view = _EvidenceView(case, list(claims or []), list(evidence or []))
+    log: dict = {"required": {k: list(v) for k, v in (codes or {}).items()}, "added": [], "unmet": [], "no_action": []}
+    for family in policy_required_evidence.SIGNAL_CODES:
+        for code in (codes or {}).get(family) or []:
+            before = len(view.added)
+            outcome = view.code(family, code)
+            if outcome == "added":
+                log["added"].append({"signal": family, "code": code,
+                                     "claims": [request for _, request in view.added[before:]]})
+            elif outcome in ("unmet", "no_action"):
+                log[outcome].append({"signal": family, "code": code})
+    return {"claims": [claim for claim, _ in view.added], "log": log}
+
+
 def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimits, *, grouping_version: str,
                policy: object = None, rows: Callable[[list], dict] | None = None,
                evidence_state: Callable[[dict, list], dict] | None = None,
@@ -366,6 +701,9 @@ def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimit
             statuses = _statuses_of(evidence)
             filled = report_claims.run({"mode": mode, "case": case, "metrics": _metrics_of(evidence),
                                         "statuses": statuses, "requests": _requests_of(draft, statuses)})
+        # 필수 근거 주장 덧붙이기(모든 모드 같은 규칙). freeform도 덧붙이는 주장은 단위 R1의 틀 채우기(fill)로 검증된 지표에서
+        # 채운다(모델 주장은 R1 freeform이 그대로 돌려준 것이고, R1을 두 번 부를 뿐 R1을 고치지 않는다).
+        extra = evidence_claims(case, inp.get("required_codes") or {}, filled["claims"], evidence)
         try:
             unresolved = policy_case_aggregate.run({"signals": case.get("signals"),
                                                     "signal_status": draft.get("signal_status")})["unresolved_evidence"]
@@ -378,10 +716,12 @@ def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimit
             "report_id": f"{run_id}-report{made['reports']}", "run_id": run_id, "mode": mode,
             "created_at": trace_log.iso_kst(clock()), "policy_version": case.get("policy_version"),
             "snapshot_id": case.get("snapshot_id"), "grouping_version": grouping_version, "case": case,
-            "claims": filled["claims"], "narrative": draft.get("narrative"), "hypotheses": draft.get("hypotheses"),
+            "claims": list(filled["claims"]) + extra["claims"], "narrative": draft.get("narrative"),
+            "hypotheses": draft.get("hypotheses"),
             "review_status": draft.get("review_status"), "signal_status": draft.get("signal_status"),
             "unresolved_evidence": unresolved, "validator_findings": []})
-        return {"report": rendered["report"], "rejected": list(filled.get("rejected") or [])}
+        return {"report": rendered["report"], "rejected": list(filled.get("rejected") or []),
+                "evidence_claims": extra["log"]}
 
     def check_report(inp: dict) -> dict:
         report, evidence = inp["report"], inp["evidence"]
@@ -417,9 +757,10 @@ def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimit
         state = evidence_state(case, evidence)
         return policy_signal_decide.run({"policy": policy, "case": case, "evidence": state})
 
+    wired = evidence_state is not None and policy is not None
     return Ports(tool=tool, budget=budget, build_report=build_report, check_report=check_report,
                  checklist_draft=checklist_draft, required_evidence=required,
-                 reference_status=reference if evidence_state is not None and policy is not None else None)
+                 reference_status=reference if wired else None, evidence_reference=reference if wired else None)
 
 
 def _unresolved(signal_status: dict, signals: dict | None = None) -> bool:
@@ -664,10 +1005,25 @@ class _Flow:
 
     # 보고서와 판정 ----------------------------------------------------------------------------------------------
     def build(self, draft: dict) -> dict:
+        """보고서를 만든다. 필수 근거 코드(evidence_codes)를 넘겨 build_report가 채울 주장을 덧붙이게 하고, 덧붙인 결과를
+        trace state_change evidence_claims로 남긴다(build_report가 결과를 돌려줄 때)."""
+        codes = evidence_codes(self.signals, draft.get("signal_status"), self.reference_for_codes())
         built = self.ports.build_report({"case": self.case, "mode": self.mode, "run_id": self.ctx.run_id,
-                                         "draft": draft, "evidence": list(self.evidence)})
+                                         "draft": draft, "evidence": list(self.evidence), "required_codes": codes})
         self.rejected = list(built.get("rejected") or [])
+        if isinstance(built.get("evidence_claims"), dict):
+            self.state("evidence_claims", draft, **built["evidence_claims"])
         return built["report"]
+
+    def reference_for_codes(self) -> dict | None:
+        """필수 근거 코드를 고를 때 쓰는 규칙 참고값(P3 출력). 없거나 계산할 수 없으면(입력 검사 오류) None이다. 모델에게
+        싣는 참고값 문구·trace rule_reference와 관계없다(배선 오류는 참고값처럼 CODE_ERROR로 올린다)."""
+        if self.ports.evidence_reference is None:
+            return None
+        try:
+            return self.ports.evidence_reference(list(self.evidence))
+        except ValueError:
+            return None
 
     def check(self, report: dict, phase: str, schema_only: bool = False) -> dict:
         """스키마 검사와 검증기 판정. schema_only면(Critic 앞의 첫 검사) 스키마 결과만 판정에 쓴다."""
