@@ -200,6 +200,16 @@ class RulebookProseBoundaryTest(unittest.TestCase):
         # 단위 글자가 다른 낱말의 일부이면 빼지 않는다(kVAr·kWh)
         self.assertEqual(outcomes(prose("16kVAr, 10kWh", claims)), [("16", U), ("10", U)])
 
+    def test_26_extension_letter_and_whitespace_boundaries(self):
+        claims = one("r_U", Decimal("-40.0"), "%", "DOWN")
+        # 공백 0개 이상: 두 칸 이상도 뺀다
+        self.assertEqual(prose("HSK  10 기준, 10  단위 분류, 16  kVA 규격", a_claims()), [])
+        # 소문자 hsk·앞자리 없는 소수·천 단위 쉼표 수는 집합 밖이라 채점 대상으로 남는다
+        self.assertEqual(outcomes(prose("hsk 10 기준", claims)), [("10", U)])
+        self.assertEqual(outcomes(prose(".5kVA 규격", claims)), [("5", U)])
+        # 천 단위 쉼표가 든 규격 수는 통째로 채점 대상에서 빠진다(쉼표 앞 자리도 잡지 않는다)
+        self.assertEqual(prose("1,000kVA 규격", claims), [])
+
 
 class ProseDetailsTest(unittest.TestCase):
     def test_claim_text_field_and_identifiers(self):
