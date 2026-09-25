@@ -101,7 +101,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | G1 | g0 고정 목록 | `grouping_g0` | `src/tradesentry/grouping/g0.py` | 앱 | M | v2 2023 수입액 → 대상국 뺀 상위 5개국(`data/reference/peer_group_g0.csv`) | 유지(AS2 점검: `run-case` 실행 중에는 불리지 않음. 비교국은 미리 계산한 `peer_group` 행을 K3로 읽는다. 채점 대체 기본값 `g0` 고정 규칙으로 유지, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | **고정 규칙과 충돌**: `g1`이 동결되지 않으면 채점의 대체 기본값이 `g0`이다(자료 계약 §4.2). 그래서 버릴 수 없다. HS6별 목록이다. 해석은 2026-09-24(목) 사용자 확인(로드맵 §6.1) |
-| G2 | g1 유사도 | `grouping_g1` | `src/tradesentry/grouping/g1.py` | 앱 | M | BACI + 국가 코드 대응 → `peer_group_g1.csv` | 유지. AS4 점검: MVP 명령에서 불리지 않음. 뼈대이고 `g1`은 로드맵 §5 "끝까지 지키는 것"이라 버리지 않음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 1 | — | 결과는 D가 검수한다 |
+| G2 | g1 유사도 | `grouping_g1` | `src/tradesentry/grouping/g1.py` | 앱 | M | BACI + 국가 코드 대응 → `peer_group_g1.csv` | 유지. AS4 점검: MVP 명령에서 불리지 않음. 뼈대이고 `g1`은 로드맵 §5 "끝까지 지키는 것"이라 버리지 않음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`). 미구현, `g0` 대체 선언(2026-09-26(토) 08:10 사용자 결정, 결정 기록 `20260926-0810-user-decision-rb1-g0-substitute-and-prose-ex2.md`) | 1 | — | 결과는 D가 검수한다 |
 | G3 | 국가 코드 대응 | 없음(구성) | `data/reference/` 아래 국가 코드 대응표(파일 이름은 S0 자문 Q20) | 구성 | D | 관세청 2자리 ↔ BACI 코드, 대만 주석 | 유지 | 1 | — | 단위 G2의 입력 자료. D 소유 파일(`data/reference/`)이라 M 소유 단위 G2와 합치면 트랙 경계를 넘는다(병렬 개발 규칙 §1). 맡는 작업은 로드맵 DT1이다 |
 
 ### 3.6 I — 조사: 도구·흐름(13개)
