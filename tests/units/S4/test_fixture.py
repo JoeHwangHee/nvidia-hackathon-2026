@@ -162,7 +162,7 @@ class SwapBySnapshotIdTest(FixtureTestBase):
     def test_dal_opens_by_id_and_meta_is_the_contract_snapshot_object(self):
         obj = self.open().snapshot_object()
         self.assertEqual(set(obj), {"schema_version", *types.SNAPSHOT_KEYS})
-        self.assertEqual((obj["schema_version"], obj["snapshot_id"], obj["source_kind"]), (1, SID, "controlled"))
+        self.assertEqual((obj["schema_version"], obj["snapshot_id"], obj["source_kind"]), (2, SID, "controlled"))
         self.assertEqual(obj["normalized_sha256"], self.summary["normalized_sha256"])
         self.assertEqual(obj["collected_at"], self.spec["generated_at"])
         self.assertEqual(obj["source_url"], fixture.SOURCE_URL)  # 합성 자료는 생성 규칙의 저장소 상대경로(§2.3.1)

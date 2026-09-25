@@ -215,8 +215,8 @@ class MetricTableTest(unittest.TestCase):
         self.assertTrue(types.RUN_ID_RE.fullmatch("run_case-260925143015"))
         for bad in ("Run_case-260925143015", "run-case-260925143015", "run_case-2609251430"):
             self.assertIsNone(types.RUN_ID_RE.fullmatch(bad), bad)
-        self.assertEqual(types.SCHEMA_VERSION, 1)
-        self.assertIn("`schema_version=1`", CONTRACT)
+        self.assertEqual(types.SCHEMA_VERSION, 2)
+        self.assertIn("`schema_version=2`", CONTRACT)  # 2026-09-25(금) 사용자 결정(v2로 올림). 코드 상수와 계약 본문이 같다
         self.assertEqual(types.Number, int | Decimal)
 
 
