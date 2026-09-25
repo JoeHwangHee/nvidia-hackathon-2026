@@ -49,7 +49,7 @@
 ⑤ **분류 4에서 만들지 않는 변형** — 잠정(오케스트레이터 확인)
 
 - DT5 결정 기록 ⑥의 제외 이유("채점기가 대상국·`ALL`의 `REQUEST_FAILED`·`NOT_COLLECTED` 주장만 센다")는 지금 채점기와 맞지 않는다. 채점기는 `UNRESOLVED_ZERO` 키(인용할 행이 없으면 값으로 구분)와 비교국 누락(`missingness_listed`의 대체 조건)도 판정한다 `[사실: tests/test_scorer_results.py test_uncitable_gaps_are_distinguished_by_value, test_comparison_incomplete_lists_a_peer_gap]`. 명세 분류 4의 이유를 이 사실로 고쳤다.
-- 그래도 두 변형은 이 판에서 만들지 않는다. 비교국만 빠진 변형에서는 `failure_vs_not_collected_distinguished`가 대상국·`ALL`의 빠진 키만 보므로 빈 조건으로 채워져 구분 능력을 재지 못하고, 두 변형 모두 dev20에 확인 사례가 없다. holdout40에서 열지는 holdout40 생성(DT6) 전에 오케스트레이터가 정한다.
+- 그래도 두 변형은 이 판에서 만들지 않는다. 두 변형 모두 dev20에 확인 사례가 없고, 이 PR은 holdout40 생성 규칙을 바꾸지 않는다. 비교국 누락에서도 두 코드를 함께 보면 상태를 틀리게 적은 보고서는 떨어진다(`failure_vs_not_collected_distinguished`는 사례 품목·두 시점의 `data_status` claim에 `WRONG_VALUE`가 있으면 실패하고, 비교국에 대한 claim도 여기에 든다). holdout40에서 열지는 holdout40 생성(DT6) 전에 오케스트레이터가 정한다.
 
 ## 검토한 대안
 

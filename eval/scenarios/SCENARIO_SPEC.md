@@ -110,7 +110,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 ### 분류 4 — 월 누락·API 실패·미수집
 
 - 자료 구성: 대상국의 부모 HS6 행은 비교월·기준월 모두 있어 신호는 발동한다. 판정에 필요한 대상국 HS10 하위 자료를 맡은 요청(HS6 조회)이 실패(`REQUEST_FAILED`: 수신 기록 `FAILED`)했거나 수집되지 않았다(`NOT_COLLECTED`: 수신 기록 없음). 비교월 연도나 기준월 연도 구간 어느 쪽이든 된다.
-- 만들지 않는 변형: 요청은 성공했는데 그 달 행만 없는 변형(`UNRESOLVED_ZERO`만 있는 경우)과 비교국 자료만 빠진 변형. 두 변형의 필수 근거도 §5.3 판정 조건표로 판정할 수는 있다(인용할 행이 없는 키는 값으로 구분하고, 비교국 누락은 `missingness_listed`의 대체 조건으로 채운다) `[사실: eval/scorer/results.py _tag_ok, tests/test_scorer_results.py]`. 다만 비교국만 빠진 변형에서는 `failure_vs_not_collected_distinguished`가 대상국·`ALL`의 빠진 키만 보므로 빈 조건으로 채워져 요청 실패와 미수집의 구분을 재지 못하고, 두 변형 모두 dev20에 확인 사례가 없다. 그래서 이 판에서는 만들지 않고, holdout40에서 열지는 holdout40 생성(로드맵 DT6) 전에 오케스트레이터가 정한다.
+- 만들지 않는 변형: 요청은 성공했는데 그 달 행만 없는 변형(`UNRESOLVED_ZERO`만 있는 경우)과 비교국 자료만 빠진 변형. 두 변형의 필수 근거도 §5.3 판정 조건표로 판정할 수는 있다(인용할 행이 없는 키는 값으로 구분하고, 비교국 누락은 `missingness_listed`의 대체 조건으로 채운다) `[사실: eval/scorer/results.py _tag_ok, tests/test_scorer_results.py]`. 다만 두 변형 모두 dev20에 확인 사례가 없고 이 판은 생성 규칙을 바꾸지 않으므로 만들지 않는다. holdout40에서 열지는 holdout40 생성(로드맵 DT6) 전에 오케스트레이터가 정한다.
 - 기대 처리: 발동한 모든 신호가 `hold_missing` → `HOLD`.
 
 ### 분류 5 — 단위·HS 버전·하위 합계 불일치
