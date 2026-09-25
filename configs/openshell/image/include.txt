@@ -11,6 +11,10 @@
 # 들이지 않는 것(도구가 거부한다): .env와 .env.*, outputs/, artifacts/(eval 포함), eval/dev/oracle_ABC.json,
 # eval/dev/dev20/ 전체(입력 eval/dev/dev20/input/만 --add로. answers/는 거부), eval/scorer/, eval/datagen/, 봉인 폴더, 스냅샷의 raw/·manifest·수집기
 # SQLite·합성 생성 규칙 fixture_spec.json(사례 이름표가 있다), .git·.venv·spikes/·tests/·docs/·scripts/
+#
+# 겹침 규칙(--overlay): 봉인 입력은 이 목록에 적지 않는다. 반입 도구 `python -m scripts.import_sealed_holdout40 --dest <폴더>`가 저장소
+# 밖에 만든 폴더를 `--overlay <폴더>`로 들이며, 저장소에 같은 상대경로가 있으면 거부하고 위 거부 규칙을 겹침 파일에도 그대로 적용한다
+# (eval/ 예외만 eval/dev/<묶음>/input/ 아래로 넓힌다. 결정 기록 model-decision-f2-holdout40-import).
 
 # 가상환경 정의(Python 3.12.13, uv lock)
 pyproject.toml
