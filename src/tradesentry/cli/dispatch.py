@@ -112,6 +112,19 @@ model-decision-as2-run-case)
   지표·P2 출력, 흐름 조정의 반환 모양, 출력 직렬화). 흐름 안(도구 봉투 → 근거 상태 변환 등)에서 난 WiringError는 흐름
   조정이 CODE_ERROR로 기록하므로 실행 결과 기록이 남고 1이다. 오류 문장에는 받은 값과 스냅샷 안의 값을 넣지 않는다(N13).
 
+- 키 없는 스모크 재현(--replay <재생 파일 상대 경로>, run-case만의 선택 옵션. 사용자 결정 2026-09-26(토) 02:12 ②, 결정 기록
+  model-decision-smoke-replay): 옵션이 있으면 모델 전송 자리를 단위 I8 ReplayTransport로 바꿔 재생 파일에 기록된 모델 응답을
+  차례로 내주고 요청 해시(request_sha256)를 대조한다. NIM을 부르지 않으므로 키 환경변수가 없어도 돈다. 도구 5개는 실제
+  스냅샷(합성 픽스처)으로 돈다. 시계는 단위 I8 ReplayClock(가상 시계. 기록된 elapsed_ms와 재전송 대기만큼 흐른다)이라 429
+  뒤 대기가 실제로 잠들지 않고 실행이 결정적이다. 재생 파일(load_replay): JSON 객체 {"trace": [model_request·
+  model_response·model_error 레코드], "requests": [], "source": {run_id, case_id, snapshot_id, policy_version, mode,
+  code_version, model_config, execution_status, review_status_final}}. 실행 폴더를 만들기 전에 읽고, 파일 없음·JSON
+  아님·모양 틀림은 RunCaseError(1. 경로·내용은 되풀이하지 않는다, N13), source의 case_id·snapshot_id·policy_version·mode가
+  요청과 다르면 RunCaseError(1). 요청 해시가 기록과 다르거나 기록이 모자라면 흐름 조정이 ReplayMismatch를 CODE_ERROR로
+  기록하고 1이다(단위 I8 규칙). 재생이 기록을 다 쓰지 않고 끝나면 출력은 남기고 1이다(같은 실행이 아니다). 실행 결과 기록·
+  trace의 모양은 바꾸지 않고 표준 오류에 알림 한 줄(REPLAY_NOTICE)을 쓴다. 재생 실행은 점수표 근거가 아니다(evaluate는 이
+  옵션을 받지 않는다).
+
 평가 하네스는 모듈 단위로만 허용한다. 호스트 전용 샌드박스 밖 실행기(단위 E2, tradesentry.evaluation.sealed_runner)는
 CLI가 부르지 않는다.
 
@@ -862,6 +875,48 @@ class RunCaseError(Exception):
     """run-case가 사례를 조사하지 않고 끝내는 까닭(종료 코드 1). 문장에는 받은 값·스냅샷 안의 값을 넣지 않는다(N13)."""
 
 
+# --replay 재생 파일(키 없는 스모크 재현, 결정 기록 model-decision-smoke-replay). 만드는 도구는 scripts/make_smoke_replay.py
+REPLAY_EVENTS = ("model_request", "model_response", "model_error")
+REPLAY_SOURCE_MATCH = {"case_id": "case", "snapshot_id": "snapshot_id", "policy_version": "policy_version", "mode": "mode"}
+REPLAY_NOTICE = "알림: --replay로 기록된 모델 응답을 재생한 실행이다(NIM을 부르지 않았다). 점수표 근거가 아니다."
+REPLAY_LEFTOVER = ("오류: 재생이 기록보다 일찍 끝났다(기록된 모델 응답이 남았다). 같은 실행이 아니므로 실패로 본다. 출력은 "
+                   "실행 폴더에 남겼다.")
+
+
+def load_replay(request: args.Request) -> list[dict] | None:
+    """--replay 파일(재생 파일, JSON 객체)을 읽어 trace 레코드 목록을 돌려준다. 옵션이 없으면 None. 파일 없음·JSON 아님·
+    모양 틀림·source가 요청과 다르면 RunCaseError(오류 문장에 경로·내용을 넣지 않는다, N13)."""
+    if request.replay is None:
+        return None
+    if request.mode == "checklist":
+        raise RunCaseError("오류: tradesentry run-case의 --replay는 모델 모드(agent·full·freeform)에서만 뜻이 있다. checklist는 "
+                           "모델을 부르지 않는다.")
+    from tradesentry.runlog import trace as trace_log
+
+    try:
+        text = Path(request.replay).read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RunCaseError(f"오류: tradesentry run-case가 --replay의 재생 파일을 읽지 못했다({type(exc).__name__}).") from None
+    try:
+        doc = trace_log.loads(text)
+    except ValueError:
+        raise RunCaseError("오류: tradesentry run-case의 --replay 재생 파일이 JSON이 아니다.") from None
+    if not isinstance(doc, dict) or not isinstance(doc.get("trace"), list) \
+            or not all(isinstance(r, dict) and r.get("event") in REPLAY_EVENTS and isinstance(r.get("data"), dict)
+                       for r in doc["trace"]) or not isinstance(doc.get("requests"), list) \
+            or not isinstance(doc.get("source"), dict):
+        raise RunCaseError("오류: tradesentry run-case의 --replay 재생 파일이 {trace[모델 레코드], requests[], source{}} "
+                           "모양이 아니다.")
+    if not doc["trace"]:
+        raise RunCaseError("오류: tradesentry run-case의 --replay 재생 파일에 기록된 모델 응답이 없다.")
+    source = doc["source"]
+    off = [key for key, field in REPLAY_SOURCE_MATCH.items() if source.get(key) != getattr(request, field)]
+    if off:
+        raise RunCaseError("오류: tradesentry run-case의 --replay 재생 파일이 이 요청의 사례가 아니다(source의 "
+                           f"{', '.join(off)}가 요청과 다르다).")
+    return doc["trace"]
+
+
 def image_code_version(root: Path) -> str:
     """샌드박스 이미지 기록(<앱 뿌리>/image_manifest.json, 스테이징 도구 scripts/stage_sandbox_image.py가 쓴다)의 git 커밋.
 
@@ -1258,32 +1313,45 @@ def _write_json(run_dir: Path, run_id: str, domain: str, stamp: str, value: obje
 
 
 def investigate_case(snap, policy: dict, case: dict, request: args.Request, run_id: str, stamp: str, run_dir: Path,
-                     *, dataset: str, grouping_version: str) -> dict:
+                     *, dataset: str, grouping_version: str, replay: list[dict] | None = None) -> dict:
     """사례 1건을 흐름 조정(단위 I12)으로 NAT(단위 I13) 안에서 돌린다. trace(단위 L1)는 실행 폴더에 쓴다.
-    돌려주는 값: {"record": 실행 쪽 키, "report": 최종 보고서 또는 None, "trace": 상대경로, "nat": 상대경로}."""
+    replay(재생 파일의 trace 레코드)가 있으면 모델 전송 자리는 단위 I8 ReplayTransport, 시계는 ReplayClock이다(머리 설명
+    "키 없는 스모크 재현").
+    돌려주는 값: {"record": 실행 쪽 키, "report": 최종 보고서 또는 None, "trace": 상대경로, "nat": 상대경로,
+    "replay_remaining": 재생 뒤 남은 기록 수(재생이 아니면 0)}."""
     from tradesentry.contract import types
     from tradesentry.runlog import trace as trace_log
     from tradesentry.workflow import model_client, nat_wrap, orchestrate
+    from tradesentry.workflow import replay as replay_unit
 
     config = model_client.load_model_config()
+    clock = replay_unit.ReplayClock() if replay is not None else None
+    clocks = {} if clock is None else {"clock_ms": clock.now_ms, "sleep_ms": clock.sleep_ms}
     port = ToolPort(snap, case, request.policy_version, grouping_version)
     ports = orchestrate.unit_ports(case, request.mode, run_id, config.limits, grouping_version=grouping_version,
                                    policy=policy, rows=lambda ids: resolve_rows(snap, ids),
                                    evidence_state=lambda case_obj, envelopes: evidence_state(case_obj, envelopes,
-                                                                                             policy))
+                                                                                             policy),
+                                   **({} if clock is None else {"clock": clock.wall}))
     ports.tool = port.call
     ports.required_tools = required_tools
     ports.drafts_only_without_tools = True  # 초안은 구조화 출력(json_object) 차례에서만 받는다(AS2 결정 기록 ⑱)
     ctx = orchestrate.RunContext(run_id=run_id, case=case, mode=request.mode, dataset=dataset,
                                  rulebook_version=types.RULEBOOK_VERSION, grouping_version=grouping_version,
                                  code_version=code_version())
-    transport = None if request.mode == "checklist" else run_case_transport(config)
+    if request.mode == "checklist":
+        transport = None
+    elif replay is not None:
+        transport = replay_unit.ReplayTransport(replay, clock)
+    else:
+        transport = run_case_transport(config)
     trace_file = trace_log.trace_path(run_dir, stamp)
-    writer = trace_log.TraceWriter(trace_file, run_id)
+    writer = trace_log.TraceWriter(trace_file, run_id, **({} if clock is None else {"clock": clock.wall}))
     nat_dir = run_dir / f"{NAT_DOMAIN}-{stamp}"
 
     def flow(nat_sink):
-        return orchestrate.orchestrate(ctx, ports, config, transport=transport, sink=trace_log.Tee(writer, nat_sink))
+        return orchestrate.orchestrate(ctx, ports, config, transport=transport, sink=trace_log.Tee(writer, nat_sink),
+                                       **clocks)
 
     try:
         outcome = nat_wrap.run_under_nat(flow, nat_dir, model=config.settings.model)
@@ -1292,16 +1360,22 @@ def investigate_case(snap, policy: dict, case: dict, request: args.Request, run_
     result = outcome["result"]
     if not isinstance(result, dict) or not isinstance(result.get("record"), dict) or "report" not in result:
         raise WiringError("단위 I12(orchestrate)의 출력이 {record, report} 객체가 아니다")
+    remaining = transport.remaining if replay is not None and transport is not None else 0
     return {"record": result["record"], "report": result["report"],
-            "trace": f"{OUTPUT_LABEL}/{run_id}/{trace_file.name}", "nat": f"{OUTPUT_LABEL}/{run_id}/{nat_dir.name}"}
+            "trace": f"{OUTPUT_LABEL}/{run_id}/{trace_file.name}", "nat": f"{OUTPUT_LABEL}/{run_id}/{nat_dir.name}",
+            "replay_remaining": remaining}
 
 
-def run_case_in(request: args.Request, run_id: str, stamp: str, run_dir: Path) -> tuple[dict, list[str]]:
+def run_case_in(request: args.Request, run_id: str, stamp: str, run_dir: Path, *,
+                replay: list[dict] | None = None) -> tuple[dict, list[str]]:
     """확보한 빈 실행 폴더(run_dir)에서 사례 1건을 조사하고 출력 파일을 쓴다. run-case 처리 함수와 evaluate의 호스트 백엔드
     (host_case_runner)가 같이 쓴다(AS2 결정 기록 "AS3" 항목: investigate_case 배선을 그대로 써서 필수 조회·초안 차례·
     참고값 세 포트가 켜진다).
 
-    돌려주는 값: (실행 쪽 키 21개, 표준 출력에 적을 상대경로 목록: trace·NAT 폴더·실행 결과 기록·보고서(있을 때)).
+    replay(재생 파일의 trace 레코드, load_replay)가 있으면 모델 응답을 재생한다(키 없는 스모크 재현). 호스트 백엔드는 넘기지 않는다.
+
+    돌려주는 값: (실행 쪽 키 21개, 표준 출력에 적을 상대경로 목록: trace·NAT 폴더·실행 결과 기록·보고서(있을 때)). 재생이
+    기록을 다 쓰지 않고 끝났으면 기록에 "replay_remaining"을 붙이지 않고 RunCaseLeftover를 낸다(출력 파일은 이미 썼다).
     정책(PolicyError)·모델 설정(ConfigError)·스냅샷(SnapshotError·ScopeError)을 읽지 못하거나 사례가 아니면(RunCaseError)
     예외를 낸다. 예외 문장에는 받은 값·스냅샷 안의 값을 넣지 않는다(N13).
     """
@@ -1329,12 +1403,22 @@ def run_case_in(request: args.Request, run_id: str, stamp: str, run_dir: Path) -
             grouping_version = snapshot_grouping_version(snap)
         case = rebuild_case(snap, policy, request.case, case_input)
         outcome = investigate_case(snap, policy, case, request, run_id, stamp, run_dir, dataset=dataset,
-                                   grouping_version=grouping_version)
+                                   grouping_version=grouping_version, replay=replay)
     record, report = outcome["record"], outcome["report"]
     shown = [outcome["trace"], outcome["nat"], _write_json(run_dir, run_id, RUN_RECORD_DOMAIN, stamp, record)]
     if report is not None:
         shown.append(_write_json(run_dir, run_id, REPORT_DOMAIN, stamp, report))
+    if outcome.get("replay_remaining"):
+        raise RunCaseLeftover(shown)
     return record, shown
+
+
+class RunCaseLeftover(Exception):
+    """재생이 기록을 다 쓰지 않고 끝났다(같은 실행이 아니다). 출력 파일은 썼으므로 그 상대경로 목록을 지닌다."""
+
+    def __init__(self, shown: list[str]):
+        super().__init__(REPLAY_LEFTOVER)
+        self.shown = shown
 
 
 def _run_case(request: args.Request) -> int:
@@ -1345,9 +1429,21 @@ def _run_case(request: args.Request) -> int:
     from tradesentry.runlog import cause_codes
     from tradesentry.workflow import model_client
 
+    try:  # 재생 파일(--replay)은 실행 폴더를 만들기 전에 읽고 검사한다(머리 설명 "키 없는 스모크 재현")
+        replay = load_replay(request)
+    except RunCaseError as exc:
+        _report(str(exc))
+        return EXIT_FAILED
     run_id, stamp, run_dir = reserve_run_dir(RUN_CASE_RUN_NAME, given=request.run_name)
+    if replay is not None:
+        _report(REPLAY_NOTICE)
     try:
-        record, shown = run_case_in(request, run_id, stamp, run_dir)
+        record, shown = run_case_in(request, run_id, stamp, run_dir, replay=replay)
+    except RunCaseLeftover as exc:
+        for line in exc.shown:
+            _emit(line)
+        _report(REPLAY_LEFTOVER)
+        return EXIT_FAILED
     except policy_load.PolicyError:
         _report("오류: tradesentry run-case가 --policy의 정책을 읽지 못했다(PolicyError). "
                 "정책 버전 이름과 configs/의 정책 파일을 확인한다.")

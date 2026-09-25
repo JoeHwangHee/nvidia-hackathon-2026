@@ -391,7 +391,7 @@ class RunTest(unittest.TestCase):
         detect = ["detect", "--snapshot", "controlled_fixture_v0", "--policy", "dev-0.1"]
         self.assertEqual(args.run(detect),
                          {"command": "detect", "snapshot_id": "controlled_fixture_v0", "policy_version": "dev-0.1",
-                          "mode": None, "case": None, "run_name": None, "conditions_extra": None})
+                          "mode": None, "case": None, "run_name": None, "conditions_extra": None, "replay": None})
         self.assertEqual(args.run(detect + ["--mode", "agent"])["mode"], "agent")  # 쓰지 않는 옵션도 받은 값 그대로
 
 
@@ -442,3 +442,39 @@ class ConditionsExtraTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReplayTest(unittest.TestCase):
+    """--replay(키 없는 스모크 재현, 사용자 결정 2026-09-26 02:12 ②): run-case만의 선택 옵션. 값은 공백·제어 문자 없는 상대
+    경로 한 조각이다. 한 번만 적는다."""
+
+    def test_only_run_case_takes_it_and_it_is_optional(self):
+        argv = argv_for("run-case") + ["--replay", "eval/dev/smoke/850450-XA-202412.json"]
+        self.assertEqual(args.parse(argv).replay, "eval/dev/smoke/850450-XA-202412.json")
+        self.assertIsNone(args.parse(argv_for("run-case")).replay)
+        for command in args.COMMANDS:
+            if command == "run-case":
+                continue
+            with self.subTest(command=command):
+                code, err = parse_error(argv_for(command) + ["--replay", "replay.json"])
+                self.assertEqual(code, 2)
+                self.assertIn("unrecognized arguments: --replay <값 생략>", err)
+        code, err = parse_error(argv + ["--replay", "replay.json"])
+        self.assertEqual(code, 2)
+        self.assertIn("--replay 옵션을 두 번 적었다", err)
+
+    def test_absolute_home_and_whitespace_paths_are_refused_without_echo(self):
+        bad = ["", "/srv/probe/replay.json", "\\\\srv\\replay.json", "~" + "/replay.json", "~replay.json",
+               "C:\\replay.json", "c:/replay.json", "replay .json", "replay.json\n", "replay\u200b.json", " replay.json"]
+        for value in bad:
+            with self.subTest(value=value):
+                code, err = parse_error(argv_for("run-case") + ["--replay", value])
+                self.assertEqual(code, 2)
+                self.assertIn("--replay", err)
+                self.assertIn("상대 경로", err)
+                self.assertNotIn("srv", err)
+                if value.strip():
+                    self.assertNotIn(value, err)  # 받은 값을 되풀이하지 않는다
+        for value in ("replay.json", "./replay.json", "../shared/replay.json", "eval/dev/smoke/x.json"):
+            with self.subTest(value=value):
+                self.assertEqual(args.parse(argv_for("run-case") + ["--replay", value]).replay, value)

@@ -1,1 +1,1 @@
-{"command": "run-case", "snapshot_id": "controlled_fixture_v0", "policy_version": "dev-0.1", "mode": "full", "case": "A-composition", "run_name": null, "conditions_extra": null}
+{"command": "run-case", "snapshot_id": "controlled_fixture_v0", "policy_version": "dev-0.1", "mode": "full", "case": "A-composition", "run_name": null, "conditions_extra": null, "replay": null}

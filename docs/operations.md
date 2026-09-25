@@ -24,6 +24,7 @@
 | NemoClaw(OpenShell 위에서 에이전트를 돌리는 NVIDIA 참조 스택)가 안 될 때의 대체 경로와 시한 | `docs/plan/DEV_PLAN.md` §5.4, `docs/plan/ROADMAP.md` §7.1 |
 | 공식 스킬과 우리 스킬(스킬은 Agent Skills 형식의 에이전트용 작업 절차)의 설치·이름 확인 | `docs/eval/SKILL_DICTIONARY.md` §5 |
 | 성능 평가(사전 점검 → 실행 → 채점 → 결과 보고) | `skills/tradesentry-eval/SKILL.md` |
+| 키 없는 스모크 재현(커밋된 합성 픽스처 + 기록된 모델 응답으로 `run-case`가 끝까지 도는 것. 점수표 근거 아님): 저장소 루트에서 ① 합성 픽스처 설치 `uv run --locked python -c "from tradesentry.snapshot import fixture; fixture.materialize()"`(한 번. 이미 있으면 대조·검증만) ② 사례마다 `uv run --locked tradesentry run-case --snapshot controlled_fixture_v0 --policy policy_v1 --mode full --case 850450-XA-202412 --replay eval/dev/smoke/850450-XA-202412.json`(재생 파일은 `eval/dev/smoke/{case_id}.json`, 사례 A `850450-XA-202412`·B `850431-XB-202412`·C `850432-XC-202412`. 종료 코드 0이고 표준 오류에 재생 알림 한 줄) | `docs/rules/DATA_CONTRACT_V1.md` §10.3, `docs/tracking/decisions/20260926-0230-model-decision-smoke-replay.md`, 재생 파일 만들기 `scripts/make_smoke_replay.py` |
 | 자기채점 | `skills/tradesentry-scorecard/SKILL.md` |
 | Codex(OpenAI의 코딩 에이전트 CLI) 실행(권한 모드, 환경변수 제거, 제한 시간) | `docs/rules/AGENT_OPS.md` §2.2·§2.4 |
 | 날짜별 도착점, 작업 순서, 늦어질 때 줄이는 순서 | `docs/plan/ROADMAP.md` §1·§2.6·§5 |
