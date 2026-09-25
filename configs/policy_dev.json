@@ -1,6 +1,6 @@
 {
   "_status": "개발용 임시 정책 dev-0.1이다. 승인된 동결 정책 policy_v1이 아니다(결정 D2: policy_v1 승인 전 실행용). 기준값은 eval/dev/oracle_ABC.json 최상위 policy_version의 설명 '임계 |r_U|>=30%, |d_s|>=10pp'를 자료 계약 §11.2 단위로 옮겼다(30%는 30, 10pp는 10). 허용오차는 자료 계약 §11.1의 출발값(금액 정확 일치, 중량 0.5kg×(행수+1))이다. min_amount·min_weight와 CONFIRMED_NO_TRADE 승격 규칙은 dev-0.1에 없어 null이다. dev-0.1로는 승격하지 않는다(UNRESOLVED_ZERO는 그대로 두고, 승격은 사용자가 승인한 policy_v1의 규칙으로만 한다). 형식은 src/tradesentry/contract/policy_load.py 머리 설명을 따른다.",
-  "schema_version": 1,
+  "schema_version": 2,
   "policy_version": "dev-0.1",
   "thresholds": {"unit_value": 30, "share": 10},
   "min_amount": null,

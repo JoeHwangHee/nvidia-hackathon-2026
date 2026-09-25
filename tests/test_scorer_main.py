@@ -253,7 +253,7 @@ class SealedBatchTest(ScorerCommandBase):
         self.sealed_dir.mkdir()
         (self.sealed_dir / "answers.json").write_text(dump(answers), encoding="utf-8")
         digest = hashlib.sha256((self.sealed_dir / "answers.json").read_bytes()).hexdigest()
-        (self.root / "eval" / "sealed_manifest.json").write_text(json.dumps({"schema_version": 1, "files": [
+        (self.root / "eval" / "sealed_manifest.json").write_text(json.dumps({"schema_version": 2, "files": [
             {"dataset": "holdout40", "file_name": "answers.json", "sha256": digest,
              "created_at": "2026-09-25T09:00:00+09:00", "created_by": "시험"}]}), encoding="utf-8")
         patcher = mock.patch.dict(cli.SEALED_FILES, {"holdout40": "answers.json"})
@@ -476,6 +476,19 @@ class UntrustedInputTest(ScorerCommandBase):
         self.assertEqual(code, cli.EXIT_FAILED)
         self.assertIn("스냅샷 메타", err)
 
+    def test_snapshot_meta_of_previous_contract_version_is_refused(self):
+        """계약 버전 1(이전 계약)로 빌드한 스냅샷은 채점하지 않는다(자료 계약 §1.2, 버전 2로 올림)."""
+        path = self.root / "data" / "snapshots" / "controlled_fixture_v0" / "snapshot_build.sqlite"
+        path.unlink()
+        doc = self.rows.doc()
+        doc["tables"]["snapshot_meta"] = [dict(row, value="1") if row["key"] == "schema_version" else row
+                                          for row in doc["tables"]["snapshot_meta"]]
+        fx.write_sqlite(path, doc)
+        self.write_inputs()
+        code, _, err = self.run_scorer()
+        self.assertEqual(code, cli.EXIT_FAILED)
+        self.assertIn("schema_version이 2가 아니다", err)
+
     def test_folder_os_error_prints_no_path(self):
         self.write_inputs()
         with mock.patch.object(cli.os, "mkdir", side_effect=PermissionError(13, "Permission denied",
@@ -506,7 +519,7 @@ class SealedExceptionPathTest(SealedBatchTest):
         answers["cases"][0]["expected"]["required_evidence"] = sorted(cli.c3.FAMILY_TAGS["unit_value"])
         (self.sealed_dir / "answers.json").write_text(dump(answers), encoding="utf-8")
         digest = hashlib.sha256((self.sealed_dir / "answers.json").read_bytes()).hexdigest()
-        (self.root / "eval" / "sealed_manifest.json").write_text(json.dumps({"schema_version": 1, "files": [
+        (self.root / "eval" / "sealed_manifest.json").write_text(json.dumps({"schema_version": 2, "files": [
             {"dataset": "holdout40", "file_name": "answers.json", "sha256": digest,
              "created_at": "2026-09-25T09:00:00+09:00", "created_by": "시험"}]}), encoding="utf-8")
         a = copy.deepcopy(self.reports["A-composition"])

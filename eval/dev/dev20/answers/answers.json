@@ -1,5 +1,5 @@
 {
- "schema_version": 1,
+ "schema_version": 2,
  "dataset": "dev20",
  "snapshot_id": "dev20",
  "policy_version": "dev-0.1",

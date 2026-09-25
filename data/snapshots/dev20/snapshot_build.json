@@ -1,7 +1,7 @@
 {
- "schema_version": 1,
+ "schema_version": 2,
  "snapshot_id": "dev20",
- "normalized_sha256": "e10b41a985ae36098f32723f9627c86fa09f2ea048edd1b614bdbcf474d47c16",
+ "normalized_sha256": "fb802b8ffc562551583e5cfc4f5adaed70eefb84b8623c31224e43f8537e8b9d",
  "raw_sha256": "297218ff708efa14504b698ab21175b3b88cbfa627e5899bbd24b5fed58df25c",
  "policy_version": "dev-0.1",
  "confirmed_no_trade_rule": null,
@@ -19,7 +19,7 @@
   "snapshot_meta": 14
  },
  "build_file": "snapshot_build.sqlite",
- "built_at": "2026-09-25T05:51:28+09:00",
- "installed_from": "snapshot_build-260925055128.sqlite",
- "installed_at": "2026-09-25T05:51:28+09:00"
+ "built_at": "2026-09-25T12:11:41+09:00",
+ "installed_from": "snapshot_build-260925121140.sqlite",
+ "installed_at": "2026-09-25T12:11:41+09:00"
 }

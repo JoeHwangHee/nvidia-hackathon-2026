@@ -1,5 +1,5 @@
 {
- "schema_version": 1,
+ "schema_version": 2,
  "snapshot_id": "dev20",
  "collected_at": "2026-09-25T00:00:00+09:00",
  "_rule": "manifest 요청 가운데 raw/<request_id>.xml이 있는 요청은 OK(HTTP 200, 시도 1회)다. FAILED는 HTTP 500으로 세 번 실패한 요청(응답 본문 없음), NOT_COLLECTED는 수신 기록이 없는 요청이다",

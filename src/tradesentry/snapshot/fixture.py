@@ -133,7 +133,7 @@ def parse_spec(spec: object) -> dict:
     if missing:
         raise FixtureError(f"생성 규칙에 키가 없다: {', '.join(missing)}")
     if spec["schema_version"] != types.SCHEMA_VERSION or spec["snapshot_id"] != SNAPSHOT_ID:
-        raise FixtureError(f"생성 규칙의 schema_version은 1, snapshot_id는 {SNAPSHOT_ID}이다")
+        raise FixtureError(f"생성 규칙의 schema_version은 {types.SCHEMA_VERSION}, snapshot_id는 {SNAPSHOT_ID}이다")
     if spec["source_kind"] != "controlled":
         raise FixtureError("합성 시험자료의 source_kind는 controlled다")
     if not isinstance(spec["generated_at"], str) or not KST_ISO_RE.fullmatch(spec["generated_at"]):

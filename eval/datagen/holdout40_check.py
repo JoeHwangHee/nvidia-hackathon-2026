@@ -184,7 +184,7 @@ def cases_problems(doc: object) -> tuple[list[str], dict]:
     if not isinstance(doc, dict) or not CASES_DOC_KEYS <= set(doc) or set(doc) - CASES_DOC_KEYS - CASES_DOC_OPTIONAL:
         return ["사례 목록 최상위 키가 형식과 다르다"], cases
     if not _is_int(doc["schema_version"]) or doc["schema_version"] != SCHEMA_VERSION:
-        problems.append("사례 목록 schema_version이 1이 아니다")
+        problems.append(f"사례 목록 schema_version이 {SCHEMA_VERSION}가 아니다")
     if doc["dataset"] not in SYNTHETIC_DATASETS:
         problems.append("사례 목록 dataset이 dev20·holdout40이 아니다")
     if not isinstance(doc["snapshot_id"], str) or not SNAPSHOT_ID_RE.fullmatch(doc["snapshot_id"]):
@@ -283,7 +283,7 @@ def answers_problems(doc: object) -> tuple[list[str], dict]:
     if not isinstance(doc, dict) or not ANSWERS_DOC_KEYS <= set(doc) or set(doc) - ANSWERS_DOC_KEYS - ANSWERS_DOC_OPTIONAL:
         return ["정답표 최상위 키가 형식과 다르다"], entries
     if not _is_int(doc["schema_version"]) or doc["schema_version"] != SCHEMA_VERSION:
-        problems.append("정답표 schema_version이 1이 아니다")
+        problems.append(f"정답표 schema_version이 {SCHEMA_VERSION}가 아니다")
     if doc["dataset"] not in SYNTHETIC_DATASETS:
         problems.append("정답표 dataset이 dev20·holdout40이 아니다")
     items = doc["cases"]

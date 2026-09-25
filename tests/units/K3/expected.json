@@ -1,6 +1,6 @@
 {
  "snapshot": {
-  "schema_version": 1,
+  "schema_version": 2,
   "snapshot_id": "unit_fixture_s2",
   "source_kind": "real",
   "collected_at": "2026-09-25T00:00:00+09:00",
@@ -30,7 +30,7 @@
    "snapshot_id": "unit_fixture_s2"
   },
   "raw_sha256": "15374eb6ae479a570cb829a489c9402e2cbcc07aaa93f4493dbf230b3ffa7e1c",
-  "normalized_sha256": "881cb7e32b3cf46823f3ccbb689e2be1dca687b8c1798ea606f4649ed5850dc5",
+  "normalized_sha256": "0754f038e8d8ed4707c15c8b44c5c58e99dec0bd842891f4c5fe793f01399375",
   "period": {
    "end": "202302",
    "start": "202301"

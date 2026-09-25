@@ -1,10 +1,10 @@
 {
  "snapshot_id": "unit_fixture_s2",
- "schema_version": 1,
+ "schema_version": 2,
  "build_file": "snapshot_build.sqlite",
  "ok": true,
- "normalized_sha256": "881cb7e32b3cf46823f3ccbb689e2be1dca687b8c1798ea606f4649ed5850dc5",
- "recorded_normalized_sha256": "881cb7e32b3cf46823f3ccbb689e2be1dca687b8c1798ea606f4649ed5850dc5",
+ "normalized_sha256": "0754f038e8d8ed4707c15c8b44c5c58e99dec0bd842891f4c5fe793f01399375",
+ "recorded_normalized_sha256": "0754f038e8d8ed4707c15c8b44c5c58e99dec0bd842891f4c5fe793f01399375",
  "checks": [
   {
    "name": "open_read_only",

@@ -45,12 +45,12 @@ def fake_bundle(dataset: str = "holdout40") -> tuple[dict, dict]:
                             "rule": dict(CLASS_RULE[klass]),
                             "expected": {"signals": signals, "signal_status": status, "review_status": review,
                                          "unresolved_evidence": unresolved, "required_evidence": evidence}})
-    head = {"schema_version": 1, "dataset": dataset, "snapshot_id": "fixture_v4", "policy_version": "dev-0.1"}
+    head = {"schema_version": 2, "dataset": dataset, "snapshot_id": "fixture_v4", "policy_version": "dev-0.1"}
     return {**head, "cases": cases}, {**head, "cases": answers}
 
 
 def fake_dev20_ids() -> dict:
-    return {"schema_version": 1, "dataset": "dev20", "id_rule": "시험용",
+    return {"schema_version": 2, "dataset": "dev20", "id_rule": "시험용",
             "parent_series_ids": sorted(pid(f"dev20-{n}") for n in range(20))}
 
 

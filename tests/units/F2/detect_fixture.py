@@ -57,7 +57,7 @@ NEUTRAL_2023_01_2024_01 = {"202301": NEUTRAL, "202401": NEUTRAL}
 
 PROMOTION_POLICY = {
     "_status": "시험용 빌드 정책(승격 규칙 있음). 실제 정책이 아니다",
-    "schema_version": 1, "policy_version": "dev-9.9", "thresholds": {"unit_value": 30, "share": 10},
+    "schema_version": 2, "policy_version": "dev-9.9", "thresholds": {"unit_value": 30, "share": 10},
     "min_amount": None, "min_weight": None, "tolerance": {"amount_usd": 0, "weight_rounding_kg": Decimal("0.5")},
     "confirmed_no_trade": {"rule": "ingest_verify_candidates"},
 }

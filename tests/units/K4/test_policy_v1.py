@@ -31,7 +31,7 @@ APPROVAL_RECORD = "20260925-0846-user-decision-policy-v1-approval.md"
 ORACLE = ROOT / "eval" / "dev" / "oracle_ABC.json"
 FIXTURE = ROOT / "data" / "snapshots" / "controlled_fixture_v0"
 APPROVED = {  # 승인 기록 "결정 1"의 값(자료 계약 §11.2 단위: 30%는 30, 10pp는 10)
-    "schema_version": 1,
+    "schema_version": 2,
     "policy_version": "policy_v1",
     "thresholds": {"unit_value": 30, "share": 10},
     "min_amount": 100,

@@ -188,7 +188,7 @@ def _check_rules(rules: object) -> dict:
     if not isinstance(rules, dict) or set(rules) != RULES_KEYS:
         raise ValueError(f"생성 규칙의 최상위 키는 {sorted(RULES_KEYS)}다")
     if rules["schema_version"] != types.SCHEMA_VERSION or rules["dataset"] not in v4.SYNTHETIC_DATASETS:
-        raise ValueError("생성 규칙의 schema_version은 1, dataset은 dev20·holdout40이다")
+        raise ValueError(f"생성 규칙의 schema_version은 {types.SCHEMA_VERSION}, dataset은 dev20·holdout40이다")
     if not isinstance(rules["snapshot_id"], str) or not v4.SNAPSHOT_ID_RE.fullmatch(rules["snapshot_id"]):
         raise ValueError("snapshot_id는 영문 소문자·숫자로 시작하고 영문 소문자·숫자·밑줄만 쓴다")
     if not s2.KST_ISO_RE.fullmatch(str(rules["fixed_time"])):
