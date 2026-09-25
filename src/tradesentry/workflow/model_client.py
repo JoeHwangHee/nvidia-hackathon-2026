@@ -14,7 +14,7 @@ NIM(NVIDIA 클라우드 추론 API) chat completions를 부르는 클라이언�
 - 자동 재시도는 없다(urllib 직접 호출). HTTP 5xx만 코드가 명시적으로 재전송한다: 요청당 최대 3회, 지수 대기
   (1초부터 2배, 조정값). 재전송도 HTTP 시도 한 번이므로 모델 요청 수(model_requests)에 센다.
 - 4xx·연결 실패·요청별 제한 시간 초과·읽을 수 없는 본문은 재전송하지 않고 실행을 멈춘다(원인 분류 코드는 단위 L3).
-- 한도 확인 순서: 사례 deadline이 먼저다(전체 deadline 우선). 그다음 모델 요청 10회, 그다음 누적 토큰 32,000.
+- 한도 확인 순서: 사례 deadline이 먼저다(전체 deadline 우선). 그다음 모델 요청 10회, 그다음 누적 토큰(설정 limits.tokens, 128,000).
   재전송하기 전에도 같은 순서로 본다. 대기가 deadline을 넘으면 DEADLINE(TIMEOUT), 재전송 중 모델 요청 10회에 먼저
   닿으면 BUDGET_MODEL_REQUESTS(BUDGET_EXCEEDED)로 멈춘다. 후자는 인프라 실패 재실행 대상이 아니다.
 - 요청별 제한 시간은 min(60초, deadline까지 남은 시간 − 종료 기록 예약 시간)이다. 남은 시간이 없으면 보내지 않는다.
@@ -110,6 +110,7 @@ class ModelSettings:
     request_cap_ms: int
     end_reserve_ms: int
     structured_output: str = "off"
+    tool_turn_max_tokens: int | None = None  # tool_choice required 차례의 max_tokens(없으면 max_tokens. AS2 ㉑)
 
 
 @dataclass(frozen=True)
@@ -165,7 +166,9 @@ def load_model_config(config_dir: Path | None = None, *, api_key_env: str | None
             backoff_factor=_int(retry["backoff_factor"], "retry.backoff_factor"),
             request_cap_ms=_int(timeouts["request_cap_ms"], "timeouts.request_cap_ms"),
             end_reserve_ms=_int(timeouts["end_reserve_ms"], "timeouts.end_reserve_ms"),
-            structured_output=structured)
+            structured_output=structured,
+            tool_turn_max_tokens=None if request.get("tool_turn_max_tokens") is None
+            else _int(request["tool_turn_max_tokens"], "request.tool_turn_max_tokens"))
         run_limits = RunLimits(**{key: _int(limits[key], f"limits.{key}") for key in LIMIT_KEYS})
     except (OSError, KeyError, TypeError, ValueError) as exc:
         if isinstance(exc, ConfigError):
@@ -375,22 +378,25 @@ class ModelClient:
             raise RunStop(cause_codes.BUDGET_TOKENS, stage, "누적 토큰 한도에 닿았다")
         return now
 
-    def build_payload(self, messages: list[dict], tools: list[dict] | None, json_output: bool = False) -> dict:
+    def build_payload(self, messages: list[dict], tools: list[dict] | None, json_output: bool = False,
+                      tool_choice: str = "auto") -> dict:
         """요청 본문. 도구가 없으면 tools·tool_choice 키를 싣지 않는다. 구조화 출력(response_format json_object)은 설정이
-        "json_object"이고, 도구가 없고, 부르는 쪽이 json_output을 참으로 줄 때만 싣는다."""
+        "json_object"이고, 도구가 없고, 부르는 쪽이 json_output을 참으로 줄 때만 싣는다. tool_choice가 required인 도구 차례의
+        max_tokens는 설정 tool_turn_max_tokens(있을 때)다(도구 호출 응답은 짧다. 공백 반복 실측, AS2 ㉑)."""
         s = self.settings
+        cap = s.tool_turn_max_tokens if tools and tool_choice == "required" and s.tool_turn_max_tokens else s.max_tokens
         payload = {"model": s.model, "messages": messages, "temperature": s.temperature, "top_p": s.top_p,
-                   "max_tokens": max(1, min(s.max_tokens, self.budget.limits.tokens - self.budget.tokens_total)),
+                   "max_tokens": max(1, min(cap, self.budget.limits.tokens - self.budget.tokens_total)),
                    "stream": False, "chat_template_kwargs": {"enable_thinking": s.enable_thinking}}
         if tools:
             payload["tools"] = tools
-            payload["tool_choice"] = "auto"
+            payload["tool_choice"] = tool_choice  # "auto" 또는 "required"(흐름 조정이 필수 결과가 빠진 차례에만, AS2 ⑲)
         elif json_output and s.structured_output == "json_object":
             payload["response_format"] = {"type": "json_object"}
         return payload
 
     def chat(self, messages: list[dict], *, stage: str | None, tools: list[dict] | None = None,
-             json_output: bool = False) -> dict:
+             json_output: bool = False, tool_choice: str = "auto") -> dict:
         """요청 하나를 보내고 응답(message·finish_reason·usage)을 돌려준다. 멈출 원인이 생기면 RunStop을 낸다.
         json_output은 도구 없는 요청에서 구조화 출력을 청하는 표시다(설정이 "off"면 싣지 않는다)."""
         self._precheck(stage)
@@ -401,7 +407,9 @@ class ModelClient:
             except TransportConfigError as exc:
                 raise RunStop(cause_codes.CODE_ERROR, stage, str(exc)) from None
         self.request_no += 1
-        payload = self.build_payload(messages, tools, json_output)
+        if tool_choice not in ("auto", "required"):
+            raise ValueError("tool_choice는 auto나 required다(도구 이름 지정은 하지 않는다)")
+        payload = self.build_payload(messages, tools, json_output, tool_choice)
         request_sha = trace_log.canonical_sha256(payload)
         base = {"request_no": self.request_no}
         retries = 0
@@ -414,7 +422,8 @@ class ModelClient:
             self.sink.emit("model_request", stage, dict(base, attempt=attempt,
                                                         model_requests=self.budget.model_requests,
                                                         request_sha256=request_sha, timeout_ms=timeout_ms,
-                                                        messages=len(messages), tools=len(tools or [])))
+                                                        messages=len(messages), tools=len(tools or []),
+                                                        **({"tool_choice": tool_choice} if tools else {})))
             try:
                 sent = self.transport.send(payload, timeout_ms)
             except TransportConfigError as exc:

@@ -86,8 +86,8 @@ _HOLD_MISSING = ("missingness_listed", "failure_vs_not_collected_distinguished",
 # 판정 근거 규칙: 신호 계열 → 규칙 키 → (신호 상태, 필수 근거 순서). 명세 §5가 정본 설명이다.
 # composition_explained·unexplained·hold_missing·rounding_unstable은 단위 P5 규칙표(판정 근거 composition_explained,
 # unexplained, data_insufficient·comparison_incomplete, rounding_unstable)와 상태·근거가 같다. hold_inconsistent(관측은
-# 있으나 부모·하위 대조, 분해, 분모가 성립하지 않는 자료 보류)는 P5에 따로 없는 잠정 규칙이다(MT1 결정 기록 "영향과
-# 넘길 곳"의 D17 제안을 따랐다. 사용자·오케스트레이터 확정 전).
+# 있으나 부모·하위 대조, 분해, 분모가 성립하지 않는 자료 보류)는 보류 사유별 필수 근거(사용자 결정 14, 결정 기록
+# 20260925-0847-user-decision-morning-shared-promises.md)로 확정됐다. 판정 정책 P5의 사유별 규칙은 짝 PR(모델 트랙)이 맞춘다.
 RULES = {
     UNIT_VALUE: {
         "composition_explained": (MONITOR, ("parent_child_match_V_and_Q", "weight_share_decomposition",

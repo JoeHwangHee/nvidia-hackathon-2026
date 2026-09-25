@@ -63,9 +63,10 @@ PROMOTION_POLICY = {
 }
 
 
-def _config(snapshot_id: str, partners: list[str]) -> dict:
+def _config(snapshot_id: str, partners: list[str], hs6_codes: list[str] | None = None) -> dict:
     return {"snapshot_id": snapshot_id, "period": {"start": "202301", "end": "202402"}, "chunk_months": 12,
-            "hs6": [HS6], "partners": partners, "collect_total_denominator": True, "hs10": [], "hs4_scan": [HS4]}
+            "hs6": hs6_codes or [HS6], "partners": partners, "collect_total_denominator": True, "hs10": [],
+            "hs4_scan": [HS4]}
 
 
 MAIN = {
@@ -114,6 +115,17 @@ WORLD_GAP = {
 
 
 OTHER_PARTNER = {**WORLD_GAP, "config": _config("as1_detect_other_partner", ["CN"]), "world": MAIN["world"], "failed": set()}
+# 작은 스냅샷 as1_detect_two_hs6(HS6 850450·850431 × 상대국 CN·JP): 계열 넷이 모두 202301 600/100 → 202401 360/100(r_U
+# −40%)이라 좁히기가 없으면 네 계열 모두 202401에 단가 사례를 낸다. HS6 조회는 수집하지 않는다(NOT_COLLECTED). ALL 분모는 두
+# HS6의 HS10 행을 같은 값으로 둔다. (hs6, partner) 쌍으로 좁히는지 보는 시험(AS1 두 번째 PR)이 쓴다.
+TWO_HS6 = {
+    "config": _config("as1_detect_two_hs6", ["CN", "JP"], [HS6, SIBLING_HS6]),
+    "parent": {"CN": ORACLE_PARENT, "JP": ORACLE_PARENT},
+    "sibling": {"CN": ORACLE_PARENT, "JP": ORACLE_PARENT},
+    "children": {},
+    "world": {month: rows + [("8504311000",) + rows[0][1:]] for month, rows in MAIN["world"].items()},
+    "failed": set(),
+}
 OTHER_PEER = "GB"  # 수집 계획 밖 비교국(합성 비교국 표에만 있다)
 OTHER_PEER_ROWS = [{  # 계약 §2.3.6 필드 17개. 값은 합성이다
     "entity_type": "exporter_country", "entity_id": "CN", "entity_namespace": "KCS_cntyCd", "baci_country_code": "null",
@@ -157,8 +169,9 @@ def _response(spec: dict, key: tuple[str, str, str, str], months: list[str]) -> 
     if key in spec["failed"]:
         return {"ok": False, "http_status": 500, "attempts": 3, "raw": b"", "error": "HTTPError 500",
                 "attempt_errors": ["HTTPError 500"] * 3, "elapsed_ms": 30}
-    if endpoint == "itemtrade":
-        items = [_item(m, code, v, q, None) for m in months for code, v, q in spec["world"].get(m, [])]
+    if endpoint == "itemtrade":  # 요청 코드(hsSgn)로 시작하는 HS10 행만 돌려준다(HS6 두 개 자료에서 뜻이 있다)
+        items = [_item(m, code, v, q, None) for m in months for code, v, q in spec["world"].get(m, [])
+                 if code.startswith(hs_sgn)]
         owner = None
     elif hs_sgn == HS4:
         items = []
@@ -171,7 +184,8 @@ def _response(spec: dict, key: tuple[str, str, str, str], months: list[str]) -> 
     else:
         if partner not in spec["children"]:
             return None
-        items = [_item(m, code, v, q, partner) for m in months for code, v, q in spec["children"][partner].get(m, [])]
+        items = [_item(m, code, v, q, partner) for m in months for code, v, q in spec["children"][partner].get(m, [])
+                 if code.startswith(hs_sgn)]
         owner = partner
     return {"ok": True, "http_status": 200, "attempts": 1, "raw": xml_response(_with_total(items, owner)),
             "error": None, "attempt_errors": [], "elapsed_ms": 10}

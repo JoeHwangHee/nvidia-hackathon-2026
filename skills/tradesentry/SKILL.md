@@ -24,7 +24,7 @@ NemoClaw(OpenShell 위에서 에이전트를 돌리는 NVIDIA 참조 스택)의 
    | 스냅샷 ID(한 시점에 수집해 고정한 자료 묶음의 이름) | `--snapshot` | 영문 소문자로 시작, 영문 소문자·숫자·밑줄만(예: `controlled_fixture_v0`, `kcs_202201_202412_v2`) | `controlled_fixture_v0` |
    | 정책 버전 이름(판정 기준값 묶음의 버전. 파일 경로가 아니다) | `--policy` | 예: `policy_v1`, `dev-0.1` | `dev-0.1` |
    | 모드(실행 방식) | `--mode` | `checklist`, `agent`, `full`, `freeform` 가운데 하나. `run-case`만 쓴다 | `full` |
-   | 사례(조사할 경보 1건) | `--case` | 영문자·숫자로 시작하고 끝나며 그 사이에 영문자·숫자·밑줄·하이픈만(예: `A-composition`, `850450-CN-202401`). `run-case`만 쓴다 | 없음. 운영자에게 묻는다 |
+   | 사례(조사할 경보 1건) | `--case` | 사례 식별자 `{hs6}-{partner}-{month}`(예: `850450-XA-202412`). 합성 스냅샷의 사례도 같은 꼴이다. `detect` 출력의 `case_id`를 그대로 쓴다. `run-case`만 쓴다 | 없음. 운영자에게 묻는다 |
 
    값에 경로 구분자(`/`), `..`, `~`, 공백, 따옴표, 셸 기호(`;`, `|`, `&`, `$`, `` ` ``, `>`, `<`)가 들어 있으면 명령을 만들지 않고 운영자에게 다시 묻는다. CLI도 이런 값을 거부한다(종료 코드 2).
 
@@ -39,7 +39,9 @@ NemoClaw(OpenShell 위에서 에이전트를 돌리는 NVIDIA 참조 스택)의 
    ```
 
 3. 명령의 종료 코드, 표준 출력 전부, 표준 오류 전부를 그대로 전한다. 표준 출력의 각 줄은 CLI가 쓴 결과 파일의 위치(`outputs/{실행명}/{도메인명}-{시각}.{확장자}`)다.
-4. `run-case`가 종료 코드 0으로 끝났으면, 표준 출력에 적힌 파일 가운데 보고서(`.md`)와 실행 결과 기록(`.json`)만 `cat /sandbox/<표준 출력에 적힌 그 경로>`로 읽어 내용을 그대로 붙인다. 표준 출력에 없는 파일은 열지 않는다.
+4. `run-case`의 표준 출력은 차례대로 trace(`runlog_trace-{시각}.jsonl`), NAT 폴더(`workflow_nat_wrap-{시각}`), 실행 결과 기록(`runlog_run_record-{시각}.json`), 그리고 실행이 `COMPLETED`일 때만 보고서(`reports_render_ko-{시각}.json`)다. 이 가운데 실행 결과 기록과 보고서만 `cat /sandbox/<표준 출력에 적힌 그 경로>`로 읽는다. trace와 NAT 폴더는 열지 않는다. 표준 출력에 없는 파일도 열지 않는다.
+   - 운영자에게 보일 것: 실행 결과 기록의 `case_id`·`mode`·`execution_status`·`review_status_final`·`signal_status`·`unresolved_evidence`, 보고서의 `review_status`·`signal_status`·`narrative`·`hypotheses`와 `claims`의 `text`. 값은 글자 그대로 옮긴다.
+   - 종료 코드가 1이어도 표준 출력에 실행 결과 기록 경로가 있으면 그 파일만 읽어 `execution_status`와 `errors`의 `code`를 전한다(보고서는 없다).
 5. 전할 때 지킬 것
    - `case_id`, `review_status_final`(최종 검토 상태), `signal_status`(신호 상태), `unresolved_evidence`(풀리지 않은 근거), `execution_status`(실행 상태), 보고서 본문, 실행 폴더 위치를 CLI가 쓴 글자 그대로 옮긴다. 숫자를 반올림하거나 다시 계산하거나 요약하면서 바꾸지 않는다.
    - 보고서를 고쳐 쓰거나 새 결론을 덧붙이지 않는다. 설명이 필요하면 보고서 밖에 "스킬 설명"이라고 밝혀 한두 문장만 덧붙이고, 보고서의 판정과 다른 말을 하지 않는다.
