@@ -2,7 +2,8 @@
 
 판정 순서, 필수 비교 완료 규칙, 빠진 관측의 계열 배정, 신호 독립, "기준 안" 경계, 정확값(Fraction), 입력 오류를 본다.
 근거 상태는 기본값이 없으므로 시험 입력은 늘 모든 키를 채운 블록에서 한 곳씩 바꾼다. 기대값은 개발 플랜
-docs/plan/DEV_PLAN.md §6.3을 옮긴 표이고 구현을 다시 부르지 않는다(P5 규칙표와의 일치는 ConsistencyTest만 본다).
+docs/plan/DEV_PLAN.md §6.3을 옮긴 표이고 구현을 다시 부르지 않는다(P5 규칙표와의 일치는 ConsistencyTest와, D17의
+새 판정 근거를 보는 HoldSplitTest·Dev20InconsistentHoldTest만 본다).
 """
 import copy
 import json

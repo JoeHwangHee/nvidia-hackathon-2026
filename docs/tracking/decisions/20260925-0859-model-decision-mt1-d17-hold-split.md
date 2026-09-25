@@ -14,7 +14,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 날짜 | 2026-09-25(금) 08:59(기록 시각). 결정은 같은 날 08:50~08:59 구현 중에 했다 |
+| 날짜 | 2026-09-25(금) 08:59(기록 시각). 결정은 같은 날 08:50~08:59 구현 중에 했다. 작업 중 main에 조립 AS2(PR #38)가 병합되어 이 브랜치를 그 위로 옮기고, 단위 I10의 판정 근거 한국어 이름과 "영향과 넘길 곳"을 고쳤다 |
 | 제목 | 자료 보류의 사유별 판정 근거(`data_insufficient` / `data_inconsistent`), 겹칠 때의 우선순위, 새 판정 근거의 필수 근거, 필수 비교를 따지는 판정 근거의 범위, 점유율 분모 불완전의 입력 자리 |
 | 결정 | 아래 "결정 내용" ①~⑥ |
 | 이유와 근거 | 항목마다 적었다 |
@@ -62,7 +62,7 @@
 ④ **점유율 분모 불완전은 `comparability_issues`로 받는다** — 확정(MT1 기록 ⑪의 넣는 것에 더함)
 
 - 점유율 계열의 `comparability_issues`에 관측된 전체국가(`ALL`) 분모가 대상국 금액보다 작은 달(분모가 전체 국가를 담지 못해 점유율이 100%를 넘음)을 넣는다. 하나라도 있으면 `HOLD`이고, 빠진 관측이 없으면 `data_inconsistent`다.
-- P3에는 이 규칙이 이미 있었다(점유율 `comparability_issues`가 있으면 `HOLD`). 새 입력 키를 만들지 않았다. P3은 문자열의 글자를 읽지 않는다. 글자는 근거 상태를 만드는 조립(AS2)이 정한다. 병합 전 AS2 브랜치는 `denominator_below_partner:{달}`을 쓴다(잠정, `src/tradesentry/cli/dispatch.py`).
+- P3에는 이 규칙이 이미 있었다(점유율 `comparability_issues`가 있으면 `HOLD`). 새 입력 키를 만들지 않았다. P3은 문자열의 글자를 읽지 않는다. 글자는 근거 상태를 만드는 조립(AS2)이 정한다. AS2(PR #38)는 `denominator_below_partner:{달}`을 쓴다(잠정, `src/tradesentry/cli/dispatch.py` `DENOMINATOR_BELOW_PARTNER`).
 - 분모가 아예 빠진 달(관측 상태가 빠짐)은 지금처럼 `missingness`로 받아 `data_insufficient`다.
 
 ⑤ **필수 비교 완료는 후보 판정 근거에서만 따진다** — 확정
@@ -89,9 +89,10 @@
 - 시험 기대값을 바꾼 곳(P3 `tests/units/P3/test_decide.py`): 관측은 빠지지 않은 1번 사유의 기대 판정 근거를 `data_insufficient`에서 `data_inconsistent`로 바꿨다. `test_unusable_decomposition_is_hold_not_maintain`(7곳), `test_comparability_issue_is_hold`(1곳), 불변식 (가) 시험(2곳, 이름을 `test_ga_stage1_reason_with_skipped_comparisons_is_hold`로 바꿈). 상태(`HOLD`)는 모두 그대로다. oracle A/B/C 시험과 P3·P4 골든은 바뀌지 않았다.
 - 새 시험: P3 `HoldSplitTest`(겹침, 다른 계열의 빠진 관측, 신호 독립, P5 규칙과 일치), `Dev20InconsistentHoldTest`(dev20 불일치 보류 5건의 근거 상태 모양에서 `data_inconsistent`와 정답표의 필수 근거. 사례 식별자와 필수 근거만 옮기고, 옮긴 값을 정답표와 대조한다), 불변식 (가) 시험에 조기 종료 두 경우. P5 `test_inconsistent_hold_evidence_follows_user_decision_14`.
 - 짝 PR(데이터 트랙): 시나리오 명세의 §5.1 표의 `hold_inconsistent` 두 행 "단위 P5 판정 근거" 열을 `data_inconsistent`로, 점유율 행의 "없음(분모 불완전 규칙이 아직 없다)"을 `data_inconsistent`(④)로 적는다. `eval/datagen/holdout40_check.py` 88행 주석의 판정 근거 목록도 데이터 트랙이 맞춘다.
-- 조립 AS2(병합 전, 이 PR에서는 고치지 않는다)
-  - `src/tradesentry/workflow/investigator.py` `BASIS_LABELS`에 `data_inconsistent`의 한국어 이름이 없어 규칙 참고값 문구에 영문 이름이 그대로 나온다. 예: "자료 불일치"를 더한다.
-  - `configs/model/critic.txt`의 상태 뜻 "HOLD = 자료 부족·비교 미완료", `configs/model/investigator.txt`의 "HOLD(자료 보류) = 자료가 모자라 판단 불가", `investigator.py` `REFERENCE_UNAVAILABLE`의 "자료 부족(HOLD)은 조회한 자료가 비었을 때만이다"는 관측은 있는데 성립하지 않는 보류(dev20 20건 중 5건)를 모델이 `HOLD`로 내지 않게 밀 수 있다. 성립하지 않는 보류(부모·하위 합 불일치, 분해 불가, 분모가 대상국 금액보다 작음)를 넣어야 한다.
+- 조립 AS2(작업 중 main에 병합됨, PR #38. 이 PR은 그 위로 옮겼다)
+  - 이 PR에서 고친 것: 단위 I10 `src/tradesentry/workflow/investigator.py` `BASIS_LABELS`에 `data_inconsistent`의 한국어 이름("자료가 맞지 않아 검증 불가")을 더했다. 없으면 규칙 참고값 문구에 영문 이름이 그대로 나간다. 시험 `tests/units/I10/test_investigator.py` `BasisLabelTest`(P5 규칙표의 판정 근거마다 이름이 있음).
+  - 넘길 곳(프롬프트 문구라 `config_version`을 올리고 모델 동작 검토가 필요해 이 PR에서 고치지 않는다): `configs/model/critic.txt`의 상태 뜻 "HOLD = 자료 부족·비교 미완료·반올림 불안정(U4)", `configs/model/investigator.txt`의 "HOLD(자료 보류) = 자료가 모자라 판단 불가", `investigator.py` `REFERENCE_UNAVAILABLE`의 "자료 부족(HOLD)은 조회한 자료가 비었을 때만이다"는 관측은 있는데 성립하지 않는 보류(dev20 20건 중 5건)를 모델이 `HOLD`로 내지 않게 밀 수 있다. 성립하지 않는 보류(부모·하위 합 불일치, 분해 불가, 분모가 대상국 금액보다 작음)를 넣어야 한다.
   - `src/tradesentry/cli/dispatch.py`의 근거 상태 변환은 ④의 분모 불완전 문자열을 점유율 `comparability_issues`에 넣는다(이미 그렇게 한다). 부모 대조·분해 불가는 `decomposition`으로 넘긴다(MT1 기록 ⑪ 그대로).
 - 검증기(단위 R3)는 P5 규칙표를 import하지 않는다. 보고서가 판정 근거에 맞는 필수 근거를 싣는지 보는 판정 조건은 짝 PR의 판정 조건표를 따라 따로 맞춘다.
 - 단위 표 `docs/plan/UNITS.md`의 P3·P5 행은 바꾸지 않았다.
+- 두 번째 문서 PR(DOCS2): 개발 플랜 `docs/plan/DEV_PLAN.md` §6.3 표 1행("필요한 월·단위·HS정의·분모·구성자료가 없어 검증이 불가능", 반드시 남길 근거 "부족 항목, 실패/미수집 구분, …")은 빠진 관측 보류의 근거만 적고 있다. 관측은 있는데 성립하지 않는 보류의 근거(부모 대조, 비교조건, 0으로 채우지 않음 / 해당국·분모 변화)를 사용자 결정 14대로 반영한다. 이 PR은 고치지 않는다.
