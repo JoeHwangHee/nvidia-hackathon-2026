@@ -50,7 +50,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 ## 3. 단위 표
 
-- 65행이다. 판정 집계는 유지 45, 합침 후보 10, 버림 후보 1, 런타임 밖 9이고, 형식 집계는 앱 55, 커널 1, 구성 9다 `[사실: 이 표를 센 결과]`.
+- 65행이다. 판정 집계는 유지 54, 합침 후보 1(F1), 버림 후보 1(A2), 런타임 밖 9이고, 형식 집계는 앱 55, 커널 1, 구성 9다 `[사실: 이 표를 센 결과]`. 조립 점검 AS4 전에는 유지 45, 합침 후보 10, 버림 후보 1, 런타임 밖 9였다. AS4가 합침 후보 아홉(K2·K4·K5·P2·P4·R4·I8·L2·L3)을 유지로 확정했다(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`)
 - **조립 판정 열은 후보다.** 조립 점검(§5)에서 확정하고, 확정한 판정으로 이 표를 고친다. "합침 후보(→ X)"의 X가 합칠 대상이다. "런타임 밖"은 수집·합성·평가 자료 도구처럼 런타임 조립에 들지 않는 단위다(§6).
 - **동결 경로 열**의 "예"는 `RB-1`(평가 룰북의 첫 동결 버전) 전에 끝내야 하는 판정 정책·검증기 단위다. 이 단위들의 합치기는 조립 점검 작업 AS4에서만 하고, MVP(최소 기능 제품) 시험 뒤에는 건드리지 않는다(§7).
 - **비고의 "고정 규칙과 충돌"**은 조립 판정을 그대로 따르면 이미 정한 규칙과 부딪치는 단위다. 판정을 바꾸려면 그 규칙의 절차(사용자 승인 등)를 거친다.
@@ -63,19 +63,19 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | S1 | 수집기 | `ingest` | `src/tradesentry/ingest.py`(기존 그대로) | 앱 | D | 공공데이터포털 API 요청 → raw 응답·manifest | 런타임 밖 | 8 | — | 동결 스냅샷(v1·v2)에는 다시 돌리지 않는다 |
-| S2 | 스냅샷 빌더 | `snapshot_build` | `src/tradesentry/snapshot/build.py` | 앱 | D | raw·manifest·`peer_group_g1.csv`·승격 규칙 → 파생 SQLite(결정적 rowid) | 유지 | 1 | — | — |
-| S3 | 스냅샷 검증 | `snapshot_verify` | `src/tradesentry/snapshot/verify.py` | 앱 | D | SQLite·raw → 검증 보고·`normalized_sha256`·계약 검사 | 유지 | 1 | — | 단위 S2와 입력이 다르고(S2는 raw·manifest로 SQLite를 만들고, S3은 만든 SQLite를 raw와 대조해 검증한다) 명령도 따로다(`snapshot-build`, `snapshot-verify`). 평가 스킬 ② 사전 점검과 로드맵 F2도 `snapshot-verify`를 따로 부른다 |
+| S2 | 스냅샷 빌더 | `snapshot_build` | `src/tradesentry/snapshot/build.py` | 앱 | D | raw·manifest·`peer_group_g1.csv`·승격 규칙 → 파생 SQLite(결정적 rowid) | 유지. AS4 점검: `snapshot-verify`에서 S3를 거쳐 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 1 | — | — |
+| S3 | 스냅샷 검증 | `snapshot_verify` | `src/tradesentry/snapshot/verify.py` | 앱 | D | SQLite·raw → 검증 보고·`normalized_sha256`·계약 검사 | 유지. AS4 점검: `snapshot-verify`에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 1 | — | 단위 S2와 입력이 다르고(S2는 raw·manifest로 SQLite를 만들고, S3은 만든 SQLite를 raw와 대조해 검증한다) 명령도 따로다(`snapshot-build`, `snapshot-verify`). 평가 스킬 ② 사전 점검과 로드맵 F2도 `snapshot-verify`를 따로 부른다 |
 | S4 | 합성 스냅샷 생성 | `snapshot_fixture` | `src/tradesentry/snapshot/fixture.py` | 앱 | D | 생성 규칙 → `controlled_fixture_v0` | 런타임 밖 | 8 | — | 시험 자료 도구 |
 
 ### 3.2 K — 계약 커널·자료 접근(5개)
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| K1 | 계약 타입 | `contract_types` | `src/tradesentry/contract/types.py` | 커널 | D | 정의 모음(상태값·키·typed dict·`schema_version`). 입출력 없음 | 유지 | 공유 | — | 합침의 목적지 |
-| K2 | 근거 ID | `contract_evidence_id` | `src/tradesentry/contract/evidence_id.py` | 앱 | D | (`snapshot_id`, `table`, `rowid`) ↔ `ev:` 문자열, 풀림 규칙 | 합침 후보(→ K1) | 공유 | — | 채점기는 따로 구현한다(독립성) |
-| K3 | 읽기 전용 조회 | `dal_query` | `src/tradesentry/dal/query.py` | 앱 | D | `snapshot_id` + 허용 scope → 계약 객체(빠진 자료는 관측 상태 코드) | 유지 | 공유 | — | — |
-| K4 | 정책 수치 읽기 | `contract_policy_load` | `src/tradesentry/contract/policy_load.py` | 앱 | D | `configs/policy_v1.json`(승인 전에는 개발용 `configs/policy_dev.json`) → 정책 객체 | 합침 후보(→ K1) | 공유 | — | 단위 S2, 판정 정책(P 묶음), 지표 단위 X3·X4가 함께 쓴다 |
-| K5 | 공통 봉투 | `contract_envelope` | `src/tradesentry/contract/envelope.py` | 앱 | D | 도구 결과 → 키 11개 봉투 | 합침 후보(→ K1) | 공유 | — | 키 목록이 계약이라 커널로 모은다 |
+| K1 | 계약 타입 | `contract_types` | `src/tradesentry/contract/types.py` | 커널 | D | 정의 모음(상태값·키·typed dict·`schema_version`). 입출력 없음 | 유지. AS4 점검: 모든 조립체가 import. 단위 파일의 계약 상수 사본 54개가 K1 값과 같음을 `tests/test_contract_copies.py`가 고정하고, import로 바꾸기는 후보로 남김(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 공유 | — | 합침의 목적지 |
+| K2 | 근거 ID | `contract_evidence_id` | `src/tradesentry/contract/evidence_id.py` | 앱 | D | (`snapshot_id`, `table`, `rowid`) ↔ `ev:` 문자열, 풀림 규칙 | 유지(AS4 확정: 소비자가 K3·K5·I1·I5 넷이라 합침 기준 미충족, 결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 공유 | — | 채점기는 따로 구현한다(독립성) |
+| K3 | 읽기 전용 조회 | `dal_query` | `src/tradesentry/dal/query.py` | 앱 | D | `snapshot_id` + 허용 scope → 계약 객체(빠진 자료는 관측 상태 코드) | 유지. AS4 점검: `detect`·`run-case`·`evaluate`에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 공유 | — | — |
+| K4 | 정책 수치 읽기 | `contract_policy_load` | `src/tradesentry/contract/policy_load.py` | 앱 | D | `configs/policy_v1.json`(승인 전에는 개발용 `configs/policy_dev.json`) → 정책 객체 | 유지(AS4 확정: 소비자가 S2·S3·V2·I1·F2 다섯이라 합침 기준 미충족, 결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 공유 | — | 단위 S2, 판정 정책(P 묶음), 지표 단위 X3·X4가 함께 쓴다 |
+| K5 | 공통 봉투 | `contract_envelope` | `src/tradesentry/contract/envelope.py` | 앱 | D | 도구 결과 → 키 11개 봉투 | 유지(AS4 확정: 소비자가 I1·I5 둘이라 합침 기준 미충족, 결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 공유 | — | 키 목록이 계약이라 커널로 모은다 |
 
 ### 3.3 X — 지표(4개)
 
@@ -91,9 +91,9 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | P1 | 신호 발동 | `policy_trigger` | `src/tradesentry/policy/trigger.py` | 앱 | M | 지표 + 정책 → 계열·월별 신호 발동 | 유지(AS1 점검: `detect`에서 불림, 결정 기록 `20260925-0139-model-decision-as1-detect.md`) | 2 | 예 | — |
-| P2 | 사례 만들기 | `policy_case_build` | `src/tradesentry/policy/case_build.py` | 앱 | M | 발동·분할 기록과 묶음 선택(실자료 스냅샷일 때, `real_dev`/`real_sealed`) → 사례(`case_id`·scope). 지정한 묶음의 시계열로 제한(수단은 S0 자문 Q18, 고르는 방법은 병렬 개발 규칙 §7.2의 5) | 합침 후보(→ P1). AS1 점검: `detect`에서 불리나 입력이 P1과 달라(P1 출력 + 출처 종류·묶음 배정) 합침 기준을 채우지 못해 유지 권고, 확정은 AS4(동결 경로), 결정 기록 `20260925-0139-model-decision-as1-detect.md` | 2 | 예 | `detect` 한 흐름 |
+| P2 | 사례 만들기 | `policy_case_build` | `src/tradesentry/policy/case_build.py` | 앱 | M | 발동·분할 기록과 묶음 선택(실자료 스냅샷일 때, `real_dev`/`real_sealed`) → 사례(`case_id`·scope). 지정한 묶음의 시계열로 제한(수단은 S0 자문 Q18, 고르는 방법은 병렬 개발 규칙 §7.2의 5) | 유지(AS4 확정: 입력이 P1과 달라(P1 출력 + 출처 종류·묶음 배정) 합침 기준 미충족, 봉인 묶음 제한의 마지막 방어선. AS1 결정 기록 `20260925-0139-model-decision-as1-detect.md`, 결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 2 | 예 | `detect` 한 흐름 |
 | P3 | 신호별 판정 | `policy_signal_decide` | `src/tradesentry/policy/signal_decide.py` | 앱 | M | 근거 상태 → 신호별 `HOLD`·`MONITOR`·`MAINTAIN`·`NOT_TRIGGERED` | 유지(AS2 점검: `run-case`의 `checklist`에서만 불림. 모델 모드는 모델이 판정한다, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | 예 | — |
-| P4 | 사례 집계 | `policy_case_aggregate` | `src/tradesentry/policy/case_aggregate.py` | 앱 | M | 신호별 상태 → 최종(`MAINTAIN > HOLD > MONITOR`)·`unresolved_evidence` | 합침 후보(→ P3). AS2 점검: `run-case` 네 모드에서 불리나 입력이 P3과 달라(신호별 판정만) 합침 기준을 채우지 못해 유지 권고, 확정은 AS4(동결 경로), 결정 기록 `20260925-0605-model-decision-as2-run-case.md` | 3 | 예 | — |
+| P4 | 사례 집계 | `policy_case_aggregate` | `src/tradesentry/policy/case_aggregate.py` | 앱 | M | 신호별 상태 → 최종(`MAINTAIN > HOLD > MONITOR`)·`unresolved_evidence` | 유지(AS4 확정: 입력이 P3과 달라(신호별 판정만) 합침 기준 미충족. P4는 `run-case` 네 모드, P3은 `checklist`에서만 불림. AS2 결정 기록 `20260925-0605-model-decision-as2-run-case.md`, 결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 3 | 예 | — |
 | P5 | 필수 근거 규칙 | `policy_required_evidence` | `src/tradesentry/policy/required_evidence.py` | 앱 | M | 신호 계열 → 필수 주장·근거 목록 | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | 예 | 도구·검증기가 함께 쓰는 규칙 |
 
 ### 3.5 G — 비교 대상(3개)
@@ -101,7 +101,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | G1 | g0 고정 목록 | `grouping_g0` | `src/tradesentry/grouping/g0.py` | 앱 | M | v2 2023 수입액 → 대상국 뺀 상위 5개국(`data/reference/peer_group_g0.csv`) | 유지(AS2 점검: `run-case` 실행 중에는 불리지 않음. 비교국은 미리 계산한 `peer_group` 행을 K3로 읽는다. 채점 대체 기본값 `g0` 고정 규칙으로 유지, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | **고정 규칙과 충돌**: `g1`이 동결되지 않으면 채점의 대체 기본값이 `g0`이다(자료 계약 §4.2). 그래서 버릴 수 없다. HS6별 목록이다. 해석은 2026-09-24(목) 사용자 확인(로드맵 §6.1) |
-| G2 | g1 유사도 | `grouping_g1` | `src/tradesentry/grouping/g1.py` | 앱 | M | BACI + 국가 코드 대응 → `peer_group_g1.csv` | 유지 | 1 | — | 결과는 D가 검수한다 |
+| G2 | g1 유사도 | `grouping_g1` | `src/tradesentry/grouping/g1.py` | 앱 | M | BACI + 국가 코드 대응 → `peer_group_g1.csv` | 유지. AS4 점검: MVP 명령에서 불리지 않음. 뼈대이고 `g1`은 로드맵 §5 "끝까지 지키는 것"이라 버리지 않음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 1 | — | 결과는 D가 검수한다 |
 | G3 | 국가 코드 대응 | 없음(구성) | `data/reference/` 아래 국가 코드 대응표(파일 이름은 S0 자문 Q20) | 구성 | D | 관세청 2자리 ↔ BACI 코드, 대만 주석 | 유지 | 1 | — | 단위 G2의 입력 자료. D 소유 파일(`data/reference/`)이라 M 소유 단위 G2와 합치면 트랙 경계를 넘는다(병렬 개발 규칙 §1). 맡는 작업은 로드맵 DT1이다 |
 
 ### 3.6 I — 조사: 도구·흐름(13개)
@@ -115,7 +115,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | I5 | 근거 대조 | `tools_verify_evidence` | `src/tradesentry/tools/verify_evidence.py` | 앱 | M | 받은 근거·지표 → 원본 대조 결과 | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
 | I6 | 예산 집행 | `tools_budget` | `src/tradesentry/tools/budget.py` | 앱 | M | 시도 기록 → 허용·거부(8회, 재조사 1회·그 안의 조회 2회, 같은 인자, deadline) | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
 | I7 | NIM 호출 | `workflow_model_client` | `src/tradesentry/workflow/model_client.py` | 앱 | M | 메시지 → 응답(5xx 재전송 3회, 제한 시간, 토큰) | 유지(AS2 점검: `run-case` 모델 세 모드에서 전송, `checklist`는 설정·예산만, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
-| I8 | 기록 재생 | `workflow_replay` | `src/tradesentry/workflow/replay.py` | 앱 | M | 기록된 trace → 같은 응답(키 없는 스모크 시험) | 합침 후보(→ I7). AS2 점검: `run-case`에서 불리지 않음(기록 재생은 골든·키 없는 시험 전용). 시험 전용 유지나 합침은 AS4, 결정 기록 `20260925-0605-model-decision-as2-run-case.md` | 3 | — | 같은 자리의 교체 구현 |
+| I8 | 기록 재생 | `workflow_replay` | `src/tradesentry/workflow/replay.py` | 앱 | M | 기록된 trace → 같은 응답(키 없는 스모크 시험) | 유지(AS4 확정, 시험 전용: MVP 명령에서 함수가 불리지 않지만 I10·I11·I12의 진입 함수(골든·키 없는 기록 재생 시험)가 쓰는 소비자 셋이라 I7과 합칠 기준 미충족, 버리면 그 골든이 깨진다. 결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 3 | — | 같은 자리의 교체 구현 |
 | I9 | 프롬프트·모델 설정 | 없음(구성) | `configs/model/` 아래 프롬프트·모델 설정 파일 | 구성 | M | 텍스트·설정 → 조사자·Critic 프롬프트, 모델 ID, 추론 모드 | 유지(AS2 점검: `run-case`가 모델 설정·프롬프트를 읽음, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
 | I10 | 조사자 | `workflow_investigator` | `src/tradesentry/workflow/investigator.py` | 앱 | M | 상태 → 다음 비교·초안 | 유지(AS2 점검: `run-case`의 모델 세 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
 | I11 | Critic | `workflow_critic` | `src/tradesentry/workflow/critic.py` | 앱 | M | 초안 + 근거 → 구조화된 지적·재조회 요청 | 유지(AS2 점검: `run-case`의 `full`·`freeform`에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
@@ -129,35 +129,35 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | R1 | typed claim 채우기 | `reports_claims` | `src/tradesentry/reports/claims.py` | 앱 | M | 검증된 `metric` → typed claim(모드별) | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
 | R2 | 한국어 보고서 틀 | `reports_render_ko` | `src/tradesentry/reports/render_ko.py` | 앱 | M | claim + 설명·가설 → 보고서·`report_hash` | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
 | R3 | 검증 규칙 | `validator_validate` | `src/tradesentry/validator/validate.py` | 앱 | M | 보고서·봉투·스냅샷 → findings(`validator_findings`) | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | 예 | — |
-| R4 | 차단 판정 | `validator_gate` | `src/tradesentry/validator/gate.py` | 앱 | M | findings + 모드 → 통과·차단·기록만·`INVALID` | 합침 후보(→ R3). AS2 점검: `run-case` 네 모드에서 R3 바로 뒤에 불림, 소비자 하나(I12)이나 입력이 R3과 달라(findings·모드·수정 사용) 확정은 AS4(동결 경로), 결정 기록 `20260925-0605-model-decision-as2-run-case.md` | 3 | 예 | — |
+| R4 | 차단 판정 | `validator_gate` | `src/tradesentry/validator/gate.py` | 앱 | M | findings + 모드 → 통과·차단·기록만·`INVALID` | 유지(AS4 확정: 입력이 R3과 달라(findings·모드·수정 사용) 합침 기준 미충족. AS2 결정 기록 `20260925-0605-model-decision-as2-run-case.md`, 결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 3 | 예 | — |
 
 ### 3.8 F — CLI·NVIDIA 연동(7개)
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| F1 | 인자 검증 | `cli_args` | `src/tradesentry/cli/args.py` | 앱 | M | 문자열 인자 → 검증된 요청(모드 4개·스냅샷 ID·사례·정책 버전) | 합침 후보(→ F2) | CLI | — | 소비자가 하나다 |
-| F2 | 명령 배선 | `cli_dispatch` | `src/tradesentry/cli/dispatch.py` | 앱 | M | 명령 → 조립체 1~4 호출 | 유지 | CLI | — | 조립 층 자체 |
-| F3 | 런타임 스킬 | 없음(구성) | `skills/tradesentry/SKILL.md` | 구성 | M | `SKILL.md`: `detect`·`run-case`만 부르고 결과를 그대로 전달 | 유지 | 6 | — | — |
-| F4 | 샌드박스 정책 | 없음(구성) | `configs/openshell/policy.yaml`(샌드박스 종류별 파일 구성은 S0 자문 Q7) | 구성 | M | 샌드박스 종류별 정책 YAML | 유지 | 6 | — | 보안 검토 |
-| F5 | 샌드박스 이미지 | 없음(구성) | 샌드박스 이미지 정의 파일(위치는 계획 경로·명령 표에 없음. 제안 필요) | 구성 | M | Python 3.12·의존성, 정답 파일 없음 | 유지 | 6 | — | X1 이미지 정의에서 옮긴다. 이미지 빌드나 upload로 들이는 파일은 명시한 포함 목록으로 고른다. `.env`, `outputs/`, `artifacts/eval/`, 정답표(`eval/dev/oracle_ABC.json`, dev20 정답표), `eval/scorer/`는 빼도록 명시한다. 저장소 루트나 `eval/dev/`를 통째로 올리지 않는다. upload 주의: 근거는 공식 문서이고 `[사실: 공식 문서 manage-sandboxes "Transfer Files"]`, 우리 환경에서의 확정은 로드맵 MT5에서 한다 `[미확인]`. Git 저장소 안의 경로를 올리면 upload는 기본으로 `.gitignore`를 따른다. 추적 파일이 섞인 경로를 올리면 무시 대상(이 저장소에서는 스냅샷 SQLite와 `raw/` 등)은 빠진다. 모든 파일이 무시 대상인 경로(예: `snapshot.sqlite` 하나)는 경고와 함께 거르지 않고 올라간다. 그래서 `.gitignore`는 제외 장치가 아니고, 제외는 명시한 반입 목록이 맡는다. `--no-git-ignore`는 `.env`가 없는 경로에만 쓰고, 이 주의는 모든 파일이 무시 대상일 때 거르지 않고 올리는 자동 전환에도 똑같이 걸린다. 목적지를 빼면 샌드박스 작업 폴더에 올라간다. upload는 심볼릭 링크를 그대로 두고, 이미 있는 폴더에는 합쳐 덮어쓴다. 원문은 자료 계약 §10.3에 있다. |
-| F6 | 키 주입 설정 | 없음(구성) | `configs/openshell/` 아래 provider 프로필(새 파일. 이름은 계획 경로·명령 표에 없음) | 구성 | M | 헤더 치환 provider 프로필 | 유지 | 6 | — | X1에서 채택한 키 주입 방식의 설정 |
-| F7 | 위반 시험 | `openshell_violation_tests` | 위반 시험 스크립트(위치는 S0 자문 Q20) | 구성 | M | 의도적 위반 시험 스크립트 → 시험표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml` | 유지 | 6 | — | 보안 검토. 한 시험 실행이 샌드박스 여럿을 다루면 같은 확장자 파일이 여럿 생기므로, 자료 계약 §10.3 N7에 따라 `outputs/{실행명}/openshell_violation_tests-{시각}/` 폴더에 두고 폴더 안 파일 이름을 이 행에 고정한다(예: 샌드박스 이름을 붙인 `.yaml`·`.txt`). 이름은 로드맵 MT5에서 정해 이 행에 적는다 `[미확인]` |
+| F1 | 인자 검증 | `cli_args` | `src/tradesentry/cli/args.py` | 앱 | M | 문자열 인자 → 검증된 요청(모드 4개·스냅샷 ID·사례·정책 버전) | 합침 후보(→ F2). AS4 점검: 합침 기준(같은 입력인 문자열 인자, CLI 명령에서만 불림, 소비자 F2 하나)을 채운다. 합치면 단위 파일이 바뀌어(단위 표 변경) 사용자 승인 대상이고 MVP 직전이라 합치지 않았다(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | CLI | — | 소비자가 하나다 |
+| F2 | 명령 배선 | `cli_dispatch` | `src/tradesentry/cli/dispatch.py` | 앱 | M | 명령 → 조립체 1~4 호출 | 유지. AS4 점검: 명령 다섯의 배선으로 모두 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | CLI | — | 조립 층 자체 |
+| F3 | 런타임 스킬 | 없음(구성) | `skills/tradesentry/SKILL.md` | 구성 | M | `SKILL.md`: `detect`·`run-case`만 부르고 결과를 그대로 전달 | 유지. AS4 점검: 구성 단위. 공통 실행기를 부르지 않음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 6 | — | — |
+| F4 | 샌드박스 정책 | 없음(구성) | `configs/openshell/policy.yaml`(샌드박스 종류별 파일 구성은 S0 자문 Q7) | 구성 | M | 샌드박스 종류별 정책 YAML | 유지. AS4 점검: 구성 단위. 공통 실행기·`inference.local` 경로 없음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 6 | — | 보안 검토 |
+| F5 | 샌드박스 이미지 | 없음(구성) | 샌드박스 이미지 정의 파일(위치는 계획 경로·명령 표에 없음. 제안 필요) | 구성 | M | Python 3.12·의존성, 정답 파일 없음 | 유지. AS4 점검: 구성 단위. 공통 실행기·`inference.local` 경로 없음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 6 | — | X1 이미지 정의에서 옮긴다. 이미지 빌드나 upload로 들이는 파일은 명시한 포함 목록으로 고른다. `.env`, `outputs/`, `artifacts/eval/`, 정답표(`eval/dev/oracle_ABC.json`, dev20 정답표), `eval/scorer/`는 빼도록 명시한다. 저장소 루트나 `eval/dev/`를 통째로 올리지 않는다. upload 주의: 근거는 공식 문서이고 `[사실: 공식 문서 manage-sandboxes "Transfer Files"]`, 우리 환경에서의 확정은 로드맵 MT5에서 한다 `[미확인]`. Git 저장소 안의 경로를 올리면 upload는 기본으로 `.gitignore`를 따른다. 추적 파일이 섞인 경로를 올리면 무시 대상(이 저장소에서는 스냅샷 SQLite와 `raw/` 등)은 빠진다. 모든 파일이 무시 대상인 경로(예: `snapshot.sqlite` 하나)는 경고와 함께 거르지 않고 올라간다. 그래서 `.gitignore`는 제외 장치가 아니고, 제외는 명시한 반입 목록이 맡는다. `--no-git-ignore`는 `.env`가 없는 경로에만 쓰고, 이 주의는 모든 파일이 무시 대상일 때 거르지 않고 올리는 자동 전환에도 똑같이 걸린다. 목적지를 빼면 샌드박스 작업 폴더에 올라간다. upload는 심볼릭 링크를 그대로 두고, 이미 있는 폴더에는 합쳐 덮어쓴다. 원문은 자료 계약 §10.3에 있다. |
+| F6 | 키 주입 설정 | 없음(구성) | `configs/openshell/` 아래 provider 프로필(새 파일. 이름은 계획 경로·명령 표에 없음) | 구성 | M | 헤더 치환 provider 프로필 | 유지. AS4 점검: 구성 단위. `inference.local` 경로 없음. 등록 명령 주석이 키 래퍼 `spikes/x1/with_nvidia_key.py`를 씀(옮기기는 후보, 결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 6 | — | X1에서 채택한 키 주입 방식의 설정 |
+| F7 | 위반 시험 | `openshell_violation_tests` | 위반 시험 스크립트(위치는 S0 자문 Q20) | 구성 | M | 의도적 위반 시험 스크립트 → 시험표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml` | 유지. AS4 점검: `inference.local`은 차단 확인 시험 행(`inference_local` 검사 둘)으로만 있어 남김(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 6 | — | 보안 검토. 한 시험 실행이 샌드박스 여럿을 다루면 같은 확장자 파일이 여럿 생기므로, 자료 계약 §10.3 N7에 따라 `outputs/{실행명}/openshell_violation_tests-{시각}/` 폴더에 두고 폴더 안 파일 이름을 이 행에 고정한다(예: 샌드박스 이름을 붙인 `.yaml`·`.txt`). 이름은 로드맵 MT5에서 정해 이 행에 적는다 `[미확인]` |
 
 ### 3.9 A — 승인·화면(2개)
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| A1 | 모의 승인 | `approval_record` | `src/tradesentry/approval/record.py` | 앱 | M | 보고서·근거 digest → 승인 기록·`REVIEW_REQUIRED` | 유지 | 7 | — | — |
-| A2 | 화면 | `app` | `src/tradesentry/app.py` | 앱 | M | 실행 기록·조회 → Streamlit 화면 3개 | 버림 후보(로드맵 §5 줄이는 순서가 발동할 때만) | 7 | — | **고정 규칙과 충돌**: 화면 3개는 개발 플랜 §7.7의 계획이다. 줄이는 순서(화면 3번째 → 2번째)가 발동할 때만 버린다 |
+| A1 | 모의 승인 | `approval_record` | `src/tradesentry/approval/record.py` | 앱 | M | 보고서·근거 digest → 승인 기록·`REVIEW_REQUIRED` | 유지. AS4 점검: MVP 명령에서 불리지 않음. 로드맵 AP1이 구현할 뼈대라 버리지 않음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 7 | — | — |
+| A2 | 화면 | `app` | `src/tradesentry/app.py` | 앱 | M | 실행 기록·조회 → Streamlit 화면 3개 | 버림 후보(로드맵 §5 줄이는 순서가 발동할 때만). AS4 점검: 불리지 않음(U1 전 뼈대). 줄이는 순서가 발동하지 않아 버리지 않음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 7 | — | **고정 규칙과 충돌**: 화면 3개는 개발 플랜 §7.7의 계획이다. 줄이는 순서(화면 3번째 → 2번째)가 발동할 때만 버린다 |
 
 ### 3.10 E — 평가 실행(4개)
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| E1 | 묶음 실행 | `evaluation_batch_run` | `src/tradesentry/evaluation/batch_run.py` | 앱 | M | 사례 목록 × 모드 → 교차 배치 실행, 실행 결과 기록의 실행 쪽 키(`evaluation_batch_run-{시각}.jsonl`) | 유지 | 4 | — | 사례 실행마다 새 실행명을 쓰고, 실행을 시작하기 전에 호스트의 실행 폴더를 폴더 만들기 호출 하나(이미 있으면 실패하는 방식. 예: 파이썬 `os.mkdir`를 `exist_ok` 없이)로 만들어 실행명을 확보하고, 그 호출이 성공한 프로세스만 그 실행명을 쓴다. 만들기 전에 그 이름의 초가 될 때까지 기다리고, 만든 뒤 다른 부모 폴더(`outputs/`와 `outputs/sealed/`)에 같은 이름이 있으면 방금 만든 빈 폴더를 지운다. 만들기에 실패하거나 폴더를 지웠으면 다음 초의 이름으로 다시 한다(자료 계약 §10.3 N8). dev20·`real_dev` 실행과 MT7 확인 리허설(단위 E2로 돌리는 경우, 두 실행기가 동시에 도는 경우 포함)로 이름 충돌이 없는지 확인한다 |
-| E2 | 샌드박스 밖 실행기 | `evaluation_sealed_runner` | `src/tradesentry/evaluation/sealed_runner.py` | 앱 | M | 봉인 해시 대조 → 사례 식별자 한 건씩 `run-case` | 유지 | 4 | — | 단위 E2의 묶음 기록 도메인명과 봉인 묶음 실행 폴더의 실행 이름은 MT7에서 F1 전에 정한다 `[미확인]`. 봉인 묶음이면 묶음 기록은 `outputs/sealed/` 아래 자기 실행 폴더에 두고, 금지 해제 조건(정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 전에는 에이전트가 열지 않는다. 실행명 확보는 자료 계약 §10.3 N8을 따른다 |
-| E3 | 추출 명령 | `evaluation_extract` | `src/tradesentry/evaluation/extract.py` | 앱 | M | 실행 기록 → `execution_status`·원인 분류 코드·버전 키(봉인 묶음이면 사전 점검 값과의 일치 여부와 불일치 건수만) | 유지 | 4 | — | 봉인 묶음에서 만든 인프라 실패 재실행 대상 목록은 `outputs/sealed/` 아래 자기 실행 폴더에 둔다. 그 목록은 샌드박스 밖 실행기(단위 E2)만 읽고, 에이전트는 금지 해제 조건(자료 계약 §10.3 N10) 전에 열지 않는다 |
-| E4 | NAT 사후 평가 | `evaluation_nat_eval` | `src/tradesentry/evaluation/nat_eval.py` | 앱 | M | 실행 기록 → 정답 없는 지표 | 유지 | 4 | — | **고정 규칙과 충돌**: 채점기와 겹치는 항목만 정리한다. NAT의 네 역할(실행·추적·프로파일러·사후 평가)은 자문 명세서(`docs/plan/SCAFFOLD_BRIEF.md`) §5.1 고정 사항 5라, 역할을 없애려면 사용자 승인이 필요하다. NAT가 정하는 파일 이름과 이름 규칙의 대응은 자문 명세서 Q1의 4다 `[미확인]`. 정해지면 폴더 안 파일 이름을 이 행에 고정한다(자료 계약 §10.3 N6·N7) |
+| E1 | 묶음 실행 | `evaluation_batch_run` | `src/tradesentry/evaluation/batch_run.py` | 앱 | M | 사례 목록 × 모드 → 교차 배치 실행, 실행 결과 기록의 실행 쪽 키(`evaluation_batch_run-{시각}.jsonl`) | 유지. AS4 점검: `evaluate`에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 4 | — | 사례 실행마다 새 실행명을 쓰고, 실행을 시작하기 전에 호스트의 실행 폴더를 폴더 만들기 호출 하나(이미 있으면 실패하는 방식. 예: 파이썬 `os.mkdir`를 `exist_ok` 없이)로 만들어 실행명을 확보하고, 그 호출이 성공한 프로세스만 그 실행명을 쓴다. 만들기 전에 그 이름의 초가 될 때까지 기다리고, 만든 뒤 다른 부모 폴더(`outputs/`와 `outputs/sealed/`)에 같은 이름이 있으면 방금 만든 빈 폴더를 지운다. 만들기에 실패하거나 폴더를 지웠으면 다음 초의 이름으로 다시 한다(자료 계약 §10.3 N8). dev20·`real_dev` 실행과 MT7 확인 리허설(단위 E2로 돌리는 경우, 두 실행기가 동시에 도는 경우 포함)로 이름 충돌이 없는지 확인한다 |
+| E2 | 샌드박스 밖 실행기 | `evaluation_sealed_runner` | `src/tradesentry/evaluation/sealed_runner.py` | 앱 | M | 봉인 해시 대조 → 사례 식별자 한 건씩 `run-case` | 유지. AS4 점검: 불리지 않음. 봉인 묶음(로드맵 F2)의 샌드박스 밖 실행기라 버리지 않음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 4 | — | 단위 E2의 묶음 기록 도메인명과 봉인 묶음 실행 폴더의 실행 이름은 MT7에서 F1 전에 정한다 `[미확인]`. 봉인 묶음이면 묶음 기록은 `outputs/sealed/` 아래 자기 실행 폴더에 두고, 금지 해제 조건(정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 전에는 에이전트가 열지 않는다. 실행명 확보는 자료 계약 §10.3 N8을 따른다 |
+| E3 | 추출 명령 | `evaluation_extract` | `src/tradesentry/evaluation/extract.py` | 앱 | M | 실행 기록 → `execution_status`·원인 분류 코드·버전 키(봉인 묶음이면 사전 점검 값과의 일치 여부와 불일치 건수만) | 유지. AS4 점검: `evaluate` 밖의 추출 명령 `python -m tradesentry.evaluation.extract`로 평가 스킬 ② 채점 전 확인이 부르며, 실행해 불림을 확인(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 4 | — | 봉인 묶음에서 만든 인프라 실패 재실행 대상 목록은 `outputs/sealed/` 아래 자기 실행 폴더에 둔다. 그 목록은 샌드박스 밖 실행기(단위 E2)만 읽고, 에이전트는 금지 해제 조건(자료 계약 §10.3 N10) 전에 열지 않는다 |
+| E4 | NAT 사후 평가 | `evaluation_nat_eval` | `src/tradesentry/evaluation/nat_eval.py` | 앱 | M | 실행 기록 → 정답 없는 지표 | 유지. AS4 점검: `evaluate`에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 4 | — | **고정 규칙과 충돌**: 채점기와 겹치는 항목만 정리한다. NAT의 네 역할(실행·추적·프로파일러·사후 평가)은 자문 명세서(`docs/plan/SCAFFOLD_BRIEF.md`) §5.1 고정 사항 5라, 역할을 없애려면 사용자 승인이 필요하다. NAT가 정하는 파일 이름과 이름 규칙의 대응은 자문 명세서 Q1의 4다 `[미확인]`. 정해지면 폴더 안 파일 이름을 이 행에 고정한다(자료 계약 §10.3 N6·N7) |
 
 ### 3.11 V — 평가 자료(7개)
 
@@ -175,18 +175,18 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| C1 | 주장 채점 | `scorer_claims` | `eval/scorer/claims.py` | 앱 | D | 주장·정답표·원본 행 → 필드별 판정(룰북 B3-1). 주장 채점 기록 `scorer_claims-{시각}.jsonl` | 유지 | 5 | — | — |
-| C2 | 산문 채점 | `scorer_prose` | `eval/scorer/prose.py` | 앱 | D | 보고서 산문 → 패턴 판정(룰북 B3-2) | 유지 | 5 | — | 잡은 표현은 주장 채점 기록(`source`가 `prose`)으로 `scorer_claims-{시각}.jsonl`에 함께 들어간다 |
-| C3 | 채점 결과 기록 | `scorer_results` | `eval/scorer/results.py` | 앱 | D | 판정 → 실행 쪽 키에 채점 키 세 개(`required_evidence_ok`·`numeric_ok`·`provenance_ok`)를 더한 실행 결과 기록 `scorer_results-{시각}.jsonl` | 유지 | 5 | — | — |
-| C4 | 보조 지표·요약 | `scorer_summary` | `eval/scorer/summary.py` | 앱 | D | 판정 → 보조 지표·Wilson 구간(비율의 신뢰구간 계산법), 요약 `scorer_summary-{시각}.md` | 유지 | 5 | — | — |
+| C1 | 주장 채점 | `scorer_claims` | `eval/scorer/claims.py` | 앱 | D | 주장·정답표·원본 행 → 필드별 판정(룰북 B3-1). 주장 채점 기록 `scorer_claims-{시각}.jsonl` | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | — |
+| C2 | 산문 채점 | `scorer_prose` | `eval/scorer/prose.py` | 앱 | D | 보고서 산문 → 패턴 판정(룰북 B3-2) | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | 잡은 표현은 주장 채점 기록(`source`가 `prose`)으로 `scorer_claims-{시각}.jsonl`에 함께 들어간다 |
+| C3 | 채점 결과 기록 | `scorer_results` | `eval/scorer/results.py` | 앱 | D | 판정 → 실행 쪽 키에 채점 키 세 개(`required_evidence_ok`·`numeric_ok`·`provenance_ok`)를 더한 실행 결과 기록 `scorer_results-{시각}.jsonl` | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | — |
+| C4 | 보조 지표·요약 | `scorer_summary` | `eval/scorer/summary.py` | 앱 | D | 판정 → 보조 지표·Wilson 구간(비율의 신뢰구간 계산법), 요약 `scorer_summary-{시각}.md` | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | — |
 
 ### 3.13 L — 실행 기록(3개)
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | L1 | trace 기록 | `runlog_trace` | `src/tradesentry/runlog/trace.py` | 앱 | 공동 | 이벤트 → trace JSONL(형식은 S0 자문 Q21) | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3·4 | — | — |
-| L2 | 실행 결과 기록 | `runlog_run_record` | `src/tradesentry/runlog/run_record.py` | 앱 | 공동 | 실행 → 실행 결과 기록의 실행 쪽 키·`run_id` | 합침 후보(→ L1). AS2 점검: `run-case` 네 모드에서 불림. 실행 결과 기록 파일 `runlog_run_record`, 결정 기록 `20260925-0605-model-decision-as2-run-case.md` | 3·4 | — | — |
-| L3 | 원인 분류 코드 | `runlog_cause_codes` | `src/tradesentry/runlog/cause_codes.py` | 앱 | 공동 | 실패 → `errors`의 원인 분류 코드 | 합침 후보(→ L1). AS2 점검: `run-case`의 실패 경로에서만 함수가 불림(성공 경로는 상수만). 소비자가 I7·I12·L2 셋이라 확정은 AS4, 결정 기록 `20260925-0605-model-decision-as2-run-case.md` | 3·4 | — | — |
+| L2 | 실행 결과 기록 | `runlog_run_record` | `src/tradesentry/runlog/run_record.py` | 앱 | 공동 | 실행 → 실행 결과 기록의 실행 쪽 키·`run_id` | 유지(AS4 확정: 소비자가 I12·E1·E3 셋이라 합침 기준 미충족, 결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 3·4 | — | — |
+| L3 | 원인 분류 코드 | `runlog_cause_codes` | `src/tradesentry/runlog/cause_codes.py` | 앱 | 공동 | 실패 → `errors`의 원인 분류 코드 | 유지(AS4 확정: 소비자가 I7·I12·L2·E1·E3·F2 여섯이라 합침 기준 미충족. `evaluate` 실패 경로와 추출 명령에서 불림, 결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 3·4 | — | — |
 
 ## 4. 조립체 여덟 개와 CLI 조립 층
 
