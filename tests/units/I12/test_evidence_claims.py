@@ -336,10 +336,12 @@ class PeerAndParentTest(unittest.TestCase):
 
 
 class NullAlternativeTest(unittest.TestCase):
-    """missingness_listed의 대안(빠진 키가 없을 때, §5.3): 비교국 빠진 자료 상태가 없으면 계산할 수 없는 계열 지표를
-    null로 맞게 적은 주장(사례 품목, 대상국·점유율은 ALL도, 두 시점 가운데 하나)."""
+    """missingness_listed의 대안(빠진 키가 없을 때, §5.3): 계산할 수 없는 계열 지표를 null로 맞게 적은 주장(사례 품목,
+    대상국·점유율은 ALL도, 두 시점 가운데 하나)이 이미 있으면 채운 것으로 본다. 코드는 null 주장을 덧붙이지 않는다
+    (덧붙이는 것은 비교국 빠진 상태뿐). 확신이 없는 조건은 충족으로 보지 않는다."""
 
     NULL_U = metric("m-U-b-null", "U", None, "USD/kg", [PARENT_B], period=B)  # 중량 0 등으로 단가 계산 불가
+    NULL_RU = metric("m-rU-null", "r_U", None, "%", [PARENT_B, PARENT_T], baseline=B)  # 변화율 계산 불가
     OK_V = metric("m-V-b", "V", "1000", "USD", [PARENT_B], period=B)  # 관측된 키(빠진 키 없음)
 
     def history(self, *metrics):
@@ -352,55 +354,61 @@ class NullAlternativeTest(unittest.TestCase):
         claim.update(over)
         return claim
 
+    def check(self, claims, envelopes, family="unit_value"):
+        return augment({family: ["missingness_listed"]}, claims=claims, envelopes=envelopes)
+
     def test_existing_null_claim_meets_without_peer_status(self):
-        out = augment({"unit_value": ["missingness_listed"]}, claims=[self.null_claim()],
-                      envelopes=[self.history(self.NULL_U)])
+        out = self.check([self.null_claim()], [self.history(self.NULL_U)])
         self.assertEqual((out["claims"], out["log"]["added"], out["log"]["unmet"]), ([], [], []))
 
     def test_null_claim_that_is_not_correct_does_not_count(self):
-        for bad in ({"evidence_ids": []}, {"unit": "USD"}, {"direction": "UP"}, {"period": "202212"}):
+        unmet = [{"signal": "unit_value", "code": "missingness_listed"}]
+        for bad in ({"evidence_ids": []}, {"unit": "USD"}, {"direction": "UP"}, {"period": "202212"},
+                    {"baseline_period": "202201"},  # 수준 주장에 기준월
+                    {"claim_type": "change"},  # 기호와 맞지 않는 claim_type
+                    {"partner": "ALL"}):  # 단가 계열은 ALL을 세지 않는다
             with self.subTest(bad=bad):
-                envelopes = [self.history()]  # 받은 계산 불가 지표가 없어 덧붙일 수도 없다
-                out = augment({"unit_value": ["missingness_listed"]}, claims=[self.null_claim(**bad)],
-                              envelopes=envelopes)
+                out = self.check([self.null_claim(**bad)], [self.history(self.NULL_U)])
+                self.assertEqual((out["claims"], out["log"]["unmet"]), ([], unmet))
+
+    def test_null_claim_without_a_received_null_metric_does_not_count(self):
+        out = self.check([self.null_claim()], [self.history()])  # 받은 근거에 계산 불가 U가 없다
+        self.assertEqual(out["log"]["unmet"], [{"signal": "unit_value", "code": "missingness_listed"}])
+
+    def test_change_metric_null_claims_do_not_count(self):
+        # 계약이 값 null 변화 주장의 방향을 정하지 않았다: 기준월이 맞아도, 틀려도 세지 않는다
+        base = self.null_claim(claim_type="change", metric="r_U", period=T, baseline_period=B, unit="%",
+                               evidence_ids=[PARENT_B, PARENT_T])
+        for over in ({"direction": "NA"}, {"direction": "DOWN"}, {"direction": "FLAT"},
+                     {"direction": "NA", "baseline_period": "202212"}):
+            with self.subTest(over=over):
+                out = self.check([dict(base, **over)], [self.history(self.NULL_RU)])
                 self.assertEqual(out["log"]["unmet"], [{"signal": "unit_value", "code": "missingness_listed"}])
 
-    def test_unmet_without_peer_status_or_null_metric(self):
-        out = augment({"unit_value": ["missingness_listed"]}, envelopes=[self.history()])
-        self.assertEqual((out["claims"], out["log"]["unmet"]),
-                         ([], [{"signal": "unit_value", "code": "missingness_listed"}]))
+    def test_null_claims_are_never_added(self):
+        for envelopes in ([self.history()], [self.history(self.NULL_U, self.NULL_RU)]):
+            with self.subTest(nulls=len(envelopes[0]["metrics"]) - 1):
+                out = self.check([], envelopes)
+                self.assertEqual((out["claims"], out["log"]["unmet"]),
+                                 ([], [{"signal": "unit_value", "code": "missingness_listed"}]))
 
-    def test_received_null_metric_is_added_as_a_null_claim(self):
-        out = augment({"unit_value": ["missingness_listed"]}, envelopes=[self.history(self.NULL_U)])
-        self.assertEqual([(c["claim_type"], c["metric"], c["partner"], c["period"], c["value"], c["unit"],
-                           c["direction"], c["evidence_ids"]) for c in out["claims"]],
-                         [("value", "U", P, B, None, "USD/kg", "NA", [PARENT_B])])
-        self.assertEqual(out["log"]["added"][0]["claims"],
-                         [{"claim_type": "value", "metric_id": "m-U-b-null", "claim_id": "e1"}])
-        self.assertNotRegex(out["claims"][0]["text"], r"\d+(\.\d+)?\s*(달러|%|kg)")
-        again = augment({"unit_value": ["missingness_listed"]}, claims=out["claims"], envelopes=[self.history(self.NULL_U)])
-        self.assertEqual((again["claims"], again["log"]["unmet"]), ([], []))
-
-    def test_peer_status_is_preferred_over_a_null_claim(self):
+    def test_peer_status_is_the_only_thing_added(self):
         gap = {"evidence_id": ev(901), "request_id": "r", "partner_code": PEER, "hs_code": HS6, "month": B,
                "flow": "import", "observation_status": "NOT_COLLECTED"}
         peer = envelope("compare_partners", metrics=[metric("m-rU-JP", "r_U", "1.5", "%", [PEER_B, PEER_T],
                                                             partner=PEER, baseline=B)], missingness=[gap])
-        out = augment({"unit_value": ["missingness_listed"]}, envelopes=[self.history(self.NULL_U), peer])
+        out = self.check([], [self.history(self.NULL_U), peer])
         self.assertEqual([(c["claim_type"], c["partner"]) for c in out["claims"]], [("data_status", PEER)])
 
-    def test_share_counts_and_adds_an_all_null_claim(self):
+    def test_share_counts_an_existing_all_null_claim(self):
         null_all = metric("m-VA-b-null", "V", None, "USD", [ALL_B], partner="ALL", period=B)
-        out = augment({"share": ["missingness_listed"]}, envelopes=[self.history(null_all)])
-        self.assertEqual([(c["metric"], c["partner"], c["period"], c["value"]) for c in out["claims"]],
-                         [("V", "ALL", B, None)])
         existing = [self.null_claim(claim_id="mine-2", partner="ALL", metric="V", unit="USD", evidence_ids=[ALL_B])]
-        out = augment({"share": ["missingness_listed"]}, claims=existing, envelopes=[self.history(null_all)])
+        out = self.check(existing, [self.history(null_all)], family="share")
         self.assertEqual((out["claims"], out["log"]["unmet"]), ([], []))
-        # 단가 계열은 ALL null 주장을 세지 않는다
-        out = augment({"unit_value": ["missingness_listed"]}, claims=existing, envelopes=[self.history(null_all)])
+        out = self.check([], [self.history(null_all)], family="share")  # 없으면 덧붙이지 않는다
+        self.assertEqual((out["claims"], out["log"]["unmet"]), ([], [{"signal": "share", "code": "missingness_listed"}]))
+        out = self.check(existing, [self.history(null_all)])  # 단가 계열은 ALL null 주장을 세지 않는다
         self.assertEqual(out["log"]["unmet"], [{"signal": "unit_value", "code": "missingness_listed"}])
-
 
 def ports_for(mode, case, reference, checklist_status=None):
     """실제 R1·R2(unit_ports의 build_report)에 이 파일의 봉투를 주고, 검증기 자리는 통과로 둔다."""

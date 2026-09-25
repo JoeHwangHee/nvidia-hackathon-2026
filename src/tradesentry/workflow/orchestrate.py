@@ -354,12 +354,14 @@ EVIDENCE_CLAIM_ID = "e{n}"  # 덧붙인 주장의 claim_id(모델·틀 채우기
 # 덧붙일 것이 없는 코드: 부정 조건(no_zero_fill: 주장을 더해서 채울 수 없다)과 v1에서 판정하지 않는 교정 근거 셋(§5.3).
 NO_ACTION_CODES = ("no_zero_fill", "correction_snapshots_before_after", "recalculated_values", "change_reason")
 _MISSING_STATES = ("OBSERVED", "CONFIRMED_NO_TRADE")  # 빠진 키가 아닌 관측 상태(§5.3 "빠진 키")
-# §5.3 missingness_listed의 대안(빠진 키가 없을 때): 사례 품목·두 시점 계열 지표 가운데 계산할 수 없는 것을 null로 적은 주장.
-# 계열마다 세는 기호(`@` 앞)와 상대국. 덧붙일 때는 변화가 아닌 기호만 쓴다(변화 주장의 방향 UP·DOWN·FLAT을 null 값에 정할 수
-# 없다). 이미 있는 변화 null 주장은 센다.
+# §5.3 missingness_listed의 대안(빠진 키가 없을 때): 사례 품목·두 시점 계열 지표 가운데 계산할 수 없는 것을 null로 적어
+# CORRECT인 주장. 이미 있는 주장만 세고 덧붙이지는 않는다(Codex 검토 3회차: 채점기의 CORRECT를 받은 근거만으로 확실히 가늠할
+# 수 없어서다). 계열마다 세는 기호(`@` 앞)다.
 NULL_BASES = {"unit_value": ("V", "Q", "U", "w", "r_U", "within_effect", "mix_effect", "residual"),
               "share": ("V", "s", "d_s")}
-NULL_LABELS = {"V": "수입금액", "Q": "순중량", "U": "단가", "w": "중량 비중", "s": "점유율"}
+# 값이 null인 변화 주장에 허용하는 방향. 자료 계약 §6.2는 변화 주장의 방향을 UP·DOWN·FLAT(값의 부호)로만 정하고 값 null의
+# 방향을 정하지 않았다. 확신이 없는 조건은 충족으로 보지 않으므로 비어 있다(값 null의 변화 주장은 세지 않는다).
+NULL_CHANGE_DIRECTIONS: tuple = ()
 
 
 def evidence_codes(signals: dict | None, signal_status: object, reference: object) -> dict:
@@ -428,34 +430,15 @@ class _EvidenceView:
         self.by_target: dict = {}
         for claim in self.candidates:
             self.by_target.setdefault(_target(claim), []).append(claim)
-        # 계산 불가(값 null) 지표: R1이 주장으로 만들지 않으므로(자료 상태로 쓰라고 버린다) 여기서 대상·근거만 옮긴다
-        self.nulls = [self.null_claim(m) for m in metrics if m.get("value") is None]
-        self.nulls = [c for c in self.nulls if c is not None]
-        for claim in self.nulls:
-            self.request_of[id(claim)] = {"claim_type": claim["claim_type"], "metric_id": claim["claim_id"]}
-
-    def null_claim(self, metric: dict) -> dict | None:
-        """계산 불가 지표 하나를 값 null의 typed claim 후보로(사례 품목, 대상국이나 ALL, 두 시점, 근거가 있을 때)."""
-        inputs = metric.get("inputs") if isinstance(metric.get("inputs"), dict) else {}
-        symbol, partner, period = inputs.get("metric"), inputs.get("partner"), inputs.get("period")
-        evidence = metric.get("evidence_ids")
-        if not isinstance(symbol, str) or report_claims.base_symbol(symbol) is None or inputs.get("hs6") != self.hs6 \
-                or partner not in (self.partner, "ALL") or period not in (self.t, self.b) \
-                or not isinstance(evidence, list) or not evidence or not all(isinstance(e, str) for e in evidence):
-            return None
-        base, _, code = symbol.partition("@")
-        if metric.get("unit") != report_claims.UNIT_OF[base]:
-            return None
-        changes = base in report_claims.CHANGE_BASES
-        item = f"하위품목 HS {code}의 " if code else ""
-        label = NULL_LABELS.get(base, "지표")
-        text = (f"{report_claims.month_label(period)} {report_claims.subject_prefix(partner, self.partner)}{item}"
-                f"{label} 값은 계산할 수 없다(null).")
-        return {"claim_id": metric["metric_id"], "claim_type": report_claims.claim_type_of(symbol, partner, self.partner),
-                "hs6": self.hs6, "partner": partner, "period": period,
-                "baseline_period": inputs.get("baseline_period") if changes else None, "metric": symbol,
-                "value": None, "unit": report_claims.UNIT_OF[base], "direction": "NA", "evidence_ids": list(evidence),
-                "text": text}
+        # 계산 불가(값 null) 지표 {(기호, 상대국, 월, 기준월): 근거 묶음 목록}. null 주장의 충족 판정에만 쓴다
+        self.nulls: dict = {}
+        for metric in metrics:
+            inputs = metric.get("inputs") if isinstance(metric.get("inputs"), dict) else {}
+            evidence = metric.get("evidence_ids")
+            if metric.get("value") is None and inputs.get("hs6") == self.hs6 and isinstance(evidence, list) and evidence \
+                    and all(isinstance(e, str) for e in evidence):
+                key = (inputs.get("metric"), inputs.get("partner"), inputs.get("period"), inputs.get("baseline_period"))
+                self.nulls.setdefault(key, []).append((set(evidence), metric.get("unit")))
 
     def null_scope(self, claim: dict, family: str) -> bool:
         """missingness_listed 대안의 범위: 사례 품목, 대상국(점유율은 대상국이나 ALL), 두 시점, 계열 기호."""
@@ -466,30 +449,32 @@ class _EvidenceView:
             and claim.get("partner") in partners and claim.get("period") in (self.t, self.b)
 
     def null_listed(self, family: str) -> bool:
-        """계산할 수 없는 계열 지표를 null로 맞게 적은 주장이 있다: 값 null, 대상이 같은 계산 불가 지표의 근거를 모두
-        인용, 단위가 계약 단위, 변화가 아닌 기호면 방향 NA(§5.3 missingness_listed의 대안, CORRECT 조건)."""
+        """계산할 수 없는 계열 지표를 null로 맞게 적은 주장이 이미 있다(§5.3 missingness_listed의 대안, 자료 계약 §6.2).
+        조건: 사례 품목, 대상국(점유율은 ALL도), 두 시점 가운데 하나, 값 null, claim_type이 기호·상대국에 맞음, 단위가 계약
+        단위이자 받은 계산 불가 지표의 단위, 그 지표의 근거를 모두 인용. 비변화 기호는 기준월 null·방향 NA. 변화 기호는
+        기준월이 비교 시점 − 12개월이고 방향이 NULL_CHANGE_DIRECTIONS 안(지금은 비어 있어 세지 않는다)."""
         for claim in self.claims:
             if claim.get("value") is not None or not self.null_scope(claim, family) or _target(claim) is None:
                 continue
+            symbol, partner, period = claim["metric"], claim["partner"], claim["period"]
+            base = report_claims.base_symbol(symbol)
+            if base is None or claim.get("claim_type") != report_claims.claim_type_of(symbol, partner, self.partner) \
+                    or claim.get("unit") != report_claims.UNIT_OF[base]:
+                continue
+            if base in report_claims.CHANGE_BASES:
+                baseline = validator_validate.month_minus_12(period)
+                if claim.get("baseline_period") != baseline or claim.get("direction") not in NULL_CHANGE_DIRECTIONS:
+                    continue
+            else:
+                baseline = None
+                if claim.get("baseline_period") is not None or claim.get("direction") != "NA":
+                    continue
             cited = claim.get("evidence_ids")
             cited = {e for e in cited if isinstance(e, str)} if isinstance(cited, list) else set()
-            for known in self.nulls:
-                if _target(known) == _target(claim) and set(known["evidence_ids"]) <= cited \
-                        and claim.get("unit") == known["unit"] \
-                        and (known["metric"].partition("@")[0] in report_claims.CHANGE_BASES
-                             or claim.get("direction") == "NA"):
-                    return True
+            if any(evidence <= cited and unit == claim["unit"]
+                   for evidence, unit in self.nulls.get((symbol, partner, period, baseline), [])):
+                return True
         return False
-
-    def add_null(self, family: str) -> str:
-        """받은 계산 불가 지표 가운데 변화가 아닌 첫 것을 null 주장으로 덧붙인다(같은 대상이 이미 있으면 건너뛴다)."""
-        for claim in self.nulls:
-            if claim["metric"].partition("@")[0] in report_claims.CHANGE_BASES or not self.null_scope(claim, family) \
-                    or self.taken(_target(claim)):
-                continue
-            if self.add([claim]):
-                return "added"
-        return "unmet"
 
     # 유효성과 후보 ---------------------------------------------------------------------------------------------
     def valid(self, claim: dict) -> bool:
@@ -761,9 +746,8 @@ class _EvidenceView:
             peer_options = self.status_options(self.peer_statuses())
             if (peer_options and self.part_met(peer_options)) or self.null_listed(family):
                 return "met"
-            if peer_options and self.fill_parts([peer_options]) == "added":
-                return "added"
-            return self.add_null(family)
+            # 덧붙이는 것은 비교국 빠진 상태뿐이다(null 주장은 덧붙이지 않는다, NULL_BASES 주석)
+            return self.fill_parts([peer_options]) if peer_options else "unmet"
         return "unmet"
 
 
