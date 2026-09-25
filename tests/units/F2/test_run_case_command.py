@@ -336,33 +336,35 @@ class ModelModesTest(RunCaseBase):
                                  (cause_codes.COMPLETED, "MAINTAIN", {"unit_value": "MAINTAIN", "share": N}))
                 self.assertEqual(record["model_requests"], len(transport.payloads))
 
-    def test_disallowed_status_combination_is_blocked_in_full_and_recorded_in_freeform(self):
-        """10회차(평 권고 C): 허용되지 않는 상태 조합(단가 MONITOR인데 사례 MAINTAIN)을 가짜 모델이 내면 full은 수정 1회
-        뒤에도 검증기가 막아 INVALID(VALIDATOR_BLOCKED), freeform은 COMPLETED이고 검증기 사유를 기록만 한다."""
+    def test_disallowed_status_combination_is_aggregated_by_code_in_full_and_freeform(self):
+        """10회차(평 권고 C)의 갈래(사용자 결정 2026-09-25(금) 22:22 ①): 허용되지 않는 상태 조합(단가 MONITOR인데 사례
+        MAINTAIN)을 가짜 모델이 내면 코드가 review_status를 집계값 MONITOR로 채워, 전처럼 full이 INVALID(VALIDATOR_BLOCKED)로
+        끝나거나 freeform이 STATUS_INCONSISTENT를 기록하지 않고 두 모드 모두 수정 없이 COMPLETED다. 모델 값은 trace
+        state_change status_aggregated에 남는다."""
         for mode in ("full", "freeform"):
             with self.subTest(mode=mode):
                 bad = dict(draft_for("A", mode), review_status="MAINTAIN",
                            signal_status={"unit_value": "MONITOR", "share": N})
                 script = [tools_answer("decompose_hs", "compare_partners"), draft_answer(bad),
                           critic_answer(needs_revision=False)]
-                if mode == "full":
-                    script.append(draft_answer(bad))
                 transport = ScriptedTransport(script)
                 with mock.patch.object(dispatch, "run_case_transport", lambda config: transport):
                     code, out, err = call(argv(CASES["A"], mode))
                 files = self.files(out)
                 record = self.read_json(files["runlog_run_record"])
+                report = self.read_json(files["reports_render_ko"])
                 checks = [e["data"] for e in self.trace(files) if e["event"] == "validator_result"]
                 codes = {f["code"] for c in checks for f in c["findings"]}
-                self.assertIn("STATUS_INCONSISTENT", codes)
-                if mode == "full":
-                    self.assertEqual((code, record["execution_status"], [e["code"] for e in record["errors"]]),
-                                     (1, "INVALID", [cause_codes.VALIDATOR_BLOCKED]))
-                else:
-                    report = self.read_json(files["reports_render_ko"])
-                    self.assertEqual((code, record["execution_status"], record["review_status_final"]),
-                                     (0, cause_codes.COMPLETED, "MAINTAIN"))
-                    self.assertIn("STATUS_INCONSISTENT", {f["code"] for f in report["validator_findings"]})
+                self.assertNotIn("STATUS_INCONSISTENT", codes)
+                self.assertEqual((code, record["execution_status"], record["revision_used"],
+                                  record["review_status_final"], report["review_status"], report["unresolved_evidence"]),
+                                 (0, cause_codes.COMPLETED, False, "MONITOR", "MONITOR", False))
+                self.assertEqual(report["signal_status"], {"unit_value": "MONITOR", "share": N})  # 모델 값 그대로
+                aggregated = [e["data"] for e in self.trace(files)
+                              if e["event"] == "state_change" and e["data"]["phase"] == "status_aggregated"]
+                self.assertEqual([(a["model_review_status"], a["review_status"], a["unresolved_evidence"])
+                                  for a in aggregated], [("MAINTAIN", "MONITOR", False)])
+                self.assertEqual(transport.script, [])
 
     def test_model_mode_keeps_c_type_expansion(self):
         _, _, report, _ = self.run_ok(CASES["C"], "agent", script_for("C", "agent"))

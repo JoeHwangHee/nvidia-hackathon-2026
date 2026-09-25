@@ -568,14 +568,19 @@ class MergedUnitsTest(unittest.TestCase):
                          ("COMPLETED", []))
         self.assertRegex(result["report"]["report_hash"], r"^[0-9a-f]{64}$")
 
-    def test_status_mismatch_is_recorded_in_freeform_and_revised_in_full_by_the_real_validator(self):
-        freeform, _ = self.run_merged("freeform", [mismatched(claims=[self.CLAIM]), h.critic_answer()])
-        self.assertEqual(freeform["record"]["execution_status"], "COMPLETED")
-        self.assertEqual([f["code"] for f in freeform["report"]["validator_findings"]], ["STATUS_INCONSISTENT"])
-        full, records = self.run_merged("full", [mismatched(), h.critic_answer(), h.draft_answer(status="HOLD")])
-        self.assertEqual((full["record"]["execution_status"], full["record"]["revision_used"]), ("COMPLETED", True))
-        self.assertEqual([r["data"]["decision"] for r in h.events(records, "validator_result")],
-                         ["pass", "block", "pass"])  # 첫 검사는 스키마만 본다
+    def test_status_mismatch_is_aggregated_by_code_so_the_real_validator_passes(self):
+        # 사용자 결정 2026-09-25(금) 22:22 ①: 집계가 어긋난 초안(신호 HOLD, 사례 MONITOR)은 코드가 review_status를 집계값
+        # HOLD로 채우므로 실제 검증기 R3가 STATUS_INCONSISTENT를 내지 않는다(전에는 freeform 기록·full 수정이었다)
+        freeform, records = self.run_merged("freeform", [mismatched(claims=[self.CLAIM]), h.critic_answer()])
+        self.assertEqual((freeform["record"]["execution_status"], freeform["report"]["validator_findings"],
+                          freeform["report"]["review_status"], freeform["report"]["unresolved_evidence"]),
+                         ("COMPLETED", [], "HOLD", False))
+        aggregated = [r["data"] for r in h.events(records, "state_change") if r["data"]["phase"] == "status_aggregated"]
+        self.assertEqual([(a["model_review_status"], a["review_status"]) for a in aggregated], [("MONITOR", "HOLD")])
+        full, records = self.run_merged("full", [mismatched(), h.critic_answer()])
+        self.assertEqual((full["record"]["execution_status"], full["record"]["revision_used"],
+                          full["record"]["review_status_final"]), ("COMPLETED", False, "HOLD"))
+        self.assertEqual([r["data"]["decision"] for r in h.events(records, "validator_result")], ["pass", "pass"])
 
 
 class CTypeStatusTest(unittest.TestCase):

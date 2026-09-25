@@ -55,7 +55,12 @@ checklist: 모델 없이 check_comparability → get_history → decompose_hs(�
   invalid_args로 거부하면서 시도 1회를 쓰는 호출) 시도로 세지 않고 건너뛰며, 다음 validator_result에 verify_skipped
   참을 남긴다. 몫(특히 최종 verify_evidence 1회)을 쓰지 않는다. 도구 봉투의 retryable_error는 도구 쪽 결과라 모델
   제공자 원인 코드(PROVIDER_*)가 되지 않는다(결정 기록 ⑯).
-- 코드는 모델의 틀린 상태를 고치지 않는다. 형식·검증기 문제는 수정 단계로 보내거나 INVALID로 끝낸다.
+- 코드는 모델의 틀린 신호별 판정(signal_status)·주장·설명·가설을 고치지 않는다. 형식·검증기 문제는 수정 단계로 보내거나
+  INVALID로 끝낸다. 다만 review_status·unresolved_evidence는 signal_status의 결정적 함수(자료 계약 §3.1)라, 보고서를 만들
+  때마다(_Flow.build → aggregated, 초안·verify·final, 모든 모드) 검증기 R3와 같은 계산(validate.aggregate_status)으로 채운다
+  (사용자 결정 2026-09-25(금) 22:22 ①). signal_status가 형식에 안 맞거나 발동한 신호의 판정이 없으면 손대지 않는다. 모델이
+  쓴 값과 달라졌을 때만 trace state_change status_aggregated(model_review_status, review_status, model_unresolved_evidence,
+  unresolved_evidence)를 그 보고서의 evidence_claims 앞에 남긴다(trace draft·after_critic·revised의 review_status는 모델 값).
 - 필수 조회(Ports.required_tools, 조립 AS2가 넘긴다. 없으면 강제하지 않는다): 도구를 주는 조사자 차례에 필수 도구의 결과를
   받지 않고 초안을 쓰면, 그 초안을 받지 않고 차례마다 한 번 필수 조회 메시지(단위 I10 REQUIRED_TOOLS_REQUEST, 모든 모드
   같음)로 돌려보낸다. trace에는 state_change draft_refused(missing_tools)로 남는다.
@@ -70,6 +75,11 @@ checklist: 모델 없이 check_comparability → get_history → decompose_hs(�
   있을 때만 도구 차례다(도구 목록은 전부, tool_choice "required", 알림 한 줄 PENDING_TOOLS_REQUEST). 아니면 곧바로 도구 없는
   초안 차례다. Critic(full·freeform) 뒤에도 필수 결과가 빠졌고 재조회 예산이 있으면 코드 지적(code_finding)을 Critic
   결과(agent는 수정 지시)에 덧붙이고 수정 1회로 간다. 스키마 실패 초안이 Critic을 건너뛰는 규칙(개발 플랜 §6.6)은 그대로다.
+  HOLD 합의 예외(사용자 결정 2026-09-25(금) 22:22 ③, hold_consensus_skips): 초안의 신호별 판정과 규칙 참고값(reference_for_codes,
+  P3 출력)이 둘 다 HOLD인 발동 신호에는 지적을 내지 않는다. 신호 전용 도구(SIGNAL_ONLY_TOOLS의 decompose_hs)는 그 신호가
+  HOLD 합의면 빼고, 그 밖의 필수 도구(compare_partners)는 발동한 모든 신호가 HOLD 합의일 때 뺀다. 참고값이 None이면 빼지
+  않는다. trace state_change code_finding에 skipped_for_hold(뺀 도구 이름 목록)를 함께 남기고, 지적이 전부 빠졌을 때도 같은
+  사건(missing_tools 빈 목록)으로 남긴다. 지적이 비면 흐름 수정 (나)의 kept_draft 조건은 그대로 성립한다.
 
 다른 작업 단위를 부르는 자리(Ports). unit_ports가 그 단위들의 run을 부르는 얇은 배선을 한곳에 모았다. 보고서·
 검증기(MT3 R1~R4)와 정책(MT1 P3~P5)은 각 작업 브랜치에 커밋된 입출력에 맞췄고(병합 전 대조), 도구 5개·도구 예산(MT2)은
@@ -96,6 +106,11 @@ errors는 원인 분류 코드 항목 하나다(단위 L3: 원인, 누적 시도
   인자(초안이 가리킨 근거)도 바꾸지 않는다. trace에는 보고서를 만들 때마다 state_change phase evidence_claims
   (review_status·signal_status, required {신호: 코드}, added [{signal, code, claims: [요청 모양]}], unmet, no_action)가
   그 보고서의 validator_result 앞에 나온다.
+- 발동 신호 자기 계열 주장 덧붙이기(사용자 결정 2026-09-25(금) 22:22 ②, signal_claims): 위 덧붙임 뒤 같은 자리에서, 발동한
+  신호마다 검증기 R3 signal_families와 같은 판정으로 그 계열 주장이 사례 대상(hs6·상대국·비교월)에 없으면 그 신호의 변화
+  지표(unit_value → r_U, share → d_s. 비교월 대 기준월) 주장을 받은 봉투의 검증된 지표에서 단위 R1 틀 채우기로 덧붙인다
+  (freeform도 같다). 받은 근거에 없거나 같은 대상(같은 metric_id)의 주장이 이미 있으면 덧붙이지 않는다. 도구를 새로 부르지
+  않는다. claim_id는 기존 덧붙임과 같은 e{번호} 번호열이고, trace evidence_claims의 added에 code "signal_claim"으로 남는다.
 """
 from dataclasses import dataclass
 from decimal import Decimal
@@ -406,6 +421,7 @@ class _EvidenceView:
     """보고서 주장(R1 출력)과 받은 봉투로 §5.3 조건을 보고, 채울 주장을 고른다."""
 
     def __init__(self, case: dict, claims: list, evidence: list):
+        self.case = case
         self.hs6, self.partner = case.get("hs6"), case.get("partner")
         self.t, self.b = case.get("month"), case.get("baseline_month")
         self.evidence = [e for e in evidence if isinstance(e, dict)]
@@ -707,6 +723,22 @@ class _EvidenceView:
             groups += found
         return groups
 
+    def signal_claim(self, family: str) -> str:
+        """발동 신호 자기 계열 주장(계약 §9.4, 사용자 결정 2026-09-25(금) 22:22 ②): 검증기 R3 signal_families와 같은 판정으로
+        (형식이 맞는 주장만, R3의 valid와 같다) 그 계열의 주장이 사례 대상에 있으면 met. 없으면 그 신호의 변화 지표
+        (unit_value → r_U, share → d_s. 사례 대상 hs6·상대국·비교월 대 기준월)의 후보를 받은 봉투의 검증된 지표에서 골라
+        덧붙인다(added). 후보가 없거나 같은 대상(같은 metric_id)의 주장이 이미 있으면 덧붙이지 않는다(unmet)."""
+        for claim in self.claims:
+            if not validator_validate.claim_problems(claim) and family in validator_validate.signal_families(claim, self.case):
+                return "met"
+        change = "r_U" if family == "unit_value" else "d_s"
+        target, _ = self.level(report_claims.claim_type_of(change, self.partner, self.partner), change, self.partner,
+                               self.t, self.b)
+        found = self.candidate(target)
+        if found is None or self.taken(target):
+            return "unmet"
+        return "added" if self.add([found]) else "unmet"
+
     def code(self, family: str, code: str) -> str:
         """코드 하나: met(이미 채움) | added(덧붙여 채움) | unmet(받은 근거로 채울 수 없음) | no_action(덧붙일 것이 없음)."""
         p, t, b = self.partner, self.t, self.b
@@ -772,6 +804,28 @@ def evidence_claims(case: dict, codes: dict, claims: list, evidence: list) -> di
     return {"claims": [claim for claim, _ in view.added], "log": log}
 
 
+SIGNAL_CLAIM_CODE = "signal_claim"  # trace evidence_claims의 added에 적는 ②의 코드(P5 코드가 아니다)
+
+
+def signal_claims(case: dict, claims: list, evidence: list) -> dict:
+    """발동 신호 자기 계열 주장 덧붙이기(사용자 결정 2026-09-25(금) 22:22 ②). evidence_claims 뒤에 같은 자리에서 부른다:
+    claims에는 모델(또는 checklist 규칙) 주장과 evidence_claims가 덧붙인 주장이 모두 있어야 claim_id 번호열(e{번호})이 이어진다.
+
+    돌려주는 값: {"claims": 덧붙인 typed claim, "added": [{"signal", "code": "signal_claim", "claims": [요청 모양]}]}.
+    요청 모양은 evidence_claims와 같다({claim_id, claim_type, metric_id}. claim_type은 단위 R1이 기호로 정한 값: r_U는
+    change, d_s는 share_change). claims와 입력을 바꾸지 않는다."""
+    view = _EvidenceView(case, list(claims or []), list(evidence or []))
+    added = []
+    for family in policy_required_evidence.SIGNAL_CODES:
+        if (case.get("signals") or {}).get(family) != policy_required_evidence.TRIGGERED:
+            continue
+        before = len(view.added)
+        if view.signal_claim(family) == "added":
+            added.append({"signal": family, "code": SIGNAL_CLAIM_CODE,
+                          "claims": [request for _, request in view.added[before:]]})
+    return {"claims": [claim for claim, _ in view.added], "added": added}
+
+
 def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimits, *, grouping_version: str,
                policy: object = None, rows: Callable[[list], dict] | None = None,
                evidence_state: Callable[[dict, list], dict] | None = None,
@@ -809,6 +863,10 @@ def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimit
         # 필수 근거 주장 덧붙이기(모든 모드 같은 규칙). freeform도 덧붙이는 주장은 단위 R1의 틀 채우기(fill)로 검증된 지표에서
         # 채운다(모델 주장은 R1 freeform이 그대로 돌려준 것이고, R1을 두 번 부를 뿐 R1을 고치지 않는다).
         extra = evidence_claims(case, inp.get("required_codes") or {}, filled["claims"], evidence)
+        # 발동 신호 자기 계열 주장(결정 2026-09-25(금) 22:22 ②): 필수 근거 덧붙임 뒤 같은 번호열로 이어 붙인다
+        family = signal_claims(case, list(filled["claims"]) + extra["claims"], evidence)
+        extra = {"claims": extra["claims"] + family["claims"],
+                 "log": dict(extra["log"], added=list(extra["log"]["added"]) + family["added"])}
         try:
             unresolved = policy_case_aggregate.run({"signals": case.get("signals"),
                                                     "signal_status": draft.get("signal_status")})["unresolved_evidence"]
@@ -1110,8 +1168,10 @@ class _Flow:
 
     # 보고서와 판정 ----------------------------------------------------------------------------------------------
     def build(self, draft: dict) -> dict:
-        """보고서를 만든다. 필수 근거 코드(evidence_codes)를 넘겨 build_report가 채울 주장을 덧붙이게 하고, 덧붙인 결과를
-        trace state_change evidence_claims로 남긴다(build_report가 결과를 돌려줄 때)."""
+        """보고서를 만든다. review_status·unresolved_evidence는 신호별 판정의 코드 집계로 채우고(aggregated), 필수 근거
+        코드(evidence_codes)를 넘겨 build_report가 채울 주장을 덧붙이게 하고, 덧붙인 결과를 trace state_change
+        evidence_claims로 남긴다(build_report가 결과를 돌려줄 때)."""
+        draft = self.aggregated(draft)
         codes = evidence_codes(self.signals, draft.get("signal_status"), self.reference_for_codes())
         built = self.ports.build_report({"case": self.case, "mode": self.mode, "run_id": self.ctx.run_id,
                                          "draft": draft, "evidence": list(self.evidence), "required_codes": codes})
@@ -1119,6 +1179,48 @@ class _Flow:
         if isinstance(built.get("evidence_claims"), dict):
             self.state("evidence_claims", draft, **built["evidence_claims"])
         return built["report"]
+
+    def aggregated(self, draft: dict) -> dict:
+        """review_status 코드 집계(사용자 결정 2026-09-25(금) 22:22 ①, 모든 모드·모든 보고서): 초안의 signal_status에서
+        자료 계약 §3.1 규칙(검증기 R3 aggregate_status와 같은 계산)으로 review_status·unresolved_evidence를 채운 초안 사본을
+        돌려준다. signal_status가 형식에 안 맞거나 발동한 신호의 판정이 하나도 없으면 손대지 않는다(스키마 검사가 맡는다).
+        모델(또는 checklist 규칙)이 쓴 값과 달라졌을 때만 trace state_change status_aggregated(model_review_status,
+        review_status, model_unresolved_evidence, unresolved_evidence)를 남긴다. signal_status·주장·설명·가설은 그대로다."""
+        statuses = draft.get("signal_status")
+        if not isinstance(statuses, dict) or set(statuses) != set(investigator.SIGNAL_CODES) \
+                or any(v not in investigator.SIGNAL_STATUSES for v in statuses.values()):
+            return draft
+        aggregate = validator_validate.aggregate_status(statuses, self.signals)
+        if aggregate is None:
+            return draft
+        review_status, unresolved = aggregate
+        model_review, model_unresolved = draft.get("review_status"), draft.get("unresolved_evidence")
+        out = dict(draft, review_status=review_status, unresolved_evidence=unresolved)
+        if model_review != review_status or (isinstance(model_unresolved, bool) and model_unresolved is not unresolved):
+            self.state("status_aggregated", out, model_review_status=model_review,
+                       model_unresolved_evidence=model_unresolved, unresolved_evidence=unresolved)
+        return out
+
+    def hold_consensus_skips(self, draft: dict, missing: list) -> tuple[list, list]:
+        """HOLD 합의 신호엔 빠진 도구 지적 없음(사용자 결정 2026-09-25(금) 22:22 ③): 초안의 신호별 판정과 규칙 참고값
+        (reference_for_codes, P3 출력)이 둘 다 HOLD인 발동 신호(HOLD 합의)에 대해, 그 신호 전용 도구(SIGNAL_ONLY_TOOLS,
+        decompose_hs)는 그 신호가 HOLD 합의면 빼고, 나머지 필수 도구(compare_partners)는 발동한 모든 신호가 HOLD 합의일 때
+        뺀다. 참고값이 없으면(None) 빼지 않는다. (지적할 도구, 뺀 도구)를 돌려준다."""
+        if not missing:
+            return list(missing), []
+        reference = self.reference_for_codes()
+        ref_status = reference.get("signal_status") if isinstance(reference, dict) else None
+        stated = draft.get("signal_status") if isinstance(draft, dict) else None
+        if not isinstance(ref_status, dict) or not isinstance(stated, dict):
+            return list(missing), []
+        fired = {code for code, value in (self.signals or {}).items() if value == "TRIGGERED"}
+        hold = {code for code in fired if stated.get(code) == "HOLD" and ref_status.get(code) == "HOLD"}
+        kept, skipped = [], []
+        for tool in missing:
+            only = SIGNAL_ONLY_TOOLS.get(tool)
+            relevant = fired & set(only) if only is not None else fired
+            (skipped if relevant and relevant <= hold else kept).append(tool)
+        return kept, skipped
 
     def reference_for_codes(self) -> dict | None:
         """필수 근거 코드를 고를 때 쓰는 규칙 참고값(P3 출력). 없거나 계산할 수 없으면(입력 검사 오류) None이다. 모델에게
@@ -1248,11 +1350,14 @@ class _Flow:
                 self.stage = "basic"
             code_missing = self.missing_required_tools() if self.directed() and comparable \
                 and self._allowance_left("requery") > 0 else []
+            # HOLD 합의 신호(초안 판정·규칙 참고값이 둘 다 HOLD)의 도구는 지적에서 뺀다(결정 2026-09-25(금) 22:22 ③)
+            code_missing, skipped_for_hold = self.hold_consensus_skips(draft, code_missing)
             if code_missing:  # 코드 지적(AS2 ⑲): 빠진 필수 결과를 Critic 결과(agent는 수정 지시)에 덧붙이고 수정 1회
                 finding = investigator.code_finding(code_missing)
                 if review is not None:
                     review = dict(review, findings=list(review["findings"]) + [finding], needs_revision=True)
-                self.state("code_finding", draft, missing_tools=code_missing)
+            if code_missing or skipped_for_hold:  # 지적이 전부 빠진 때도 뺀 사실은 같은 사건에 남긴다(missing_tools 빈 목록)
+                self.state("code_finding", draft, missing_tools=code_missing, skipped_for_hold=skipped_for_hold)
             self.verify(draft, "verify")
             check = self.check(report, "verify")
             if review is not None and review["needs_revision"] and not code_missing and check["schema_ok"] \
