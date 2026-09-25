@@ -27,6 +27,7 @@ import harness_fixtures as hf
 from eval.datagen import dev20
 from eval.scorer import __main__ as scorer
 from tradesentry.cli import dispatch
+from tradesentry.evaluation import batch_run
 from tradesentry.dal import query
 from tradesentry.runlog import cause_codes
 from tradesentry.workflow import orchestrate
@@ -82,6 +83,7 @@ def setUpModule():
             mock.patch.object(query, "SNAPSHOTS_ROOT", root / "data" / "snapshots"), \
             mock.patch.object(dispatch, "OUTPUT_PARENT", root / "outputs"), \
             mock.patch.object(dispatch, "EVALUATE_BACKEND", dispatch.HOST_BACKEND), \
+            mock.patch.object(dispatch, "evaluate_pacing", lambda: batch_run.Pacing()), \
             mock.patch.dict(dispatch.EVALUATE_CASE_LISTS,
                             {"dev20": root / "eval" / "dev" / "dev20" / "input" / "cases.json"}), \
             mock.patch.object(dispatch, "run_case_transport", lambda config: transport), \

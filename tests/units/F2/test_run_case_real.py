@@ -24,6 +24,7 @@ from unittest import mock
 import harness_fixtures as hf
 from tradesentry.cli import dispatch
 from tradesentry.dal import query
+from tradesentry.evaluation import batch_run
 from tradesentry.runlog import trace as trace_log
 
 from ..I7.fakes import NoNetworkMixin
@@ -135,7 +136,8 @@ class RealDevEvaluateTest(RealCase):
         self.runner = hf.FakeRunner()
         for patcher in (mock.patch.dict(dispatch.EVALUATE_DATASETS, {rf.TWO_WAY_ID: "real_dev"}),
                         mock.patch.object(dispatch, "EVALUATE_BACKEND", dispatch.HOST_BACKEND),
-                        mock.patch.object(dispatch, "host_case_runner", self.runner)):
+                        mock.patch.object(dispatch, "host_case_runner", self.runner),
+                        mock.patch.object(dispatch, "evaluate_pacing", lambda: batch_run.Pacing())):
             patcher.start()
             self.addCleanup(patcher.stop)
 
