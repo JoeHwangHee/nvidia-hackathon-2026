@@ -57,9 +57,15 @@ R4가 정한다.
   - 한 보고서에서 같은 대상의 자료 상태 주장끼리 값이 다르거나, `OBSERVED`가 아닌 자료 상태와 같은 키·월의 값 주장이
     함께 있으면 `DATA_STATUS_CONFLICT`다. `CONFIRMED_NO_TRADE`는 V·Q를 0으로 보아 s·d_s·w@가 계산되므로 단가(U·r_U,
     하위품목이면 U@·r_U@)와 분해 효과만 본다(자료 계약 §3.4).
-- 금지 문구 목록과 산문 패턴 정규식은 이 파일에 둔다. 룰북 B3-2가 정본이고, 채점기(eval/scorer)와 따로 구현했다.
-  룰북 EX 표에 없는 빼기 셋(품목 규격 1kVA·16kVA, 분류 자릿수 HSK 10·10단위·6자리, 기준월 표기 t−12)은 무역통계
-  검토 권고로 더한 해석이다. `RB-1` 동결 전에 룰북 EX-1·EX-2와 채점기에 같게 넣을지 오케스트레이터가 정한다.
+- 금지 문구 목록과 산문 패턴 정규식은 이 파일에 둔다. 룰북 B3-2가 정본이고, 채점기(eval/scorer/prose.py)와 따로
+  구현했다. 둘이 어긋나면 채점기 판정이 기준이므로(룰북 B3-2 끝 문장) 검증기는 채점기의 규칙에 맞춘다(2026-09-26(토)
+  결정 기록 `model-decision-validator-prose-alignment`): EX-1 `N일`·`N주`는 빼되 `연속`이 뒤따르면 빼지 않고, EX-4
+  `제N`(제2-1안·제3국)과 `Nkg당`·`N톤당`의 기준 수량을 빼고, `USD/톤`·`달러/톤`·`톤당`은 호환 claim이 없는 단위로
+  잡고(룰북 경계 14), `%P`(대문자)는 pp로 읽지 않고, `USD3.7`은 식별자가 아니라 금액이고, 배수 부등식("2배 이상")은
+  비율 비교에 부등식을 적용하고, 배수와 금액 사이 공백("21.9 백만")을 허용하고, 부정형에 `(이|가|은|는)? 없`을 더한다.
+  룰북 EX 표에 없던 빼기 셋(품목 규격 1kVA·16kVA, 분류 자릿수 HSK 10·10단위·6자리, 기준월 표기 t−12)은 무역통계
+  검토 권고로 더한 해석이었고, 사용자 결정 2026-09-26(토) 08:10 ②로 룰북 EX-2와 채점기에 같은 집합이 들어갔다(대문자
+  HS·HSK, 접두 k만 대소문자 무관, 공백 0개 이상, 앞자리 있는 숫자). 검증기도 그 문장에 맞췄다.
 - 기호·단위·자릿수·상태값 표는 자료 계약의 사본이다(단위 표 §6 조립 부산물 4. 조립 점검에서 K1·X4로 옮긴다).
 """
 import re
@@ -873,14 +879,20 @@ def forbidden_hits(text: str) -> list[str]:
 
 # ---- 산문 패턴(룰북 B3-2) -----------------------------------------------------------------------------------
 
-NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_.])(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?")
+# 숫자 본체. 앞 글자가 라틴 문자·숫자·밑줄이면 식별자의 일부로 보고 잡지 않되, 단위 앞말 USD·US$ 바로 뒤는 잡는다
+# ("USD3.7"은 금액이다. 채점기 EX-3 `(?!USD\d)` 가드와 같다). 앞 글자 `.`은 막지 않아 ".5kVA"의 5도 채점기처럼 표현으로 잡는다
+NUMBER_RE = re.compile(r"(?:(?<=USD)|(?<=US\$)|(?<![A-Za-z0-9_]))(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?")
 SIGNS = {"-": -1, "−": -1, "△": -1, "▼": -1, "+": 1, "▲": 1}
-MULTIPLIERS = (("천만", Decimal(10) ** 7), ("백만", Decimal(10) ** 6), ("천", Decimal(10) ** 3),
-               ("만", Decimal(10) ** 4), ("억", Decimal(10) ** 8))
-UNIT_PATTERNS = (  # 순서가 뜻이다: %p·pp가 %보다 먼저(PT-2가 PT-1보다 먼저), 달러/kg가 달러보다 먼저
-    (re.compile(r"\s?(?:%\s?p(?![A-Za-z])|%\s?P(?![A-Za-z])|%\s?포인트|퍼센트\s?포인트|pp(?![A-Za-z]))"), "pp"),
+# 금액 배수. 숫자와 배수 사이 공백을 허용한다("21.9 백만", 채점기와 같다). 긴 말(천만·백만)이 먼저다
+MULTIPLIER_RE = re.compile(r"\s*(천만|백만|억|만|천)")
+MULTIPLIERS = {"천만": Decimal(10) ** 7, "백만": Decimal(10) ** 6, "억": Decimal(10) ** 8, "만": Decimal(10) ** 4,
+               "천": Decimal(10) ** 3}
+UNIT_PATTERNS = (  # 순서가 뜻이다: %p·pp가 %보다 먼저(PT-2가 PT-1보다 먼저), 달러/kg·달러/톤이 달러보다 먼저.
+    # 대문자 "%P"와 띄운 "% p"는 pp로 읽지 않는다(채점기 `%p(?![A-Za-z])`와 같다. 그때는 "%"만 단위로 읽는다)
+    (re.compile(r"\s?(?:%p(?![A-Za-z])|%\s?포인트|퍼센트\s?포인트|pp(?![A-Za-z]))"), "pp"),
     (re.compile(r"\s?(?:%|퍼센트)"), "pct"),
     (re.compile(r"\s?(?:USD\s?/\s?kg|US\$\s?/\s?kg|\$\s?/\s?kg|달러\s?/\s?kg)"), "usd_per_kg"),
+    (re.compile(r"\s?(?:USD\s?/\s?톤|US\$\s?/\s?톤|\$\s?/\s?톤|달러\s?/\s?톤)"), "usd_per_ton"),
     (re.compile(r"\s?(?:USD|US\$|\$|달러)(?![A-Za-z])"), "usd"),
     (re.compile(r"\s?(?:kg|킬로그램)(?![A-Za-z])"), "kg"),
     (re.compile(r"\s?톤"), "ton"),
@@ -888,6 +900,7 @@ UNIT_PATTERNS = (  # 순서가 뜻이다: %p·pp가 %보다 먼저(PT-2가 PT-1�
 )
 PREFIX_USD_RE = re.compile(r"(?:US\$|USD|\$)\s?$")
 PREFIX_PER_KG_RE = re.compile(r"kg당\s?$")
+PREFIX_PER_TON_RE = re.compile(r"톤\s*당\s*$")  # 톤당 단가는 관세청 지표와 환산하지 않는다(룰북 B3-2 경계 14). "톤 당"도(채점기 `톤\s*+당\s*+`)
 APPROX_BEFORE_RE = re.compile(r"(?:약|대략|거의)\s?$")
 APPROX_AFTER_RE = re.compile(r"\s?(?:가량|쯤|안팎|내외|정도|남짓)")
 BOUND_RE = re.compile(r"\s?(?:을|를|이|가|은|는|도)?\s?(이상|넘게|초과|웃도는|미만|이하|밑도는)")
@@ -906,25 +919,30 @@ EXCLUDE_RES = (
     re.compile(r"(?<!\d)(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?!\d)"),
     re.compile(r"\d\s?분기"),
     re.compile(r"\d+\s?개월(?!\s?연속)"),
-    re.compile(r"\d{1,2}\s?일"),
-    re.compile(r"(?<![A-Za-z])t\s?[-−+]\s?\d+"),  # 기준월 표기 t−12(해석: 무역통계 검토 권고 4)
-    # EX-2 품목 식별(HS와 함께 쓴 숫자, 류·호 표기). HS 코드 집합의 숫자는 아래 CODE_TOKEN_RE로 따로 본다
-    re.compile(r"(?<![A-Za-z])[Hh][Ss]\s?[-:]?\s?\d+(?:[.\-]\d+)*"),
+    # "N일"·"N주" 기간(숫자와 단위 사이 공백 0개 이상, 채점기 `\s*+`와 같다). "N일 연속"은 빼지 않는다
+    re.compile(r"(?<!\d)\d{1,3}\s*(?:일|주)(?!\s*연속)"),
+    re.compile(r"(?<![A-Za-z])t\s?[-−+]\s?\d+"),  # 기준월 표기 t−12(해석: 무역통계 검토 권고 4. 채점기도 뺀다)
+    # EX-2 품목 식별(대문자 HS·HSK와 함께 쓴 숫자, 류·호 표기. 채점기 `HSK?\s*+(?:코드\s*+)?\d[\d.\-]*`와 같다).
+    # HS 코드 집합의 숫자는 아래 CODE_TOKEN_RE로 따로 본다
+    re.compile(r"HSK?\s*(?:코드\s*)?\d[\d.\-]*"),
     re.compile(r"제\s?\d+\s?(?:류|호)"),
     re.compile(r"\d+\s?(?:류|호)"),
-    # EX-2 확장(해석: 무역통계 검토 권고 4). 품목 규격(1kVA·16kVA)과 분류 자릿수(HSK 10, 10단위, 6자리)
-    re.compile(r"\d+(?:\.\d+)?\s?(?:[kKM]?VA|[kK]V|[kK]W)(?![A-Za-z])"),
-    re.compile(r"(?<![A-Za-z])[Hh][Ss][Kk]\s?\d+"),
-    re.compile(r"\d+\s?(?:단위|자리)"),
+    # EX-2 확장(룰북 B3-2, 사용자 결정 2026-09-26(토) 08:10 ②): 분류 자릿수 "N단위"·"N자리"와 품목 규격의 전기 단위
+    # (VA·kVA·MVA·kV·kW. 접두 k만 대소문자 무관, VA·V·W·M은 대문자만)가 붙은 앞자리 있는 숫자. 공백 0개 이상. 채점기와 같다
+    re.compile(r"(?<!\d)\d+\s*(?:단위|자리)"),
+    re.compile(r"(?<![\d.])\d+(?:\.\d+)?\s*(?:[kKM]?VA|[kK]V|[kK]W)(?![A-Za-z])"),
     # EX-3 식별자·버전(근거 ID, 라틴 문자와 숫자가 섞인 이름: policy_v1, RB-1, g1, kcs_202201_202412_v2 등)
     re.compile(r"ev:[^\s,;)\]]+"),
-    # EX-4 목록 번호와 조사 과정·구조의 개수
+    # EX-4 목록 번호와 조사 과정·구조의 개수, 순번 "제N"(제2-1안·제3국), "1kg당"처럼 단위 기준을 뜻하는 수량
     re.compile(r"(?m)^\s*\d+[.)](?=\s)"),
     re.compile(r"\d+\s?(?:회|번째|단계|차례)"),
+    re.compile(r"제\s*\d+(?:\s*[-.]\s*\d+)*"),  # 공백 0개 이상(채점기 `\s*+`와 같다)
     re.compile(r"(?:신호|도구|호출)\s?\d+\s?(?:개|종|가지|회|번)"),
     re.compile(r"\d+\s?(?:개|종|가지)의?\s?(?:신호|도구)"),
+    re.compile(r"(?<!\d)\d+\s*(?:kg|킬로그램|톤)\s*당"),  # 공백 0개 이상(채점기 `\s*+`와 같다)
 )
-IDENT_RE = re.compile(r"(?<![A-Za-z0-9_])[A-Za-z_][A-Za-z0-9_]*(?:[-.:][A-Za-z0-9_]+)*")
+# EX-3 식별자(라틴 문자로 시작하고 숫자가 든 이름). "USD3.7"처럼 단위 앞말 USD 바로 뒤의 숫자는 식별자가 아니다
+IDENT_RE = re.compile(r"(?<![A-Za-z0-9_])(?!USD\d)[A-Za-z_][A-Za-z0-9_]*(?:[-.:][A-Za-z0-9_]+)*")
 CODE_TOKEN_RE = re.compile(r"(?<![\d.,])\d[\d.\-]*\d(?!\d)")
 
 UP_WORDS = ("증가", "상승", "급증", "급등", "폭등", "치솟", "반등", "확대", "늘었", "늘어", "늘며", "늘고",
@@ -934,7 +952,9 @@ DOWN_WORDS = ("감소", "하락", "급감", "급락", "폭락", "반토막", "�
 FLAT_WORDS = ("보합", "변화가 없", "변동이 없", "변함없", "제자리")
 CHANGE_WORD_RE = re.compile("|".join(re.escape(w) for w in sorted(UP_WORDS + DOWN_WORDS + FLAT_WORDS,
                                                                  key=len, reverse=True)))
-NEGATION_RE = re.compile(r"[가-힣]{0,3}\s?(?:지\s?않|지는\s?않|지\s?못|지는\s?못)")
+# 부정형: "…지 않/못", "…지는 않/못"과 "증가가 없다"·"증가는 없었다"·"감소 없이" 꼴의 "(이|가|은|는)? 없". 구간 공백은
+# 0개 이상(채점기 `지\s*(?:않|못)`·`\s*(?:이|가|은|는)?\s*없`과 같다. "증가   가   없다"도 부정형이다)
+NEGATION_RE = re.compile(r"[가-힣]{0,3}\s?(?:지\s*않|지는\s*않|지\s*못|지는\s*못)|\s*(?:이|가|은|는)?\s*없")
 PRICE_SUBJECT_RE = re.compile(r"(?:단가|가격|값|금액)\s?(?:이|가|은|는)\s?$")
 
 
@@ -987,8 +1007,8 @@ def _prose(path: str, kind: str, snippet: str) -> dict:
 
 
 def _number_kind(unit: str | None) -> str:
-    return {"pct": "PT-1", "pp": "PT-2", "usd": "PT-3", "usd_per_kg": "PT-3", "kg": "PT-3", "ton": "PT-3"}.get(
-        unit or "", "PT-5")
+    return {"pct": "PT-1", "pp": "PT-2", "usd": "PT-3", "usd_per_kg": "PT-3", "usd_per_ton": "PT-3", "kg": "PT-3",
+            "ton": "PT-3"}.get(unit or "", "PT-5")
 
 
 def excluded_spans(text: str, ctx: Context) -> list[tuple[int, int]]:
@@ -1022,13 +1042,14 @@ def scan_numbers(text: str, spans: list[tuple[int, int]], ctx: Context) -> list[
             prefix, start = "usd", PREFIX_USD_RE.search(before).start()
         elif PREFIX_PER_KG_RE.search(before):
             prefix, start = "per_kg", PREFIX_PER_KG_RE.search(before).start()
+        elif PREFIX_PER_TON_RE.search(before):
+            prefix, start = "per_ton", PREFIX_PER_TON_RE.search(before).start()
         before = text[:start]
         approx = bool(APPROX_BEFORE_RE.search(before))
         pos, scale = m.end(), Decimal(1)
-        for word, factor in MULTIPLIERS:
-            if text.startswith(word, pos):
-                pos, scale = pos + len(word), factor
-                break
+        mult = MULTIPLIER_RE.match(text, pos)
+        if mult:
+            pos, scale = mult.end(), MULTIPLIERS[mult.group(1)]
         unit = None
         for rx, name in UNIT_PATTERNS:
             unit_match = rx.match(text, pos)
@@ -1039,6 +1060,8 @@ def scan_numbers(text: str, spans: list[tuple[int, int]], ctx: Context) -> list[
             unit = "usd"
         if prefix == "per_kg" and unit in (None, "usd"):
             unit = "usd_per_kg"
+        if prefix == "per_ton" and unit in (None, "usd"):
+            unit = "usd_per_ton"
         rest = text[pos:]
         interval = unit == "pct" and rest.startswith("대") and not rest.startswith("대비")
         approx = approx or bool(APPROX_AFTER_RE.match(rest))
@@ -1084,15 +1107,17 @@ def round_at(value: Decimal, places: int) -> Decimal:
 
 
 def _compatible(unit: str | None, claim_unit: object) -> bool:
+    """표현의 단위 부류와 호환되는 claim 단위. 톤당 단가(usd_per_ton)는 계약 단위(§11)에 없어 어느 claim과도 호환되지
+    않는다(룰북 B3-2 경계 14: BACI 값을 관세청 지표와 환산하지 않는다)."""
     return {None: True, "pct": claim_unit == "%", "pp": claim_unit == "pp",
-            "usd": claim_unit in ("USD", "USD/kg"), "usd_per_kg": claim_unit == "USD/kg",
+            "usd": claim_unit in ("USD", "USD/kg"), "usd_per_kg": claim_unit == "USD/kg", "usd_per_ton": False,
             "kg": claim_unit == "kg", "ton": claim_unit == "kg"}.get(unit, False)
 
 
 def number_backed(expr: NumberExpr, numeric: list[dict]) -> bool:
     """숫자(PT-1~PT-5): 같은 보고서의 단위가 호환되는 typed claim 값 하나와 같으면 뒷받침된다."""
     if expr.unit == "multiple":
-        return _multiple_backed(expr.magnitude, expr.places, numeric)
+        return _multiple_backed(expr.magnitude, expr.places, numeric, expr.bound)
     return any(_claim_backs(expr, c) for c in numeric if _compatible(expr.unit, c["unit"]))
 
 
@@ -1118,10 +1143,21 @@ def _claim_backs(expr: NumberExpr, claim: dict) -> bool:
     return abs(got) == abs(want)  # 부호가 없으면 절댓값을 비교한다
 
 
-def _multiple_backed(value: Decimal, places: int, numeric: list[dict]) -> bool:
-    """배수(PT-4): r_U 주장을 비율 k = 1 + r_U/100으로 바꿔 보인 자리에서 반올림해 같으면 뒷받침된다."""
+def _multiple_backed(value: Decimal, places: int, numeric: list[dict], bound: str | None = None) -> bool:
+    """배수(PT-4): r_U 주장을 비율 k = 1 + r_U/100으로 바꿔 보인 자리에서 반올림해 같으면 뒷받침된다. 부등식이 붙으면
+    ("2배 이상") 반올림하지 않고 비율이 그 값 이상(ge)·이하(le)인 주장이 있으면 뒷받침된다(룰북 B3-2 부등식, 채점기와
+    같다)."""
     for claim in numeric:
-        if claim["metric"] == "r_U" and round_at(1 + Decimal(claim["value"]) / 100, places) == value:
+        if claim["metric"] != "r_U":
+            continue
+        ratio = 1 + Decimal(claim["value"]) / 100
+        if bound == "ge":
+            ok = ratio >= value
+        elif bound == "le":
+            ok = ratio <= value
+        else:
+            ok = round_at(ratio, places) == value
+        if ok:
             return True
     return False
 
@@ -1162,7 +1198,8 @@ def _from_to_backed(first: NumberExpr, second: NumberExpr, numeric: list[dict], 
 
 
 def change_words(text: str, spans: list[tuple[int, int]]) -> list[tuple[int, int, str, bool]]:
-    """증감 어휘(PT-6). 지표 이름(EX-6), 오탐 표현(오른쪽·확대 해석·늘어놓다), 조건 밖의 "내렸"은 빼고 부정형을 가른다."""
+    """증감 어휘(PT-6). 지표 이름(EX-6), 오탐 표현(오른쪽·확대 해석·늘어놓다), 조건 밖의 "내렸"은 빼고 부정형을 가른다.
+    그대로(FLAT) 어휘("변화가 없")는 부정형을 보지 않는다(채점기와 같다)."""
     found = []
     for m in CHANGE_WORD_RE.finditer(text):
         word, start, end = m.group(), m.start(), m.end()
@@ -1180,7 +1217,7 @@ def change_words(text: str, spans: list[tuple[int, int]]) -> list[tuple[int, int
         if word == "내렸" and not PRICE_SUBJECT_RE.search(text[:start]):
             continue
         direction = "UP" if word in UP_WORDS else "DOWN" if word in DOWN_WORDS else "FLAT"
-        found.append((start, end, direction, bool(NEGATION_RE.match(after))))
+        found.append((start, end, direction, direction != "FLAT" and bool(NEGATION_RE.match(after))))
     return found
 
 

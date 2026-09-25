@@ -668,6 +668,136 @@ class ProseRuleTest(unittest.TestCase):
         self.assertEqual(self.kinds("1. 단가 확인\n2) 점유율 확인", []), [])
 
 
+class ScorerAlignmentTest(unittest.TestCase):
+    """검증기 산문 규칙을 채점기(eval/scorer/prose.py, 룰북 B3-2 "둘이 어긋나면 채점기 판정이 기준")에 맞춘 항목별
+    시험(결정 기록 2026-09-26(토) model-decision-validator-prose-alignment). 항목마다 빼야 하는 문장이 통과하고 막아야
+    하는 문장이 PROSE_UNBACKED로 막히는 양쪽을 본다. 예문은 규칙 대조 보고서의 실측 예다. 값은 합성이다."""
+
+    V_CLAIM = [_claim("v", "value", "V", 21876681, "USD", "NA")]
+    Q_CLAIM = [_claim("q", "value", "Q", 1075490, "kg", "NA")]
+    D_CLAIM = [_claim("d", "share_change", "d_s", Decimal("-4.0"), "pp", "DOWN", baseline="202301")]
+
+    def setUp(self):
+        super().setUp()
+        inp = clean_input()
+        inp["hs_codes"].append("8504501010")
+        self.ctx = validate._context(inp)
+
+    def kinds(self, text, claims):
+        found = validate.prose_findings([("narrative", text)], claims, self.ctx)
+        self.assertTrue(all(f["code"] == "PROSE_UNBACKED" for f in found))
+        return [f["detail"].split(" ")[0] for f in found]
+
+    def test_1_ordinal_je_n_is_excluded(self):
+        # #1 EX-4 "제N": 제2-1안·제3국의 숫자는 순번이라 뺀다(채점기 `제\s*+\d++(-\d+)*`). 개수 "3개국"은 그대로 PT-5다.
+        self.assertEqual(self.kinds("제2-1안을 택했다. 제3국을 통한 수입 여부는 보지 않는다.", []), [])
+        self.assertEqual(self.kinds("제 3 국가와 비교했다.", []), [])
+        self.assertEqual(self.kinds("3개국과 비교했다.", []), ["PT-5"])
+
+    def test_2_weeks_period_is_excluded(self):
+        # #2 EX-1 "N주": 기간 표현이라 뺀다. "N일"·"N주"에 "연속"이 뒤따르면 빼지 않는다(#11).
+        self.assertEqual(self.kinds("2주 동안 하락했다.", rate_claims("-40.0")), [])
+        self.assertEqual(self.kinds("2주 연속 하락했다.", rate_claims("-40.0")), ["PT-5"])
+
+    def test_3_per_kg_quantity_is_excluded(self):
+        # #3 "1kg당": 단위 기준 수량 1kg은 빼고, 뒤의 단가만 U claim과 비교한다(채점기 `\d+(kg|킬로그램|톤)당`).
+        self.assertEqual(self.kinds("1kg당 3.6달러다.", CASE_A_CLAIMS), [])
+        self.assertEqual(self.kinds("1kg당 3.7달러다.", CASE_A_CLAIMS), ["PT-3"])
+        self.assertEqual(self.kinds("1 킬로그램당 3.6달러다.", CASE_A_CLAIMS), [])
+
+    def test_4_multiple_with_inequality(self):
+        # #4 배수 부등식 "2배 이상": 비율 k = 1 + r_U/100에 부등식을 적용한다(채점기 `op`). r_U +150은 비율 2.5 ≥ 2다.
+        self.assertEqual(self.kinds("2배 이상 증가", rate_claims("150.0")), [])
+        self.assertEqual(self.kinds("2배 이상 증가", rate_claims("80.0")), ["PT-4"])  # 비율 1.8 < 2
+        self.assertEqual(self.kinds("2배 이하로 증가", rate_claims("80.0")), [])
+        self.assertEqual(self.kinds("2배 증가", rate_claims("150.0")), ["PT-4"])  # 부등식이 없으면 반올림 등가(2.5 → 3)
+
+    def test_5_space_between_number_and_multiplier(self):
+        # #5 배수·금액 사이 공백 "21.9 백만 달러": 배수를 읽어 V claim과 맞춘다(채점기 `\s*+`).
+        self.assertEqual(self.kinds("21.9 백만 달러였다.", self.V_CLAIM), [])
+        self.assertEqual(self.kinds("21.9 백만 달러였다.", self.Q_CLAIM), ["PT-3"])
+        self.assertEqual(self.kinds("2,188 만 달러였다.", self.V_CLAIM), [])
+
+    def test_6_usd_per_ton_has_no_compatible_claim(self):
+        # #6 "USD/톤"·"달러/톤"·"톤당": 관세청 지표(USD/kg)와 환산하지 않으므로 호환 claim이 없어 막는다(룰북 경계 14).
+        for text in ("3.6 USD/톤이다.", "3,600달러/톤이다.", "톤당 3,600달러다.", "톤당 3.6달러다.", "톤 당 3.6달러다.",
+                     "톤  당  3.6달러다."):  # 띄운 "톤 당"도 톤당 단가다(채점기 `톤\s*+당\s*+`)
+            with self.subTest(text=text):
+                self.assertEqual(self.kinds(text, CASE_A_CLAIMS), ["PT-3"])
+        self.assertEqual(self.kinds("kg당 3.6달러다. 3.6 USD/kg이다.", CASE_A_CLAIMS), [])
+
+    def test_9_usd_prefix_glued_to_number_is_not_an_identifier(self):
+        # #9 EX-3 "USD3.7": 식별자가 아니라 금액이다(채점기 `(?!USD\d)` 가드). 다른 식별자는 그대로 뺀다.
+        self.assertEqual(self.kinds("USD3.6이다.", CASE_A_CLAIMS), [])
+        self.assertEqual(self.kinds("USD3.7이다.", CASE_A_CLAIMS), ["PT-3"])
+        self.assertEqual(self.kinds("policy_v1과 RB-1, kcs_202201_202412_v2 기준", []), [])
+
+    def test_10_negation_with_none_word(self):
+        # #10 부정형 "(이|가|은|는)? 없": "증가가 없다"·"증가는 없었다"·"감소 없이"는 반대 방향이나 FLAT claim으로 뒷받침된다.
+        for text in ("증가가 없다.", "증가는 없었다.", "증가 없이 유지됐다."):
+            with self.subTest(text=text):
+                self.assertEqual(self.kinds(text, rate_claims("-40.0")), [])
+                self.assertEqual(self.kinds(text, rate_claims("40.0")), ["PT-6"])
+        # "지는 않"은 검증기가 이미 잡던 부정형이다(채점기 쪽 보정은 사용자 확인 대기라 이 시험은 검증기 규칙만 본다).
+        self.assertEqual(self.kinds("증가하지는 않았다.", rate_claims("-40.0")), [])
+        # 그대로(FLAT) 어휘는 부정형을 보지 않는다(채점기와 같다).
+        self.assertEqual(self.kinds("변화가 없었다.", rate_claims("0.0")), [])
+        self.assertEqual(self.kinds("변화가 없었다.", rate_claims("-40.0")), ["PT-6"])
+
+    def test_11_days_in_a_row_is_not_excluded(self):
+        # #11 "N일 연속": EX-1 예외가 아니라 PT-5다(채점기 `(일|주)(?!연속)`). "N일 뒤"는 뺀다.
+        self.assertEqual(self.kinds("3일 연속 하락했다.", rate_claims("-40.0")), ["PT-5"])
+        self.assertEqual(self.kinds("3일 뒤 하락했다.", rate_claims("-40.0")), [])
+        self.assertEqual(self.kinds("2024년 3월 5일 조회", []), [])
+
+    def test_12_uppercase_percent_p_is_not_pp(self):
+        # #12 "%P"(대문자): pp로 읽지 않는다. "%"까지가 단위라 −4.0%가 되고 d_s(pp) claim과 호환되지 않아 막는다.
+        self.assertEqual(self.kinds("△4.0%P", self.D_CLAIM), ["PT-1"])
+        self.assertEqual(self.kinds("△4.0%p", self.D_CLAIM), [])
+        self.assertEqual(self.kinds("△4.0%P", CASE_A_CLAIMS), ["PT-1"])  # s 10.0·6.0%와도 값이 다르다
+
+    def test_whitespace_boundaries_match_scorer(self):
+        # Codex 1회차: 숫자와 단위 사이 공백. 채점기 EX-1·EX-4 패턴은 `\s*+`(0개 이상)라 "2 주 동안"·"2  주 동안"도
+        # 기간으로 빼고, "연속" 앞 공백도 0개 이상이다. pp 단위 "%p"는 붙여 쓴 것만이다(채점기 `%p(?![A-Za-z])`).
+        for text in ("2 주 동안 하락했다.", "2  주 동안 하락했다.", "2주 동안 하락했다."):
+            with self.subTest(text=text):
+                self.assertEqual(self.kinds(text, rate_claims("-40.0")), [])
+        for text in ("2 주 연속 하락했다.", "2 주  연속 하락했다.", "3 일 연속 하락했다."):
+            with self.subTest(text=text):
+                self.assertEqual(self.kinds(text, rate_claims("-40.0")), ["PT-5"])
+        self.assertEqual(self.kinds("제 3 국과 제 2 - 1 안", []), [])
+        self.assertEqual(self.kinds("1 kg 당 3.6달러다.", CASE_A_CLAIMS), [])
+        self.assertEqual(self.kinds("△4.0% p", self.D_CLAIM), ["PT-1"])  # 띄운 "% p"는 pp가 아니라 %다
+        self.assertEqual(self.kinds("△4.0%p", self.D_CLAIM), [])
+        self.assertEqual(self.kinds("4% p 하락", self.D_CLAIM), ["PT-1"])
+        self.assertEqual(self.kinds("4%p 하락", self.D_CLAIM), [])
+        # Codex 2회차: 부정형 구간 공백도 0개 이상(채점기 `\s*`). 공백 2~3개를 넣어도 부정형으로 읽는다.
+        for text in ("증가   가   없다.", "증가  는  없었다.", "증가   없이 유지됐다.", "증가하지   않았다.", "증가하지  못했다."):
+            with self.subTest(text=text):
+                self.assertEqual(self.kinds(text, rate_claims("-40.0")), [])
+                self.assertEqual(self.kinds(text, rate_claims("40.0")), ["PT-6"])
+
+
+    def test_ex2_extension_matches_scorer(self):
+        # EX-2 확장(룰북 B3-2, 사용자 결정 2026-09-26(토) 08:10 ②, 채점기 EX2 PR): 대문자 HS·HSK만, 접두 k만 대소문자 무관
+        # (VA·V·W는 대문자만), 공백 0개 이상, 앞자리 있는 숫자만 뺀다. 소문자 "hsk 10"·"16kva"는 빼지 않는다. "hs 8504"의
+        # 8504는 사례의 HS4 코드라 EX-2 코드 집합으로 빠지므로 집합 밖 8501로 본다.
+        for text in ("HSK  10단위 품목", "10  단위 품목", "16  kVA 이하", "HSK 10 단위", "HS 코드 8504", "0.5kVA 규격", "16 KVA 규격"):
+            with self.subTest(text=text):
+                self.assertEqual(self.kinds(text, []), [])
+        for text in ("hsk 10 품목", "hs 8501 품목", "16kva 규격", "16 Kva 규격", "16 kv 규격"):
+            with self.subTest(text=text):
+                self.assertEqual(self.kinds(text, []), ["PT-5"])
+        # 채점기 EX-2 경계 시험(tests/test_scorer_prose.py, EX2 브랜치)과 같은 결과: ① 공백 2개 표현은 모두 빠짐 ② 소문자
+        # "hsk 10"과 앞자리 없는 ".5kVA"의 숫자(10·5)는 채점 대상으로 남음(NUMBER_RE가 앞 글자 `.`을 막지 않는다) ③ 천 단위
+        # 쉼표가 든 규격 수 "1,000kVA"는 통째로 빠지고 쉼표 앞 1도 잡지 않는다.
+        self.assertEqual(self.kinds("HSK  10 기준, 10  단위 분류, 16  kVA 규격", []), [])
+        self.assertEqual(self.kinds("hsk 10 기준", []), ["PT-5"])
+        self.assertEqual(self.kinds(".5kVA 규격", []), ["PT-5"])
+        self.assertEqual(self.kinds("1,000kVA 규격", []), [])
+        self.assertEqual(self.kinds("1,000 kVA 규격", []), [])
+
+
 class TemplateConsistencyTest(unittest.TestCase):
     """R1 문장 틀은 산문 검사에서 사유가 0건이다(틀 채우기 모드의 기본 경로)."""
 
