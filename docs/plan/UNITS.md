@@ -50,7 +50,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 ## 3. 단위 표
 
-- 65행이다. 판정 집계는 유지 54, 합침 후보 1(F1), 버림 후보 1(A2), 런타임 밖 9이고, 형식 집계는 앱 55, 커널 1, 구성 9다 `[사실: 이 표를 센 결과]`. 조립 점검 AS4 전에는 유지 45, 합침 후보 10, 버림 후보 1, 런타임 밖 9였다. AS4가 합침 후보 아홉(K2·K4·K5·P2·P4·R4·I8·L2·L3)을 유지로 확정했다(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`)
+- 65행이다. 판정 집계는 유지 55, 합침 후보 1(F1), 버림 후보 0, 런타임 밖 9이고, 형식 집계는 앱 55, 커널 1, 구성 9다 `[사실: 이 표를 센 결과]`. 조립 점검 AS4 전에는 유지 45, 합침 후보 10, 버림 후보 1, 런타임 밖 9였고, AS4 뒤에는 유지 54, 버림 후보 1(A2)이었다(A2는 2026-09-26(토) 04:25 사용자 결정으로 화면 1개를 구현해 유지로 바뀜, 결정 기록 `20260926-0732-model-decision-ui-screen-1.md`). AS4가 합침 후보 아홉(K2·K4·K5·P2·P4·R4·I8·L2·L3)을 유지로 확정했다(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`)
 - **조립 판정 열은 후보다.** 조립 점검(§5)에서 확정하고, 확정한 판정으로 이 표를 고친다. "합침 후보(→ X)"의 X가 합칠 대상이다. "런타임 밖"은 수집·합성·평가 자료 도구처럼 런타임 조립에 들지 않는 단위다(§6).
 - **동결 경로 열**의 "예"는 `RB-1`(평가 룰북의 첫 동결 버전) 전에 끝내야 하는 판정 정책·검증기 단위다. 이 단위들의 합치기는 조립 점검 작업 AS4에서만 하고, MVP(최소 기능 제품) 시험 뒤에는 건드리지 않는다(§7).
 - **비고의 "고정 규칙과 충돌"**은 조립 판정을 그대로 따르면 이미 정한 규칙과 부딪치는 단위다. 판정을 바꾸려면 그 규칙의 절차(사용자 승인 등)를 거친다.
@@ -101,7 +101,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | G1 | g0 고정 목록 | `grouping_g0` | `src/tradesentry/grouping/g0.py` | 앱 | M | v2 2023 수입액 → 대상국 뺀 상위 5개국(`data/reference/peer_group_g0.csv`) | 유지(AS2 점검: `run-case` 실행 중에는 불리지 않음. 비교국은 미리 계산한 `peer_group` 행을 K3로 읽는다. 채점 대체 기본값 `g0` 고정 규칙으로 유지, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | **고정 규칙과 충돌**: `g1`이 동결되지 않으면 채점의 대체 기본값이 `g0`이다(자료 계약 §4.2). 그래서 버릴 수 없다. HS6별 목록이다. 해석은 2026-09-24(목) 사용자 확인(로드맵 §6.1) |
-| G2 | g1 유사도 | `grouping_g1` | `src/tradesentry/grouping/g1.py` | 앱 | M | BACI + 국가 코드 대응 → `peer_group_g1.csv` | 유지. AS4 점검: MVP 명령에서 불리지 않음. 뼈대이고 `g1`은 로드맵 §5 "끝까지 지키는 것"이라 버리지 않음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 1 | — | 결과는 D가 검수한다 |
+| G2 | g1 유사도 | `grouping_g1` | `src/tradesentry/grouping/g1.py` | 앱 | M | BACI + 국가 코드 대응 → `peer_group_g1.csv` | 유지. AS4 점검: MVP 명령에서 불리지 않음. 뼈대이고 `g1`은 로드맵 §5 "끝까지 지키는 것"이라 버리지 않음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`). 미구현, `g0` 대체 선언(2026-09-26(토) 08:10 사용자 결정, 결정 기록 `20260926-0810-user-decision-rb1-g0-substitute-and-prose-ex2.md`) | 1 | — | 결과는 D가 검수한다 |
 | G3 | 국가 코드 대응 | 없음(구성) | `data/reference/` 아래 국가 코드 대응표(파일 이름은 S0 자문 Q20) | 구성 | D | 관세청 2자리 ↔ BACI 코드, 대만 주석 | 유지 | 1 | — | 단위 G2의 입력 자료. D 소유 파일(`data/reference/`)이라 M 소유 단위 G2와 합치면 트랙 경계를 넘는다(병렬 개발 규칙 §1). 맡는 작업은 로드맵 DT1이다 |
 
 ### 3.6 I — 조사: 도구·흐름(13개)
@@ -148,7 +148,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | A1 | 모의 승인 | `approval_record` | `src/tradesentry/approval/record.py` | 앱 | M | 보고서·근거 digest → 승인 기록·`REVIEW_REQUIRED` | 유지. AS4 점검: MVP 명령에서 불리지 않음. 로드맵 AP1이 구현할 뼈대라 버리지 않음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 7 | — | — |
-| A2 | 화면 | `app` | `src/tradesentry/app.py` | 앱 | M | 실행 기록·조회 → Streamlit 화면 3개 | 버림 후보(로드맵 §5 줄이는 순서가 발동할 때만). AS4 점검: 불리지 않음(U1 전 뼈대). 줄이는 순서가 발동하지 않아 버리지 않음(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 7 | — | **고정 규칙과 충돌**: 화면 3개는 개발 플랜 §7.7의 계획이다. 줄이는 순서(화면 3번째 → 2번째)가 발동할 때만 버린다 |
+| A2 | 화면 | `app` | `src/tradesentry/app.py` | 앱 | M | 실행 기록·조회 → Streamlit 화면 1개(화면 1 "사례 보기" + "사례 실행" 패널) | 유지. 화면 1개 구현(2026-09-26(토) 04:25 사용자 결정, 제출 시나리오 C = A + 화면 1개), 화면 2·3은 뺌. 구현 결정 기록 `20260926-0732-model-decision-ui-screen-1.md`. AS4 점검 때는 불리지 않은 뼈대였고 버림 후보였다 | 7 | — | 화면 3개 계획(개발 플랜 §7.7)에서 화면 1개로 줄인 것은 사용자 결정 0425다. streamlit 1.64.0은 `uv.lock`에 넣지 않고 `uv run --locked --with "streamlit==1.64.0" streamlit run … --client.showErrorDetails=false`으로 실행 때만 받으며(streamlit의 `websockets<17` 요구가 기본 lock에 닿아서. 오케스트레이터 결정), 함수 안에서만 import한다. 골든 쌍은 재생 실행 폴더 픽스처(`tests/units/A2/fixture/`), 근거 ID 풀기는 임시 합성 픽스처로 시험 |
 
 ### 3.10 E — 평가 실행(4개)
 
@@ -178,7 +178,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | C1 | 주장 채점 | `scorer_claims` | `eval/scorer/claims.py` | 앱 | D | 주장·정답표·원본 행 → 필드별 판정(룰북 B3-1). 주장 채점 기록 `scorer_claims-{시각}.jsonl` | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | — |
 | C2 | 산문 채점 | `scorer_prose` | `eval/scorer/prose.py` | 앱 | D | 보고서 산문 → 패턴 판정(룰북 B3-2) | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | 잡은 표현은 주장 채점 기록(`source`가 `prose`)으로 `scorer_claims-{시각}.jsonl`에 함께 들어간다 |
 | C3 | 채점 결과 기록 | `scorer_results` | `eval/scorer/results.py` | 앱 | D | 판정 → 실행 쪽 키에 채점 키 세 개(`required_evidence_ok`·`numeric_ok`·`provenance_ok`)를 더한 실행 결과 기록 `scorer_results-{시각}.jsonl` | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | — |
-| C4 | 보조 지표·요약 | `scorer_summary` | `eval/scorer/summary.py` | 앱 | D | 판정 → 보조 지표·Wilson 구간(비율의 신뢰구간 계산법), 요약 `scorer_summary-{시각}.md` | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | — |
+| C4 | 보조 지표·요약 | `scorer_summary` | `eval/scorer/summary.py` | 앱 | D | 판정·실행 추적(trace) 사실 → 보조 지표·Wilson 구간(비율의 신뢰구간 계산법), 룰북 B7 공개 값(덧붙인 주장 수·`review_status` 집계 변경·버린 초안·HOLD 합의 생략·덧붙이기 전 기준 오류율·뒷받침된 산문 표현 수), 요약 `scorer_summary-{시각}.md` | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | 룰북 B7 공개 값은 사례 실행 폴더의 `runlog_trace-{시각}.jsonl`을 `__main__.py`가 읽기만 해 넘긴 사건 목록으로 이 단위가 센다(새 단위 파일을 두지 않았다. 결정 기록 `20260926-0730-data-decision-b7-public-values.md`) |
 
 ### 3.13 L — 실행 기록(3개)
 
