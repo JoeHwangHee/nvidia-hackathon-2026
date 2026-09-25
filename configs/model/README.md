@@ -13,6 +13,7 @@
 - `config_version` `model-1.0`: 지침이 판정 정책을 틀리게 설명하던 곳을 바로잡았다(MONITOR는 단가 신호의 하위품목 구성효과만, 동반 변화·분모 축소·비교국 차이는 상태를 바꾸는 근거가 아님, 비교 미완료·분모 < 대상국 금액은 HOLD, θ 경계는 참고값). 검증기 산문 패턴(PT-1~PT-6·PT-8)의 목록을 지침에 옮겼다(증감 어휘는 검증기 목록 글자 그대로, 시험이 대조). `max_tokens` 8192(AS2 9회차, 같은 결정 기록 ⑳).
 - `config_version` `model-1.1`: `tool_turn_max_tokens` 1024(`tool_choice` required 도구 차례의 `max_tokens`. 초안 차례는 `max_tokens` 8192 그대로. 도구 차례에서 공백만 8192토큰 낸 실측 반례). 참고값 계산 불가 안내를 "자료 부족 HOLD"가 아니라 빠진 필수 조회를 알리는 글로 바꿨다. 수정 지시에 검증기가 막은 산문 표현을 경로·글자 그대로 나열한다. 지침의 숫자 안내를 검증기 빼기(EX)와 맞췄다(AS2 10회차, 같은 결정 기록 ㉑).
 - `config_version` `model-1.2`: `limits.tokens` 128,000(2026-09-25(금) 사용자 결정 4). 지침 규칙 요약에 U4 반올림 불안정 → HOLD를 더했다(사용자 결정 1의 policy_v1 승인, 근거 상태 변환의 스위치를 켬. AS2 마무리, 같은 결정 기록 ㉒).
+- `config_version` `model-1.3`: 숫자 금지 — narrative·가설과 Critic 지적 문장에는 숫자 표현(%, pp, 금액·중량·단가, 배수, "X에서 Y로")을 쓰지 않고 값은 claims로만 낸다. "발동한 신호마다 그 계열의 지표 주장(r_U·d_s)을 하나 이상" 규칙을 초안 규칙의 맨 앞으로 올렸다(real_dev 사례로 조정, 같은 결정 기록 ㉓).
 - `investigator.txt`: 조사자 공통 지침(판정 뜻과 신호별 판정 규칙, 금지 문구, 도구 사용과 인자, 초안 JSON 형식). 금지 낱말 목록은 검증기(단위 R3)의 금지 문구 목록(한국어 62개, 영문 앞부분 9개)과 같아야 한다(시험 `tests/test_model_config.py`).
 - `claims_template.txt` / `claims_freeform.txt`: 주장(claims) 쓰는 법. `freeform`만 값을 직접 쓰고, 나머지 모드는 metric_id·근거 ID로 가리킨다(코드가 검증된 지표로 채운다).
 - `critic.txt`: Critic(별도 문맥의 검수자) 지침. 도구 없음, 구조화된 지적과 재조회 요청.

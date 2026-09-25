@@ -90,6 +90,30 @@ class ProsePatternListTest(unittest.TestCase):
         self.assertEqual(missing, [])
 
 
+class NoNumbersInProseTest(unittest.TestCase):
+    """AS2 12회차(model-1.3, 결정 ㉓): narrative·가설 숫자 금지 문장과 신호 계열 주장 규칙이 agent·full·freeform 세 모드의
+    조사자 지침에 글자까지 같게 들어 있다(룰북 B2 공정성: 모드끼리 같은 지침). 신호 계열 규칙은 초안 규칙의 맨 앞이다."""
+
+    NO_NUMBERS = ("- 숫자 금지: narrative·hypotheses에는 숫자 표현을 쓰지 않는다(%, pp, 금액·중량·단가, 배수, \"X에서 Y로\" 모두). "
+                  "값은 claims로만 내고, 문장은 \"단가 변화율 주장(claims의 r_U)\"처럼 주장을 가리킨다.")
+
+    def test_same_sentence_in_three_modes(self):
+        prompts = model_client.load_model_config().prompts
+        for mode in ("agent", "full", "freeform"):
+            with self.subTest(mode=mode):
+                self.assertEqual(investigator.system_prompt(prompts, mode).count(self.NO_NUMBERS), 1)
+
+    def test_signal_family_rule_is_first_draft_rule(self):
+        lines = model_client.load_model_config().prompts["investigator"].splitlines()
+        start = [i for i, ln in enumerate(lines) if ln.startswith("초안 형식:")][0]
+        first_rule = [ln for ln in lines[start + 1:] if ln.startswith("- ")][0]
+        self.assertTrue(first_rule.startswith("- 맨 앞 규칙: 발동한(TRIGGERED) 신호마다 그 계열의 지표 주장(단가 신호는 r_U, "
+                                              "점유율 신호는 d_s)을 claims에 반드시 하나 이상 넣는다."))
+
+    def test_critic_findings_forbid_numbers(self):
+        self.assertIn("- 숫자 금지: 지적 문장에는 숫자 표현", model_client.load_model_config().prompts["critic"])
+
+
 class FeedbackAndUnavailableTextTest(unittest.TestCase):
     """AS2 10회차: 수정 지시의 막힌 산문 표현 나열, 참고값 계산 불가 안내(자료 부족 HOLD로 이끌지 않음)."""
 
