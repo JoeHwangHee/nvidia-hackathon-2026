@@ -15,9 +15,9 @@
 코드와 실행 상태
 | 코드 | 실행 상태 | 인프라 실패 재실행 대상(룰북 B5) | 언제 |
 |---|---|---|---|
-| PROVIDER_HTTP_5XX | FAILED | 예 | 요청당 재전송 한도(3회)를 다 쓴 뒤에도 HTTP 5xx |
+| PROVIDER_HTTP_5XX | FAILED | 예 | 요청당 재전송 한도(3회, 429와 같이 센다)를 다 쓴 뒤에도 HTTP 5xx |
 | PROVIDER_CONNECTION | FAILED | 예 | 연결 실패(응답을 받지 못함). 재전송하지 않는다 |
-| PROVIDER_HTTP_4XX | FAILED | 아니오 | HTTP 4xx(429 포함). 재전송하지 않는다. 재실행 여부는 결정 D12의 입력 |
+| PROVIDER_HTTP_4XX | FAILED | 429만 예 | HTTP 4xx. 429는 5xx와 같은 재전송 한도(3회)를 다 쓴 뒤이고 재실행 대상이다(detail이 "HTTP 429"로 시작). 다른 4xx는 재전송·재실행하지 않는다 |
 | PROVIDER_REQUEST_TIMEOUT | FAILED | 아니오 | 사례 deadline 전의 요청별 제한 시간(최대 60초) 초과. 재실행 여부는 결정 D12의 입력 |
 | PROVIDER_BAD_RESPONSE | FAILED | 아니오 | HTTP 200인데 본문(JSON·choices·usage)을 읽을 수 없음 |
 | BUDGET_MODEL_REQUESTS | BUDGET_EXCEEDED | 아니오 | 모델 요청 한도(10회, 재전송 포함) |
@@ -44,9 +44,18 @@
   "policy_denied(l7)"와 프록시 상태 코드, trace model_error의 error "policy_denied"·denial(connect·l7)·http_status다
   (단위 I7). 원인 분류 코드 이름 전체는 사용자 결정(D12) 대상이라 바뀔 수 있다.
 - 결정 D12에 함께 올린 분류: 429는 PROVIDER_HTTP_4XX, 요청별 제한 시간 초과(연결 단계 시간 초과 포함)는
-  PROVIDER_REQUEST_TIMEOUT, 본문을 받는 도중 끊김(http.client.IncompleteRead)은 예외 이름을 적는 CODE_ERROR다. 셋 다
-  지금은 재실행 대상이 아니다.
+  PROVIDER_REQUEST_TIMEOUT, 본문을 받는 도중 끊김(http.client.IncompleteRead)은 예외 이름을 적는 CODE_ERROR다. 뒤의
+  둘은 재실행 대상이 아니다.
+
+HTTP 429(호출 한도 초과, 2026-09-25 15:52 사용자 결정 기록 20260925-1552-user-decision-429-retry, 사용자 결정 5 변경)
+- 코드는 PROVIDER_HTTP_4XX 그대로다(코드 11개와 오류 항목 키는 바꾸지 않는다). 단위 I7이 5xx와 같은 재전송 고리로
+  다시 보내고, 한도를 다 쓴 뒤 detail "HTTP 429(재전송 N회 뒤)"로 멈춘다.
+- 재실행 대상 판정(infra_rerun_eligible)은 PROVIDER_HTTP_4XX 가운데 detail이 RATE_LIMIT_DETAIL_RE(맨 앞 "HTTP 429",
+  뒤에 숫자가 붙지 않음)에 맞는 항목도 대상으로 본다. 다른 4xx(400·401·403·404·422 등)와 정책 프록시 거부는 대상이
+  아니다. 429 항목을 가르는 곳은 rate_limited_entry 하나다(단위 E1의 속도 조절도 이것을 쓴다).
 """
+import re
+
 PROVIDER_HTTP_5XX = "PROVIDER_HTTP_5XX"
 PROVIDER_CONNECTION = "PROVIDER_CONNECTION"
 PROVIDER_HTTP_4XX = "PROVIDER_HTTP_4XX"
@@ -78,6 +87,7 @@ STATUS_BY_CODE = {
 }
 CODES = tuple(STATUS_BY_CODE)
 INFRA_RERUN_CODES = frozenset({PROVIDER_HTTP_5XX, PROVIDER_CONNECTION})
+RATE_LIMIT_DETAIL_RE = re.compile(r"HTTP 429(?!\d)")  # re.match로 쓴다(detail 맨 앞, 단위 I7이 적는 모양)
 ERROR_ENTRY_KEYS = ("code", "stage", "detail", "attempts", "last_good_evidence")
 ATTEMPT_KEYS = ("tool_attempts", "model_requests", "tokens_in", "tokens_out", "wall_ms")
 DETAIL_MAX = 200
@@ -132,11 +142,18 @@ def error_entry(code: str, stage: str | None, attempts: dict, last_good_evidence
             "attempts": {k: attempts[k] for k in ATTEMPT_KEYS}, "last_good_evidence": list(last_good_evidence)}
 
 
+def rate_limited_entry(entry: object) -> bool:
+    """오류 항목이 HTTP 429(호출 한도 초과)로 멈춘 것인가: 코드 PROVIDER_HTTP_4XX이고 detail이 "HTTP 429"로 시작한다."""
+    return (isinstance(entry, dict) and entry.get("code") == PROVIDER_HTTP_4XX and isinstance(entry.get("detail"), str)
+            and RATE_LIMIT_DETAIL_RE.match(entry["detail"]) is not None)
+
+
 def infra_rerun_eligible(execution_status_value: str, errors: list) -> bool:
-    """룰북 B5 인프라 실패 재실행 대상인가: FAILED이고, errors가 비지 않았고, 모든 코드가 모델 제공자 쪽 인프라 오류다."""
+    """룰북 B5 인프라 실패 재실행 대상인가: FAILED이고, errors가 비지 않았고, 모든 항목이 모델 제공자 쪽 인프라
+    오류(PROVIDER_HTTP_5XX·PROVIDER_CONNECTION, 또는 HTTP 429인 PROVIDER_HTTP_4XX)다."""
     if execution_status_value != FAILED or not errors:
         return False
-    return all(isinstance(e, dict) and e.get("code") in INFRA_RERUN_CODES for e in errors)
+    return all(isinstance(e, dict) and (e.get("code") in INFRA_RERUN_CODES or rate_limited_entry(e)) for e in errors)
 
 
 def run(inp: object) -> object:
@@ -144,10 +161,11 @@ def run(inp: object) -> object:
 
     입력: {"kind": 실패 종류, "http_status": 정수(선택), "limit": 한도 이름(선택)}.
     출력: {"code": 원인 분류 코드, "execution_status": 실행 상태, "infra_rerun": 인프라 실패 재실행 대상인가}.
+    http_status 실패는 단위 I7이 적는 detail 모양("HTTP {상태}")으로 재실행 대상을 가른다(429면 참).
     """
     if not isinstance(inp, dict):
         raise ValueError("입력은 {kind, ...} 객체다")
     code = classify(inp.get("kind"), http_status=inp.get("http_status"), limit=inp.get("limit"))
     status = execution_status(code)
-    probe = [{"code": code}]
+    probe = [{"code": code, "detail": f"HTTP {inp['http_status']}" if inp.get("kind") == "http_status" else ""}]
     return {"code": code, "execution_status": status, "infra_rerun": infra_rerun_eligible(status, probe)}
