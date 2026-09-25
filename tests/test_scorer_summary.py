@@ -236,6 +236,219 @@ class RepresentativeMetricsTest(unittest.TestCase):
         self.assertIn("서로 다른 시계열 2개", text)
 
 
+def trace_event(seq: int, run_id: str, phase: str, stage: str = "basic", **data) -> dict:
+    """런타임(단위 I12·L1)이 남기는 state_change 사건 모양(tests/units/I12/, 실제 실행 trace로 확인)."""
+    return {"seq": seq, "ts": "2026-09-26T03:00:00+09:00", "run_id": run_id, "event": "state_change", "stage": stage,
+            "data": {"phase": phase, "review_status": "HOLD", "signal_status": {"unit_value": "HOLD", "share": "NOT_TRIGGERED"},
+                     **data}}
+
+
+def evidence_claims_event(seq: int, run_id: str, stage: str, added: list[tuple[str, list[str]]]) -> dict:
+    return trace_event(seq, run_id, "evidence_claims", stage, required={"unit_value": ["comparability_ok"]}, unmet=[],
+                       no_action=[], added=[{"signal": "unit_value", "code": code,
+                                            "claims": [{"claim_type": "value", "metric_id": f"m-{i}", "claim_id": i}
+                                                       for i in ids]} for code, ids in added])
+
+
+class TraceAggregationTest(unittest.TestCase):
+    """룰북 B7 공개 값(실행 추적 집계): 골든 trace 조각으로 ①~⑥이 기대값과 같은지 본다. 픽스처는 덧붙인 주장이 있는 보고서
+    1건, review_status 집계 변경 1건, (나) 수정본 버림 1건, trace 없는 실행 1건이다."""
+
+    def setUp(self):
+        self.rows, self.ids = fx.rulebook_snapshot()
+        self.snap = c1.Snapshot.from_json(self.rows.doc())
+        self.thresholds = [Fraction(30), Fraction(10)]
+        self.cases = [{"case_id": f"case-{i}", "hs6": "850450", "partner": "CN", "month": "202401"} for i in range(1, 5)]
+        from eval.scorer import prose as c2
+        from eval.scorer import results as c3
+        good = fx.claim("k", "value", "U", Decimal("20.34"), "USD/kg", "NA", [self.rows.ev(self.ids["cn_2401"])])
+        attached = dict(good, claim_id="e1")  # 코드가 덧붙인 주장(trace가 가른다)과 같은 값의 산문
+        self.run_ids = [f"run_case-2609260300{i:02d}" for i in range(1, 5)]
+        specs = [  # (claims, narrative): 사례 1 덧붙인 주장이 산문을 뒷받침, 2 모델 주장이 뒷받침, 3 산문 없음, 4 trace 없음
+            ([attached], "단가는 20.34 USD/kg다."), ([good], "단가는 20.34 USD/kg다."), ([good], ""), ([good], "")]
+        self.batch, self.records, self.reports = [], [], {}
+        for run_id, case, (claims, narrative) in zip(self.run_ids, self.cases, specs):
+            report = fx.report(run_id, [dict(c) for c in claims], narrative=narrative, case_id=case["case_id"], mode="full")
+            self.reports[run_id] = report
+            self.batch.append(fx.batch_line(run_id, case["case_id"], mode="full", dataset="real_dev", review="HOLD",
+                                            snapshot_id="kcs_202201_202412_v2"))
+            self.records += c1.score_report_claims(report, self.snap, run_id, self.rows.snapshot_id)
+            self.records += c2.score_report_prose(report, run_id, self.snap.hs_codes, self.thresholds)
+        self.results = c3.run({"batch": self.batch, "reports": {}, "claims": self.records, "answers": None,
+                               "cases": self.cases, "snapshot": self.rows.doc()})
+        r1, r2, r3, _ = self.run_ids
+        self.traces = {
+            r1: [trace_event(1, r1, "draft"), evidence_claims_event(2, r1, "basic", [("comparability_ok", ["e9"])]),
+                 evidence_claims_event(3, r1, "final", [("comparability_ok", ["e1"]), ("signal_claim", ["e7"])]),
+                 trace_event(4, r1, "final", "final")],
+            r2: [trace_event(1, r2, "status_aggregated", "basic", model_review_status="MONITOR", model_unresolved_evidence=None,
+                             unresolved_evidence=False),
+                 trace_event(2, r2, "code_finding", "basic", missing_tools=[], skipped_for_hold=["compare_partners"]),
+                 trace_event(3, r2, "after_critic", "critic", needs_revision=True, findings=1, requery=0, problems=[],
+                             requery_dropped=[{"tool": "decompose_hs", "args": {}, "reason": "signal_not_triggered",
+                                               "signals": ["unit_value"]}]),
+                 trace_event(4, r2, "status_aggregated", "final", model_review_status="MONITOR", model_unresolved_evidence=None,
+                             unresolved_evidence=False)],
+            r3: [trace_event(1, r3, "revision_discarded", "final", blocked_by="validator", would_be_cause="VALIDATOR_BLOCKED",
+                             kept_report_id="report1")],
+        }
+
+    def trace_stats(self, runs: list[str] | None = None) -> dict:
+        """eval/scorer/__main__.py trace_entry와 같은 계산(파일 읽기만 뺀 것)."""
+        from eval.scorer import prose as c2
+        out = {}
+        for run_id in (runs if runs is not None else self.run_ids):
+            events = self.traces.get(run_id)
+            if events is None:
+                out[run_id] = {"available": False, "reason": c4.TRACE_NONE}
+                continue
+            report = self.reports[run_id]
+            facts = c4.trace_facts(events, report, True)
+            before = c4.without_attached(report, facts["attached_ids"])
+            mine = c1.score_report_claims(before, self.snap, run_id, self.rows.snapshot_id)
+            mine += c2.score_report_prose(before, run_id, self.snap.hs_codes, self.thresholds)
+            entry = {"available": True, **{k: v for k, v in facts.items() if k != "attached_ids"}}
+            entry.update(c4.before_after(mine, [r for r in self.records if r["run_id"] == run_id]))
+            out[run_id] = entry
+        return out
+
+    def test_parse_trace_rejects_untrusted_shapes(self):
+        r1 = self.run_ids[0]
+        text = "\n".join(c1.dumps_json(e) for e in self.traces[r1]) + "\n"
+        self.assertEqual(len(c4.parse_trace(text, r1)), 4)
+        self.assertIsNone(c4.parse_trace(text, self.run_ids[1]))  # run_id 불일치
+        self.assertIsNone(c4.parse_trace(text + "{not json}\n", r1))
+        self.assertIsNone(c4.parse_trace('[1, 2]\n', r1))  # 객체가 아니다
+        self.assertIsNone(c4.parse_trace('{"data": {}}\n', r1))  # event 없음
+        self.assertIsNone(c4.parse_trace("\n\n", r1))
+
+    def test_trace_shape_check_follows_golden_field_names(self):
+        r1 = self.run_ids[0]
+        self.assertTrue(c4.trace_shape_ok(self.traces[r1]))
+        self.assertTrue(c4.trace_shape_ok(self.traces[self.run_ids[1]]))
+        self.assertTrue(c4.trace_shape_ok([trace_event(1, r1, "after_critic", "critic", needs_revision=False)]))  # requery_dropped 없어도 된다
+        bad = [
+            [{k: v for k, v in trace_event(1, r1, "draft").items() if k != "stage"}],  # stage 없음
+            [dict(trace_event(1, r1, "draft"), data=[])],  # data가 객체 아님
+            [dict(trace_event(1, r1, "draft"), data={"review_status": "HOLD"})],  # phase 없음
+            [trace_event(1, r1, "evidence_claims", added={"code": "x"})],  # added가 목록 아님
+            [trace_event(1, r1, "evidence_claims", added=[{"code": 1, "claims": []}])],  # code가 문자열 아님
+            [trace_event(1, r1, "evidence_claims", added=[{"code": "comparability_ok", "claims": [{"metric_id": "m"}]}])],  # claim_id 없음
+            [trace_event(1, r1, "code_finding", skipped_for_hold="compare_partners")],
+            [trace_event(1, r1, "after_critic", "critic", requery_dropped={})],
+        ]
+        for events in bad:
+            with self.subTest(events=events):
+                self.assertFalse(c4.trace_shape_ok(events))
+        self.assertTrue(c4.trace_shape_ok([{"event": "tool_call", "stage": "basic", "data": 3}]))  # state_change가 아닌 사건은 보지 않는다
+
+    def test_not_aggregated_text_names_each_reason(self):
+        self.assertEqual(c4.not_aggregated_text({c4.TRACE_NONE: 1}, 1, 4), "집계하지 않음(trace 없음 1/4건)")
+        self.assertEqual(c4.not_aggregated_text({c4.TRACE_MALFORMED: 2}, 2, 4), "집계하지 않음(trace 모양 다름 2/4건)")
+        self.assertEqual(c4.not_aggregated_text({c4.TRACE_MALFORMED: 1, c4.TRACE_NONE: 1, c4.TRACE_UNREADABLE: 1}, 3, 4),
+                         "집계하지 않음(trace 없음 1·trace를 읽을 수 없음 1·trace 모양 다름 1, 3/4건)")
+        self.assertEqual(c4.not_aggregated_text({}, 0, 0), "집계하지 않음(trace 없음 0/0건)")
+        plan = c4.Plan(self.cases, ["full"], self.results)
+        stats = self.trace_stats(self.run_ids[:2])
+        stats[self.run_ids[2]] = {"available": False, "reason": c4.TRACE_MALFORMED}
+        text = c4.trace_mode_stats(plan, c4.ClaimIndex(self.records), set(), stats, "full")["not_aggregated"]
+        self.assertEqual(text, "집계하지 않음(trace 없음 1·trace 모양 다름 1, 2/4건)")
+
+    def test_attached_claims_come_from_the_last_evidence_claims_event(self):
+        r1 = self.run_ids[0]
+        self.assertEqual(c4.attached_claim_ids(self.traces[r1]), {"e1": c4.REQUIRED_EVIDENCE, "e7": c4.SIGNAL_CLAIM})
+        facts = c4.trace_facts(self.traces[r1], self.reports[r1], True)
+        self.assertEqual(facts["attached_ids"], {"e1"})  # e7은 trace에만 있고 최종 보고서에 없다
+        self.assertEqual((facts["attached_count"], facts["attached_missing_in_report"]), (1, 1))
+        self.assertEqual(facts["attached_by_code"], {c4.REQUIRED_EVIDENCE: 1, c4.SIGNAL_CLAIM: 0, c4.ZERO_WEIGHT_CLAIM: 0})
+        self.assertEqual(c4.without_attached(self.reports[r1], {"e1"})["claims"], [])
+        self.assertEqual(c4.trace_facts(self.traces[r1], None, True)["attached_count"], None)  # 보고서 없음
+        zero = c4.attached_claim_ids([evidence_claims_event(1, r1, "basic", [("zero_weight_claim", ["e2"])])])
+        self.assertEqual(zero, {"e2": c4.ZERO_WEIGHT_CLAIM})
+        self.assertEqual(c4.attached_claim_ids([trace_event(1, r1, "draft")]), {})
+
+    def test_status_aggregation_discards_and_hold_skips(self):
+        r2, r3 = self.run_ids[1], self.run_ids[2]
+        facts = c4.trace_facts(self.traces[r2], self.reports[r2], True)
+        self.assertEqual((facts["status_aggregated_final"], facts["status_aggregated_any"]), (True, True))
+        self.assertEqual((facts["requery_dropped"], facts["hold_skipped_findings"], facts["revision_discarded"]), (1, 1, 0))
+        self.assertFalse(c4.trace_facts(self.traces[r2], self.reports[r2], False)["status_aggregated_final"])  # 실패 실행
+        self.assertTrue(c4.trace_facts(self.traces[r2][:1], None, True)["status_aggregated_any"])  # basic 단계만
+        self.assertFalse(c4.trace_facts(self.traces[r2][:1], None, True)["status_aggregated_final"])
+        self.assertEqual(c4.trace_facts(self.traces[r3], self.reports[r3], True)["revision_discarded"], 1)
+
+    def test_mode_stats_match_expected_values(self):
+        plan = c4.Plan(self.cases, ["full"], self.results)
+        index = c4.ClaimIndex(self.records)
+        stats = self.trace_stats(self.run_ids[:3])  # 사례 4는 trace 없음
+        partial = c4.trace_mode_stats(plan, index, set(), stats, "full")
+        self.assertEqual(partial["not_aggregated"], "집계하지 않음(trace 없음 1/4건)")
+        self.traces[self.run_ids[3]] = [trace_event(1, self.run_ids[3], "draft")]
+        full = c4.trace_mode_stats(plan, index, set(), self.trace_stats(), "full")
+        self.assertIsNone(full["not_aggregated"])
+        self.assertEqual((full["errors_before"], full["errors_after"]), (1, 0))  # 사례 1의 산문이 덧붙인 주장 없이는 뒷받침되지 않는다
+        self.assertEqual(full["backed_by_attached"], 1)
+        self.assertEqual((full["attached_total"], full["attached_per_report"]), (1, [1, 0, 0, 0]))
+        self.assertEqual(full["attached_by_code"], {c4.REQUIRED_EVIDENCE: 1, c4.SIGNAL_CLAIM: 0, c4.ZERO_WEIGHT_CLAIM: 0})
+        self.assertEqual((full["status_aggregated_final"], full["status_aggregated_any"]), (1, 1))
+        self.assertEqual((full["revision_discarded"], full["requery_dropped"], full["hold_skipped_findings"]), (1, 1, 1))
+        self.assertEqual(full["attached_missing_in_report"], 1)
+
+    def test_failed_unread_and_unrun_rows_stay_errors_before_and_after(self):
+        failed = dict(self.results[2], execution_status="FAILED", review_status_final=None, signal_status=None)
+        results = [self.results[0], self.results[1], failed]  # 사례 4는 미실행
+        plan = c4.Plan(self.cases, ["full"], results)
+        stats = self.trace_stats(self.run_ids[:3])
+        stats[self.run_ids[2]] = {"available": True, **{k: v for k, v in
+                                                        c4.trace_facts(self.traces[self.run_ids[2]], None, False).items()
+                                                        if k != "attached_ids"}}
+        full = c4.trace_mode_stats(plan, c4.ClaimIndex(self.records), {self.run_ids[1]}, stats, "full")
+        self.assertIsNone(full["not_aggregated"])  # 미실행 사례는 최종 행이 없어 trace 대상이 아니다
+        self.assertEqual((full["errors_before"], full["errors_after"]), (4, 3))  # 읽지 못한 보고서·실패·미실행은 전·뒤 모두 오류
+        self.assertEqual(full["attached_per_report"], [1])
+        stats[self.run_ids[0]]["before_error"] = None  # 덧붙이기 전 재채점이 입력 오류를 냈다
+        self.assertEqual(c4.trace_mode_stats(plan, c4.ClaimIndex(self.records), {self.run_ids[1]}, stats, "full")["not_aggregated"],
+                         "집계하지 않음(덧붙이기 전 재채점 불가 1건)")
+
+    def render(self, trace_stats: dict | None) -> str:
+        inp = {"dataset": "real_dev", "batch_run": "evaluate-260926030000", "batch_dir": "outputs/evaluate-260926030000",
+               "scoring_run": "score-260926040000", "planned": {"cases": self.cases, "modes": ["freeform", "full"]},
+               "results": self.results, "claims": self.records, "answers": None, "report_stats": {}, "reports_unread": [],
+               "conditions": {}, "meta": {"schema_version": 2}}
+        if trace_stats is not None:
+            inp["trace_stats"] = trace_stats
+        return c4.run(inp)
+
+    def test_summary_lines_follow_rulebook_b7(self):
+        self.traces[self.run_ids[3]] = [trace_event(1, self.run_ids[3], "draft")]
+        text = self.render(self.trace_stats())
+        for fragment in (
+                "- 덧붙이기 전·뒤 보고서 단위 오류율(덧붙인 주장을 뺀 주장 집합으로 산문 뒷받침을 다시 판정. 실패·무효·미실행은 그대로 오류. "
+                "결정 기록 20260925-1856): freeform 집계하지 않음(trace 없음 0/0건), full 전 1/4 → 뒤 0/4",
+                "- 덧붙인 주장 덕분에 뒷받침된 산문 표현 수: freeform 집계하지 않음(trace 없음 0/0건), full 1",
+                "코드가 덧붙인 주장(최종 보고서에 남은 것) freeform 집계하지 않음(trace 없음 0/0건), full 합계 1(보고서당 0(0~1))",
+                "review_status 집계로 바뀐 최종 보고서(어느 단계든) freeform 집계하지 않음(trace 없음 0/0건), full 1(1)",
+                "버린 초안 (나) 수정본 버림 / (가) 재조회 버림 freeform 집계하지 않음(trace 없음 0/0건), full 1 / 1",
+                "HOLD 합의로 뺀 도구 지적 freeform 집계하지 않음(trace 없음 0/0건), full 1",
+                "full 보고서당 0(0~1), 합계 1(필수 근거 1·자기 계열 0·중량 0 0), 완료 보고서 4건",
+                "- 덧붙이기 전 기준의 보고서 단위 오류율(덧붙인 필수 근거 주장을 빼고 같은 채점 규칙으로 다시 계산. 2026-09-25(금) 18:56 사용자 "
+                "결정. 괄호는 덧붙이기 뒤): freeform 집계하지 않음(trace 없음 0/0건), full 1/4 = 25.0% (4.6%~69.9%) (뒤 0/4)",
+                "- 버린 초안 수(조사 흐름 수정, B2): (나) 수정본 버림 freeform 집계하지 않음(trace 없음 0/0건), full 1; (가) 재조회 버림 "
+                "freeform 집계하지 않음(trace 없음 0/0건), full 1",
+                "모드별 trace 있는 최종 실행 freeform 0/0건, full 4/4건",
+                "- trace가 덧붙였다고 적었는데 최종 보고서에 없는 주장: full 1건"):
+            self.assertIn(fragment, text)
+        for run_id in self.run_ids:  # 요약의 새 줄에는 사례 식별자가 들어가지 않는다(건수·비율만)
+            self.assertNotIn(run_id, "\n".join(l for l in text.splitlines() if "trace" in l or "덧붙" in l or "버린 초안" in l))
+        self.assertEqual(text.count("- 덧붙이기 전·뒤 보고서 단위 오류율"), 1)  # 3절(real_dev)에 한 번
+
+    def test_summary_without_trace_input_says_not_aggregated(self):
+        text = self.render(None)
+        self.assertIn("full 집계하지 않음(trace 없음 4/4건)", text)
+        self.assertIn("모드별 trace 있는 최종 실행 freeform 0/0건, full 0/4건", text)
+        self.assertNotIn("최종 보고서에 없는 주장", text)
+
+
 class UntrustedSummaryValueTest(unittest.TestCase):
     """실행 쪽 값(믿지 않는 입력)이 요약 마크다운에 가짜 제목·표 행을 만들지 못한다(보안 검토 1회차 권고 3)."""
 
