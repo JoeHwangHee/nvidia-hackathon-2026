@@ -186,7 +186,7 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 | `3b` | 평가 투명성 | 평가 설명 없음 | 이 룰북 같은 설명만 있음 | 독립 채점기 `eval/scorer/`와 실행 명령 `python -m eval.scorer --run <run_dir>`가 있음 | 3점 증거 + 골든셋(정답이 정해진 평가 자료: `eval/dev/oracle_ABC.json`, `eval/dev/dev20/`, 봉인 해시 `eval/sealed_manifest.json`과 최종 채점 뒤 공개한 봉인 원본) + 버전 고정(결과 기록의 `rulebook_version`, `policy_version`, `snapshot_id`, `grouping_version`, `code_version`) |
 | `3c` | 실행 가능성 | 코드만 있음 | README대로 로컬에서 여러 단계로 실행 | README의 명령 하나(`tradesentry <명령>`)로 키 없는 스모크 재현(커밋된 합성 픽스처 + 기록된 trace)이 끝까지 돈다 | Brev Launchable(Brev의 원클릭 실행 링크) 또는 Docker Compose 원클릭 |
 | `3d` | 관측성 | 기록 없음 | 비구조 로그 | 구조화 trace(JSONL, `outputs/{실행명}/`) | NAT 프로파일러(도구·에이전트 단위 토큰·지연 측정 도구) 결과(`outputs/{실행명}/`)를 결과 요약에 옮겨 제시 |
-| `3e` | 실패 내성 | 없음 | 예외 처리만 | 폴백 경로 구현: NIM 5xx 명시 재전송(요청당 최대 3회, 지수 대기), 한도 도달 시 `TIMEOUT`·`BUDGET_EXCEEDED`·`INVALID` 기록, NemoClaw 대체 경로 | 정책 위반·API 장애 시나리오 시험 결과 제시: `artifacts/openshell/openshell_violation_tests-{시각}/openshell_violation_tests-{시각}.md`(정답 경로 읽기, 비허용 호스트 전송, 비허용 바이너리, 키 조회) + 예산 강제 시험과 5xx 재전송 시험의 `tests/` 통과 기록 |
+| `3e` | 실패 내성 | 없음 | 예외 처리만 | 폴백 경로 구현: NIM 5xx·429 명시 재전송(요청당 최대 3회, 대기 5·10·20초), 한도 도달 시 `TIMEOUT`·`BUDGET_EXCEEDED`·`INVALID` 기록, NemoClaw 대체 경로 | 정책 위반·API 장애 시나리오 시험 결과 제시: `artifacts/openshell/openshell_violation_tests-{시각}/openshell_violation_tests-{시각}.md`(정답 경로 읽기, 비허용 호스트 전송, 비허용 바이너리, 키 조회) + 예산 강제 시험과 5xx·429 재전송 시험의 `tests/` 통과 기록 |
 | `3f` | 가시화 | 없음 | 표만 | 차트 | 타임라인(36개월 시계열 등)이나 그래프 + before-after 대조(조사 전 경보 → 최종 판정, 모델 원초안 → Critic 뒤 → 검증 뒤) |
 
 - **`3a`** `[추론]`: 5점 앵커의 "공개 벤치마크 점수"는 규범 §3의 숫자 4등급 표에 맞춰 "등급 A 또는 B인 대표 숫자"로 읽는다. 그 표가 등급 A·B의 `3a` 상한을 5로 두기 때문이다. TradeSentry의 대표 지표는 공개 벤치마크가 아니라 공식 통계 원본을 정답으로 쓰는 실제 라벨(등급 A)이다. 봉인 원본은 최종 채점 뒤 공개한다. 다만 저장소만으로 다시 채점할 수 있는지는 아직 알 수 없다 `[미확인]`(자료 계약 §10.3 N11, B7).
@@ -412,7 +412,7 @@ Part A는 규범의 §2~§4와 §7을 TradeSentry에서 **무엇이 있으면 �
 - **모든 모드에 같은 조건** `[DESIGN]`:
   - 자료·스냅샷, 도구 5개(`check_comparability`, `get_history`, `compare_partners`, `decompose_hs`, `verify_evidence`)와 공통 출력 봉투, `policy_v1`, `grouping_version`, 모델 ID와 설정, 샌드박스 정책, 동시성
   - 한도(조정값): 도구 호출 시도 `tool_attempts ≤ 8`(기본 경로 ≤5, 재조회 ≤2, 최종 검증 1), 재조사 1회(그 안의 조회 ≤2), 모델 요청 10회(재전송 포함), 사례당 wall time 300초, 누적 토큰 128,000(2026-09-25(금) 사용자 결정 4). 먼저 닿는 한도가 실행을 멈춘다.
-  - 재시도: provider 자동 재시도는 끈다. HTTP 5xx 명시 재전송만 요청당 최대 3회, 지수 대기로 하고 모델 요청 횟수에 센다.
+  - 재시도: provider 자동 재시도는 끈다. HTTP 5xx(서버 오류)와 HTTP 429(호출 한도 초과) 명시 재전송만 요청당 최대 3회, 대기 5·10·20초의 지수 대기(조정값)로 하고 모델 요청 횟수에 센다. 대기가 사례 deadline을 넘으면 `DEADLINE`이다. 다른 4xx는 재전송하지 않는다(2026-09-25(금) 15:52 사용자 결정, 결정 기록 `docs/tracking/decisions/20260925-1552-user-decision-429-retry.md`).
   - Critic의 비용·토큰도 같은 예산 안에 든다. 모델이 없는 `checklist`의 토큰은 0으로 표시한다.
   - 모델 모드는 규칙 참고값을 보고 판정하며, 필수 조회가 빠지면 도구 호출을 요구받는다 `[DESIGN: 2026-09-25(금) 사용자 결정 13, 결정 기록 `docs/tracking/decisions/20260925-0847-user-decision-morning-shared-promises.md`]`. 아래 문구는 사례 조사 조립 결정 기록 `docs/tracking/decisions/20260925-0605-model-decision-as2-run-case.md` ㉑의 초안(AS2 PR)을 글자 그대로 옮겼다. `tool_choice: "required"`는 NIM 요청에서 도구를 하나는 반드시 부르게 하는 설정이고, 규칙 참고값은 trace에만 남으며 보고서·실행 결과 기록 키는 그대로다.
     - 규칙 참고값과 필수 조회: 모델 모드(`agent`·`full`·`freeform`)의 조사자와 Critic은, 코드가 공개 판정 규칙(판정 정책 P3)을 그 초안을 쓸 때까지 받은 근거에 적용한 신호별 판정을 규칙 참고값으로 받는다(수정 단계에서 새 조회 결과를 받으면 다시 계산한다). 지침은 참고값을 따르게 하고, 규칙이 보지 않는 도구 결과 속 사실이 있을 때만 narrative에 반대 근거를 적고 벗어나게 한다. 코드는 모델의 판정을 덮어쓰지 않는다. 필수 도구(발동 신호가 있으면 `compare_partners`, 단가 신호가 발동했으면 `decompose_hs`)의 결과가 없고 그 단계의 도구 몫이 남은 차례에는 `tool_choice: "required"`와 빠진 도구 이름을 적은 알림을 싣는다(부를 도구를 API로 지정하지는 않는다). Critic 뒤(agent는 첫 검증 뒤)에도 필수 결과가 없으면 코드 지적을 붙여 같은 수정 1회로 보낸다. 문구·시점은 세 모델 모드에 글자까지 같다.
@@ -804,9 +804,9 @@ p = x / n
 - **순서**: (사례 × 모드) 실행 목록을 고정 난수로 섞어 교차 배치한다. 한 모드가 특정 시간대에 몰리지 않게 한다. seed는 `RB-1`과 함께 동결하고 기록한다.
 - **분모**: 실패·미실행·timeout·invalid는 분모에 남긴다. 결과를 본 뒤 어려운 사례를 지우지 않는다.
 - **기록**: 모든 실행은 실행 결과 기록 키 `run_id, case_id, dataset, mode, policy_version, rulebook_version, snapshot_id, grouping_version, code_version, review_status_final, signal_status, unresolved_evidence, execution_status, required_evidence_ok, numeric_ok, provenance_ok, tool_attempts, model_requests, tokens_in, tokens_out, wall_ms, critic_used, revision_used, errors`를 모두 남긴다.
-- **재전송과 재실행의 구분**: 재전송은 한 실행 안에서 같은 모델 요청을 다시 보내는 것이다(B2의 5xx 규칙). 재실행은 실행 하나를 처음부터 다시 돌리는 것이다.
+- **재전송과 재실행의 구분**: 재전송은 한 실행 안에서 같은 모델 요청을 다시 보내는 것이다(B2의 5xx·429 규칙). 재실행은 실행 하나를 처음부터 다시 돌리는 것이다.
 - **인프라 실패 재실행** `[DESIGN, 조정값]`: 명세의 "NIM 오류 재실행 여유"를 실행 규칙으로 고정한 것이다. 재량을 두지 않는다.
-  - 조건: `execution_status`가 `FAILED`이고, 실행 기록의 `errors`에 적힌 원인 분류 코드가 모델 제공자 쪽 오류(재전송 한도를 다 쓴 HTTP 5xx, 연결 실패)뿐인 실행. 원인 분류 코드는 자료 계약 §8.1의 11개이고, 이 조건에 드는 코드는 `PROVIDER_HTTP_5XX`·`PROVIDER_CONNECTION`이다(2026-09-25(금) 사용자 결정 5). 샌드박스 정책이 막은 요청(`CODE_ERROR`, 사유 `policy_denied`)은 재실행하지 않는다. 재실행 규칙의 나머지 빈칸(결정 D12: HTTP 429·요청별 시간 초과·세션 중단을 재실행할지, 재실행 시점의 단위 등)은 아직 정하지 않았다 `[미확인]`.
+  - 조건: `execution_status`가 `FAILED`이고, 실행 기록의 `errors`에 적힌 원인 분류 코드가 모델 제공자 쪽 오류(재전송 한도를 다 쓴 HTTP 5xx, 재전송 한도를 다 쓴 HTTP 429, 연결 실패)뿐인 실행. 원인 분류 코드는 자료 계약 §8.1의 11개이고, 이 조건에 드는 것은 `PROVIDER_HTTP_5XX`·`PROVIDER_CONNECTION`과, 오류 항목의 HTTP 상태가 429인 `PROVIDER_HTTP_4XX`다(2026-09-25(금) 사용자 결정 5, 429는 2026-09-25(금) 15:52 사용자 결정, 결정 기록 `docs/tracking/decisions/20260925-1552-user-decision-429-retry.md`). 그 밖의 4xx(400·401·403·404·422 등)가 적힌 `PROVIDER_HTTP_4XX` 항목이 하나라도 있으면 대상이 아니다. 샌드박스 정책이 막은 요청(`CODE_ERROR`, 사유 `policy_denied`)은 재실행하지 않는다. HTTP 429 재실행은 위 15:52 결정으로 정했다. 재실행 규칙의 나머지 빈칸(결정 D12: 요청별 시간 초과·세션 중단을 재실행할지, 재실행 시점의 단위 등)은 아직 정하지 않았다 `[미확인]`.
   - 조건을 채운 실행은 **모두** 같은 설정으로 1회 재실행한다. 일부만 골라 돌리지 않는다.
   - 재실행 순서는 첫 실행의 순서(고정 난수로 섞은 순서)를 그대로 따르고, 첫 실행이 모두 끝난 뒤에 돌린다.
   - (사례 × 모드)마다 분모에 들어가는 행은 1개다. 재실행했으면 재실행 결과가 그 행이 된다. 재실행도 실패하면 그 실패가 최종이다.

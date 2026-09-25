@@ -99,7 +99,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
   - credential placeholder rewrite: 샌드박스 프로그램은 자리표시자만 갖고, 샌드박스 안 감독 프로세스의 정책 프록시가 게이트웨이에서 받은 자격 증명으로 요청 시점에 바꿔 넣는 방식 `[사실: OpenShell v0.0.116 docs/about/how-it-works.mdx 116행, docs/sandboxes/manage-providers.mdx 327~330행]`.
   - `inference.local`: 샌드박스는 `inference.local`만 보고, 감독 프로세스의 추론 라우터가 게이트웨이의 추론 설정대로 전달하는 방식 `[사실: OpenShell v0.0.116 docs/about/how-it-works.mdx 117행]`. 추론 라우터는 `inference.local` 요청을 가로채 설정된 추론 백엔드로 넘기는 감독 프로세스의 부분이다. 게이트웨이당 provider(추론 제공자) 1개·모델 1개만 연결하는 단일 백엔드다 `[사실: 03-openshell-policy-yaml-구조.md §2.1-1]`. 공식 문서끼리의 표현 차이(요청이 게이트웨이를 거친다는 문서와 라우터를 샌드박스 쪽에 두는 문서)는 `docs/plan/DEV_PLAN.md` §4.6에 적었다. 조사자(도구를 골라 근거가 붙은 보고서 초안을 쓰는 모델 호출)와 Critic(조사자가 받은 근거와 초안을 별도 문맥에서 검토하는 검수자)이 같은 모델이라 라우팅이 필요 없다.
   - 둘 중 X1에서 실제로 성공한 방식만 채택하고 이유를 결정 기록(`docs/tracking/decisions/`)에 남긴다. 이 스킬이 두 방식을 모두 다루는지는 `[미확인]`이다.
-- 범위 밖: NIM 무료 키에서 간헐적으로 나는 HTTP 500은 경로 문제가 아니라 상류 오류일 수 있다 `[추론]`. 5xx 명시 재전송 규칙은 `docs/plan/DEV_PLAN.md`를 따른다.
+- 범위 밖: NIM 무료 키에서 간헐적으로 나는 HTTP 500은 경로 문제가 아니라 상류 오류일 수 있다 `[추론]`. 5xx·429 명시 재전송 규칙은 `docs/plan/DEV_PLAN.md`를 따른다.
 - 삭제 시험 답: 정확도 지표는 변하지 않는다. X1에서 추론 경로 문제를 푸는 시간이 늘 수 있다 `[추론]`.
 
 ### 2.5 `nemoclaw-user-guide` — NemoClaw 운용 안내
