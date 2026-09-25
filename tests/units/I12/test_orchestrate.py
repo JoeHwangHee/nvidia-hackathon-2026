@@ -7,6 +7,7 @@
 critic_used 기준, 기록 없이 끝나던 두 경로, 배선(unit_ports)의 P4 감싸기·I6 한도·자료 상태·P3 근거 상태.
 """
 import copy
+import dataclasses
 import json
 import unittest
 from decimal import Decimal
@@ -564,6 +565,335 @@ class MergedUnitsTest(unittest.TestCase):
         self.assertEqual((full["record"]["execution_status"], full["record"]["revision_used"]), ("COMPLETED", True))
         self.assertEqual([r["data"]["decision"] for r in h.events(records, "validator_result")],
                          ["pass", "block", "pass"])  # 첫 검사는 스키마만 본다
+
+
+class CTypeStatusTest(unittest.TestCase):
+    """조립 AS2: C형 자료 상태(MT2 missingness 항목의 hs10_codes)를 코드마다 R1 자료 상태 항목으로 펼친다(MT3 결정 ⑨)."""
+
+    C_ITEM = {"evidence_id": "ev:controlled_fixture_v0:observation:7131", "request_id": "r", "partner_code": "XC",
+              "hs_code": "850432", "month": "202412", "flow": "import", "observation_status": "REQUEST_FAILED",
+              "hs10_codes": ["8504321000", "8504322000"], "hs10_codes_source": "other_case_month"}
+
+    def test_codes_become_one_status_each_with_distinct_ids(self):
+        statuses = orchestrate._statuses_of([{"missingness": [self.C_ITEM]}, {"missingness": [self.C_ITEM]}])
+        ev = self.C_ITEM["evidence_id"]
+        self.assertEqual([(s["status_id"], s["hs10"], s["hs6"], s["partner"], s["evidence_ids"]) for s in statuses],
+                         [(f"{ev}@8504321000", "8504321000", "850432", "XC", [ev]),
+                          (f"{ev}@8504322000", "8504322000", "850432", "XC", [ev])])
+
+    def test_empty_code_list_makes_no_status(self):
+        item = dict(self.C_ITEM, hs10_codes=[], hs10_codes_source="none")
+        self.assertEqual(orchestrate._statuses_of([{"missingness": [item]}]), [])
+
+    def test_a_claim_on_the_status_row_expands_to_every_code(self):
+        statuses = orchestrate._statuses_of([{"missingness": [self.C_ITEM]}])
+        draft = {"claims": [{"claim_type": "change", "metric_id": "m-rU"},
+                            {"claim_type": "data_status", "evidence_id": self.C_ITEM["evidence_id"]},
+                            {"claim_type": "data_status", "evidence_id": "ev:controlled_fixture_v0:observation:1"}]}
+        self.assertEqual(orchestrate._requests_of(draft, statuses),
+                         [{"claim_id": "c1", "metric_id": "m-rU"},
+                          {"claim_id": "c2-1", "status_id": statuses[0]["status_id"]},
+                          {"claim_id": "c2-2", "status_id": statuses[1]["status_id"]},
+                          {"claim_id": "c3", "status_id": "ev:controlled_fixture_v0:observation:1"}])
+        self.assertEqual(orchestrate._requests_of(draft)[1], {"claim_id": "c2", "status_id": self.C_ITEM["evidence_id"]})
+
+    def test_checklist_cites_the_real_evidence_id_once(self):
+        case = dict(h.CASE_A, partner="XC", hs6="850432", month="202412", baseline_month="202312")
+        claims = orchestrate.checklist_claims(case, [{"missingness": [self.C_ITEM]}])
+        self.assertEqual(claims, [{"claim_type": "data_status", "evidence_id": self.C_ITEM["evidence_id"]}])
+
+
+class RequiredToolsTest(unittest.TestCase):
+    """조립 AS2 4회차: 필수 조회(Ports.required_tools). 필수 도구 없이 쓴 초안은 차례마다 한 번 돌려보낸다(모든 모드 같음)."""
+
+    def run_with(self, mode, script):
+        fake = h.FakePorts()
+        ports = fake.ports()
+        ports.required_tools = lambda case: ["decompose_hs"]
+        clock = FakeClock()
+        transport = ScriptedTransport(script, clock)
+        sink = orchestrate.trace_log.MemoryTrace(h.RUN_ID)
+        ctx = orchestrate.RunContext(run_id=h.RUN_ID, case=h.CASE_A, mode=mode, dataset="controlled_fixture_v0",
+                                     rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
+        result = orchestrate.orchestrate(ctx, ports, mc.load_model_config(), transport=transport, sink=sink,
+                                         clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)
+        return result, sink.records, fake, transport
+
+    def test_draft_without_the_required_tool_is_sent_back_once(self):
+        result, records, fake, transport = self.run_with("agent", [h.draft_answer(), h.tools_answer("decompose_hs"),
+                                                                   h.draft_answer()])
+        self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+        self.assertEqual(result["record"]["model_requests"], 3)
+        refused = [r["data"] for r in h.events(records, "state_change") if r["data"]["phase"] == "draft_refused"]
+        self.assertEqual([r["missing_tools"] for r in refused], [["decompose_hs"]])
+        sent = [m["content"] for m in transport.payloads[1]["messages"] if m["role"] == "user"]
+        self.assertTrue(any("[필수 조회]" in c for c in sent))
+        self.assertIn(("decompose_hs", {}), fake.tool_calls)
+
+    def test_second_draft_without_the_tool_is_accepted(self):
+        result, records, fake, _ = self.run_with("agent", [h.draft_answer(), h.draft_answer()])
+        self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+        self.assertEqual(len([r for r in h.events(records, "state_change") if r["data"]["phase"] == "draft_refused"]), 1)
+        self.assertNotIn("decompose_hs", [name for name, _ in fake.tool_calls])
+
+    def test_message_is_the_same_for_every_mode(self):
+        payloads = {}
+        for mode in ("agent", "full", "freeform"):
+            script = [h.draft_answer(), h.tools_answer("decompose_hs"), h.draft_answer()]
+            if mode != "agent":
+                script.append(h.critic_answer())
+            if mode == "freeform":
+                claim = dict(FREEFORM_CLAIM)
+                script[0] = h.draft_answer(claims=[claim])
+                script[2] = h.draft_answer(claims=[claim])
+            _, _, _, transport = self.run_with(mode, script)
+            payloads[mode] = [m["content"] for m in transport.payloads[1]["messages"]
+                              if m["role"] == "user" and "[필수 조회]" in m["content"]]
+        self.assertEqual(len({tuple(v) for v in payloads.values()}), 1)
+        self.assertEqual(len(payloads["agent"]), 1)
+
+
+class RuleReferenceTest(unittest.TestCase):
+    """조립 AS2 6회차: 모델 모드의 규칙 참고값(Ports.reference_status, MT1 결정 ⑬의 "모델 상태와 나란히 적는 참고값").
+    필수 도구 결과를 받은 뒤 첫 조사자 요청 앞에 한 번, 모든 모델 모드에 같은 문구로 싣고 Critic에도 준다."""
+
+    DECIDED = {"signal_status": {"unit_value": "MONITOR", "share": "NOT_TRIGGERED"},
+               "basis": {"unit_value": "composition_explained", "share": "not_triggered"}}
+
+    def run_with(self, mode, script, reference=None):
+        fake = h.FakePorts()
+        ports = fake.ports()
+        ports.required_tools = lambda case: ["decompose_hs"]
+        seen = []
+
+        def decided(evidence):
+            seen.append([e["tool"] for e in evidence])
+            if reference == "fail":
+                raise ValueError("근거 상태를 만들 수 없다")
+            return self.DECIDED
+        ports.reference_status = decided
+        clock = FakeClock()
+        transport = ScriptedTransport(script, clock)
+        sink = orchestrate.trace_log.MemoryTrace(h.RUN_ID)
+        ctx = orchestrate.RunContext(run_id=h.RUN_ID, case=h.CASE_A, mode=mode, dataset="controlled_fixture_v0",
+                                     rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
+        result = orchestrate.orchestrate(ctx, ports, mc.load_model_config(), transport=transport, sink=sink,
+                                         clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)
+        return result, sink.records, transport, seen
+
+    @staticmethod
+    def reference_lines(payload):
+        return [m["content"] for m in payload["messages"] if m["role"] == "user" and "[규칙 계산 결과(참고값)]" in m["content"]]
+
+    def script(self, mode):
+        steps = [h.tools_answer("decompose_hs"), h.draft_answer(claims=[dict(FREEFORM_CLAIM)] if mode == "freeform"
+                                                                else None)]
+        return steps + ([h.critic_answer()] if mode != "agent" else [])
+
+    def test_same_text_at_the_same_turn_for_every_model_mode(self):
+        texts = {}
+        for mode in ("agent", "full", "freeform"):
+            result, records, transport, seen = self.run_with(mode, self.script(mode))
+            self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+            order = [(r["event"], r["data"].get("phase") or r["data"].get("tool")) for r in records
+                     if r["event"] in ("model_request", "state_change", "tool_result")]
+            at = order.index(("state_change", "rule_reference"))
+            self.assertEqual(order[at - 1], ("tool_result", "decompose_hs"))  # 분해를 받은 뒤
+            self.assertEqual([e for e, _ in order[:at]].count("model_request"), 1)  # 두 번째 조사자 요청 앞
+            texts[mode] = self.reference_lines(transport.payloads[1])
+            self.assertEqual(seen, [["check_comparability", "get_history", "decompose_hs"]])  # 한 번만 계산
+            [ref] = [r["data"] for r in h.events(records, "state_change") if r["data"]["phase"] == "rule_reference"]
+            self.assertEqual((ref["available"], ref["signal_status"], ref["basis"]),
+                             (True, self.DECIDED["signal_status"], self.DECIDED["basis"]))
+            self.assertEqual(result["record"]["review_status_final"], "MONITOR")  # 모델 상태 그대로(덮어쓰지 않음)
+            if mode != "agent":  # Critic 요청에도 같은 글
+                critic_body = transport.payloads[2]["messages"][1]["content"]
+                self.assertIn(texts[mode][0], critic_body)
+        self.assertEqual(len({tuple(v) for v in texts.values()}), 1)
+        self.assertEqual(texts["agent"], ["[규칙 계산 결과(참고값)] 공개 판정 규칙을 지금까지 받은 근거에 코드로 적용한 결과다: "
+                                          "단가 신호(unit_value) = MONITOR(구성효과로 설명됨). 이 값과 다르게 판정하려면 "
+                                          "narrative에 그 반대 근거를 적는다."])
+
+    def test_unavailable_text_when_p3_cannot_run(self):
+        result, records, transport, _ = self.run_with("agent", self.script("agent"), reference="fail")
+        self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+        self.assertTrue(self.reference_lines(transport.payloads[1])[0].startswith(
+            "[규칙 계산 결과(참고값)] 규칙 계산 불가"))
+        [ref] = [r["data"] for r in h.events(records, "state_change") if r["data"]["phase"] == "rule_reference"]
+        self.assertEqual((ref["available"], ref["error"]), (False, "ValueError"))
+
+    def test_after_a_refused_draft_the_reference_says_what_is_missing(self):
+        _, records, transport, _ = self.run_with("agent", [h.draft_answer(), h.draft_answer()], reference="fail")
+        self.assertIn("받지 못한 도구: decompose_hs", self.reference_lines(transport.payloads[1])[0])
+
+    def test_checklist_has_no_reference(self):
+        result, records, _, seen = self.run_with("checklist", [])
+        self.assertEqual(seen, [])
+        self.assertFalse([r for r in h.events(records, "state_change") if r["data"]["phase"] == "rule_reference"])
+
+
+class DraftTurnAndReferenceRetryTest(unittest.TestCase):
+    """조립 AS2 7회차: 초안은 도구 없는 차례에서만(Ports.drafts_only_without_tools), 계산 불가였던 참고값은 필수 도구 결과가
+    갖춰지면 다시 싣는다."""
+
+    def run_with(self, mode, script, *, drafts_only=False, reference=None):
+        fake = h.FakePorts()
+        ports = fake.ports()
+        ports.required_tools = lambda case: ["decompose_hs"]
+        ports.drafts_only_without_tools = drafts_only
+        if reference is not None:
+            ports.reference_status = reference
+        clock = FakeClock()
+        transport = ScriptedTransport(script, clock)
+        sink = orchestrate.trace_log.MemoryTrace(h.RUN_ID)
+        ctx = orchestrate.RunContext(run_id=h.RUN_ID, case=h.CASE_A, mode=mode, dataset="controlled_fixture_v0",
+                                     rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
+        result = orchestrate.orchestrate(ctx, ports, mc.load_model_config(), transport=transport, sink=sink,
+                                         clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)
+        return result, sink.records, transport
+
+    def test_draft_in_a_required_turn_is_discarded_and_asked_again_without_tools(self):
+        for mode in ("agent", "full", "freeform"):
+            with self.subTest(mode=mode):
+                draft = h.draft_answer(claims=[dict(FREEFORM_CLAIM)]) if mode == "freeform" else h.draft_answer()
+                script = [draft, draft, h.tools_answer("decompose_hs"), draft]
+                if mode != "agent":
+                    script.insert(2, h.critic_answer())
+                result, records, transport = self.run_with(mode, script, drafts_only=True)
+                self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+                phases = [r["data"]["phase"] for r in h.events(records, "state_change")]
+                self.assertEqual(phases.count("draft_discarded"), 1)
+                self.assertEqual(transport.payloads[0]["tool_choice"], "required")  # 필수 결과 없음 + 예산 있음
+                self.assertNotIn("tools", transport.payloads[1])  # 버린 뒤: 도구 없는 초안 차례
+                if mc.load_model_config().settings.structured_output == "json_object":
+                    self.assertEqual(transport.payloads[1]["response_format"], {"type": "json_object"})
+                # 필수 결과가 빠진 초안: Critic을 거치고(full·freeform), 코드 지적을 덧붙여 수정 1회에서 도구를 부른다
+                self.assertIn("code_finding", phases)
+                self.assertEqual(result["record"]["critic_used"], mode != "agent")
+                self.assertEqual(result["record"]["revision_used"], True)
+                # 버린 초안·required 차례도 모델 요청 수와 토큰에 든다(9회차, 평 권고 7)
+                usage = [r["data"]["usage"] for r in h.events(records, "model_response")]
+                self.assertEqual(result["record"]["model_requests"], len(transport.payloads))
+                self.assertEqual(result["record"]["tokens_in"] + result["record"]["tokens_out"],
+                                 sum(u["total_tokens"] for u in usage))
+                revision = [r["data"] for r in h.events(records, "model_request") if r["stage"] == "revision"]
+                self.assertEqual(revision[0].get("tool_choice"), "required")
+                self.assertNotIn("tool_choice", revision[-1])  # 결과를 받은 뒤: 도구 없는 초안 차례
+
+    def test_required_only_when_results_are_missing_and_budget_is_left(self):
+        # 필수 결과를 받은 뒤의 차례는 도구 없는 초안 차례다(tool_choice 없음)
+        result, records, transport = self.run_with("agent", [h.tools_answer("decompose_hs"), h.draft_answer()],
+                                                   drafts_only=True)
+        requests = [r["data"] for r in h.events(records, "model_request")]
+        self.assertEqual([q.get("tool_choice") for q in requests], ["required", None])
+        self.assertEqual(result["record"]["model_requests"], 2)
+        # 비교 몫이 없으면(비교 불가가 아니어도) required를 싣지 않고 곧바로 초안 차례다
+        config = mc.load_model_config()
+        fake = h.FakePorts()
+        ports = fake.ports()
+        ports.required_tools = lambda case: ["decompose_hs"]
+        ports.drafts_only_without_tools = True
+        limits = dataclasses.replace(config.limits, investigator_comparisons=0)
+        config = dataclasses.replace(config, limits=limits)
+        clock = FakeClock()
+        transport = ScriptedTransport([h.draft_answer(), h.tools_answer("decompose_hs"), h.draft_answer()], clock)
+        sink = orchestrate.trace_log.MemoryTrace(h.RUN_ID)
+        ctx = orchestrate.RunContext(run_id=h.RUN_ID, case=h.CASE_A, mode="agent", dataset="controlled_fixture_v0",
+                                     rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
+        record = orchestrate.orchestrate(ctx, ports, config, transport=transport, sink=sink,
+                                         clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)["record"]
+        requests = [(r["stage"], r["data"].get("tool_choice")) for r in h.events(sink.records, "model_request")]
+        self.assertEqual(requests, [("basic", None), ("revision", "required"), ("revision", None)])  # 몫 0: 곧바로 초안
+        self.assertEqual((record["execution_status"], record["revision_used"]), (cause_codes.COMPLETED, True))
+
+    def test_unavailable_reference_is_recomputed_when_the_tool_arrives(self):
+        def decided(evidence):
+            if "decompose_hs" not in [e["tool"] for e in evidence]:
+                raise ValueError("단가 신호의 이력·분해 조회를 받지 못했다")
+            return RuleReferenceTest.DECIDED
+        script = [h.draft_answer(), h.draft_answer(), h.critic_answer(needs_revision=True),
+                  h.tools_answer("decompose_hs"), h.draft_answer()]
+        result, records, _ = self.run_with("full", script, reference=decided)
+        self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+        refs = [r["data"] for r in h.events(records, "state_change") if r["data"]["phase"] == "rule_reference"]
+        self.assertEqual([(r["available"], r["error"]) for r in refs], [(False, "ValueError"), (True, None)])
+        self.assertEqual(refs[0]["error_detail"], "단가 신호의 이력·분해 조회를 받지 못했다")
+
+
+class DirectedFlowModeParityTest(unittest.TestCase):
+    """9회차(평 권고 8): 차례 규칙(directed)을 켠 흐름에서 모드 사이 동일성."""
+
+    def run_with(self, mode, script, *, checks=None, comparisons=None, reference=None):
+        fake = h.FakePorts(checks=checks)
+        ports = fake.ports()
+        ports.required_tools = lambda case: ["decompose_hs"]
+        ports.drafts_only_without_tools = True
+        if reference is not None:
+            ports.reference_status = reference
+        config = mc.load_model_config()
+        if comparisons is not None:
+            config = dataclasses.replace(config, limits=dataclasses.replace(config.limits,
+                                                                            investigator_comparisons=comparisons))
+        clock = FakeClock()
+        transport = ScriptedTransport(script, clock)
+        sink = orchestrate.trace_log.MemoryTrace(h.RUN_ID)
+        ctx = orchestrate.RunContext(run_id=h.RUN_ID, case=h.CASE_A, mode=mode, dataset="controlled_fixture_v0",
+                                     rulebook_version="RB-1", grouping_version="g0", code_version="abc1234")
+        result = orchestrate.orchestrate(ctx, ports, config, transport=transport, sink=sink,
+                                         clock_ms=clock.clock_ms, sleep_ms=clock.sleep_ms)
+        return result, sink.records, transport
+
+    @staticmethod
+    def draft(mode):
+        return h.draft_answer(claims=[dict(FREEFORM_CLAIM)]) if mode == "freeform" else h.draft_answer()
+
+    def test_first_draft_schema_failure_with_missing_results_skips_critic_and_requires_tools(self):
+        for mode in ("full", "freeform"):
+            with self.subTest(mode=mode):
+                script = [self.draft(mode), h.tools_answer("decompose_hs"), self.draft(mode)]
+                result, records, transport = self.run_with(mode, script, checks=[h.SCHEMA_FAIL], comparisons=0)
+                record = result["record"]
+                self.assertEqual((record["execution_status"], record["critic_used"], record["revision_used"]),
+                                 (cause_codes.COMPLETED, False, True))
+                self.assertEqual([r for r in h.events(records, "model_request") if r["stage"] == "critic"], [])
+                revision = [r["data"] for r in h.events(records, "model_request") if r["stage"] == "revision"]
+                self.assertEqual(revision[0].get("tool_choice"), "required")
+                self.assertEqual(record["model_requests"], len(transport.payloads))
+
+    def test_reference_turn_order_is_the_same_for_every_mode(self):
+        orders = {}
+        for mode in ("agent", "full", "freeform"):
+            script = [h.tools_answer("decompose_hs"), self.draft(mode)] + ([h.critic_answer()] if mode != "agent" else [])
+            result, records, _ = self.run_with(mode, script, reference=lambda evidence: RuleReferenceTest.DECIDED)
+            self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+            orders[mode] = [(r["event"], r["data"].get("phase") or r["data"].get("tool") or r["data"].get("tool_choice"))
+                            for r in records if r["stage"] != "critic"
+                            and r["event"] in ("model_request", "tool_result", "state_change")]
+        self.assertEqual(orders["agent"], orders["full"])
+        self.assertEqual(orders["full"], orders["freeform"])
+        self.assertIn(("state_change", "rule_reference"), orders["agent"])
+
+    def test_reference_is_recomputed_after_new_revision_envelopes(self):
+        calls = []
+
+        def decided(evidence):
+            calls.append([e["tool"] for e in evidence if e["tool"] != "verify_evidence"])
+            return RuleReferenceTest.DECIDED
+        script = [h.tools_answer("decompose_hs"), self.draft("full"),
+                  h.critic_answer(needs_revision=True, requery=[{"tool": "compare_partners", "args": {}}]),
+                  h.tools_answer("compare_partners"), self.draft("full")]
+        result, records, _ = self.run_with("full", script, reference=decided)
+        self.assertEqual(result["record"]["execution_status"], cause_codes.COMPLETED)
+        self.assertEqual(calls, [["check_comparability", "get_history", "decompose_hs"],
+                                 ["check_comparability", "get_history", "decompose_hs", "compare_partners"]])
+        self.assertEqual(len([r for r in h.events(records, "state_change") if r["data"]["phase"] == "rule_reference"]),
+                         2)
+
+    def test_wiring_error_in_the_reference_is_a_code_error(self):
+        def broken(evidence):
+            raise KeyError("signal_status")
+        result, _, _ = self.run_with("agent", [h.tools_answer("decompose_hs"), self.draft("agent")], reference=broken)
+        self.assertEqual([e["code"] for e in result["record"]["errors"]], [cause_codes.CODE_ERROR])
 
 
 if __name__ == "__main__":
