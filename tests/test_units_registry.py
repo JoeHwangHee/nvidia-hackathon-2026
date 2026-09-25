@@ -99,7 +99,11 @@ class RegistryTest(unittest.TestCase):
         for path in found:
             rel = path.relative_to(ROOT).as_posix()
             with self.subTest(path=rel):
-                self.assertTrue(rel in registered or path.name in ("__init__.py", "__main__.py"), rel)
+                self.assertTrue(rel in registered or rel in registry.AUXILIARY_FILES
+                                or path.name in ("__init__.py", "__main__.py"), rel)
+        for rel, unit_id in registry.AUXILIARY_FILES.items():  # 보조 파일은 실제 단위에 붙고 파일이 있다
+            self.assertIn(unit_id, registry.UNITS)
+            self.assertTrue((ROOT / rel).is_file(), rel)
         infra = {p.name for p in (ROOT / "src" / "tradesentry" / "units").glob("*.py")}
         self.assertLessEqual(infra, UNITS_PACKAGE_FILES)
         for package in UNIT_PACKAGES + ("units",):
