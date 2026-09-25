@@ -1,6 +1,6 @@
 # 현재 위치
 
-2026-09-24(목) 기준이다.
+2026-09-24(목) 기준이다. 2026-09-25(금) 사용자 결정(아래 "된 것"의 마지막 항목)만 더했다.
 
 ## 된 것
 
@@ -26,6 +26,7 @@
 - **앱 뼈대 S0**(2026-09-24(목), S0 PR): 패키지 15개와 `eval/scorer/`·`eval/datagen/`, 단위 표대로 단위 파일 뼈대(저장소에 두는 앱·커널 54개, 기존 S1 포함), 단위 등록부와 공통 실행기(실행명 확보 N8), 골든 시험 틀, 경계 시험, CLI 진입점 `tradesentry`, Python 3.12.13·uv lock. 시험 `uv run --locked python -m unittest discover -s tests -v`는 종료 코드 0이다(Ran 139: ok 85, skipped 54). 외부 자문은 반영 없음이고(결정 기록 `20260924-2035-user-decision-s0-no-advisory.md`), S0가 정한 위치와 약속은 결정 기록 `20260924-2212-orchestrator-decision-s0-scaffold.md`에 있다.
 - **구현 계획 승인**(2026-09-24(목) 23:09): 자료 계약 PR #18과 S0 PR이 병합된 뒤, 사용자가 두 트랙 구현 계획과 결정 열한 가지(D1~D8, D16~D18)를 승인했고 두 트랙 구현을 시작했다. 결정 기록 `20260924-2315-user-decision-impl-plan-approval.md`.
 - **NIM 연결**: NIM(NVIDIA 클라우드 추론 API)의 Nemotron(NVIDIA 언어 모델)에서 native tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능) 왕복은 구 개발계획의 G4 관문 시험(NIM으로 모델의 도구 호출 왕복을 확인한 이전 계획의 시험)에서 확인한 기록이 있다(`docs/plan/DEV_PLAN.md` §3.1). NAT(NVIDIA 에이전트 실행 추적·평가 도구 모음) 연동은 아직 시작하지 않았다(같은 문서 §3.3). 확인 스크립트는 `scripts/g4_nim_toolcall_probe.py`이고, 이번 문서 작업에서는 다시 돌리지 않았다.
+- **사용자 결정**(2026-09-25(금) 08:41): `policy_v1` 수치와 판정 해석 U1~U4 승인, 실자료 판정 분포 수용(결정 기록 `20260925-0846-user-decision-policy-v1-approval.md`), `real_sealed` 표본 추출 방법(`20260925-0845-user-decision-real-sealed-sampling-method.md`), 공용 약속 결정 11개(토큰 한도 128,000, 원인 분류 코드 11개, `tool_attempts`의 뜻, 실자료 `required_evidence_ok` null, 분할 기록 위치, 필수 근거 코드 13개, 실행명 `--run-name`, `RB-1` 동결 2026-09-26(토) 18:00, `evaluate --mode`, 규칙 참고값과 도구 호출 요구, 보류 사유별 필수 근거)와 진행 방식(`20260925-0847-user-decision-morning-shared-promises.md`). 계획 문서 반영은 두 번째 문서 PR(DOCS2)에서 했고, 비밀값·로컬 경로 검사 `scripts/secret_scan.py`도 그 PR에서 만들었다.
 
 ## 남은 일
 
@@ -41,12 +42,10 @@
 
 로드맵 §6(`docs/plan/ROADMAP.md`)의 사용자 확인 항목과 그 밖에 지금 걸려 있는 것이다.
 
-- `policy_v1` 수치 승인과 함께 확인할 것(빈 응답 달을 무거래 확정 `CONFIRMED_NO_TRADE`로 바꾸는 승격과 그 달의 0 처리 포함): 로드맵 §6.3
 - `g1` 동결과 최종 스냅샷 빌드의 순서: 로드맵 §6.1, DT7 ② 전
 - 룰북 `RB-1` 동결 때 확인할 부록 13개 항목: 로드맵 §6.2
 - 대회 참가 조건 확인(교육 미션 DLI(NVIDIA 교육 과정) 강의는 늦어도 2026-09-27(일)까지): 로드맵 §6.5
 - 공개 저장소 방식 결정: 2026-09-28(월) 오전, 로드맵 §6.1
 - 계획 문서 작업 중 오케스트레이터(작업을 나누고 PR을 병합하는 주관 에이전트)가 정해 둔 해석 가운데 사용자 확인이 남은 것: `docs/tracking/decisions/20260924-0810-docs-run-review-decisions.md`의 4·6·9·10·11·12·18·19행. 행마다 "사용자 확인" 칸에 확인 시점이 있다. 1·5·13행은 2026-09-24(목)에 승인했고, 2행(`g0` 해석)은 같은 날 21:51 사용자 결정으로 확정했다(결정 기록 `20260924-2212-user-decision-snapshot-build-and-g0.md` ②)
 - X1 뒤 개발 기계 정리(선택): 사용자 zsh 시작 설정 파일(`.zshrc`)에 NemoClaw가 더한 PATH 블록을 둘지. 되돌리는 방법은 `spikes/x1/README.md`의 "개발 기계 되돌리기" 절에 있다. 명령은 공개 문서(판을 고정한 OpenShell·NemoClaw 문서, Homebrew 공식 manpage(명령 설명서), Docker 공식 문서)로 확인한 것만 적었고, LaunchAgent(로그인할 때 프로그램을 띄우는 macOS 설정) 파일 삭제 등은 `[미확인]`으로 남았다. 1단계 게이트웨이 상태 저장소에 키가 남았는지는 `[미확인]`이고, 키 사본 정리는 대회 마무리 때 한다(위 "남은 일" 5). X1 PR의 병합 조건은 아니다
-- 아직 어느 문서에도 규칙이 없어 정해야 하는 것: `docs/tracking/findings.md`의 해당 항목(재실행 규칙의 빈칸, 봉인 해시 목록의 생성 시각, 시험표 행의 작성 주체, 비밀값 검사 스크립트)
-- `checklist` 모드에서 스키마 검사가 막았을 때의 상태 문구(D1은 검증기 차단만 적었다): 2026-09-25(금) 09:00 사용자 확인(`docs/tracking/findings.md`의 해당 항목)
+- 아직 어느 문서에도 규칙이 없어 정해야 하는 것: `docs/tracking/findings.md`의 해당 항목(재실행 규칙의 빈칸(결정 D12), 시험표 행의 작성 주체, 저장소 공개 때의 PR 참조 검사)

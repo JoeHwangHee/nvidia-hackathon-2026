@@ -175,6 +175,8 @@
 
 ### 2.3 계획 경로·명령 표
 
+2026-09-25(금) 사용자 결정 8·10·12(결정 기록 `docs/tracking/decisions/20260925-0847-user-decision-morning-shared-promises.md`)로 실자료 분할 기록 행을 더하고, CLI 행에 `evaluate --mode`의 뜻과 선택 옵션 `--run-name`을 더했다.
+
 **2026-09-24(목) 사용자 결정(결정 기록 `20260924-1720-user-decision-domain-restructure.md`, `20260924-2315-user-decision-impl-plan-approval.md` D2·D3)으로 고친 표**
 
 - 모든 문서는 아래 표의 경로와 명령만 쓴다. 이름은 조정값이며, S0 외부 자문으로 바뀌면 이 표와 참조 문서를 **함께** 고친다.
@@ -184,7 +186,7 @@
 |---|---|---|
 | 앱 패키지 | `src/tradesentry/` — `ingest.py`(기존), 패키지 `contract/`, `snapshot/`, `dal/`, `metrics/`, `policy/`, `grouping/`, `tools/`, `workflow/`, `reports/`, `validator/`, `runlog/`, `evaluation/`, `approval/`, `cli/`. 단위 파일은 `{패키지}/{단위}.py` | D: ingest·contract·snapshot·dal·metrics / M: policy·grouping·tools·workflow·reports·validator·evaluation·approval·cli / 공동: runlog |
 | 단위 등록부·공통 실행기(개발 전용) | `src/tradesentry/units/`, 실행 `python -m tradesentry.units <단위 ID> --in <입력 파일>` | 공동 |
-| CLI | `tradesentry <명령>` — `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate`, 공통 옵션 `--snapshot`, `--policy`, `--mode`(값은 `checklist`, `agent`, `full`, `freeform`) | M |
+| CLI | `tradesentry <명령>` — `snapshot-build`, `snapshot-verify`, `detect`, `run-case`, `evaluate`, 공통 옵션 `--snapshot`, `--policy`, `--mode`(값은 `checklist`, `agent`, `full`, `freeform`). `evaluate`에 `--mode`를 주지 않으면 그 묶음의 정해진 모드 전부를 한 묶음으로 돌고, 주면 그 모드 하나만(스모크용, 점수표로 합치지 않음) 돈다. 다섯 명령 모두에 선택 옵션 `--run-name <실행명>`: 샌드박스 밖 실행기(평가 하네스와 봉인 실행기)가 호스트에서 먼저 확보한 실행명을 넘긴다. CLI는 이름이 N5 형식이고 앞부분이 그 명령의 실행 이름과 같은지 검사한 뒤 샌드박스 쪽 `outputs/{실행명}/`을 이미 있으면 실패하는 방식으로 만든다. 옵션이 없으면 CLI가 확보한다(샌드박스 밖 직접 실행, 이름·출력 규칙 N8) | M |
 | 화면 | `src/tradesentry/app.py`(Streamlit 화면) | M |
 | 정책 수치 | `configs/policy_v1.json`(사용자 승인 뒤), 개발용 `configs/policy_dev.json`(`policy_version` `dev-0.1`, oracle 기준값, 승인 전 실행용) | D 제안·사용자 승인(개발용은 D) |
 | NAT 설정 | `configs/nat/workflow.yml` | M |
@@ -194,6 +196,7 @@
 | 평가 스킬 | `skills/tradesentry-scorecard/SKILL.md`, `skills/tradesentry-eval/SKILL.md` | 공동 |
 | 합성 시험자료 | `data/snapshots/controlled_fixture_v0/` | D |
 | 그룹핑 결과 | `data/reference/peer_group_g0.csv`(`g0`, MVP 시험용 고정 비교국 목록), `data/reference/peer_group_g1.csv` | M 계산·D 검수 |
+| 실자료 분할 기록 | `data/reference/real_split_kcs_202201_202412_v2.json`(실자료 64개 계열의 `real_dev`·`real_sealed` 배정. 실자료 분할 단위 V5 출력과 바이트가 같다) | D |
 | 시나리오 명세(공개) | `eval/scenarios/SCENARIO_SPEC.md` | D |
 | dev20 | `eval/dev/dev20/`(입력 + 정답표) | D |
 | 평가 자료 도구 | `eval/datagen/` — `dev20.py`(dev20 생성), `holdout40_check.py`(holdout40 결정적 검사), `split.py`(실자료 분할) | D |
@@ -208,7 +211,7 @@
 | 시험 | `tests/`(기존 `test_ingest.py` 유지), 단위 골든 시험 `tests/units/{단위 ID}/` | 공동 |
 
 - 이 표는 자료 계약 `docs/rules/DATA_CONTRACT_V1.md` §10의 표와 글자까지 같다. 명세 §4.12 원문과 다른 곳의 근거는 위 결정 기록이다.
-- 중괄호 자리 `{실행명}`, `{도메인명}`, `{시각}`, `{확장자}`, `{패키지}`, `{단위}`, `{단위 ID}`, `{run_id}`는 아래 이름·출력 규칙과 단위 표(`docs/plan/UNITS.md`)로 채운다. `{run_id}`는 사례 실행의 실행명이다(자료 계약 §10.3 N5). `{시각}`은 `yymmddhhmmss`, 곧 그 실행이 시작한 KST(한국 표준시) 24시간 12자리 시각이다(예: `260925143015`). 꺾쇠 자리 `<run_dir>`, `<단위 ID>`, `<입력 파일>`, `<명령>`은 명령을 쓸 때 실제 값으로 바꾸는 자리표시다.
+- 중괄호 자리 `{실행명}`, `{도메인명}`, `{시각}`, `{확장자}`, `{패키지}`, `{단위}`, `{단위 ID}`, `{run_id}`는 아래 이름·출력 규칙과 단위 표(`docs/plan/UNITS.md`)로 채운다. `{run_id}`는 사례 실행의 실행명이다(자료 계약 §10.3 N5). `{시각}`은 `yymmddhhmmss`, 곧 그 실행이 시작한 KST(한국 표준시) 24시간 12자리 시각이다(예: `260925143015`). 꺾쇠 자리 `<run_dir>`, `<단위 ID>`, `<입력 파일>`, `<명령>`, `<실행명>`은 명령을 쓸 때 실제 값으로 바꾸는 자리표시다.
 - `<run_dir>`는 채점할 실행의 폴더 `outputs/{실행명}/`이고, 봉인 묶음 실행이면 `outputs/sealed/{실행명}/`이다. 채점기는 자기 출력을 `outputs/score-{시각}/`에 쓴다. 봉인 묶음을 채점할 때도 같다. 그때 채점기는 시작 직후 자기가 확보한 실행 폴더 이름을 표준 출력 첫 줄로 알리고, 봉인 묶음을 채점한 채점기 출력은 금지 해제 조건(정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 전에는 에이전트가 열지 않고 커밋하지 않는다.
 - 보고서 객체는 도메인 출력이라 `outputs/{실행명}/`에 남는다. 이 폴더는 커밋하지 않으므로 재채점용 보고서 원문은 `artifacts/eval/score-{시각}/{run_id}/`에 증거 복사한다(조건 다섯은 자료 계약 §10.3 N11).
 
