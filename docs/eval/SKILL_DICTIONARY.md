@@ -186,7 +186,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 - 사전 점검
   - 구현 전에 부르면 사전 점검 단계에서 멈춘다. 없는 구성요소 목록(명령·파일·해시)을 보고하고 어떤 실행도 하지 않는다.
   - 동결 조건 가운데 하나라도 빠지면 봉인 자료 채점을 거부한다. 봉인 자료는 holdout40(봉인 평가용 합성 자료 40건)과 `real_sealed`(대표 지표를 재는 실자료 봉인 묶음)다.
-  - 이때도 dev20(공개 개발용 합성 자료)·`real_dev`(기준값 조정에 쓰는 실자료 개발 묶음) 실행은 허용한다.
+  - 이때도 dev20(공개 개발용 합성 자료)·`real_dev`(기준값 조정과 조사 지침(모델 프롬프트)·조사 흐름 조정에 쓰는 실자료 개발 묶음) 실행은 허용한다.
   - 동결 조건은 `policy_v1`(동결 판정 정책, `configs/policy_v1.json`) 승인, `g1`(BACI 국제 무역 자료의 수출 구성 유사도로 고른 비교 대상) 동결 또는 `g0`(고정 목록) 대체 선언, 봉인 자료 해시 커밋(`eval/sealed_manifest.json`)이다.
 - 실행(채점 대상 실행)
   - OpenShell 샌드박스 안에서 같은 CLI(`tradesentry <명령>`, 예: `run-case`, `evaluate`, 공통 옵션 `--snapshot`, `--policy`, `--mode`)로 직접 돌린다.
@@ -392,7 +392,7 @@ npx skills add NVIDIA/skills --skill nemo-relay-plugin-observability
 - **자기채점**: 채점 규범과 룰북 Part A로 우리 저장소를 스스로 채점하는 일. `tradesentry-scorecard`가 수행한다.
 - **컴포넌트 삭제 시험**: 구성요소마다 "지우면 어떤 지표가 나빠지는가"를 적는 점검. 답이 없으면 개수 채우기로 본다.
 - **숫자 등급 A~D**: 정답을 누가 만들었는지와 정답이 개선 과정에 노출됐는지로 매기는 숫자 신뢰 등급. 대표 지표(`real_sealed` 사실 주장 오류율)는 주장 조건(§3.3)을 채울 때 A, holdout40 처리정확도는 C, dev20·`real_dev` 결과는 D다.
-- **자료 묶음**: `controlled_fixture_v0`(데이터 트랙이 먼저 넘기는 합성 시험자료, A/B/C 사례 포함), `dev20`(공개 개발 자료), `holdout40`(봉인 평가 자료), `real_dev`(기준값 조정에 쓰는 실자료 개발 묶음), `real_sealed`(대표 지표를 재는 실자료 봉인 묶음).
+- **자료 묶음**: `controlled_fixture_v0`(데이터 트랙이 먼저 넘기는 합성 시험자료, A/B/C 사례 포함), `dev20`(공개 개발 자료), `holdout40`(봉인 평가 자료), `real_dev`(기준값 조정과 조사 지침(모델 프롬프트)·조사 흐름 조정에 쓰는 실자료 개발 묶음), `real_sealed`(대표 지표를 재는 실자료 봉인 묶음).
 - **봉인 자료**: 개발 중 보지 않도록 저장소 밖(`TRADESENTRY_SEALED_DIR`, 기본값 `~/.tradesentry/sealed/`)에 두고 sha256 해시 목록(`eval/sealed_manifest.json`)만 커밋하는 평가 자료. holdout40 입력과 정답표, `real_sealed` 사례 목록과 채점 표본이 대상이다.
 - **모드**: 비교 방식. `checklist`(고정 체크리스트, 모델 없음), `agent`(Critic 없는 Nemotron), `full`(전체 TradeSentry), `freeform`(대표 지표 기준선. 모델이 값을 직접 쓰고 검증기는 기록만 한다).
 - **스킬 호출 성공률**: NemoClaw 경로 시연에서 에이전트가 `tradesentry` 스킬을 불러 CLI 실행까지 이어진 비율. 정확도 지표와 별개다.
