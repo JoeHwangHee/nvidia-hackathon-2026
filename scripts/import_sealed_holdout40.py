@@ -6,7 +6,8 @@
 import하지 않는다(eval/은 이미지에 들어가지 않는다). 수집기 SQLite 재현은 수집기 store_result로, 빌드는 단위 S2, 검증은 단위 S3로 한다.
 
     uv run --locked python -m scripts.import_sealed_holdout40 --dest <저장소·봉인 폴더 밖의 아직 없는 폴더> \\
-        [--sealed-dir <봉인 폴더>] [--manifest eval/sealed_manifest.json] [--snapshot-id holdout40] [--policy policy_v1]
+        [--sealed-dir <봉인 폴더>] [--manifest eval/sealed_manifest.json] [--snapshot-id holdout40] [--policy policy_v1] \\
+        [--collector-meta <JSON 파일>]
 
 순서
     ① 해시 대조: 해시 목록(eval/sealed_manifest.json)의 files 전체(두 묶음)를 봉인 폴더와 대조한다. 목록 파일이 모두 있고 sha256이
@@ -17,6 +18,10 @@ import하지 않는다(eval/은 이미지에 들어가지 않는다). 수집기 
        거치고, 이 함수는 `holdout40/input/` 밖 경로를 거부한다.
     ③ 임시 폴더에 수집기 형식 원천(raw/·manifest.json 등)을 놓고 수집기 store_result로 수집기 SQLite를 재현한 뒤(시각은 기록의 고정
        시각), 단위 S2 build_to로 snapshot_build.sqlite를 빌드하고 단위 S3 verify_snapshot(raw 대조 켬, 비교국 표 명시)으로 검증한다.
+       수집기 snapshot_meta(source_kind·importer·valuation_basis·units·precision_rule·coverage_status, 선택 source_url 등)는 단위 S2가
+       정규화 해시에 넣는 값이라 도구가 고정하지 않는다. 원천 snapshot_build.json의 `snapshot_meta`(또는 `collector_meta`) 키에서 읽고,
+       없으면 `--collector-meta <JSON 파일>`이 채운다. 필수 키가 하나라도 없으면 종료 2(무기록). 파생 키(snapshot_id, created_at,
+       last_collect_at, hs_version, period_start, period_end)는 원천에서 채우고 기록값과 다르면 종료 2.
        빌드 기록의 normalized_sha256이 원천 snapshot_build.json의 값(그리고 cases.json의 snapshot_normalized_sha256이 있으면 그 값)과
        같아야 한다. 검증 실패나 값이 다르면 종료 코드 3(임시 폴더는 지운다).
     ④ `<dest>/`에 저장소 배치 그대로 쓴다(배타 생성). dest는 저장소 안(본 작업 폴더와 git이 아는 모든 worktree, 파일 정체성 비교)이나
@@ -72,6 +77,12 @@ IMPORT_MANIFEST = "import_manifest.json"
 INSTALLED_FROM = "scripts/import_sealed_holdout40.py"
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 PEER_NAME_RE = re.compile(r"peer_group_([A-Za-z0-9][A-Za-z0-9_-]*)\.csv")
+# 수집기 snapshot_meta: 단위 S2가 정규화 해시에 넣는 값이라 도구가 고정하지 않는다. 원천 빌드 기록의 이 키(둘 중 하나)나
+# --collector-meta 파일에서 읽고, 아래 필수 키가 하나라도 없으면 종료 2다. 파생 키는 도구가 원천에서 채운다(기록에 있으면 같아야 한다)
+META_RECORD_KEYS = ("snapshot_meta", "collector_meta")
+META_REQUIRED = ("source_kind", "importer", "valuation_basis", "units", "precision_rule", "coverage_status")
+META_OPTIONAL = ("source_url", "units_confirmed")  # source_url이 없으면 단위 S2가 요청 endpoint에서 유도한다
+META_DERIVED = ("snapshot_id", "created_at", "last_collect_at", "hs_version", "period_start", "period_end")
 EXIT_OK, EXIT_UNEXPECTED, EXIT_REFUSED, EXIT_BUILD = 0, 1, 2, 3
 # 수집기 ingest.open_snapshot의 표 정의와 같다(수집기는 스냅샷 폴더 위치가 고정이라 그 함수를 부르지 않는다. eval/datagen/dev20.py와 같은 사정)
 COLLECTOR_DDL = """
@@ -213,21 +224,27 @@ def load_manifest(path: Path) -> list[dict]:
     return files
 
 
-def sealed_files(sealed: Path) -> set[str]:
-    """봉인 폴더의 파일 전부(상대경로, POSIX). 폴더 심볼릭 링크는 따라가지 않고, 파일 심볼릭 링크는 파일로 센다."""
+def sealed_files(sealed: Path) -> tuple[set[str], set[str]]:
+    """봉인 폴더의 (일반 파일 전부, 심볼릭 링크 전부)(상대경로, POSIX). 해시 목록에는 일반 파일만 있으므로 링크(파일·폴더)는
+    따라가지 않고 목록 밖 항목으로 센다."""
     if not sealed.is_dir():
         raise ImportRefused("봉인 폴더가 없다")
-    found = set()
+    found, links = set(), set()
     for current, dirs, files in os.walk(sealed, followlinks=False):
         dirs.sort()
+        for name in dirs:
+            if (Path(current) / name).is_symlink():
+                links.add((Path(current) / name).relative_to(sealed).as_posix())
         for name in files:
-            found.add((Path(current) / name).relative_to(sealed).as_posix())
-    return found
+            path = Path(current) / name
+            (links if path.is_symlink() else found).add(path.relative_to(sealed).as_posix())
+    return found, links
 
 
 def check_manifest(sealed: Path, files: list[dict]) -> dict:
-    """해시 목록 전체를 봉인 폴더와 대조한다. {"listed", "matched", "missing", "mismatched", "extra"}. 이름은 목록 안 파일만 담는다."""
-    present = sealed_files(sealed)
+    """해시 목록 전체를 봉인 폴더와 대조한다. {"listed", "matched", "missing", "mismatched", "extra"}. 이름은 목록 안 파일만 담고,
+    extra는 목록 밖 일반 파일과 심볼릭 링크(파일·폴더)의 수다."""
+    present, links = sealed_files(sealed)
     listed = {entry["file_name"]: entry["sha256"] for entry in files}
     missing, mismatched, matched = [], [], 0
     for name in sorted(listed):
@@ -238,7 +255,7 @@ def check_manifest(sealed: Path, files: list[dict]) -> dict:
             mismatched.append(name)
         else:
             matched += 1
-    extra = len(present - set(listed))
+    extra = len(present - set(listed)) + len(links)
     return {"listed": len(listed), "matched": matched, "missing": missing, "mismatched": mismatched, "extra": extra}
 
 
@@ -289,8 +306,40 @@ def select_inputs(files: list[dict], snapshot_id: str) -> dict:
             "raws": [by_name[name] for name in raws]}
 
 
-def read_inputs(sealed: Path, selected: dict, snapshot_id: str, policy_version: str) -> dict:
-    """입력 파일을 읽고 모양을 확인한다. 값(사례 식별자)은 다루지 않는다."""
+def _meta_text(value: object) -> str:
+    """snapshot_meta 값은 문자열 한 칸이다. dict·list는 JSON 문자열로 적는다(수집기·dev20 생성기와 같은 json.dumps 기본 모양)."""
+    if isinstance(value, str):
+        return value
+    return json.dumps(value, ensure_ascii=False)
+
+
+def collector_meta(record: dict, extra: dict | None, snapshot_id: str, fixed: str, period: dict) -> dict:
+    """수집기 snapshot_meta 행을 만든다. 원천 빌드 기록의 META_RECORD_KEYS 값이 먼저, --collector-meta 파일(extra)이 빈 키를 채운다.
+    같은 키에 다른 값이면 거부. 필수 키가 하나라도 없으면 거부(키 이름만 적는다). 파생 키는 원천에서 채우고 기록값과 다르면 거부."""
+    given: dict[str, str] = {}
+    sources = [record.get(key) for key in META_RECORD_KEYS if key in record] + ([extra] if extra else [])
+    for source in sources:
+        if not isinstance(source, dict):
+            raise ImportRefused("수집기 메타(snapshot_meta)가 JSON 객체가 아니다")
+        for key, value in source.items():
+            text = _meta_text(value)
+            if key in given and given[key] != text:
+                raise ImportRefused(f"수집기 메타의 값이 두 출처에서 다르다: {key}")
+            given.setdefault(key, text)
+    derived = {"snapshot_id": snapshot_id, "created_at": fixed, "last_collect_at": fixed, "hs_version": s2.COLLECTOR_HS_VERSION,
+               "period_start": _meta_text(period.get("start")), "period_end": _meta_text(period.get("end"))}
+    for key, value in derived.items():
+        if key in given and given[key] != value:
+            raise ImportRefused(f"수집기 메타의 파생 키가 원천과 다르다: {key}")
+    missing = [key for key in META_REQUIRED if key not in given]
+    if missing:
+        raise ImportRefused("수집기 메타를 알 수 없다(원천 snapshot_build.json의 snapshot_meta나 --collector-meta 파일에 없는 키): "
+                            + ", ".join(missing))
+    return {**given, **derived}  # 그 밖의 키는 그대로 둔다(단위 S2는 필수·선택 키만 정규화 해시에 넣는다)
+
+
+def read_inputs(sealed: Path, selected: dict, snapshot_id: str, policy_version: str, extra_meta: dict | None = None) -> dict:
+    """입력 파일을 읽고 모양을 확인한다. 값(사례 식별자)은 다루지 않는다. extra_meta는 --collector-meta 파일의 내용이다."""
     cases_bytes = read_input_bytes(sealed, CASES_REL)
     cases = _json(cases_bytes, CASES_REL)
     if cases.get("dataset") != DATASET:
@@ -317,9 +366,10 @@ def read_inputs(sealed: Path, selected: dict, snapshot_id: str, policy_version: 
         raise ImportRefused("원천 snapshot_build.json의 snapshot_id·normalized_sha256이 맞지 않다")
     if expected_cases is not None and expected_cases != expected:
         raise ImportRefused("cases.json의 snapshot_normalized_sha256이 원천 snapshot_build.json과 다르다")
+    meta = collector_meta(record, extra_meta, snapshot_id, log["collected_at"], manifest["config"].get("period") or {})
     peer_name = selected["peer"]["file_name"][len(SOURCE_PREFIX):]
     raws = {entry["file_name"][len(RAW_PREFIX):]: read_input_bytes(sealed, entry["file_name"]) for entry in selected["raws"]}
-    return {"cases_bytes": cases_bytes, "texts": texts, "manifest": manifest, "log": log, "expected": expected,
+    return {"cases_bytes": cases_bytes, "texts": texts, "manifest": manifest, "log": log, "expected": expected, "meta": meta,
             "peer_name": peer_name, "peer_bytes": read_input_bytes(sealed, selected["peer"]["file_name"]), "raws": raws}
 
 
@@ -355,18 +405,10 @@ def materialize_collector(inputs: dict, snapshot_id: str, target_dir: Path) -> P
                                 request["months"])
         con.execute("UPDATE collection_receipt SET timestamp = ?", (fixed,))
         con.execute("UPDATE collection_attempt SET timestamp = ?", (fixed,))
-        config = manifest["config"]
-        period = config.get("period") or {}
-        meta = {"snapshot_id": snapshot_id, "source_kind": "controlled", "created_at": fixed, "last_collect_at": fixed,
-                "importer": "KR", "units": json.dumps(ingest.UNITS, ensure_ascii=False),
-                "valuation_basis": json.dumps(ingest.VALUATION, ensure_ascii=False),
-                "units_confirmed": "합성 자료(controlled): 금액은 USD 정수, 중량은 kg 정수로 만들었다",
-                "precision_rule": "amount exact integer USD; weight integer kg per row (합성 자료)",
-                "hs_version": s2.COLLECTOR_HS_VERSION, "coverage_status": "IN_PROGRESS",
-                "period_start": period.get("start"), "period_end": period.get("end"),
-                "source_url": json.dumps(["eval/datagen/dev20.py", "eval/scenarios/SCENARIO_SPEC.md"])}
-        con.executemany("INSERT INTO snapshot_meta(key, value) VALUES(?, ?)", sorted(meta.items()))
+        con.executemany("INSERT INTO snapshot_meta(key, value) VALUES(?, ?)", sorted(inputs["meta"].items()))
         con.commit()
+    except KeyError as exc:  # 원천 manifest·collection_log의 키 누락은 입력 모양 오류다(종료 2)
+        raise ImportRefused(f"원천 manifest.json·collection_log.json에 필요한 키가 없다({exc.args[0]!s})") from None
     finally:
         con.close()
     if set(inputs["raws"]) != ok_files:
@@ -435,13 +477,28 @@ def write_dest(dest: Path, snapshot_id: str, build_file: Path, record: dict, inp
 
 
 # ----------------------------------------------------------------------------- 진입
-def run(sealed: Path, manifest_path: Path, dest: Path, snapshot_id: str, policy_version: str, repo_root: Path = REPO_ROOT) -> dict:
+def load_extra_meta(path: Path | None) -> dict | None:
+    """--collector-meta 파일(JSON 객체). 없으면 None."""
+    if path is None:
+        return None
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ImportRefused(f"--collector-meta 파일을 읽지 못했다({type(exc).__name__})") from None
+    if not isinstance(doc, dict):
+        raise ImportRefused("--collector-meta 파일이 JSON 객체가 아니다")
+    return doc
+
+
+def run(sealed: Path, manifest_path: Path, dest: Path, snapshot_id: str, policy_version: str, repo_root: Path = REPO_ROOT,
+        extra_meta_path: Path | None = None) -> dict:
     """전체 순서 ①~④. 성공하면 표준 출력에 낼 값(dict)을 돌려준다. 실패는 ImportRefused·BuildMismatch."""
     if not s2.SNAPSHOT_ID_RE.fullmatch(snapshot_id or ""):
         raise ImportRefused("--snapshot-id가 경로 조각으로 안전한 이름이 아니다")
     manifest_path = manifest_path if manifest_path.is_absolute() else repo_root / manifest_path
     if manifest_path.is_symlink() or not manifest_path.is_file():
         raise ImportRefused("해시 목록 파일이 없다")
+    extra_meta = load_extra_meta(extra_meta_path)
     target = check_dest(dest, repo_root, sealed)
     try:
         policy = load_policy(policy_version)
@@ -456,15 +513,15 @@ def run(sealed: Path, manifest_path: Path, dest: Path, snapshot_id: str, policy_
                             + "".join(f"\n  없음: {name}" for name in check["missing"])
                             + "".join(f"\n  해시 다름: {name}" for name in check["mismatched"]))
     selected = select_inputs(files, snapshot_id)
-    inputs = read_inputs(sealed, selected, snapshot_id, policy_version)
+    inputs = read_inputs(sealed, selected, snapshot_id, policy_version, extra_meta)
     with tempfile.TemporaryDirectory(prefix="tradesentry_import_") as tmp:
         work = Path(tmp)
-        collector = materialize_collector(inputs, snapshot_id, work / "collector")
+        collector = materialize_collector(inputs, snapshot_id, work / "collector")  # 입력 키 누락은 ImportRefused(종료 2)
         peer_file = work / inputs["peer_name"]
         peer_file.write_bytes(inputs["peer_bytes"])
         try:
             build_file, record = build_and_verify(collector, peer_file, snapshot_id, policy, work)
-        except (s2.BuildError, sqlite3.Error, ValueError, KeyError) as exc:
+        except (s2.BuildError, sqlite3.Error, ValueError) as exc:
             raise BuildMismatch(f"빌드 실패({type(exc).__name__})") from None
         if record["normalized_sha256"] != inputs["expected"]:
             raise BuildMismatch("빌드 normalized_sha256이 원천 snapshot_build.json의 값과 다르다")
@@ -484,9 +541,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--manifest", default=DEFAULT_MANIFEST, help="해시 목록(기본 eval/sealed_manifest.json)")
     parser.add_argument("--snapshot-id", default=DEFAULT_SNAPSHOT_ID, help="봉인 묶음의 snapshot_id(기본 holdout40)")
     parser.add_argument("--policy", default=DEFAULT_POLICY, help="빌드 정책 버전(기본 policy_v1)")
+    parser.add_argument("--collector-meta", help="수집기 snapshot_meta를 담은 JSON 객체 파일(원천 빌드 기록에 메타가 없을 때만)")
     args = parser.parse_args(argv)
     try:
-        result = run(sealed_dir_from(args.sealed_dir), Path(args.manifest), Path(args.dest), args.snapshot_id, args.policy)
+        result = run(sealed_dir_from(args.sealed_dir), Path(args.manifest), Path(args.dest), args.snapshot_id, args.policy,
+                     extra_meta_path=Path(args.collector_meta) if args.collector_meta else None)
     except ImportRefused as exc:
         sys.stderr.write(f"오류: {exc}\n")
         return EXIT_REFUSED

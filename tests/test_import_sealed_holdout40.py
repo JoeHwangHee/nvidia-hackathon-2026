@@ -30,6 +30,14 @@ DEV20_RAW = ROOT / "eval" / "dev" / "dev20" / "input" / "source" / "raw"
 DEV20_SNAPSHOT = ROOT / "data" / "snapshots" / "dev20"
 DEV20_PEER = ROOT / "data" / "reference" / "peer_group_dev20.csv"
 SNAPSHOT_ID, POLICY = "dev20", "dev-0.1"
+# dev20 생성기(eval/datagen/dev20.py materialize_collector)가 적는 수집기 snapshot_meta 가운데 단위 S2가 정규화 해시에 넣는 값.
+# 가짜 묶음의 원천 빌드 기록에 넣어 도구가 이 값을 읽어 빌드하면 커밋된 dev20 해시가 나온다(도구 안에 고정값이 없다는 증거)
+DEV20_META = {"source_kind": "controlled", "importer": "KR", "units": {"amount": "USD", "weight": "kg"},
+              "valuation_basis": {"import": "CIF 과세가격 미화금액", "export": "FOB 신고 미화금액"},
+              "units_confirmed": "합성 자료(controlled): 금액은 USD 정수, 중량은 kg 정수로 만들었다",
+              "precision_rule": "amount exact integer USD; weight integer kg per row (합성 자료)",
+              "coverage_status": "IN_PROGRESS", "source_url": ["eval/datagen/dev20.py", "eval/scenarios/SCENARIO_SPEC.md"]}
+RECORD_REL = "holdout40/input/source/snapshot_build.json"
 
 
 def sha256(data: bytes) -> str:
@@ -47,8 +55,11 @@ class FakeSealed:
         self.case_ids = [case["case_id"] for case in cases["cases"]]
         cases["dataset"] = "holdout40"
         self.put("holdout40/input/cases.json", (json.dumps(cases, ensure_ascii=False, indent=1) + "\n").encode("utf-8"))
-        for name in ("manifest.json", "collection_log.json", "snapshot_hash.json", "snapshot_build.json"):
+        for name in ("manifest.json", "collection_log.json", "snapshot_hash.json"):
             self.put(f"holdout40/input/source/{name}", (DEV20_SNAPSHOT / name).read_bytes())
+        record = json.loads((DEV20_SNAPSHOT / "snapshot_build.json").read_text(encoding="utf-8"))
+        record["snapshot_meta"] = dict(DEV20_META)
+        self.put_json(RECORD_REL, record)
         self.put("holdout40/input/source/peer_group_dev20.csv", DEV20_PEER.read_bytes())
         for path in sorted(DEV20_RAW.glob("*.xml")):
             self.put(f"holdout40/input/source/raw/{path.name}", path.read_bytes())
@@ -62,6 +73,12 @@ class FakeSealed:
 
     def put(self, rel: str, data: bytes) -> None:
         self.files[rel] = data
+
+    def put_json(self, rel: str, doc: dict) -> None:
+        self.put(rel, (json.dumps(doc, ensure_ascii=False, indent=1) + "\n").encode("utf-8"))
+
+    def record(self) -> dict:
+        return json.loads(self.files[RECORD_REL].decode("utf-8"))
 
     def write_all(self) -> None:
         for rel, data in self.files.items():
@@ -265,12 +282,122 @@ class ImportToolTest(unittest.TestCase):
         self.assertTrue(all(root.is_absolute() for root in roots))
 
     def test_main_never_writes_into_sealed_dir(self):
-        before = tool.sealed_files(self.fake.sealed)
+        before, links = tool.sealed_files(self.fake.sealed)
+        self.assertEqual(links, set())
         code, _, err = self.run_tool()
         self.assertEqual(code, 0, err)
-        self.assertEqual(tool.sealed_files(self.fake.sealed), before)
+        self.assertEqual(tool.sealed_files(self.fake.sealed), (before, set()))
         for rel in before:
             self.assertEqual(sha256((self.fake.sealed / rel).read_bytes()), sha256(self.fake.files[rel]))
+
+    # 수집기 메타는 원천 빌드 기록에서 읽는다(고정값 없음)
+    def expected_hash_for_meta(self, meta: dict) -> str:
+        """도구의 빌드 함수로 이 메타의 normalized_sha256을 구한다(기록에 넣어 성공을 볼 기대값)."""
+        files = tool.load_manifest(self.fake.manifest)
+        selected = tool.select_inputs(files, SNAPSHOT_ID)
+        inputs = tool.read_inputs(self.fake.sealed, selected, SNAPSHOT_ID, POLICY)
+        self.assertEqual(inputs["meta"]["importer"], meta["importer"])
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            collector = tool.materialize_collector(inputs, SNAPSHOT_ID, work / "collector")
+            peer = work / inputs["peer_name"]
+            peer.write_bytes(inputs["peer_bytes"])
+            from tradesentry.contract.policy_load import load_policy
+            _, record = tool.build_and_verify(collector, peer, SNAPSHOT_ID, load_policy(POLICY), work)
+        return record["normalized_sha256"]
+
+    def test_meta_is_read_from_record_not_fixed(self):
+        dev20_hash = json.loads((DEV20_SNAPSHOT / "snapshot_build.json").read_text(encoding="utf-8"))["normalized_sha256"]
+        meta = {**DEV20_META, "importer": "ZZ", "coverage_status": "COMPLETE",
+                "source_url": ["gen/generate.py", "eval/scenarios/SCENARIO_SPEC.md"], "precision_rule": "synthetic integers"}
+        record = self.fake.record()
+        record["snapshot_meta"] = meta
+        self.fake.put_json(RECORD_REL, record)
+        self.fake.write_all()
+        expected = self.expected_hash_for_meta(meta)
+        self.assertNotEqual(expected, dev20_hash)  # 메타가 해시에 든다
+        code, _, err = self.run_tool()
+        self.assertEqual(code, 3, err)  # 기록값은 아직 dev20 해시
+        record["normalized_sha256"] = expected
+        self.fake.put_json(RECORD_REL, record)
+        cases = json.loads(self.fake.files["holdout40/input/cases.json"].decode("utf-8"))
+        cases["snapshot_normalized_sha256"] = expected
+        self.fake.put_json("holdout40/input/cases.json", cases)
+        self.fake.write_all()
+        code, out, err = self.run_tool()
+        self.assertEqual(code, 0, err)
+        self.assertIn(f"normalized_sha256={expected}", out)
+        con = sqlite3.connect(f"file:{self.dest / 'data/snapshots/dev20/snapshot_build.sqlite'}?mode=ro", uri=True)
+        try:
+            meta_rows = dict(con.execute("SELECT key, value FROM snapshot_meta"))
+        finally:
+            con.close()
+        self.assertEqual((json.loads(meta_rows["importer"]), json.loads(meta_rows["coverage_status"])), ("ZZ", "COMPLETE"))
+
+    def test_missing_meta_exits_2_and_collector_meta_file_fills(self):
+        record = self.fake.record()
+        del record["snapshot_meta"]
+        self.fake.put_json(RECORD_REL, record)
+        self.fake.write_all()
+        code, _, err = self.run_tool()
+        self.assertEqual(code, 2, err)
+        for key in tool.META_REQUIRED:
+            self.assertIn(key, err)
+        self.assertFalse(self.dest.exists())
+        meta_file = self.base / "collector_meta.json"
+        partial = {k: v for k, v in DEV20_META.items() if k != "coverage_status"}
+        meta_file.write_text(json.dumps(partial, ensure_ascii=False), encoding="utf-8")
+        code, _, err = self.run_tool("--collector-meta", str(meta_file))
+        self.assertEqual(code, 2, err)
+        self.assertIn("coverage_status", err)
+        self.assertNotIn("importer", err.split("없는 키")[-1])
+        meta_file.write_text(json.dumps(DEV20_META, ensure_ascii=False), encoding="utf-8")
+        code, out, err = self.run_tool("--collector-meta", str(meta_file))
+        self.assertEqual(code, 0, err)
+        dev20_hash = json.loads((DEV20_SNAPSHOT / "snapshot_build.json").read_text(encoding="utf-8"))["normalized_sha256"]
+        self.assertIn(f"normalized_sha256={dev20_hash}", out)
+
+    def test_meta_conflicts_refuse(self):
+        record = self.fake.record()
+        record["snapshot_meta"]["snapshot_id"] = "other"  # 파생 키가 원천과 다르다
+        self.fake.put_json(RECORD_REL, record)
+        self.fake.write_all()
+        code, _, err = self.run_tool()
+        self.assertEqual(code, 2, err)
+        self.assertIn("파생 키", err)
+        record["snapshot_meta"] = dict(DEV20_META)
+        self.fake.put_json(RECORD_REL, record)
+        self.fake.write_all()
+        meta_file = self.base / "collector_meta.json"
+        meta_file.write_text(json.dumps({"importer": "XX"}), encoding="utf-8")
+        code, _, err = self.run_tool("--collector-meta", str(meta_file))
+        self.assertEqual(code, 2, err)
+        self.assertIn("두 출처", err)
+        self.assertFalse(self.dest.exists())
+
+    def test_symlinks_in_sealed_count_as_extra(self):
+        os.symlink(self.fake.sealed / "holdout40/input/cases.json", self.fake.sealed / "holdout40" / "link.json")
+        os.symlink(self.fake.sealed / "holdout40" / "gen", self.fake.sealed / "gen_link")
+        code, _, err = self.run_tool()
+        self.assertEqual(code, 2, err)
+        self.assertIn("목록 밖 파일 2개", err)
+        self.assertNotIn("link", err)
+        self.assertFalse(self.dest.exists())
+        present, links = tool.sealed_files(self.fake.sealed)
+        self.assertEqual(len(present), len(self.fake.files))
+        self.assertEqual(links, {"holdout40/link.json", "gen_link"})
+
+    def test_missing_request_key_exits_2(self):
+        rel = "holdout40/input/source/manifest.json"
+        manifest = json.loads(self.fake.files[rel].decode("utf-8"))
+        for request in manifest["requests"]:
+            del request["months"]
+        self.fake.put_json(rel, manifest)
+        self.fake.write_all()
+        code, _, err = self.run_tool()
+        self.assertEqual(code, 2, err)
+        self.assertIn("months", err)
+        self.assertFalse(self.dest.exists())
 
     def test_collector_db_is_not_left_in_dest(self):
         code, _, err = self.run_tool()
