@@ -703,10 +703,10 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 - `required_evidence_ok`·`numeric_ok`·`provenance_ok`는 정답표(사례별 필수 근거·기대 수치)나 원본 대조가 있어야 정할 수 있다. 그래서 샌드박스 밖 정답 대조 채점이 채우고, 런타임 검증기의 자기 보고로 채우지 않는다 [DESIGN]. 채점 결과 `scorer_results-{시각}.jsonl`의 한 줄은 채점 대상 실행이 남긴 키(평가 하네스 단위 `evaluation_batch_run`의 출력 `evaluation_batch_run-{시각}.jsonl`)에 채점기가 이 세 키를 더한 것이다. 채점기는 하네스의 파일을 고치지 않고, 둘을 합친 파일을 자기 실행 폴더에 새로 쓴다(§8.2).
 - 세 키는 구 개발계획 §8.3 처리정확도 식의 "필수근거", "수치/단위", "출처/버전"에 대응한다 [사실: 구 개발계획 §7·§8.3]. 식의 나머지 두 항은 키를 따로 두지 않는다. "예상 상태 일치"는 `review_status_final`을 정답표와 비교해 얻고, "정상 실행"은 `execution_status`가 `COMPLETED`인지로 얻는다 [추론].
-- 한도 수치(모델 요청 10회, 300초, 128,000토큰, 도구 8회)는 조정값이며 모든 모드에 같게 쓴다. 누적 토큰 한도는 2026-09-25(금) 사용자 결정 4로 32,000에서 128,000으로 올렸다. provider(모델 API를 호출하는 라이브러리) 자동 재시도는 끄고, 5xx(서버 오류를 뜻하는 HTTP 응답 코드) 명시 재전송만 `model_requests`에 센다 [DESIGN: 명세 §3.3].
+- 한도 수치(모델 요청 10회, 300초, 128,000토큰, 도구 8회)는 조정값이며 모든 모드에 같게 쓴다. 누적 토큰 한도는 2026-09-25(금) 사용자 결정 4로 32,000에서 128,000으로 올렸다. provider(모델 API를 호출하는 라이브러리) 자동 재시도는 끄고, 5xx(서버 오류를 뜻하는 HTTP 응답 코드)와 HTTP 429(호출 한도 초과) 명시 재전송(요청당 최대 3회, 대기 5·10·20초, 조정값)만 `model_requests`에 센다 [DESIGN: 명세 §3.3. 429와 대기 값은 2026-09-25(금) 15:52 사용자 결정, 결정 기록 `docs/tracking/decisions/20260925-1552-user-decision-429-retry.md`].
 - `checklist` 모드는 모델을 쓰지 않으므로 `model_requests`, `tokens_in`, `tokens_out`이 0이다 [사실: 구 개발계획 §8.2 "모델 없는 checklist의 토큰은 0으로 표시"].
 
-**`errors`의 원인 분류 코드** [DESIGN: 2026-09-25(금) 사용자 결정 5, 결정 기록 `docs/tracking/decisions/20260925-0847-user-decision-morning-shared-promises.md`. 코드와 실행 상태의 대응은 모델 트랙 결정 기록 `docs/tracking/decisions/20260925-0125-model-decision-mt4-workflow.md` ①]
+**`errors`의 원인 분류 코드** [DESIGN: 2026-09-25(금) 사용자 결정 5, 결정 기록 `docs/tracking/decisions/20260925-0847-user-decision-morning-shared-promises.md`. 코드와 실행 상태의 대응은 모델 트랙 결정 기록 `docs/tracking/decisions/20260925-0125-model-decision-mt4-workflow.md` ①. HTTP 429의 재전송·재실행은 2026-09-25(금) 15:52 사용자 결정, 결정 기록 `docs/tracking/decisions/20260925-1552-user-decision-429-retry.md`]
 
 `errors` 항목의 실패 원인은 아래 11개 코드 가운데 하나다. 원인 분류 코드는 실행을 멈춘 원인의 종류를 가르는 이름이고, 룰북 B5의 인프라 실패 재실행 판단이 이 이름에 기댄다.
 
@@ -714,7 +714,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 |---|---|---|---|
 | `PROVIDER_HTTP_5XX` | `FAILED` | 예 | 요청당 명시 재전송 한도(3회)를 다 쓴 뒤에도 HTTP 5xx(서버 오류 응답) |
 | `PROVIDER_CONNECTION` | `FAILED` | 예 | 연결 실패(응답을 받지 못함) |
-| `PROVIDER_HTTP_4XX` | `FAILED` | 아니오 | HTTP 4xx(요청 쪽 오류 응답). 429(요청 한도 초과)도 여기에 든다 |
+| `PROVIDER_HTTP_4XX` | `FAILED` | 아니오. 다만 오류 항목의 HTTP 상태가 429이면 예 | HTTP 4xx(요청 쪽 오류 응답). 429(요청 한도 초과)도 여기에 든다. 429는 요청당 명시 재전송 한도(3회)를 다 쓴 뒤에 남은 것이다(1552 결정) |
 | `PROVIDER_REQUEST_TIMEOUT` | `FAILED` | 아니오 | 사례 deadline 전의 요청별 제한 시간(최대 60초) 초과 |
 | `PROVIDER_BAD_RESPONSE` | `FAILED` | 아니오 | HTTP 200인데 응답 본문을 읽을 수 없음 |
 | `BUDGET_MODEL_REQUESTS` | `BUDGET_EXCEEDED` | 아니오 | 모델 요청 한도(10회, 재전송 포함) |
@@ -724,9 +724,10 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 | `VALIDATOR_BLOCKED` | `INVALID` | 아니오 | 수정 1회 뒤에도 검증기 차단(`checklist`는 수정 없이 곧바로) |
 | `CODE_ERROR` | `FAILED` | 아니오 | 그 밖의 코드 오류·설정 오류. 샌드박스 정책 프록시 거부도 여기에 담는다(아래) |
 
-- "언제" 칸은 단위 L3 파일의 표를 옮겼고, 누적 토큰 한도 값만 사용자 결정 4대로 고쳤다 [사실: `src/tradesentry/runlog/cause_codes.py` 머리말]. 재실행 대상은 `PROVIDER_HTTP_5XX`·`PROVIDER_CONNECTION` 둘이다.
+- "언제" 칸은 단위 L3 파일의 표를 옮겼고, 누적 토큰 한도 값만 사용자 결정 4대로 고쳤다 [사실: `src/tradesentry/runlog/cause_codes.py` 머리말]. `PROVIDER_HTTP_4XX` 행의 429 재전송 문장과 재실행 대상 칸의 429 예외는 L3 파일이 아니라 2026-09-25(금) 15:52 사용자 결정에서 왔다 [DESIGN: 결정 기록 `docs/tracking/decisions/20260925-1552-user-decision-429-retry.md`].
+- 재실행 대상은 `PROVIDER_HTTP_5XX`·`PROVIDER_CONNECTION`과, 오류 항목의 HTTP 상태가 429인 `PROVIDER_HTTP_4XX`다. 원인 분류 코드 11개의 이름은 그대로이고, 429와 다른 4xx(400·401·403·404·422 등)는 그 오류 항목의 HTTP 상태로 가른다. 다른 4xx는 재전송·재실행하지 않는다.
 - 샌드박스 정책(OpenShell 정책 프록시)이 막은 요청(HTTP 403)은 새 이름을 두지 않고 `CODE_ERROR`로 적고 사유 `policy_denied`를 함께 적는다. 재실행하지 않는다.
-- 재실행 규칙의 나머지 빈칸(결정 D12: HTTP 429·요청별 시간 초과·세션 중단을 재실행할지, 재실행 시점의 단위 등)은 아직 정하지 않았다 [미확인]. 룰북 B5와 `docs/tracking/findings.md`의 해당 항목을 본다.
+- HTTP 429 재실행은 2026-09-25(금) 15:52 사용자 결정으로 정했다. 재실행 규칙의 나머지 빈칸(결정 D12: 요청별 시간 초과·세션 중단을 재실행할지, 재실행 시점의 단위 등)은 아직 정하지 않았다 [미확인]. 룰북 B5와 `docs/tracking/findings.md`의 해당 항목을 본다.
 
 ### 8.2 기록 위치와 규칙
 
