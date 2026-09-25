@@ -71,13 +71,16 @@ STAMP_FORMAT = "%y%m%d%H%M%S"
 MAX_ATTEMPTS = 10
 RUN_NAME = "score"
 CONDITIONS_DOMAIN = "run_conditions"
-BATCH_DOMAINS = {"evaluate": "evaluation_batch_run"}  # 평가 묶음 실행 이름 → 묶음 기록 도메인명(단위 E1)
+BATCH_DOMAINS = {"evaluate": "evaluation_batch_run",  # 평가 묶음 실행 이름 → 묶음 기록 도메인명(단위 E1)
+                 "sealed_evaluate": "evaluation_sealed_runner"}  # 봉인 묶음 실행(단위 E2, MT7 오케스트레이터 결정 2026-09-26)
 REPORT_DOMAIN = "reports_render_ko"  # 사례 실행 폴더 안 보고서 객체 파일의 도메인명(단위 R2, AS3에서 맞춘다)
 TRACE_DOMAIN = "runlog_trace"  # 사례 실행 폴더 안 실행 추적 파일의 도메인명(단위 L1). 룰북 B7 공개 값을 세는 데 읽기만 한다
 SNAPSHOT_FILE = "snapshot_build.sqlite"
 ORACLE_PATH = ("eval", "dev", "oracle_ABC.json")
 DEV20_ANSWERS: tuple[str, ...] | None = ("eval", "dev", "dev20", "answers", "answers.json")  # DT5 결정 기록 ⑭
-SEALED_FILES: dict[str, str | None] = {"holdout40": None, "real_sealed": None}  # 봉인 폴더 기준 상대경로(DT6·DT7)
+SEALED_FILES: dict[str, str | None] = {  # 봉인 폴더 기준 상대경로. 해시 목록 eval/sealed_manifest.json의 file_name과 같다
+    "holdout40": "holdout40/answers/answers.json",  # 정답표(DT6, 해시 등록 결정 기록 20260926-0715)
+    "real_sealed": "real_sealed/sample-260926065820.json"}  # 채점 표본 {"cases": [case_id, ...]}(DT7 ③, 같은 기록)
 SEALED_MANIFEST = ("eval", "sealed_manifest.json")
 SEALED_ENV = "TRADESENTRY_SEALED_DIR"
 

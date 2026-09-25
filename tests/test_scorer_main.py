@@ -637,5 +637,23 @@ class SealedExceptionPathTest(SealedBatchTest):
         self.assertEqual((code, out.splitlines(), err), (0, ["score-260925150000", "끝 상태: 완료"], ""))
 
 
+class SealedWiringTest(unittest.TestCase):
+    """봉인 파일 이름과 봉인 묶음 실행 이름의 배선(RB-1 동결 전 확정. 결정 기록 data-decision-scorer-sealed-wiring)."""
+
+    def test_sealed_files_are_in_the_committed_manifest_exactly_once(self):
+        manifest = json.loads((Path(__file__).resolve().parents[1] / "eval" / "sealed_manifest.json").read_text("utf-8"))
+        for dataset, name in cli.SEALED_FILES.items():
+            with self.subTest(dataset=dataset):
+                self.assertIsNotNone(name)
+                self.assertFalse(Path(name).is_absolute())
+                self.assertNotIn("..", Path(name).parts)
+                hits = [e for e in manifest["files"] if e["dataset"] == dataset and e["file_name"] == name]
+                self.assertEqual(len(hits), 1)
+
+    def test_sealed_batch_run_name_maps_to_unit_e2_domain(self):
+        self.assertEqual(cli.BATCH_DOMAINS["sealed_evaluate"], "evaluation_sealed_runner")
+        self.assertEqual(cli.BATCH_DOMAINS["evaluate"], "evaluation_batch_run")
+
+
 if __name__ == "__main__":
     unittest.main()
