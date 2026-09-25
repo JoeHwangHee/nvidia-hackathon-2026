@@ -1172,14 +1172,13 @@ def sandbox_preflight(sandbox: str, host_code_version: str) -> str | None:
     return None
 
 
-def _scan_download(temp: Path, run_id: str) -> tuple[list[Path], list[Path]]:
-    """받은 임시 폴더를 링크를 따라가지 않고(os.lstat) 훑는다. (심볼릭 링크 목록, 일반 파일·폴더가 아닌 항목 목록).
-    내용이 {실행명} 폴더 하나로 한 겹 더 싸여 있으면(T-DL1과 다른 모양) DownloadRejected."""
+def _scan_download(temp: Path, run_id: str) -> tuple[list[Path], list[Path], bool]:
+    """받은 임시 폴더를 링크를 따라가지 않고(os.lstat) 훑는다. (심볼릭 링크 목록, 일반 파일·폴더가 아닌 항목 목록,
+    내용이 {실행명} 폴더 하나로 한 겹 더 싸여 있는가(T-DL1과 다른 모양))."""
     import stat
 
     top = list(os.scandir(temp))
-    if len(top) == 1 and top[0].name == run_id and top[0].is_dir(follow_symlinks=False):
-        raise DownloadRejected("받은 내용이 실행명 폴더로 한 겹 더 싸여 있다")
+    layered = len(top) == 1 and top[0].name == run_id and top[0].is_dir(follow_symlinks=False)
     links, others = [], []
     for folder, dirnames, filenames in os.walk(temp, followlinks=False):
         for name in dirnames + filenames:
@@ -1189,7 +1188,7 @@ def _scan_download(temp: Path, run_id: str) -> tuple[list[Path], list[Path]]:
                 links.append(path)
             elif not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
                 others.append(path)
-    return links, others
+    return links, others, layered
 
 
 class SandboxCaseRunner:
@@ -1244,15 +1243,16 @@ class SandboxCaseRunner:
         if got is None or got.returncode != 0:
             self._discard(temp)
             raise DownloadFailed("openshell sandbox download가 실패했다")
-        links, others = _scan_download(temp, call.run_id)
-        if links or others:
+        links, others, layered = _scan_download(temp, call.run_id)
+        if links or others or layered:
             for link in links:
                 os.unlink(link)  # 링크 자체만 지운다(대상을 따라가지 않는다)
             quarantine = temp.with_name(".quarantine-" + temp.name.lstrip(".").split("-", 1)[-1])
             os.rename(temp, quarantine)
-            self.incidents.append(f"{call.run_id}: 링크 {len(links)}개·특수 항목 {len(others)}개를 거부하고 "
+            shape = "·겹친 층" if layered else ""
+            self.incidents.append(f"{call.run_id}: 링크 {len(links)}개·특수 항목 {len(others)}개{shape}을 거부하고 "
                                   f"{quarantine.name}로 격리했다")
-            raise DownloadRejected("받은 내용에 링크나 특수 항목이 있다")
+            raise DownloadRejected("받은 내용에 링크나 특수 항목이 있거나 한 겹 더 싸여 있다")
         for entry in sorted(os.listdir(temp)):
             if os.path.lexists(target / entry):
                 raise DownloadMoveConflict("옮길 이름이 받는 곳에 이미 있다")

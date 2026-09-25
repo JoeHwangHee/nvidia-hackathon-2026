@@ -151,16 +151,20 @@ class SandboxRunnerTest(FakeOpenShell, unittest.TestCase):
                          {CASES[0]["case_id"]: "harness:DownloadRejected",
                           CASES[1]["case_id"]: "harness:DownloadRejected",
                           CASES[2]["case_id"]: "harness:DownloadFailed"})
-        link_case = by_case[CASES[0]["case_id"]]
-        self.assertEqual(list((self.outputs / link_case["run_id"]).iterdir()), [])  # 옮기지 않았다
+        for line in by_case.values():
+            self.assertEqual(list((self.outputs / line["run_id"]).iterdir()), [])  # 옮기지 않았다
+        self.assertEqual([p for p in self.outputs.iterdir() if p.name.startswith(".download-")], [])  # 임시 폴더를 남기지 않는다
         quarantined = [p for p in self.outputs.iterdir() if p.name.startswith(".quarantine-")]
-        self.assertEqual(len(quarantined), 1)
-        leftovers = [p for p in quarantined[0].rglob("*") if p.is_symlink()]
+        self.assertEqual(len(quarantined), 2)  # 링크 사례와 겹친 층 사례
+        leftovers = [p for q in quarantined for p in q.rglob("*") if p.is_symlink()]
         self.assertEqual(leftovers, [])  # 링크는 지웠다(대상 파일은 그대로다)
         self.assertTrue((self.sandbox_root / "host_secret.txt").exists())
-        self.assertEqual(len(runner.incidents), 1)
-        self.assertIn(link_case["run_id"], runner.incidents[0])
-        self.assertNotIn(str(self.root), runner.incidents[0])  # 사건 문장에 로컬 절대경로가 없다
+        self.assertEqual(len(runner.incidents), 2)
+        link_case = by_case[CASES[0]["case_id"]]
+        self.assertTrue(any(link_case["run_id"] in incident for incident in runner.incidents))
+        self.assertTrue(any("겹친 층" in incident for incident in runner.incidents))
+        for incident in runner.incidents:
+            self.assertNotIn(str(self.root), incident)  # 사건 문장에 로컬 절대경로가 없다
 
     def test_special_files_are_refused(self):
         result, _ = self.run_batch({CASES[0]["case_id"]: "fifo"})
