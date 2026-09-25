@@ -86,7 +86,7 @@ REQUIRED_TOOLS_REQUEST = ("[필수 조회] 공개 판정 규칙에 필요한 도
 
 
 BASIS_LABELS = {"composition_explained": "구성효과로 설명됨", "unexplained": "설명되지 않음", "data_insufficient": "자료 부족",
-                "comparison_incomplete": "비교 미완료", "rounding_unstable": "반올림 불안정",
+                "data_inconsistent": "자료가 맞지 않아 검증 불가", "comparison_incomplete": "비교 미완료", "rounding_unstable": "반올림 불안정",
                 "resolved_after_correction": "교정 뒤 해소", "not_triggered": "미발동"}
 SIGNAL_LABELS = {"unit_value": "단가 신호(unit_value)", "share": "점유율 신호(share)"}
 REFERENCE_HEAD = "[규칙 계산 결과(참고값)] 공개 판정 규칙을 지금까지 받은 근거에 코드로 적용한 결과다: "

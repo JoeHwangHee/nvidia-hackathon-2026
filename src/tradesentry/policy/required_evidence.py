@@ -27,7 +27,14 @@
 않음. 비교 불가로 조기 종료했거나 도구 호출이 실패한 경우). 단위 P3은 판정 근거를 정하기 전에 그 근거의 규칙이 요구하는
 비교가 끝났는지(`done`) 확인하고, `incomplete`면 `comparison_incomplete`(`HOLD`)로 낸다. 요구하는 비교가
 `not_performed`인데 자료 부족 같은 앞 단계 사유가 없으면 입력 오류다. 어느 규칙이 어느 비교를 요구하는지는 이 파일의
-규칙표 하나에서 나온다.
+규칙표 하나에서 나온다. 판정 전 비교 완료를 따지는 것은 후보 판정 근거(GATED_BASES)뿐이다.
+
+자료 보류(`HOLD`)는 사유별로 둘이다(사용자 결정 14, 결정 기록 `*-model-decision-mt1-d17-hold-split.md`).
+- `data_insufficient`: 비교월·기준월의 관측이 빠졌다(`REQUEST_FAILED`·`NOT_COLLECTED`·`UNRESOLVED_ZERO`). 필수 근거는
+  `missingness_listed`·`failure_vs_not_collected_distinguished`·`no_zero_fill`이다.
+- `data_inconsistent`: 관측은 빠지지 않았는데 비교 조건(단위·HS 정의·점유율 분모), 부모·하위 대조, 구성 분해, 하위·기준월
+  단가가 성립하지 않는다. 필수 근거는 단가 `parent_child_match_V_and_Q`·`comparability_ok`·`no_zero_fill`, 점유율
+  `country_and_world_change_shown`·`comparability_ok`·`no_zero_fill`이다.
 
 계약 상수: 커널 K1(tradesentry.contract.types)이 아직 뼈대라, 판정 정책 단위가 쓰는 계약 값(상태값·신호 코드·관측
 상태·출처·자료 묶음 이름)을 이 파일에 한 번만 적고 P1~P4가 여기서 import한다. 글자는 자료 계약과 같다. 조립 점검
@@ -62,7 +69,8 @@ REAL_DATASETS = ("real_dev", "real_sealed")
 
 # --- 판정 근거(basis). 이 단위가 정한 이름이고 계약 값이 아니다. 개발 플랜 §6.3 표의 행에 대응한다 ---------------
 BASIS_NOT_TRIGGERED = "not_triggered"
-BASIS_DATA_INSUFFICIENT = "data_insufficient"  # §6.3 1행: 필요한 월·단위·HS 정의·분모·구성자료가 없어 검증 불가
+BASIS_DATA_INSUFFICIENT = "data_insufficient"  # §6.3 1행 중 빠진 관측: 비교월·기준월의 관측이 빠져 검증 불가
+BASIS_DATA_INCONSISTENT = "data_inconsistent"  # §6.3 1행 중 관측은 있으나 비교 조건·부모 대조·구성 분해·분모가 성립 안 함
 BASIS_COMPARISON_INCOMPLETE = "comparison_incomplete"  # §6.3 4행·표 아래: 필수 비교를 수행했지만 자료가 모자라 못 끝냄
 BASIS_ROUNDING_UNSTABLE = "rounding_unstable"  # §6.3 6행: 작은 기준월 값이나 반올림 때문에 방향·충족 여부가 불안정
 BASIS_RESOLVED_AFTER_CORRECTION = "resolved_after_correction"  # §6.3 3행: 자료 교정 뒤 동결 정책으로 경보 해소
@@ -87,6 +95,11 @@ EVIDENCE_DESCRIPTIONS = {
 }
 
 _HOLD_EVIDENCE = ("missingness_listed", "failure_vs_not_collected_distinguished", "no_zero_fill")
+# 관측은 빠지지 않았는데 성립하지 않는 자료 보류(사용자 결정 14, 2026-09-25(금) 08:47). 계열마다 대조 근거가 다르다.
+_INCONSISTENT_EVIDENCE = {
+    UNIT_VALUE: ("parent_child_match_V_and_Q", "comparability_ok", "no_zero_fill"),
+    SHARE: ("country_and_world_change_shown", "comparability_ok", "no_zero_fill"),
+}
 _CORRECTION_EVIDENCE = ("correction_snapshots_before_after", "recalculated_values", "change_reason")
 
 # 계열 → ((basis, 신호 상태, 필수 근거 코드), ...). 반올림 불안정 규칙은 단가 신호에만 있다. 점유율은 정수 USD 금액만
@@ -94,6 +107,7 @@ _CORRECTION_EVIDENCE = ("correction_snapshots_before_after", "recalculated_value
 RULES = {
     UNIT_VALUE: (
         (BASIS_DATA_INSUFFICIENT, HOLD, _HOLD_EVIDENCE),
+        (BASIS_DATA_INCONSISTENT, HOLD, _INCONSISTENT_EVIDENCE[UNIT_VALUE]),
         (BASIS_COMPARISON_INCOMPLETE, HOLD, _HOLD_EVIDENCE),
         (BASIS_ROUNDING_UNSTABLE, HOLD, ("precision_sensitivity_shown",)),
         (BASIS_RESOLVED_AFTER_CORRECTION, MONITOR, _CORRECTION_EVIDENCE),
@@ -104,6 +118,7 @@ RULES = {
     ),
     SHARE: (
         (BASIS_DATA_INSUFFICIENT, HOLD, _HOLD_EVIDENCE),
+        (BASIS_DATA_INCONSISTENT, HOLD, _INCONSISTENT_EVIDENCE[SHARE]),
         (BASIS_COMPARISON_INCOMPLETE, HOLD, _HOLD_EVIDENCE),
         (BASIS_RESOLVED_AFTER_CORRECTION, MONITOR, _CORRECTION_EVIDENCE),
         (BASIS_UNEXPLAINED, MAINTAIN, ("country_and_world_change_shown", "partner_comparison_done",
@@ -118,6 +133,8 @@ COMPARISON_DONE = "done"
 COMPARISON_INCOMPLETE = "incomplete"
 COMPARISON_NOT_PERFORMED = "not_performed"
 COMPARISON_STATES = (COMPARISON_DONE, COMPARISON_INCOMPLETE, COMPARISON_NOT_PERFORMED)
+# 필수 비교 완료를 따지는 판정 근거(단위 P3 판정 순서 4번의 후보). 나머지는 앞 단계에서 끝나 비교 표시를 보지 않는다.
+GATED_BASES = (BASIS_COMPOSITION_EXPLAINED, BASIS_UNEXPLAINED)
 
 # 자료 계약 §9.4 신호 계열 대응. HS10 하위 기호는 `<기호>@<HS10 코드>`다(§6.2).
 CLAIM_METRICS = {UNIT_VALUE: ("U", "r_U", "within_effect", "mix_effect", "residual"), SHARE: ("s", "d_s")}
@@ -156,8 +173,16 @@ def rule_evidence(family: str, basis: str) -> tuple[str, ...]:
 
 
 def required_comparisons(family: str, basis: str) -> tuple[str, ...]:
-    """그 판정 근거를 내기 전에 끝나 있어야 하는 필수 비교(COMPARISON_EVIDENCE 순서)."""
+    """그 판정 근거를 내기 전에 끝나 있어야 하는 필수 비교(COMPARISON_EVIDENCE 순서).
+
+    후보 판정 근거(GATED_BASES: 단위 P3의 4번)에만 있다. 앞 단계(자료 보류 두 가지, 반올림 불안정, 교정 해소)에서 끝나는
+    판정 근거는 비교 표시를 보지 않으므로 빈 튜플이다. `data_inconsistent`의 필수 근거에 든 `comparability_ok`·
+    `country_and_world_change_shown`은 보고서가 남길 근거(성립하지 않음을 보여 주는 점검 결과)이고, 판정 전에 끝나 있어야
+    하는 비교가 아니다.
+    """
     evidence = rule_evidence(family, basis)
+    if basis not in GATED_BASES:
+        return ()
     return tuple(key for key, code in COMPARISON_EVIDENCE.items() if code in evidence)
 
 
