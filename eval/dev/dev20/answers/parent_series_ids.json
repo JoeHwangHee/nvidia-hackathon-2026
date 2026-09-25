@@ -1,5 +1,5 @@
 {
- "schema_version": 1,
+ "schema_version": 2,
  "dataset": "dev20",
  "id_rule": "ps_ + sha256(정규 JSON {\"children\": {HS10 뒤 4자리: [[V, Q] 월별]}, \"parent\": [[V, Q] 월별], \"period\": {\"start\", \"end\"}})의 16진수 소문자 앞 16자. 정규 JSON은 키 정렬, 구분자 ',' ':', ensure_ascii=False. 기본 계열은 사례 사건을 얹기 전의 대상 계열(부모 HS6와 HS10 하위품목의 월별 금액·중량)",
  "parent_series_ids": [
