@@ -19,6 +19,12 @@ PR #18 새 판(옛 C3 scorer_summary를 C3·C4로 나눔)을 따른다.
 - 비율마다 Wilson 95% 구간(z = 1.96)을 붙인다. 짝 분석은 Newcombe 짝 차이 95% 구간(1998 방법 10, 연속성 보정 없음)과
   McNemar 정확 검정(양측 이항)이다. 계산은 Decimal(정밀도 50)과 Fraction으로 하고 float를 쓰지 않는다.
 - 집계하지 않는 칸(상태 변화: trace 형식 미정, 신호 요건 INVALID: 원인 분류 코드 미정)은 사유를 적는다.
+- 룰북 B7 공개 값(코드가 덧붙인 주장 수, `review_status` 집계로 바뀐 보고서 수, 버린 초안 수, HOLD 합의로 뺀 도구 지적 수,
+  덧붙이기 전 기준 보고서 단위 오류율, 덧붙인 주장 덕분에 뒷받침된 산문 표현 수)은 사례 실행 폴더의 실행 추적
+  `runlog_trace-{시각}.jsonl`(샌드박스가 쓴 믿지 않는 입력. 읽기만 한다)에서 센다. 파일 읽기는 eval/scorer/__main__.py가
+  하고, 이 단위는 사건 목록을 해석해(아래 "실행 추적 집계") 모드별 건수·비율로만 요약에 적는다. trace가 없거나 읽을 수
+  없는 최종 실행이 한 건이라도 있는 모드는 "집계하지 않음(trace 없음)"으로 적고 실패하지 않는다(증거 사본만으로 다시
+  채점할 때가 그렇다). 결정 기록 docs/tracking/decisions/20260926-*-data-decision-b7-public-values.md.
 """
 import math
 from decimal import ROUND_HALF_UP, Decimal, localcontext
@@ -171,6 +177,124 @@ def _get(conditions: dict, *path: str) -> object:
             return None
         node = node[key]
     return node
+
+
+# ----------------------------------------------------------------------------- 실행 추적 집계(룰북 B7 공개 값)
+#
+# trace 사건 가운데 event가 state_change인 것의 data.phase를 본다(런타임 단위 I12·L1이 남기는 모양. 저장소의 골든
+# tests/units/I12/와 실제 실행의 trace로 확인했다).
+# - evidence_claims: 코드가 덧붙인 주장. 보고서를 만들 때마다 덧붙이기를 처음부터 다시 하므로 최종 보고서의 덧붙인 주장은
+#   **마지막** evidence_claims 사건의 added[].claims[].claim_id다. 최종 보고서에 그 claim_id로 남은 주장만 센다. code는
+#   signal_claim(발동 신호 자기 계열, 결정 2225 ②)·zero_weight_claim(중량 비중 0, 결정 0105 ①)·나머지(필수 근거 코드 13개,
+#   결정 1809)의 세 갈래로 묶는다.
+# - status_aggregated: 코드가 review_status를 집계 값으로 바꾼 보고서(결정 2225 ①). 최종 보고서 기준은 stage가 final인
+#   사건이 있고 실행이 COMPLETED인 것이고, "어느 단계든"은 stage를 가리지 않는다.
+# - revision_discarded: 조사 흐름 수정 (나) 수정본 버림(결정 1417 ③). after_critic의 requery_dropped: (가) 재조회 버림.
+# - code_finding의 skipped_for_hold: HOLD 합의 신호에 내지 않은 도구 지적(결정 2225 ③).
+# 덧붙이기 전 기준은 덧붙인 주장을 뺀 보고서 사본(without_attached)을 같은 채점 함수(단위 C1·C2)로 다시 채점한 것이다.
+
+STATE_CHANGE = "state_change"
+TRACE_NONE = "trace 없음"
+TRACE_UNREADABLE = "trace를 읽을 수 없음"
+REQUIRED_EVIDENCE = "required_evidence"
+SIGNAL_CLAIM = "signal_claim"
+ZERO_WEIGHT_CLAIM = "zero_weight_claim"
+ATTACH_CATEGORIES = (REQUIRED_EVIDENCE, SIGNAL_CLAIM, ZERO_WEIGHT_CLAIM)
+ATTACH_LABELS = {REQUIRED_EVIDENCE: "필수 근거", SIGNAL_CLAIM: "자기 계열", ZERO_WEIGHT_CLAIM: "중량 0"}
+TRACE_NOT_AGGREGATED = "집계하지 않음"
+
+
+def parse_trace(text: str, run_id: str) -> list[dict] | None:
+    """trace JSONL 본문을 사건 목록으로 읽는다. 줄은 줄바꿈 문자로만 나눈다. 한 줄이라도 JSON 객체가 아니거나 event가
+    없거나 run_id가 다르면(믿지 않는 입력) None(읽을 수 없음)이다. 사건이 하나도 없어도 None이다."""
+    events: list[dict] = []
+    for line in text.split("\n"):
+        if not line.strip():
+            continue
+        try:
+            event = c1.loads_json(line)
+        except (ValueError, RecursionError):
+            return None
+        if not isinstance(event, dict) or not isinstance(event.get("event"), str):
+            return None
+        if "run_id" in event and event["run_id"] != run_id:
+            return None
+        events.append(event)
+    return events or None
+
+
+def _state_changes(events: list[dict], phase: str) -> list[dict]:
+    return [e for e in events if e.get("event") == STATE_CHANGE and isinstance(e.get("data"), dict)
+            and e["data"].get("phase") == phase]
+
+
+def attached_claim_ids(events: list[dict]) -> dict[str, str]:
+    """마지막 evidence_claims 사건이 덧붙인 {claim_id: 갈래}. 사건이 없으면 빈 dict."""
+    changes = _state_changes(events, "evidence_claims")
+    if not changes:
+        return {}
+    ids: dict[str, str] = {}
+    added = changes[-1]["data"].get("added")
+    for entry in added if isinstance(added, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        code = entry.get("code")
+        category = code if code in (SIGNAL_CLAIM, ZERO_WEIGHT_CLAIM) else REQUIRED_EVIDENCE
+        claims = entry.get("claims")
+        for claim in claims if isinstance(claims, list) else []:
+            if isinstance(claim, dict) and isinstance(claim.get("claim_id"), str):
+                ids[claim["claim_id"]] = category
+    return ids
+
+
+def _count_items(events: list[dict], phase: str, key: str) -> int:
+    return sum(len(e["data"][key]) for e in _state_changes(events, phase) if isinstance(e["data"].get(key), list))
+
+
+def trace_facts(events: list[dict], report: dict | None, completed: bool) -> dict:
+    """실행 하나의 trace 사실. report가 None이면(보고서 없음·읽지 못함) 덧붙인 주장 수는 None이다."""
+    ids = attached_claim_ids(events)
+    claims = report.get("claims") if isinstance(report, dict) and isinstance(report.get("claims"), list) else None
+    by_code = {category: 0 for category in ATTACH_CATEGORIES}
+    present: set[str] = set()
+    if claims is not None:
+        for claim in claims:
+            claim_id = claim.get("claim_id") if isinstance(claim, dict) else None
+            if isinstance(claim_id, str) and claim_id in ids:
+                by_code[ids[claim_id]] += 1
+                present.add(claim_id)
+    aggregated = _state_changes(events, "status_aggregated")
+    return {
+        "attached_ids": present,
+        "attached_count": sum(by_code.values()) if claims is not None else None,
+        "attached_by_code": by_code,
+        "attached_missing_in_report": len(set(ids) - present) if claims is not None else 0,
+        "status_aggregated_final": bool(completed and any(e.get("stage") == "final" for e in aggregated)),
+        "status_aggregated_any": bool(aggregated),
+        "revision_discarded": len(_state_changes(events, "revision_discarded")),
+        "requery_dropped": _count_items(events, "after_critic", "requery_dropped"),
+        "hold_skipped_findings": _count_items(events, "code_finding", "skipped_for_hold"),
+    }
+
+
+def without_attached(report: dict, attached_ids: set[str]) -> dict:
+    """덧붙인 주장을 뺀 보고서 사본(덧붙이기 전 기준 재채점 입력). 다른 필드는 그대로다."""
+    claims = report.get("claims") if isinstance(report.get("claims"), list) else []
+    kept = [c for c in claims if not (isinstance(c, dict) and isinstance(c.get("claim_id"), str)
+                                      and c["claim_id"] in attached_ids)]
+    return dict(report, claims=kept)
+
+
+def before_after(records_before: list[dict], records_after: list[dict]) -> dict:
+    """덧붙이기 전(덧붙인 주장을 뺀 사본의 채점 기록)과 뒤(원래 기록)의 보고서 단위 오류와 UNBACKED_PROSE 수."""
+    def unbacked(records: list[dict]) -> int:
+        return sum(1 for r in records if r["source"] == c1.SOURCE_PROSE and r["outcome"] == c1.UNBACKED_PROSE)
+
+    def error(records: list[dict]) -> bool:
+        return any(r["source"] == c1.SOURCE_CLAIM and r["outcome"] != c1.CORRECT for r in records) or unbacked(records) > 0
+
+    return {"before_error": error(records_before), "after_error": error(records_after),
+            "unbacked_before": unbacked(records_before), "unbacked_after": unbacked(records_after)}
 
 
 # ----------------------------------------------------------------------------- 실행 행 고르기
@@ -333,6 +457,97 @@ def paired(first: dict[str, bool], second: dict[str, bool], cases: list[str]) ->
     b = sum(1 for c in cases if first[c] and not second[c])
     c_ = sum(1 for c in cases if not first[c] and second[c])
     return a, b, c_, len(cases) - a - b - c_
+
+
+# ----------------------------------------------------------------------------- 실행 추적 값의 모드별 집계
+
+def trace_mode_stats(plan: Plan, index: ClaimIndex, unread: set[str], trace_stats: dict, mode: str) -> dict:
+    """모드 하나의 룰북 B7 공개 값. trace_stats는 {run_id: {"available": 참·거짓, "reason", trace_facts 값, before_after 값}}
+    (eval/scorer/__main__.py가 만든다). 최종 실행(사례마다 고른 행) 가운데 trace가 없거나 읽을 수 없는 것이 하나라도
+    있으면 그 모드는 집계하지 않는다("not_aggregated"에 사유). 분모는 계획 사례 수다."""
+    finals = [plan.final(case, mode) for case in plan.cases]
+    rows = [f for f in finals if f is not None]
+    missing = [f for f in rows if not (trace_stats.get(f["run_id"]) or {}).get("available")]
+    out = {"planned": len(plan.cases), "rows": len(rows), "trace_missing": len(missing), "not_aggregated": None}
+    if not rows or missing:
+        out["not_aggregated"] = f"{TRACE_NOT_AGGREGATED}({TRACE_NONE} {len(missing)}/{len(rows)}건)"
+        return out
+    valid = [f for f in rows if f["execution_status"] == c3.COMPLETED and f["run_id"] not in unread]
+    facts = {f["run_id"]: trace_stats[f["run_id"]] for f in rows}
+    rescored = [facts[f["run_id"]] for f in valid]
+    if any(t.get("before_error") is None for t in rescored):
+        out["not_aggregated"] = f"{TRACE_NOT_AGGREGATED}(덧붙이기 전 재채점 불가 " \
+                                f"{sum(1 for t in rescored if t.get('before_error') is None)}건)"
+        return out
+    attached = [t["attached_count"] for t in rescored if t.get("attached_count") is not None]
+    out.update({
+        "errors_after": sum(report_error(f, index, unread) for f in finals),
+        "errors_before": sum(1 for f in finals if f is None or f["execution_status"] != c3.COMPLETED
+                             or f["run_id"] in unread) + sum(1 for t in rescored if t["before_error"]),
+        "backed_by_attached": sum(max(0, t["unbacked_before"] - t["unbacked_after"]) for t in rescored),
+        "attached_per_report": attached, "attached_total": sum(attached),
+        "attached_by_code": {c: sum(t["attached_by_code"][c] for t in rescored) for c in ATTACH_CATEGORIES},
+        "attached_missing_in_report": sum(t["attached_missing_in_report"] for t in rescored),
+        "status_aggregated_final": sum(1 for t in facts.values() if t["status_aggregated_final"]),
+        "status_aggregated_any": sum(1 for t in facts.values() if t["status_aggregated_any"]),
+        "revision_discarded": sum(t["revision_discarded"] for t in facts.values()),
+        "requery_dropped": sum(t["requery_dropped"] for t in facts.values()),
+        "hold_skipped_findings": sum(t["hold_skipped_findings"] for t in facts.values()),
+        "valid": len(valid),
+    })
+    return out
+
+
+def _per_mode(stats: dict[str, dict], value) -> str:
+    """모드마다 "모드 값"을 쉼표로 잇는다. 집계하지 않는 모드는 사유를 적는다."""
+    return ", ".join(f"{mode} {s['not_aggregated'] if s['not_aggregated'] else value(s)}" for mode, s in stats.items())
+
+
+def _trace_lines(stats: dict[str, dict]) -> list[str]:
+    """모드별 표 아래에 붙이는 "덧붙이기 전·뒤" 줄과 장치 발동 수 줄(룰북 B7)."""
+    lines = ["- 덧붙이기 전·뒤 보고서 단위 오류율(덧붙인 주장을 뺀 주장 집합으로 산문 뒷받침을 다시 판정. 실패·무효·미실행은 그대로 오류. "
+             "결정 기록 20260925-1856): "
+             + _per_mode(stats, lambda s: f"전 {s['errors_before']}/{s['planned']} → 뒤 {s['errors_after']}/{s['planned']}"),
+             "- 덧붙인 주장 덕분에 뒷받침된 산문 표현 수: " + _per_mode(stats, lambda s: str(s["backed_by_attached"])),
+             "- 장치 발동 수(실행 추적 집계): 코드가 덧붙인 주장(최종 보고서에 남은 것) "
+             + _per_mode(stats, lambda s: f"합계 {s['attached_total']}(보고서당 {fmt_median_range(s['attached_per_report'])})")
+             + "; review_status 집계로 바뀐 최종 보고서(어느 단계든) "
+             + _per_mode(stats, lambda s: f"{s['status_aggregated_final']}({s['status_aggregated_any']})")
+             + "; 버린 초안 (나) 수정본 버림 / (가) 재조회 버림 "
+             + _per_mode(stats, lambda s: f"{s['revision_discarded']} / {s['requery_dropped']}")
+             + "; HOLD 합의로 뺀 도구 지적 " + _per_mode(stats, lambda s: str(s["hold_skipped_findings"]))]
+    return lines
+
+
+def _trace_b7_lines(stats: dict[str, dict]) -> list[str]:
+    """4절 참고 지표의 룰북 B7 공개 항목 줄."""
+    def attached(s: dict) -> str:
+        by_code = "·".join(f"{ATTACH_LABELS[c]} {s['attached_by_code'][c]}" for c in ATTACH_CATEGORIES)
+        return f"보고서당 {fmt_median_range(s['attached_per_report'])}, 합계 {s['attached_total']}({by_code}), 완료 보고서 {s['valid']}건"
+
+    lines = [
+        "- 코드가 덧붙인 필수 근거 주장 수(2026-09-25(금) 18:09 사용자 결정, B2. 발동 신호 자기 계열 주장(2026-09-25(금) 22:22 사용자 결정 "
+        "②·⑦)과 자료 불일치 HOLD 초안의 중량 비중 0 주장(2026-09-26(토) 01:05 사용자 결정 ①·③)도 이 수에 든다. 최종 보고서에 남은 것, "
+        "완료 보고서당 중앙값(범위)): " + _per_mode(stats, attached),
+        "- 코드가 `review_status`를 집계 값으로 바꾼 보고서 수(2026-09-25(금) 22:22 사용자 결정 ①·⑦. 최종 보고서 기준, 괄호는 어느 "
+        "단계든 바뀐 보고서 수): " + _per_mode(stats, lambda s: f"{s['status_aggregated_final']}({s['status_aggregated_any']})"),
+        "- 덧붙이기 전 기준의 보고서 단위 오류율(덧붙인 필수 근거 주장을 빼고 같은 채점 규칙으로 다시 계산. 2026-09-25(금) 18:56 사용자 "
+        "결정. 괄호는 덧붙이기 뒤): "
+        + _per_mode(stats, lambda s: f"{fmt_rate(s['errors_before'], s['planned'])} (뒤 {s['errors_after']}/{s['planned']})"),
+        "- 덧붙인 필수 근거 주장 덕분에 뒷받침된 산문 표현 수(같은 결정, 모드별 합계): "
+        + _per_mode(stats, lambda s: str(s["backed_by_attached"])),
+        "- 버린 초안 수(조사 흐름 수정, B2): (나) 수정본 버림 " + _per_mode(stats, lambda s: str(s["revision_discarded"]))
+        + "; (가) 재조회 버림 " + _per_mode(stats, lambda s: str(s["requery_dropped"])),
+        "- HOLD 합의 신호에 내지 않은 도구 지적 수(2026-09-25(금) 22:22 사용자 결정 ③): "
+        + _per_mode(stats, lambda s: str(s["hold_skipped_findings"])),
+        "- 실행 추적 집계 범위: 사례 실행 폴더의 runlog_trace 파일(읽기만)에서 센다. 모드별 trace 있는 최종 실행 "
+        + ", ".join(f"{mode} {s['rows'] - s['trace_missing']}/{s['rows']}건" for mode, s in stats.items()),
+    ]
+    mismatch = {mode: s.get("attached_missing_in_report", 0) for mode, s in stats.items() if not s["not_aggregated"]}
+    if any(mismatch.values()):
+        lines.append("- trace가 덧붙였다고 적었는데 최종 보고서에 없는 주장: "
+                     + ", ".join(f"{mode} {n}건" for mode, n in mismatch.items()))
+    return lines
 
 
 # ----------------------------------------------------------------------------- 요약 쓰기
@@ -518,6 +733,8 @@ def render(inp: dict) -> str:
 
     extremes = {m: sum(stats_extra.get(f["run_id"], {}).get("extremes", 0)
                        for f in (plan.final(c, m) for c in plan.cases) if f is not None) for m in plan.modes}
+    trace_stats = {m: trace_mode_stats(plan, index, unread, inp.get("trace_stats") or {}, m) for m in plan.modes}
+    trace_lines = [""] + _trace_lines(trace_stats)
     rep_stats = aux_stats = None
     if dataset in ("real_dev", "real_sealed"):
         rep_stats = {m: representative(plan, index, unread, m) for m in plan.modes}
@@ -536,33 +753,36 @@ def render(inp: dict) -> str:
         lines.append(f"- 사례 {len(plan.cases)}건, 서로 다른 시계열 {series if series is not None else '집계 못 함(사례 문맥 없음)'}개. "
                      "한 시계열에서 경보가 여러 건 뽑히면 Wilson 구간의 독립 가정이 약해진다")
         lines += [""] + _rep_table(rep_stats, {m: grade for m in rep_stats}) + _rep_analysis(rep_stats, plan, extremes)
+        lines += trace_lines
     else:
         lines.append(f"- 해당 없음(이 채점 실행의 자료 묶음은 {dataset}다)")
 
     lines += ["", "## 2. 보조 지표 — holdout40 (등급 C)", ""]
     if dataset == "holdout40":
-        lines += _aux_table(aux_stats, "등급 C") + _aux_analysis(aux_stats, plan, answers)
+        lines += _aux_table(aux_stats, "등급 C") + _aux_analysis(aux_stats, plan, answers) + trace_lines
     else:
         lines.append(f"- 해당 없음(이 채점 실행의 자료 묶음은 {dataset}다)")
 
     lines += ["", "## 3. 개발 묶음 값 — 대표 숫자 아님 (등급 D)", ""]
     if dataset == "dev20":
         lines += ["- dev20 비교군 3개:", ""] + _aux_table(aux_stats, "등급 D") + _aux_analysis(aux_stats, plan, answers)
+        lines += trace_lines
     elif dataset == "real_dev":
         series = plan.series()
         lines += ["- real_dev freeform 대 full — \"개발 묶음 값, 대표 숫자 아님\"",
                   f"- 사례 {len(plan.cases)}건, 서로 다른 시계열 {series if series is not None else '집계 못 함'}개", ""]
         lines += _rep_table(rep_stats, {m: "등급 D(개발 묶음 값, 대표 숫자 아님)" for m in rep_stats})
-        lines += _rep_analysis(rep_stats, plan, extremes)
+        lines += _rep_analysis(rep_stats, plan, extremes) + trace_lines
     elif dataset == "controlled_fixture_v0":
         lines.append("- controlled_fixture_v0은 개발용 합성 시험자료라 성능 숫자로 보고하지 않는다(룰북 B1). 아래는 참고다.")
         if aux_stats is not None:
-            lines += [""] + _aux_table(aux_stats, "참고") + _aux_analysis(aux_stats, plan, answers)
+            lines += [""] + _aux_table(aux_stats, "참고") + _aux_analysis(aux_stats, plan, answers) + trace_lines
     else:
         lines.append(f"- 해당 없음(이 채점 실행의 자료 묶음은 {dataset}다)")
 
     lines += ["", "## 4. 참고 지표", ""]
     lines.append(f"- 스킬 호출 성공률(NemoClaw 경로, 정확도 지표에는 영향을 주지 않는다): {cell(_get(cond, 'skill_call_success'))}")
+    lines += _trace_b7_lines(trace_stats)
     quality = []
     for mode in plan.modes:
         runs = [f["run_id"] for f in (plan.final(c, mode) for c in plan.cases)

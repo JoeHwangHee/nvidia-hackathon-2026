@@ -12,6 +12,10 @@ N8), 그 이름을 표준 출력 첫 줄로 알린 뒤 scorer_claims-{시각}.js
 - 채점기는 실행 조건을 실행 조건 입력 파일에서만 읽는다(자료 계약 §8.2). 샌드박스가 쓴 파일(묶음 기록·보고서)은 믿지
   않는 입력으로 검증한다. 채점기 커밋 해시는 하위 프로세스로 얻지 않고 그 파일에서 받는다.
 - tradesentry 패키지 전부와 eval.datagen을 import하지 않는다. 모델·네트워크·하위 프로세스를 쓰지 않는다.
+- 룰북 B7 공개 값(코드가 덧붙인 주장 수, review_status 집계로 바뀐 보고서 수, 버린 초안 수, HOLD 합의로 뺀 도구 지적 수,
+  덧붙이기 전 기준 보고서 단위 오류율, 덧붙인 주장 덕분에 뒷받침된 산문 표현 수)은 사례 실행 폴더의 실행 추적
+  runlog_trace-{시각}.jsonl을 읽기만 해서 센다(read_trace·trace_entry, 해석은 단위 C4). 없거나 읽을 수 없으면 그 모드를
+  "집계하지 않음(trace 없음)"으로 적고 실패하지 않는다. 요약에는 모드별 건수·비율만 적는다.
 
 실행 조건 입력 파일(임시 형식, 결정 D6: MVP 전 임시로 정해 쓰고 F1 전에 MT7과 확정)
 - 위치와 이름: <run_dir>/run_conditions-{시각}.json. {시각}은 <run_dir> 실행명의 시각이다. 내려받기를 끝낸 호스트 쪽
@@ -69,6 +73,7 @@ RUN_NAME = "score"
 CONDITIONS_DOMAIN = "run_conditions"
 BATCH_DOMAINS = {"evaluate": "evaluation_batch_run"}  # 평가 묶음 실행 이름 → 묶음 기록 도메인명(단위 E1)
 REPORT_DOMAIN = "reports_render_ko"  # 사례 실행 폴더 안 보고서 객체 파일의 도메인명(단위 R2, AS3에서 맞춘다)
+TRACE_DOMAIN = "runlog_trace"  # 사례 실행 폴더 안 실행 추적 파일의 도메인명(단위 L1). 룰북 B7 공개 값을 세는 데 읽기만 한다
 SNAPSHOT_FILE = "snapshot_build.sqlite"
 ORACLE_PATH = ("eval", "dev", "oracle_ABC.json")
 DEV20_ANSWERS: tuple[str, ...] | None = ("eval", "dev", "dev20", "answers", "answers.json")  # DT5 결정 기록 ⑭
@@ -471,6 +476,50 @@ def read_report(run_dir: Path, line: dict, sealed: bool) -> tuple[dict | None, s
     return report, digest, None
 
 
+def read_trace(run_dir: Path, line: dict) -> tuple[list[dict] | None, str | None]:
+    """사례 실행 폴더의 실행 추적 runlog_trace-{시각}.jsonl을 읽기만 한다(룰북 B7 공개 값, 단위 C4 "실행 추적 집계").
+    (사건 목록, None) 또는 (None, 사유). 사유는 "trace 없음"(폴더·파일 없음. 증거 사본만으로 다시 채점할 때)과 "trace를 읽을
+    수 없음"(심볼릭 링크, 크기 상한, JSON 아님, run_id 불일치) 둘뿐이다. 어느 쪽도 채점을 멈추지 않는다."""
+    case_dir = run_dir.parent / line["run_id"]
+    if case_dir.is_symlink() or not case_dir.is_dir():
+        return None, c4.TRACE_NONE
+    path = case_dir / f"{TRACE_DOMAIN}-{line['run_id'].rsplit('-', 1)[1]}.jsonl"
+    if path.is_symlink():
+        return None, c4.TRACE_UNREADABLE
+    if not path.is_file():
+        return None, c4.TRACE_NONE
+    with open(path, "rb") as fh:
+        data = fh.read(MAX_INPUT_BYTES + 1)
+    if len(data) > MAX_INPUT_BYTES:
+        return None, c4.TRACE_UNREADABLE
+    try:
+        events = c4.parse_trace(data.decode("utf-8"), line["run_id"])
+    except UnicodeDecodeError:
+        return None, c4.TRACE_UNREADABLE
+    return (events, None) if events is not None else (None, c4.TRACE_UNREADABLE)
+
+
+def trace_entry(run_dir: Path, line: dict, report: dict | None, records: list[dict], snap, snapshot_id: str,
+                context: dict | None, thresholds: list[Fraction]) -> dict:
+    """실행 하나의 trace 사실과 덧붙이기 전 기준 재채점(단위 C4 trace_facts·without_attached·before_after). 보고서를 읽어
+    채점한 실행(report와 그 채점 기록 records)은 덧붙인 주장을 뺀 사본을 같은 채점 함수로 다시 채점한다. 재채점이 입력 오류를
+    내면 before_error를 None으로 두어 그 모드를 집계하지 않게 한다."""
+    events, reason = read_trace(run_dir, line)
+    if events is None:
+        return {"available": False, "reason": reason}
+    facts = c4.trace_facts(events, report, line["execution_status"] == c3.COMPLETED)
+    entry = {"available": True, **{k: v for k, v in facts.items() if k != "attached_ids"}}
+    if report is not None:
+        try:
+            before = c4.without_attached(report, facts["attached_ids"])
+            mine = c1.score_report_claims(before, snap, line["run_id"], snapshot_id, context)
+            mine += c2.score_report_prose(before, line["run_id"], snap.hs_codes, thresholds)
+            entry.update(c4.before_after(mine, records))
+        except (c1.ScorerInputError, RecursionError):
+            entry.update({"before_error": None, "after_error": None, "unbacked_before": None, "unbacked_after": None})
+    return entry
+
+
 def score_batch(run_dir: Path, sealed: bool, repo_root: Path, environ: dict, scoring_run: str) -> tuple[list, list, str]:
     """묶음 하나를 채점해 (주장 채점 기록, 실행 결과 기록, 요약 문서)를 돌려준다. 파일은 쓰지 않는다."""
     run_name, stamp = run_dir.name.rsplit("-", 1)
@@ -512,14 +561,16 @@ def score_batch(run_dir: Path, sealed: bool, repo_root: Path, environ: dict, sco
     records: list[dict] = []
     stats: dict[str, dict] = {}
     unread: list[str] = []
+    trace_stats: dict[str, dict] = {}
     for line in lines:
+        context = c3.case_context(cases.get(line["case_id"]), line)
         if line["execution_status"] != c3.COMPLETED:
+            trace_stats[line["run_id"]] = trace_entry(run_dir, line, None, [], snap, snapshot_id, context, thresholds)
             continue
         report, digest, reason = read_report(run_dir, line, sealed)
         if report is not None:
             try:  # 믿지 않는 보고서의 모양·크기 문제는 그 보고서 하나의 실패로 센다(묶음 전체를 멈추지 않는다)
-                mine = c1.score_report_claims(report, snap, line["run_id"], snapshot_id,
-                                              c3.case_context(cases.get(line["case_id"]), line))
+                mine = c1.score_report_claims(report, snap, line["run_id"], snapshot_id, context)
                 mine += c2.score_report_prose(report, line["run_id"], snap.hs_codes, thresholds)
                 quality = dict(c2.korean_quality(report), extremes=c2.extreme_count(report), report_sha256=digest)
             except c1.ScorerInputError as exc:
@@ -529,10 +580,12 @@ def score_batch(run_dir: Path, sealed: bool, repo_root: Path, environ: dict, sco
         if report is None:
             unread.append(line["run_id"])
             stats[line["run_id"]] = {"unreadable": reason, **({"report_sha256": digest} if digest else {})}
+            trace_stats[line["run_id"]] = trace_entry(run_dir, line, None, [], snap, snapshot_id, context, thresholds)
             continue
         reports[line["run_id"]] = report
         records += mine
         stats[line["run_id"]] = quality
+        trace_stats[line["run_id"]] = trace_entry(run_dir, line, report, mine, snap, snapshot_id, context, thresholds)
     answers = c3.read_answer_table(answers_doc) if answers_doc is not None else {}
     results = [c3.result_line(line, reports.get(line["run_id"]), [r for r in records if r["run_id"] == line["run_id"]],
                               answers.get(line["case_id"]), c3.case_context(cases.get(line["case_id"]), line), snap)
@@ -542,7 +595,7 @@ def score_batch(run_dir: Path, sealed: bool, repo_root: Path, environ: dict, sco
         "batch_dir": ("outputs/sealed/" if sealed else "outputs/") + run_dir.name,
         "planned": {"cases": conditions["planned_cases"], "modes": conditions["planned_modes"]},
         "results": results, "claims": records, "answers": answers_doc, "report_stats": stats,
-        "reports_unread": unread, "conditions": conditions,
+        "reports_unread": unread, "conditions": conditions, "trace_stats": trace_stats,
         "meta": {"schema_version": c4.SCHEMA_VERSION, "prose_patterns_sha256": c2.pattern_list_sha256(),
                  "snapshot_file": _relative(snap_path.resolve(), repo_root), "snapshot_file_sha256": snap_digest}}
     return records, results, c4.render(summary_input)
