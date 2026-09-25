@@ -111,6 +111,12 @@ errors는 원인 분류 코드 항목 하나다(단위 L3: 원인, 누적 시도
   지표(unit_value → r_U, share → d_s. 비교월 대 기준월) 주장을 받은 봉투의 검증된 지표에서 단위 R1 틀 채우기로 덧붙인다
   (freeform도 같다). 받은 근거에 없거나 같은 대상(같은 metric_id)의 주장이 이미 있으면 덧붙이지 않는다. 도구를 새로 부르지
   않는다. claim_id는 기존 덧붙임과 같은 e{번호} 번호열이고, trace evidence_claims의 added에 code "signal_claim"으로 남는다.
+- 중량 0 하위품목의 중량 비중 주장 덧붙이기(사용자 결정 2026-09-26(토) 01:05 ①, zero_weight_claims): 위 덧붙임 뒤 같은
+  자리에서, 사례의 unit_value 신호가 발동했고 초안의 signal_status.unit_value가 HOLD면(규칙 참고값·산문 내용은 보지 않는다)
+  retryable_error가 없는 decompose_hs 봉투의 검증된 지표 가운데 w@<HS10>이고 값이 정확히 0인 것마다 값 주장을 단위 R1 틀
+  채우기로 덧붙인다(모든 모드 같은 규칙). 같은 대상(같은 metric_id)의 주장이 이미 있으면 넣지 않고, 도구를 새로 부르지
+  않는다. claim_id는 같은 e{번호} 번호열이고, trace evidence_claims의 added에 code "zero_weight_claim"(hs10 코드 포함)으로
+  남는다. 검증기 R3는 단위 없는 산문 숫자를 어떤 단위의 주장 값과도 대조하므로 이 주장(0.0%)이 산문의 '0'을 뒷받침한다.
 """
 from dataclasses import dataclass
 from decimal import Decimal
@@ -826,6 +832,64 @@ def signal_claims(case: dict, claims: list, evidence: list) -> dict:
     return {"claims": [claim for claim, _ in view.added], "added": added}
 
 
+ZERO_WEIGHT_CLAIM_CODE = "zero_weight_claim"  # trace evidence_claims의 added에 적는 중량 0 덧붙임의 코드(P5 코드가 아니다)
+ZERO_WEIGHT_TOOL = "decompose_hs"  # 중량 비중 w@<HS10>을 돌려주는 도구(후보는 이 도구의 봉투에서만 고른다)
+
+
+def _is_zero(value: object) -> bool:
+    """값이 정확히 0인 수(int·Decimal. bool·float·None은 아니다)."""
+    return not isinstance(value, bool) and isinstance(value, (int, Decimal)) and value == 0
+
+
+def zero_weight_claims(case: dict, draft: dict, claims: list, evidence: list) -> dict:
+    """자료 불일치 HOLD 초안에 중량 0 하위품목의 중량 비중 주장 덧붙이기(사용자 결정 2026-09-26(토) 01:05 ①). signal_claims
+    뒤에 같은 자리에서 부른다(claims에는 모델(또는 checklist 규칙) 주장과 앞선 덧붙임이 모두 있어야 e{번호} 번호열이 이어진다).
+
+    조건: 사례의 unit_value 신호가 TRIGGERED이고 초안의 signal_status.unit_value가 HOLD다(규칙 참고값·산문 내용은 보지 않는다).
+    후보: retryable_error가 없는 decompose_hs 봉투의 검증된 지표 가운데 기호가 w@<HS10>이고 값이 정확히 0인 것 전부(사례 hs6).
+    후보마다 단위 R1 틀 채우기로 만든 값 주장(claim_type은 R1이 w에 정한 값 value, 단위 %, 표시 자릿수 1)을 덧붙이고, 같은
+    대상(같은 metric_id가 가리키는 기호·품목·상대국·월)의 주장이 이미 있으면 넣지 않는다. 도구를 새로 부르지 않는다.
+
+    돌려주는 값: {"claims": 덧붙인 typed claim, "added": [{"signal": "unit_value", "code": "zero_weight_claim", "hs10": HS10 코드,
+    "claims": [요청 모양]}]}(HS10 코드마다 한 항목, 봉투의 지표 차례). claims와 입력을 바꾸지 않는다."""
+    signals = case.get("signals") if isinstance(case.get("signals"), dict) else {}
+    statuses = draft.get("signal_status") if isinstance(draft, dict) and isinstance(draft.get("signal_status"), dict) else {}
+    if signals.get("unit_value") != policy_required_evidence.TRIGGERED or statuses.get("unit_value") != "HOLD":
+        return {"claims": [], "added": []}
+    zero_ids: list = []  # 값이 정확히 0인 지표(반올림 전 원값으로 본다)
+    for envelope in evidence or []:
+        if not isinstance(envelope, dict) or envelope.get("tool") != ZERO_WEIGHT_TOOL \
+                or envelope.get("retryable_error") is not None:
+            continue
+        for metric in envelope.get("metrics") or []:
+            if isinstance(metric, dict) and isinstance(metric.get("metric_id"), str) and _is_zero(metric.get("value")) \
+                    and metric["metric_id"] not in zero_ids:
+                zero_ids.append(metric["metric_id"])
+    if not zero_ids:
+        return {"claims": [], "added": []}
+    view = _EvidenceView(case, list(claims or []), list(evidence or []))
+    # 후보(단위 R1 틀 채우기가 만든 typed claim, claim_id = metric_id) 가운데 기호가 w@<HS10>인 것
+    by_id = {c["claim_id"]: c for c in view.candidates
+             if c.get("claim_type") != "data_status" and report_claims.base_symbol(c["metric"]) == "w"}
+    added: list = []
+    for metric_id in zero_ids:
+        found = by_id.get(metric_id)
+        if found is None or view.taken(_target(found)):
+            continue
+        before = len(view.added)
+        if not view.add([found]):
+            continue
+        hs10 = found["metric"].partition("@")[2]
+        requests = [request for _, request in view.added[before:]]
+        for entry in added:
+            if entry["hs10"] == hs10:
+                entry["claims"] += requests
+                break
+        else:
+            added.append({"signal": "unit_value", "code": ZERO_WEIGHT_CLAIM_CODE, "hs10": hs10, "claims": requests})
+    return {"claims": [claim for claim, _ in view.added], "added": added}
+
+
 def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimits, *, grouping_version: str,
                policy: object = None, rows: Callable[[list], dict] | None = None,
                evidence_state: Callable[[dict, list], dict] | None = None,
@@ -865,8 +929,10 @@ def unit_ports(case: dict, mode: str, run_id: str, limits: model_client.RunLimit
         extra = evidence_claims(case, inp.get("required_codes") or {}, filled["claims"], evidence)
         # 발동 신호 자기 계열 주장(결정 2026-09-25(금) 22:22 ②): 필수 근거 덧붙임 뒤 같은 번호열로 이어 붙인다
         family = signal_claims(case, list(filled["claims"]) + extra["claims"], evidence)
-        extra = {"claims": extra["claims"] + family["claims"],
-                 "log": dict(extra["log"], added=list(extra["log"]["added"]) + family["added"])}
+        # 중량 0 하위품목의 중량 비중 주장(사용자 결정 2026-09-26(토) 01:05 ①): 자기 계열 주장 뒤 같은 번호열로 이어 붙인다
+        zero = zero_weight_claims(case, draft, list(filled["claims"]) + extra["claims"] + family["claims"], evidence)
+        extra = {"claims": extra["claims"] + family["claims"] + zero["claims"],
+                 "log": dict(extra["log"], added=list(extra["log"]["added"]) + family["added"] + zero["added"])}
         try:
             unresolved = policy_case_aggregate.run({"signals": case.get("signals"),
                                                     "signal_status": draft.get("signal_status")})["unresolved_evidence"]
