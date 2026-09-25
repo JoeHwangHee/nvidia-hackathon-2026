@@ -16,9 +16,9 @@
 | `20260924-2010-user-decision-key-rule-interpretation.md` | 2026-09-24(목) 20:10 | 절대 규칙 1·요건 (c)의 "샌드박스 안" 해석 A와 새 규칙 문구, NVIDIA 키 재발급 시점(마무리 때), NemoClaw 설치기 고지 전문 | 사용자 | 유효 |
 | `20260924-2035-user-decision-s0-no-advisory.md` | 2026-09-24(목) 20:35 | S0(앱 뼈대) 외부 자문: 더 반영할 것 없음 | 사용자 | 유효 |
 | `20260924-2055-user-decision-pr18-confirmation.md` | 2026-09-24(목) 20:55 | 자료 계약 PR #18 확인 항목 여덟 가지 승인, 실행 결과 기록 파일 이름 `scorer_results-{시각}.jsonl`과 단위 C3 분리 | 사용자 | 유효 |
-| `20260924-2212-orchestrator-decision-s0-scaffold.md` | 2026-09-24(목) 22:12 | S0가 정할 위치와 S0 뼈대의 약속 확정(계획 경로 표를 바꾸는 항목 제외) | 오케스트레이터 | 유효 |
 | `20260924-2212-user-decision-impl-plan-after-s0.md` | 2026-09-24(목) 22:12 | 두 트랙 구현 계획은 S0(앱 뼈대) 병합 뒤 따로 세우고 사용자가 보고 승인한 뒤 착수 | 사용자 | 유효 |
 | `20260924-2212-user-decision-snapshot-build-and-g0.md` | 2026-09-24(목) 22:12 | 최종 스냅샷 빌드 파일 `data/snapshots/{snapshot_id}/snapshot_build.sqlite`와 `g0` 해석(대상국을 뺀 15개국 중 상위 5개국) | 사용자 | 유효 |
+| `20260924-2212-orchestrator-decision-s0-scaffold.md` | 2026-09-24(목) 22:12 | S0가 정할 위치와 S0 뼈대의 약속 확정(계획 경로 표를 바꾸는 항목 제외) | 오케스트레이터 | 유효 |
 | `20260924-2315-user-decision-impl-plan-approval.md` | 2026-09-24(목) 23:15 | 두 트랙 구현 계획 승인과 결정 열한 가지(D1~D8, D16~D18) | 사용자 | 유효 |
 | `20260924-2340-dt4-real-split-and-sample-seed.md` | 2026-09-24(목) 23:40 | 실자료 분할(DT4 ①): seed `20260924`, `real_dev`:`real_sealed` = 21:43, HS6 층화 sha256 순위, `real_sealed` 표본 추출 seed 파일 sha256 | 소유 트랙(D) | 유효 |
 | `20260924-2356-orchestrator-decision-mt5-cli.md` | 2026-09-24(목) 23:56 | MT5 첫 PR(CLI 단위 F1·F2)의 인자 형식·공통 옵션·종료 코드·스냅샷 명령 배선, S0 결정의 종료 코드 3 문구 변경 | 오케스트레이터 | 유효 |

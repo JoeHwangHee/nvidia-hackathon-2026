@@ -56,7 +56,8 @@ class EvaluateTest(unittest.TestCase):
 
     def test_unwired_run_case_gives_a_clear_failure_without_outputs(self):
         self.assertIs(dispatch.HANDLERS["evaluate"], dispatch._evaluate)
-        self.assertIs(dispatch.HANDLERS["run-case"], dispatch._not_wired)
+        # run-case 처리 함수는 AS2(#38)가 이었다. evaluate가 부를 사례 실행 함수(EVALUATE_CASE_RUNNER)는 AS3이 잇는다
+        self.assertIsNone(dispatch.EVALUATE_CASE_RUNNER)
         code, out, err = call(ARGV)
         self.assertEqual((code, out), (1, ""))
         self.assertIn("tradesentry evaluate는 사례 실행(run-case)이 아직 조립되지 않아 돌 수 없다", err)

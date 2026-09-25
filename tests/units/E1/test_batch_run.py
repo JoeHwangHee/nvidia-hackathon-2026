@@ -290,8 +290,9 @@ class RunConditionsTest(unittest.TestCase):
         from tradesentry.workflow import model_client  # 실제 설정 파일(configs/model/model.json)의 한도
 
         limits = batch_run.limits_from_run_limits(model_client.load_model_config().limits)
+        # 누적 토큰 한도는 2026-09-25(금) 사용자 결정 4로 128,000(결정 기록 20260925-0847, AS2 #38이 설정에 반영)
         self.assertEqual(limits, {"tool_attempts": 8, "reinvestigation": 1, "model_requests": 10, "wall_time_s": 300,
-                                  "tokens": 32000})
+                                  "tokens": 128000})
 
 
 if __name__ == "__main__":
