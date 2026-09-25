@@ -172,12 +172,15 @@ def write_profile(nat_dir: Path, *, llm: list[tuple[int, int, int]], spans: list
 
 class FakeRunner:
     """가짜 사례 실행 함수. plan: case_id → 동작(완료가 기본). 동작: "ok", "infra"(5xx FAILED), "budget", "raise",
-    "invalid"(키가 빠진 기록), "mismatch"(다른 run_id), "interrupt"(KeyboardInterrupt). 부를 때마다 시계를 민다."""
+    "invalid"(키가 빠진 기록), "mismatch"(다른 run_id), "interrupt"(KeyboardInterrupt). 부를 때마다 시계를 민다.
+    recover가 참이면 같은 (사례, 모드)의 두 번째 호출(인프라 실패 재실행, 룰북 B5)은 완료로 돌려준다."""
 
-    def __init__(self, clock: FakeClock | None = None, plan: dict | None = None, profile: bool = True):
+    def __init__(self, clock: FakeClock | None = None, plan: dict | None = None, profile: bool = True,
+                 recover: bool = False):
         self.clock = clock
         self.plan = plan or {}
         self.profile = profile
+        self.recover = recover
         self.calls: list[batch_run.CaseCall] = []
 
     def __call__(self, call: batch_run.CaseCall) -> dict:
@@ -186,6 +189,8 @@ class FakeRunner:
         if self.clock is not None:
             self.clock.advance_ms(250)
         action = self.plan.get((call.case["case_id"], call.mode), self.plan.get(call.case["case_id"], "ok"))
+        if self.recover and sum((c.case["case_id"], c.mode) == (call.case["case_id"], call.mode) for c in self.calls) > 1:
+            action = "ok"
         if self.profile and action in ("ok", "infra", "budget") and call.mode != "checklist":
             write_profile(call.run_dir / f"workflow_nat_wrap-{call.stamp}", llm=[(1200, 2800, 80), (2400, 3000, 150)],
                           spans=["basic", "critic"] if call.mode == "full" else ["basic"], workflow_ms=6000)
