@@ -5,6 +5,14 @@
 플랜 §4.3 "반입 목록"). .gitignore는 제외 장치가 아니므로 쓰지 않고, 들이면 안 되는 경로는 이 도구의 거부 규칙이 막는다.
 
     uv run --locked python -m scripts.stage_sandbox_image --dest <저장소 밖의 아직 없는 폴더> [--add <저장소 상대경로>]...
+        [--overlay <겹침 폴더>]...
+
+겹침 폴더(--overlay, 여러 번 가능): 저장소·봉인 폴더 밖 폴더 안의 파일을 저장소 상대경로로 보고 빌드 맥락에 더한다. 공식 채점 대상
+실행 전용 이미지의 봉인 입력은 `python -m scripts.import_sealed_holdout40 --dest <폴더>`가 만든 폴더를 이렇게 들인다(저장소 안에는
+봉인 사본을 두지 않는다). 같은 상대경로가 저장소에도 있으면(대소문자만 다른 별칭 포함) 거부한다 — 봉인 입력이 저장소 파일을 덮지
+않게. 아래 거부 규칙은 겹침 파일에도 그대로 적용하되, eval/ 예외는 eval/dev/<묶음>/input/ 아래(입력 하위 경로)로 넓힌다. 겹침 폴더
+뿌리의 import_manifest.json(반입 도구의 기록)은 들이지 않고 sha256만 이미지 기록의 overlays에 적는다. 이미지 기록의 files 항목은
+출처를 source(repo·overlay)로 표시한다.
 
 빌드 기록(data/snapshots/<id>/snapshot_build.json)을 들이면 그 기록의 peer_group_files가 가리키는 비교국 표
 (data/reference/peer_group_*.csv)를 sha256 대조 뒤 자동으로 함께 들이고, 이미지 기록의 snapshots에 snapshot_id·
@@ -19,9 +27,10 @@ normalized_sha256·비교국 표를 적는다(결정 기록 model-decision-mt5-s
 거부 규칙(하나라도 걸리면 아무것도 남기지 않고 종료 코드 2)
     - .env와 .env.* 등 이름이 .env로 시작하거나 끝나는 파일, .git·.venv·.dryforge·node_modules 아래
     - outputs/, artifacts/, spikes/, tests/, docs/, scripts/, research_raw/, .claude/ 아래
-    - eval/ 아래 전부. 예외는 --add로 준 eval/dev/dev20/input/과 그 아래다(dev20 입력 하위 경로. 로드맵 DT5의 배치는
-      입력 eval/dev/dev20/input/cases.json, 정답표 eval/dev/dev20/answers/). dev20 폴더 전체, answers/, 그 밖의 하위
-      경로는 거부한다. 이름에 oracle·answer가 든 파일은 어디서든 거부한다
+    - eval/ 아래 전부. 예외는 --add로 준 eval/dev/dev20/input/과 그 아래(dev20 입력 하위 경로. 로드맵 DT5의 배치는
+      입력 eval/dev/dev20/input/cases.json, 정답표 eval/dev/dev20/answers/), 그리고 --overlay 파일의 eval/dev/<묶음>/input/
+      아래다. dev20 폴더 전체, answers/, 그 밖의 하위 경로는 거부한다. 이름에 oracle·answer가 든 파일과 정답표·생성 규칙·seed
+      이름(answers.json, parent_series_ids.json, generation_rules.json, sample_seed.json, fixture_spec.json)은 어디서든 거부한다
     - data/snapshots/ 아래는 snapshot_build.sqlite·snapshot_build.json만(raw/·manifest·수집기 SQLite·fixture_spec.json 거부).
       dev20 스냅샷(`uv run --locked python -m eval.datagen.dev20 install`이 만드는 data/snapshots/dev20/snapshot_build.sqlite)은
       --add로 준다
@@ -33,7 +42,8 @@ normalized_sha256·비교국 표를 적는다(결정 기록 model-decision-mt5-s
 
 표준 출력에는 저장소 상대경로와 개수·sha256만 쓰고 로컬 절대경로는 쓰지 않는다(자료 계약 §10.3 N13).
 종료 코드: 0 성공, 2 인자·거부 규칙·목적지 오류, 1 예상 밖 오류(예외 이름만 적는다).
-봉인 입력 반입(공식 채점 대상 실행 전용 이미지)은 이 도구에 아직 없다. 방식과 조건은 MT5 샌드박스 결정 기록 ②에 있다.
+봉인 입력 반입(공식 채점 대상 실행 전용 이미지)은 반입 도구 scripts/import_sealed_holdout40.py가 만든 폴더를 --overlay로 들이는
+방식이다(결정 기록 model-decision-f2-holdout40-import. MT5 샌드박스 결정 기록 ②의 sealed_input/ 경로 대신 저장소 배치를 쓴다).
 """
 from __future__ import annotations
 
@@ -58,6 +68,11 @@ BLOCKED_TOP = ("outputs", "artifacts", "spikes", "tests", "docs", "scripts", "re
 CACHE_PARTS = frozenset({"__pycache__"})
 SNAPSHOT_FILES = frozenset({"snapshot_build.sqlite", "snapshot_build.json"})
 DEV20_INPUT_PREFIX = ("eval", "dev", "dev20", "input")
+# 정답표·생성 규칙·seed·합성 생성 규칙의 파일 이름. 어디서든(저장소·겹침 폴더) 거부한다(봉인 폴더 배치는 결정 기록 sealed-hash-registration)
+BLOCKED_NAMES = frozenset({"answers.json", "parent_series_ids.json", "generation_rules.json", "sample_seed.json",
+                           "fixture_spec.json"})
+OVERLAY_MANIFEST = "import_manifest.json"  # 반입 도구(scripts/import_sealed_holdout40.py)의 기록. 들이지 않고 sha256만 적는다
+SOURCE_REPO, SOURCE_OVERLAY = "repo", "overlay"
 BUILD_RECORD = "snapshot_build.json"
 PEER_GROUP_NAME_RE = re.compile(r"peer_group_[a-z0-9_]+\.csv")
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
@@ -76,8 +91,11 @@ def _inside(path: Path, base: Path) -> bool:
     return path == base or base in path.parents
 
 
-def blocked_reason(rel: str, *, from_add: bool) -> str | None:
-    """저장소 상대경로(POSIX)가 거부 규칙에 걸리면 이유를, 아니면 None을 돌려준다."""
+def blocked_reason(rel: str, *, from_add: bool, from_overlay: bool = False) -> str | None:
+    """저장소 상대경로(POSIX)가 거부 규칙에 걸리면 이유를, 아니면 None을 돌려준다.
+
+    from_add는 --add로 준 경로(eval/dev/dev20/input/ 예외), from_overlay는 --overlay 폴더 안 파일(eval/dev/<묶음>/input/ 예외)이다.
+    그 밖의 규칙은 셋(포함 목록·--add·--overlay)에 같다."""
     raw_parts = PurePosixPath(rel).parts
     if not raw_parts or rel.startswith("/") or ".." in raw_parts:
         return "저장소 상대경로가 아니다"
@@ -93,9 +111,13 @@ def blocked_reason(rel: str, *, from_add: bool) -> str | None:
         return f"{parts[0]}/ 아래"
     if "oracle" in name or "answer" in name:
         return "정답표 이름(oracle·answer)"
+    if name in BLOCKED_NAMES:
+        return "정답표·생성 규칙·seed 이름"
     if parts[0] == "eval":
-        if not (from_add and parts[:4] == DEV20_INPUT_PREFIX):
-            return "eval/ 아래(예외는 --add로 준 eval/dev/dev20/input/ 아래)"
+        dev20_input = from_add and parts[:4] == DEV20_INPUT_PREFIX
+        overlay_input = from_overlay and len(parts) >= 5 and parts[:2] == ("eval", "dev") and parts[3] == "input"
+        if not (dev20_input or overlay_input):
+            return "eval/ 아래(예외는 --add로 준 eval/dev/dev20/input/ 아래와 --overlay의 eval/dev/<묶음>/input/ 아래)"
     if parts[:2] == ("data", "snapshots"):
         if len(parts) != 4 or name not in SNAPSHOT_FILES:
             return "스냅샷은 snapshot_build.sqlite·snapshot_build.json만"
@@ -195,14 +217,83 @@ def collect(repo_root: Path, include: list[tuple[str, bool]], added: list[str]) 
     return sorted(files), missing_optional
 
 
-def snapshot_companions(repo_root: Path, files: list[str]) -> tuple[list[str], list[dict]]:
+def _repo_has_path(repo_root: Path, rel: str) -> bool:
+    """저장소에 같은 상대경로(대소문자만 다른 별칭 포함)가 있는지 본다. 조각마다 부모 폴더 목록을 casefold로 비교한다."""
+    current = repo_root
+    for part in PurePosixPath(rel).parts:
+        try:
+            names = os.listdir(current)
+        except OSError:
+            return False
+        match = next((name for name in names if name.casefold() == part.casefold()), None)
+        if match is None:
+            return False
+        current = current / match
+    return True
+
+
+def collect_overlays(repo_root: Path, overlays: list[Path]) -> tuple[dict[str, Path], list[dict]]:
+    """겹침 폴더들의 파일을 (저장소 상대경로 → 원본 경로)로 모은다. 폴더마다 이미지 기록의 overlays 항목을 하나 만든다.
+
+    거부: 폴더가 없거나 심볼릭 링크·저장소 안·봉인 폴더 안, 심볼릭 링크·하드 링크·일반 파일이 아닌 것, 거부 규칙
+    (from_overlay), 저장소에 같은 상대경로가 있는 것, 겹침 폴더 사이의 같은 상대경로. 뿌리의 import_manifest.json은 들이지
+    않고 sha256만 적는다. __pycache__·.pyc는 건너뛴다.
+    """
+    found: dict[str, Path] = {}
+    records: list[dict] = []
+    for number, given in enumerate(overlays, start=1):
+        base = given.expanduser()
+        if not base.is_absolute():
+            base = Path.cwd() / base
+        if base.is_symlink() or not base.is_dir():
+            raise StageError(f"--overlay {number}번이 폴더가 아니다")
+        resolved = base.resolve()
+        if _inside(resolved, repo_root.resolve()):
+            raise StageError(f"--overlay {number}번은 저장소 밖이어야 한다")
+        if _inside(resolved, sealed_dir()) or _inside(base, sealed_dir()):
+            raise StageError(f"--overlay {number}번은 봉인 폴더 밖이어야 한다")
+        count, manifest_sha = 0, None
+        for current, dirs, files in os.walk(resolved, followlinks=False):
+            dirs[:] = sorted(d for d in dirs if d not in CACHE_PARTS)
+            for name in list(dirs):
+                if (Path(current) / name).is_symlink():
+                    raise StageError(f"겹침 폴더의 심볼릭 링크는 들이지 않는다: "
+                                     f"{(Path(current) / name).relative_to(resolved).as_posix()}")
+            for name in sorted(files):
+                path = Path(current) / name
+                rel = path.relative_to(resolved).as_posix()
+                if name.endswith(".pyc"):
+                    continue
+                if path.is_symlink():
+                    raise StageError(f"겹침 폴더의 심볼릭 링크는 들이지 않는다: {rel}")
+                if rel == OVERLAY_MANIFEST:
+                    _check_regular(path, rel)
+                    manifest_sha = _sha256(path)
+                    continue
+                reason = blocked_reason(rel, from_add=False, from_overlay=True)
+                if reason:
+                    raise StageError(f"들이지 않는 경로다({reason}): {rel}")
+                _check_regular(path, rel)
+                if _repo_has_path(repo_root, rel):
+                    raise StageError(f"겹침 파일과 같은 경로가 저장소에 있다(덮지 않는다): {rel}")
+                if rel in found:
+                    raise StageError(f"겹침 폴더 사이에 같은 경로가 있다: {rel}")
+                found[rel] = path
+                count += 1
+        records.append({"overlay": number, "files": count, "import_manifest_sha256": manifest_sha})
+    return found, records
+
+
+def snapshot_companions(repo_root: Path, files: list[str], overlay: dict[str, Path] | None = None) -> tuple[list[str], list[dict]]:
     """들이는 빌드 기록(data/snapshots/<id>/snapshot_build.json)이 가리키는 비교국 표를 함께 들인다.
 
     빌드 기록의 peer_group_files[].file_name을 data/reference/에서 찾아 sha256을 기록값과 대조한다. 이름이 정해진 모양
     (peer_group_<소문자·숫자·밑줄>.csv)이 아니거나, 파일이 없거나, sha256이 다르면 StageError다. 샌드박스 안 스냅샷 검증
     (단위 S3의 peer_group_sources)이 이 표를 찾기 때문이다(결정 기록 model-decision-mt5-sandbox ⑫).
-    돌려주는 것: (더 들일 파일, 이미지 기록의 snapshots 항목 목록).
+    겹침 파일(overlay: 상대경로 → 원본 경로)의 빌드 기록·비교국 표도 같은 규칙으로 본다(비교국 표는 겹침 폴더에 있으면 그것,
+    없으면 저장소의 것). 돌려주는 것: (더 들일 파일, 이미지 기록의 snapshots 항목 목록).
     """
+    overlay = overlay or {}
     extra: list[str] = []
     snapshots: list[dict] = []
     for rel in files:
@@ -210,7 +301,7 @@ def snapshot_companions(repo_root: Path, files: list[str]) -> tuple[list[str], l
         if not (len(parts) == 4 and parts[:2] == ("data", "snapshots") and parts[3] == BUILD_RECORD):
             continue
         try:
-            record = json.loads((repo_root / rel).read_text(encoding="utf-8"))
+            record = json.loads(overlay.get(rel, repo_root / rel).read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
             raise StageError(f"빌드 기록을 읽지 못했다({type(exc).__name__}): {rel}") from None
         if not isinstance(record, dict) or record.get("snapshot_id") != parts[2]:
@@ -222,11 +313,14 @@ def snapshot_companions(repo_root: Path, files: list[str]) -> tuple[list[str], l
             if not isinstance(name, str) or not PEER_GROUP_NAME_RE.fullmatch(name):
                 raise StageError(f"빌드 기록의 비교국 표 이름이 정해진 모양이 아니다: {rel}")
             peer = f"data/reference/{name}"
-            if not (repo_root / peer).is_file() or (repo_root / peer).is_symlink():
-                raise StageError(f"빌드 기록이 가리키는 비교국 표가 없다: {peer}")
-            check_spelling(repo_root, peer)
-            _check_regular(repo_root / peer, peer)
-            if not isinstance(expected, str) or _sha256(repo_root / peer) != expected:
+            source = overlay.get(peer)
+            if source is None:
+                source = repo_root / peer
+                if not source.is_file() or source.is_symlink():
+                    raise StageError(f"빌드 기록이 가리키는 비교국 표가 없다: {peer}")
+                check_spelling(repo_root, peer)
+                _check_regular(source, peer)
+            if not isinstance(expected, str) or _sha256(source) != expected:
                 raise StageError(f"비교국 표 sha256이 빌드 기록과 다르다: {peer}")
             extra.append(peer)
             peers.append({"file_name": name, "sha256": expected})
@@ -265,8 +359,8 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def stage(repo_root: Path, dest: Path, added: list[str]) -> dict:
-    """빌드 맥락을 만들고 이미지 기록(dict)을 돌려준다. 실패하면 만든 폴더를 지운다."""
+def stage(repo_root: Path, dest: Path, added: list[str], overlays: list[Path] | tuple = ()) -> dict:
+    """빌드 맥락을 만들고 이미지 기록(dict)을 돌려준다. 실패하면 만든 폴더를 지운다. overlays는 --overlay 폴더들이다."""
     repo_root = repo_root.resolve()
     target = dest.expanduser()
     if not target.is_absolute():
@@ -281,7 +375,11 @@ def stage(repo_root: Path, dest: Path, added: list[str]) -> dict:
     if _inside(resolved, sealed_dir()):
         raise StageError("--dest는 봉인 폴더 밖이어야 한다")
     files, missing = collect(repo_root, read_include(repo_root / INCLUDE_FILE), added)
-    extra, snapshots = snapshot_companions(repo_root, files)
+    overlay, overlay_records = collect_overlays(repo_root, [Path(p) for p in overlays])
+    if set(files) & set(overlay):  # 포함 목록·--add가 든 저장소 경로와 겹침 경로는 _repo_has_path가 먼저 잡지만, 이름만 다른 경우를 막는다
+        raise StageError("겹침 파일과 같은 경로가 들이는 저장소 파일에 있다")
+    files = sorted(set(files) | set(overlay))
+    extra, snapshots = snapshot_companions(repo_root, files, overlay)
     files = sorted(set(files) | set(extra))
     os.mkdir(resolved)
     try:
@@ -290,14 +388,17 @@ def stage(repo_root: Path, dest: Path, added: list[str]) -> dict:
         for rel in files:
             out = app / rel
             out.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(repo_root / rel, out)
-            entries.append({"path": rel, "sha256": _sha256(out), "size": out.stat().st_size})
+            source = overlay.get(rel, repo_root / rel)
+            shutil.copyfile(source, out)
+            entries.append({"path": rel, "sha256": _sha256(out), "size": out.stat().st_size,
+                            "source": SOURCE_OVERLAY if rel in overlay else SOURCE_REPO})
         (resolved / "image").mkdir()
         shutil.copyfile(repo_root / IMAGE_DIR / "Dockerfile", resolved / "Dockerfile")
         shutil.copyfile(repo_root / IMAGE_DIR / "tradesentry.sh", resolved / "image" / "tradesentry.sh")
         record = {
             "files": entries,
             "optional_missing": missing,
+            "overlays": overlay_records,
             "snapshots": snapshots,
             "code_version": code_version(repo_root),
             "dockerfile_sha256": _sha256(resolved / "Dockerfile"),
@@ -319,9 +420,11 @@ def main(argv: list[str] | None = None) -> int:
                                      description="샌드박스 이미지 빌드 맥락을 포함 목록대로 저장소 밖 빈 폴더에 만든다")
     parser.add_argument("--dest", required=True, help="만들 폴더(저장소·봉인 폴더 밖, 아직 없는 이름)")
     parser.add_argument("--add", action="append", default=[], help="더 들일 저장소 상대경로(여러 번)")
+    parser.add_argument("--overlay", action="append", default=[],
+                        help="저장소 상대경로 배치로 더 들일 저장소 밖 겹침 폴더(여러 번. 봉인 입력 반입 도구의 --dest 폴더)")
     args = parser.parse_args(argv)
     try:
-        record = stage(REPO_ROOT, Path(args.dest), args.add)
+        record = stage(REPO_ROOT, Path(args.dest), args.add, [Path(p) for p in args.overlay])
     except StageError as exc:
         sys.stderr.write(f"오류: {exc}\n")
         return 2
@@ -332,6 +435,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"staged files={len(record['files'])} bytes={total} optional_missing={len(record['optional_missing'])}")
     for rel in record["optional_missing"]:
         print(f"optional_missing {rel}")
+    for item in record["overlays"]:
+        print(f"overlay {item['overlay']} files={item['files']} import_manifest_sha256={item['import_manifest_sha256']}")
     for snap in record["snapshots"]:
         peers = ",".join(entry["file_name"] for entry in snap["peer_group_files"]) or "-"
         print(f"snapshot {snap['snapshot_id']} normalized_sha256={snap['normalized_sha256']} peer_group_files={peers}")
