@@ -163,11 +163,11 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 | 단가 | `composition_explained` | `MONITOR` | `parent_child_match_V_and_Q`, `weight_share_decomposition`, `per_child_unit_value_stable`, `comparability_ok` | `composition_explained` |
 | 단가 | `unexplained` | `MAINTAIN` | `parent_child_match_V_and_Q`, `weight_share_decomposition`, `partner_comparison_done`, `comparability_ok` | `unexplained` |
 | 단가 | `hold_missing` | `HOLD` | `missingness_listed`, `failure_vs_not_collected_distinguished`, `no_zero_fill` | `data_insufficient`(빠진 관측)·`comparison_incomplete` |
-| 단가 | `hold_inconsistent` | `HOLD` | `parent_child_match_V_and_Q`, `comparability_ok`, `no_zero_fill` | `data_insufficient`의 불일치 사유(부모·하위 불일치, 분해 불가. 이름은 판정 정책 짝 PR이 정한다) |
+| 단가 | `hold_inconsistent` | `HOLD` | `parent_child_match_V_and_Q`, `comparability_ok`, `no_zero_fill` | `data_inconsistent`(관측은 모두 있는데 비교 조건·부모·하위 대조·구성 분해가 성립하지 않음, PR #42) |
 | 단가 | `rounding_unstable` | `HOLD` | `precision_sensitivity_shown` | `rounding_unstable` |
 | 점유율 | `unexplained` | `MAINTAIN` | `country_and_world_change_shown`, `partner_comparison_done`, `comparability_ok` | `unexplained` |
 | 점유율 | `hold_missing` | `HOLD` | `missingness_listed`, `failure_vs_not_collected_distinguished`, `no_zero_fill` | `data_insufficient`·`comparison_incomplete` |
-| 점유율 | `hold_inconsistent` | `HOLD` | `country_and_world_change_shown`, `comparability_ok`, `no_zero_fill` | 분모 불완전 보류(이름은 판정 정책 짝 PR이 정한다) |
+| 점유율 | `hold_inconsistent` | `HOLD` | `country_and_world_change_shown`, `comparability_ok`, `no_zero_fill` | `data_inconsistent`(점유율 비교 가능성 문제: 분모가 대상국 금액보다 작음 등, PR #42) |
 
 - 필수 근거의 모양: 발동한 신호가 하나면 그 규칙의 근거 목록이다. 두 신호가 모두 발동하면 신호별 목록 객체 `{"unit_value": [...], "share": [...]}`다(두 신호에 함께 쓰이는 코드, 예: `comparability_ok`가 어느 신호의 근거인지 드러나게. 독립 채점기의 정답표 형식과 같다 `[사실: eval/scorer/results.py _required_evidence]`).
 - "단위 P5 판정 근거" 열은 참고다. 채점기는 정답표의 필수 근거 목록만 읽고 판정 근거 이름을 읽지 않는다 `[사실: eval/scorer/results.py read_answer_table]`. 불일치 보류의 판정 근거 이름은 판정 정책 P3·P5를 고치는 짝 PR(모델 트랙 `model/MT1-d17-hold-split`)이 정하고, 병합 뒤 이 열을 그 이름으로 맞춘다.
