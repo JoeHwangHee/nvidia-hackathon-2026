@@ -174,7 +174,7 @@
     "request_no": 1,
     "attempt": 1,
     "model_requests": 1,
-    "request_sha256": "7f1ebb014df14d5413b11797f32520b5c5b2afaaf8b29695903ccbf7868a4f9c",
+    "request_sha256": "c41c537cbaf9a42ce1164d741855daf1053f21454fe9ceeb7edb387825bb3972",
     "timeout_ms": 60000,
     "messages": 2,
     "tools": 4
