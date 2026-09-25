@@ -479,6 +479,81 @@ class RunConditionsTest(unittest.TestCase):
         self.assertEqual(self.doc(extra={"grouping_reason": "합성 peer_group", "scorer_commit": "abc1234"})
                          ["grouping_reason"], "합성 peer_group")
 
+    def test_operator_conditions_are_the_keys_the_harness_does_not_fill(self):
+        """운영자 실행 조건(--conditions-extra): 허용 키 = CONDITION_KEYS − 하네스가 채우는 키. 채점기 요약이 읽는 키 이름 그대로."""
+        self.assertEqual(set(batch_run.HARNESS_CONDITION_KEYS) | set(batch_run.OPERATOR_CONDITION_KEYS),
+                         set(batch_run.CONDITION_KEYS))
+        self.assertEqual(set(batch_run.HARNESS_CONDITION_KEYS) & set(batch_run.OPERATOR_CONDITION_KEYS), set())
+        self.assertEqual(set(batch_run.OPERATOR_CONDITION_KEYS),
+                         {"rulebook", "grouping_reason", "scorer_commit", "prose_patterns_commit", "sandbox",
+                          "sealed_hash_recheck", "sealed_provenance_check", "precheck", "prescoring_checks",
+                          "skill_call_success", "korean_sample_review", "a_grade"})
+        self.assertEqual(batch_run.OPERATOR_SUBKEYS["sandbox"], ("live_policy_sha256", "violation_tests_run"))
+        self.assertEqual(batch_run.OPERATOR_SUBKEYS["prescoring_checks"],
+                         ("version_keys", "mode_case_sets", "concurrency_record"))
+
+    def test_operator_conditions_merge_into_harness_values(self):
+        operator = {"rulebook": {"freeze_commit": "abc1234", "changes_after_freeze": "없음"},
+                    "grouping_reason": "g0 고정", "scorer_commit": "abc1234", "prose_patterns_commit": "abc1234",
+                    "precheck": "통과: 확인 명령 6개 종료 코드 0", "skill_call_success": "5/7", "korean_sample_review": "표본 3건 이상 없음",
+                    "a_grade": {"rb1_frozen": False, "hash_recheck_match": True, "scorer_prevalidation": True, "scored_once": True},
+                    "sandbox": {"live_policy_sha256": "8a" * 32, "violation_tests_run": "openshell_violation_tests-260925230336"},
+                    "prescoring_checks": {"version_keys": "참: 5개 일치", "mode_case_sets": "참", "concurrency_record": "해당 없음"}}
+        batch_run.check_operator_conditions(operator, "dev20")
+        extra = {"reproduce_evaluate": "tradesentry evaluate --snapshot dev20 --policy dev-0.1",
+                 "sandbox": {"name": "ts-scored", "policy_yaml_sha256": "dc" * 32},
+                 "prescoring_checks": {"final_status": "참", "seed_concurrency": "참"}}
+        merged = batch_run.merge_operator_conditions(extra, operator)
+        self.assertEqual(merged, ["a_grade", "grouping_reason", "korean_sample_review", "precheck",
+                                  "prescoring_checks.concurrency_record", "prescoring_checks.mode_case_sets",
+                                  "prescoring_checks.version_keys", "prose_patterns_commit", "rulebook",
+                                  "sandbox.live_policy_sha256", "sandbox.violation_tests_run", "scorer_commit",
+                                  "skill_call_success"])
+        self.assertEqual(extra["sandbox"], {"name": "ts-scored", "policy_yaml_sha256": "dc" * 32,
+                                            "live_policy_sha256": "8a" * 32,
+                                            "violation_tests_run": "openshell_violation_tests-260925230336"})
+        self.assertEqual(set(extra["prescoring_checks"]),
+                         {"final_status", "seed_concurrency", "version_keys", "mode_case_sets", "concurrency_record"})
+        doc = self.doc(extra=extra)  # 합친 결과가 실행 조건 입력 파일 검사를 통과한다
+        self.assertEqual(doc["sandbox"]["live_policy_sha256"], "8a" * 32)
+        self.assertEqual(doc["skill_call_success"], "5/7")
+        # 하네스 sandbox 객체가 없으면(호스트 백엔드) 운영자 하위 키만 든 객체가 된다
+        extra2 = {"reproduce_evaluate": "x"}
+        self.assertEqual(batch_run.merge_operator_conditions(extra2, {"sandbox": {"live_policy_sha256": "8a" * 32}}),
+                         ["sandbox.live_policy_sha256"])
+        self.assertEqual(extra2["sandbox"], {"live_policy_sha256": "8a" * 32})
+
+    def test_operator_conditions_refusals(self):
+        home_path = "~" + "/x"
+        bad = [("객체", []), ("두 번 줬다", {"dataset": "dev20"}), ("두 번 줬다", {"snapshot": {"normalized_sha256": "ab"}}),
+               ("두 번 줬다", {"reproduce_evaluate": "x"}), ("두 번 줬다", {"nat_profile_summary": {}}),
+               ("약속 밖 키", {"unknown_key": 1}), ("객체", {"sandbox": "ts-scored"}),
+               ("하네스가 채우거나 약속 밖", {"sandbox": {"name": "ts-scored"}}),
+               ("하네스가 채우거나 약속 밖", {"sandbox": {"policy_yaml_sha256": "dc" * 32}}),
+               ("하네스가 채우거나 약속 밖", {"prescoring_checks": {"final_status": "참"}}),
+               ("하네스가 채우거나 약속 밖", {"prescoring_checks": {"seed_concurrency": "참"}}),
+               ("로컬 절대경로", {"scorer_commit": "/" + "Users/x"}), ("로컬 절대경로", {"precheck": home_path}),
+               ("로컬 절대경로", {"sandbox": {"violation_tests_run": "C:\\x"}}),
+               ("키 모양", {"precheck": "nv" + "api-abc"})]
+        for text, operator in bad:
+            with self.subTest(operator=operator), self.assertRaisesRegex(batch_run.BatchError, text):
+                batch_run.check_operator_conditions(operator, "dev20")
+        # 봉인 묶음: SEALED_FORBIDDEN 거부. nat_profile_summary는 하네스 키라 어느 묶음에서든 "두 번 줬다"가 먼저다
+        self.assertIn("nat_profile_summary", batch_run.HARNESS_CONDITION_KEYS)
+        self.assertEqual([k for k in batch_run.SEALED_FORBIDDEN if k in batch_run.OPERATOR_CONDITION_KEYS],
+                         ["korean_sample_review"])
+        for dataset in ("holdout40", "real_sealed"):
+            with self.subTest(dataset=dataset), self.assertRaisesRegex(batch_run.BatchError, "봉인 묶음"):
+                batch_run.check_operator_conditions({"korean_sample_review": "x"}, dataset)
+        batch_run.check_operator_conditions({"korean_sample_review": "x"}, "dev20")  # 개발 묶음은 받는다
+        # 합치기: 하네스 값과 겹치면 "두 번 줬다"
+        with self.assertRaisesRegex(batch_run.BatchError, "sandbox.name를 두 번 줬다"):
+            batch_run.merge_operator_conditions({"sandbox": {"name": "ts-scored"}}, {"sandbox": {"name": "x"}})
+        with self.assertRaisesRegex(batch_run.BatchError, "reproduce_evaluate를 두 번 줬다"):
+            batch_run.merge_operator_conditions({"reproduce_evaluate": "x"}, {"reproduce_evaluate": "y"})
+        with self.assertRaises(batch_run.BatchError):
+            batch_run.merge_operator_conditions({"sandbox": "문자열"}, {"sandbox": {"live_policy_sha256": "8a" * 32}})
+
     def test_limits_from_model_config(self):
         from tradesentry.workflow import model_client  # 실제 설정 파일(configs/model/model.json)의 한도
 

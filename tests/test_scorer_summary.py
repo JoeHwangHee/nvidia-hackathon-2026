@@ -247,6 +247,31 @@ class UntrustedSummaryValueTest(unittest.TestCase):
         self.assertNotIn("\n# 가짜 제목", text)
         self.assertIn("dev-0.1 # 가짜 제목 ／ 가짜 칸", text)
 
+    def test_operator_conditions_reach_the_summary_verbatim(self):
+        """운영자 실행 조건(tradesentry evaluate --conditions-extra가 실행 조건 입력 파일에 합친 값)을 요약 0절·4절이 그대로
+        옮긴다. 채점 규칙은 보지 않고 요약 문자열만 본다."""
+        inp = oracle_summary_input()
+        inp["conditions"].update({
+            "rulebook": {"freeze_commit": "abc1234", "changes_after_freeze": "없음"}, "grouping_reason": "g0 고정",
+            "prose_patterns_commit": "def5678", "precheck": "통과: 확인 명령 6개 종료 코드 0", "skill_call_success": "5/7",
+            "korean_sample_review": "표본 3건 이상 없음",
+            "sandbox": {"name": "ts-scored", "policy_yaml_sha256": "dc" * 32, "live_policy_sha256": "8a" * 32,
+                        "violation_tests_run": "openshell_violation_tests-260925230336"},
+            "prescoring_checks": {"final_status": "참: 예정 실행 60건 가운데 줄 없는 조합 0건", "version_keys": "참: 5개 일치",
+                                  "mode_case_sets": "참", "seed_concurrency": "참: 순서 seed 7", "concurrency_record": "해당 없음"}})
+        text = c4.run(inp)
+        for fragment in ("동결 커밋 abc1234", "동결 뒤 변경 없음", "(사유: g0 고정)", "채점기 커밋 1234567", "산문 패턴 목록 커밋 def5678",
+                         f"샌드박스 이름 ts-scored, 커밋한 라이브 정책 조회 본문(정책 YAML) sha256 {'8a' * 32}, "
+                         "대조한 시험표 실행 폴더 이름 openshell_violation_tests-260925230336",
+                         "2 버전 키 일치 참: 5개 일치", "5 모드별 사례 집합 일치 참(", "근거 결정 기록 해당 없음",
+                         "- 사전 점검 결과 통과: 확인 명령 6개 종료 코드 0",
+                         "스킬 호출 성공률(NemoClaw 경로, 정확도 지표에는 영향을 주지 않는다): 5/7",
+                         "표본 점검: 표본 3건 이상 없음"):
+            self.assertIn(fragment, text)
+        for prefix in ("- 룰북:", "- policy_version", "- code_version", "- 샌드박스 이름", "- 사전 점검 결과", "- 스킬 호출 성공률"):
+            [line] = [x for x in text.splitlines() if x.startswith(prefix)]
+            self.assertNotIn(MISSING_MARK, line, line)  # 운영자가 준 줄에는 미기재가 남지 않는다
+
     def test_unread_reports_show_reasons(self):
         inp = oracle_summary_input()
         run_id = inp["results"][0]["run_id"]

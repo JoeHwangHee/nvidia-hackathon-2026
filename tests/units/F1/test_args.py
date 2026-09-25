@@ -391,8 +391,43 @@ class RunTest(unittest.TestCase):
         detect = ["detect", "--snapshot", "controlled_fixture_v0", "--policy", "dev-0.1"]
         self.assertEqual(args.run(detect),
                          {"command": "detect", "snapshot_id": "controlled_fixture_v0", "policy_version": "dev-0.1",
-                          "mode": None, "case": None, "run_name": None})
+                          "mode": None, "case": None, "run_name": None, "conditions_extra": None})
         self.assertEqual(args.run(detect + ["--mode", "agent"])["mode"], "agent")  # 쓰지 않는 옵션도 받은 값 그대로
+
+
+class ConditionsExtraTest(unittest.TestCase):
+    """--conditions-extra(조립 AS3): evaluate만의 선택 옵션. 값은 공백·제어 문자 없는 상대 경로 한 조각이다."""
+
+    def test_only_evaluate_takes_it_and_it_is_optional(self):
+        argv = argv_for("evaluate") + ["--conditions-extra", "outputs/conditions/extra.json"]
+        self.assertEqual(args.parse(argv).conditions_extra, "outputs/conditions/extra.json")
+        self.assertIsNone(args.parse(argv_for("evaluate")).conditions_extra)
+        for command in args.COMMANDS:
+            if command == "evaluate":
+                continue
+            with self.subTest(command=command):
+                code, err = parse_error(argv_for(command) + ["--conditions-extra", "extra.json"])
+                self.assertEqual(code, 2)
+                self.assertIn("unrecognized arguments: --conditions-extra <값 생략>", err)
+        code, err = parse_error(argv + ["--conditions-extra", "extra.json"])
+        self.assertEqual(code, 2)
+        self.assertIn("--conditions-extra 옵션을 두 번 적었다", err)
+
+    def test_absolute_home_and_whitespace_paths_are_refused_without_echo(self):
+        bad = ["", "/srv/probe/extra.json", "\\\\srv\\extra.json", "~" + "/extra.json", "~extra.json", "C:\\extra.json",
+               "c:/extra.json", "extra .json", "extra.json\n", "extra\u200b.json", " extra.json"]
+        for value in bad:
+            with self.subTest(value=value):
+                code, err = parse_error(argv_for("evaluate") + ["--conditions-extra", value])
+                self.assertEqual(code, 2)
+                self.assertIn("--conditions-extra", err)
+                self.assertIn("상대 경로", err)
+                self.assertNotIn("srv", err)
+                if value.strip():
+                    self.assertNotIn(value, err)  # 받은 값을 되풀이하지 않는다
+        for value in ("extra.json", "./extra.json", "../shared/extra.json", "outputs/x-1/extra.json"):
+            with self.subTest(value=value):
+                self.assertEqual(args.parse(argv_for("evaluate") + ["--conditions-extra", value]).conditions_extra, value)
 
     def test_run_takes_only_a_list_of_strings(self):
         for bad in (None, "detect", ("detect",), ["detect", 1], {"argv": []}):

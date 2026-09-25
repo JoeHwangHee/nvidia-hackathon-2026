@@ -5,6 +5,7 @@ TradeSentry 바깥(운영자, NemoClaw(OpenShell, 곧 에이전트를 격리해 
 | 인터페이스 | 정본 |
 |---|---|
 | CLI 명령과 공통 옵션, 모드 4개 | `docs/rules/DATA_CONTRACT_V1.md` §10·§4.1, `docs/plan/SCAFFOLD_BRIEF.md` §4.7 |
+| `tradesentry evaluate`의 선택 옵션 `--conditions-extra <JSON 상대 경로>`(운영자가 아는 실행 조건을 실행 조건 입력 파일에 합치는 배관. 허용 키는 하네스가 채우지 않는 실행 조건 키) | `docs/tracking/decisions/20260926-0155-model-decision-conditions-extra.md`, `skills/tradesentry-eval/SKILL.md`의 "결과 보고"(실행 조건 입력 파일 항목), 코드 `src/tradesentry/evaluation/batch_run.py`의 `OPERATOR_CONDITION_KEYS`·`OPERATOR_SUBKEYS` |
 | 런타임 스킬 `tradesentry`(NemoClaw 에이전트가 TradeSentry CLI를 부르는 데 쓰는 Agent Skills 형식의 작업 절차)의 인터페이스(부르는 명령, 인자 검증, 돌려주는 것) | `docs/plan/DEV_PLAN.md` §5.2, `docs/plan/SCAFFOLD_BRIEF.md` §3.5 |
 | 사례를 지정하는 인자 형식과 탐지 대상 시계열 제한(아직 정하지 않음) | `docs/plan/SCAFFOLD_BRIEF.md` Q18 |
 | 조회 도구 5개의 입력과 공통 출력 봉투(모든 조회 도구가 같은 키로 돌려주는 응답 형식) | `docs/rules/DATA_CONTRACT_V1.md` §5 |

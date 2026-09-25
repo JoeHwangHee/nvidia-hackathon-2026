@@ -277,6 +277,33 @@ class PreflightTest(FakeOpenShell, unittest.TestCase):
         self.assertEqual(len(hf.read_jsonl(self.root / batch_line)), 3)
         self.assertIn("스모크 묶음", err)
 
+    def test_conditions_extra_sandbox_keys_join_the_harness_sandbox_object(self):
+        """--conditions-extra의 sandbox.live_policy_sha256·violation_tests_run이 샌드박스 백엔드가 채운 name·policy_yaml_sha256과
+        한 객체가 된다. 운영자 파일이 name을 주면 실행 폴더를 만들기 전에 거부한다."""
+        cwd = os.getcwd()  # 상대 경로의 기준은 evaluate를 부른 작업 폴더다
+        os.chdir(self.root)
+        self.addCleanup(os.chdir, cwd)
+        extra = self.root / "extra.json"
+        extra.write_text(json.dumps({"sandbox": {"live_policy_sha256": "8a" * 32,
+                                                 "violation_tests_run": "openshell_violation_tests-260925230336"},
+                                     "skill_call_success": "5/7"}), encoding="utf-8")
+        code, out, err = call(self.ARGV + ["--conditions-extra", "extra.json"])
+        self.assertEqual(code, 0, err)
+        doc = json.loads((self.root / out.splitlines()[1]).read_text(encoding="utf-8"), parse_float=Decimal)
+        self.assertEqual(set(doc["sandbox"]), {"name", "policy_yaml_sha256", "live_policy_sha256", "violation_tests_run"})
+        self.assertEqual((doc["sandbox"]["name"], doc["sandbox"]["live_policy_sha256"],
+                          doc["sandbox"]["violation_tests_run"], doc["skill_call_success"]),
+                         ("ts-scored", "8a" * 32, "openshell_violation_tests-260925230336", "5/7"))
+        self.assertEqual(doc["reproduce_evaluate"], "tradesentry evaluate --snapshot dev20 --policy dev-0.1 --mode checklist "
+                                                    "--conditions-extra extra.json")
+        self.assertIn("합쳤다(키: sandbox.live_policy_sha256, sandbox.violation_tests_run, skill_call_success)", err)
+        before = sorted(p.name for p in (self.root / "outputs").iterdir())
+        extra.write_text(json.dumps({"sandbox": {"name": "ts-scored", "live_policy_sha256": "8a" * 32}}), encoding="utf-8")
+        code, out, err = call(self.ARGV + ["--conditions-extra", "extra.json"])
+        self.assertEqual((code, out), (1, ""))
+        self.assertIn("sandbox의 하위 키 name는 하네스가 채우거나 약속 밖이다", err)
+        self.assertEqual(sorted(p.name for p in (self.root / "outputs").iterdir()), before)  # 새 실행 폴더 없음
+
     def test_preflight_refusals_leave_no_outputs(self):
         cases = {
             "manifest 없음": (None, "코드 커밋을 읽지 못했다"),
