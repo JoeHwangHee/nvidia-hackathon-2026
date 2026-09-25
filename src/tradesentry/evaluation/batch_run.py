@@ -34,6 +34,12 @@ S0 제안: 사례 실행은 묶음 폴더 안이 아니라 형제 폴더 outputs
      (사례, 모드)·같은 설정으로 한 번씩 다시 돌린다. 재실행마다 새 실행명을 확보하고 같은 묶음 기록에 줄을 더한다(원래 줄은
      그대로 둔다. 채점기의 재실행 모양 "FAILED 한 줄 뒤 재실행 한 줄"). 재실행 줄은 다시 재실행하지 않는다. 다른 실패
      (TIMEOUT·INVALID·BUDGET_EXCEEDED·CODE_ERROR 등)는 재실행하지 않는다. 대상 수와 재실행 수는 BatchResult에 남는다.
+   - 속도 조절(Pacing, 조립 AS3 세 번째 PR): 모델 제공자의 요청 한도(HTTP 429)를 넘지 않게 모델을 쓰는 실행(checklist 밖
+     모드) 사이를 띄운다. 모델을 쓰는 실행을 시작하기 전에, 직전 모델 실행의 시작 시각에서 max(최소 간격, 직전 실행 토큰
+     수 ÷ 분당 토큰 예산 × 60초)가 지날 때까지 쉰다. 직전 모델 실행이 HTTP 429로 끝났으면 그 실행이 끝난 시각에서
+     429 뒤 쉬는 시간도 지나야 한다. checklist는 모델을 부르지 않으므로 쉬지 않고 기준에서도 빠진다. 값은 모델 설정
+     (configs/model/model.json의 pacing)에서 부르는 쪽이 읽어 넘기고, 모든 모드에 같다. 429 실행은 지금처럼 실패로 남는다
+     (재실행 대상 아님, 사용자 결정 5). 쉰 시간의 합과 429 뒤 쉰 횟수는 BatchResult에 남는다.
    - 봉인 묶음(holdout40·real_sealed)은 받지 않는다. 봉인 묶음은 샌드박스 밖 실행기 E2가 돌린다(자료 계약 §8.2).
 3. 실행 조건 입력 파일(build_run_conditions·write_run_conditions): 채점기가 모르는 실행 조건을 채점기에 넘기는 파일
    run_conditions-{시각}.json을 내려받기를 끝낸 호스트 쪽 프로그램이 확보한 실행 폴더에 배타 생성한다(자료 계약 §8.2).
@@ -174,10 +180,53 @@ class BatchResult:
     ended: datetime
     rerun_targets: int = 0  # 첫 실행 줄 가운데 인프라 실패 재실행 대상 수(룰북 B5)
     reruns: int = 0  # 실제로 다시 돌린 수(사례 실행명을 확보하지 못해 멈추면 대상보다 적다)
+    paced_ms: int = 0  # 속도 조절로 쉰 시간의 합(밀리초)
+    rate_limit_waits: int = 0  # HTTP 429 뒤 더 쉰 횟수
 
     @property
     def batch_file(self) -> Path:
         return self.run_dir / f"{DOMAIN}-{self.stamp}.jsonl"
+
+
+@dataclass(frozen=True)
+class Pacing:
+    """모델을 쓰는 사례 실행 사이의 속도 조절(머리 설명 2). 0이면 그 규칙을 쓰지 않는다."""
+    min_gap_ms: int = 0  # 모델 실행 시작 사이 최소 간격
+    tokens_per_minute: int = 0  # 분당 토큰 예산(직전 실행 토큰 수에 비례해 쉰다)
+    after_rate_limit_ms: int = 0  # 직전 실행이 HTTP 429로 끝났을 때 그 끝에서 더 쉬는 시간
+
+
+PACING_KEYS = ("min_gap_ms", "tokens_per_minute", "after_rate_limit_ms")
+RATE_LIMIT_DETAIL = re.compile(r"\bHTTP 429\b")  # 단위 I7이 PROVIDER_HTTP_4XX(429 포함, 사용자 결정 5)에 적는 detail
+
+
+def pacing_from_config(raw: object) -> Pacing:
+    """모델 설정의 pacing 객체({min_gap_ms, tokens_per_minute, after_rate_limit_ms}, 0 이상의 정수)를 읽는다."""
+    if not isinstance(raw, dict) or set(raw) != set(PACING_KEYS) or not all(
+            isinstance(raw[k], int) and not isinstance(raw[k], bool) and raw[k] >= 0 for k in PACING_KEYS):
+        raise BatchError(f"pacing은 {'·'.join(PACING_KEYS)} 세 키의 0 이상 정수 객체다")
+    return Pacing(**{k: raw[k] for k in PACING_KEYS})
+
+
+def rate_limited(line: dict) -> bool:
+    """실행이 모델 제공자의 요청 한도(HTTP 429)로 끝났는가(원인 PROVIDER_HTTP_4XX, detail HTTP 429)."""
+    return any(isinstance(e, dict) and e.get("code") == cause_codes.PROVIDER_HTTP_4XX
+               and isinstance(e.get("detail"), str) and RATE_LIMIT_DETAIL.search(e["detail"])
+               for e in line.get("errors") or [])
+
+
+def pacing_target(pacing: Pacing, start: datetime, end: datetime, line: dict) -> datetime:
+    """직전 모델 실행(시작·끝 시각, 줄) 뒤 다음 모델 실행을 시작해도 되는 가장 이른 시각."""
+    from datetime import timedelta
+
+    tokens = sum(v for v in (line.get("tokens_in"), line.get("tokens_out")) if isinstance(v, int))
+    gap = pacing.min_gap_ms
+    if pacing.tokens_per_minute:
+        gap = max(gap, -(-tokens * 60000 // pacing.tokens_per_minute))
+    target = start + timedelta(milliseconds=gap)
+    if rate_limited(line):
+        target = max(target, end + timedelta(milliseconds=pacing.after_rate_limit_ms))
+    return target
 
 
 CaseRunner = Callable[[CaseCall], dict]
@@ -246,12 +295,15 @@ def _check_reserved(reserved: object, parent: Path) -> tuple[str, str, Path]:
 def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_parent: Path,
                   clock: Callable[[], datetime] | None = None,
                   sleep: Callable[[float], None] | None = None,
-                  reserved: tuple[str, str, Path] | None = None) -> BatchResult:
+                  reserved: tuple[str, str, Path] | None = None, pacing: Pacing | None = None) -> BatchResult:
     """묶음 하나를 돌린다(머리 설명 2). parent는 outputs/, other_parent는 outputs/sealed/다(N8).
 
     reserved를 주면 묶음 실행 폴더를 다시 확보하지 않고 그 폴더(이미 확보한 빈 폴더, 사용자 결정 10의 --run-name)에 쓴다.
     사례 실행명을 확보하지 못하면(RunNameError) 거기서 멈춘다. 쓴 줄은 남고, 남은 계획 조합은 미실행으로 분모에 남는다.
+    pacing을 주면 모델을 쓰는 실행 사이를 띄운다(머리 설명 2의 속도 조절).
     """
+    import time
+
     check_spec(spec)
     if sealed_place(parent / BATCH_RUN_NAME):
         raise BatchError("묶음 실행 E1은 outputs/sealed/ 아래에 쓰지 않는다(봉인 묶음은 E2)")
@@ -272,9 +324,24 @@ def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_pa
     lines: list[dict] = []
     targets: list[tuple[str, str]] = []
     reruns = 0
+    wait = sleep or time.sleep
+    paced = {"ms": 0, "rate_limit_waits": 0, "last": None}  # last: 직전 모델 실행 (시작, 끝, 줄)
     with open(batch_dir / f"{DOMAIN}-{stamp}.jsonl", "x", encoding="utf-8", newline="\n") as out:
 
+        def pace(mode: str) -> None:
+            if pacing is None or mode == "checklist" or paced["last"] is None:
+                return
+            start, end, previous = paced["last"]
+            target = pacing_target(pacing, start, end, previous)
+            if rate_limited(previous) and pacing.after_rate_limit_ms:
+                paced["rate_limit_waits"] += 1
+            before = clock()
+            while (remaining := (target - clock()).total_seconds()) > 0:
+                wait(remaining)
+            paced["ms"] += _ms(before, clock())
+
         def run_one(case_id: str, mode: str) -> dict:
+            pace(mode)
             run_id, case_stamp, case_dir = run_record.reserve_run_dir(parent, other_parent, CASE_RUN_NAME,
                                                                       **reserve_kw)
             call = CaseCall(run_id=run_id, stamp=case_stamp, run_dir=case_dir, case=dict(cases[case_id]), mode=mode,
@@ -291,6 +358,8 @@ def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_pa
             out.write(trace_log.dumps(line) + "\n")
             out.flush()
             lines.append(line)
+            if mode != "checklist":
+                paced["last"] = (begin, clock(), line)
             return line
 
         for case_id, mode in order:
@@ -301,7 +370,8 @@ def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_pa
             run_one(case_id, mode)
             reruns += 1
     return BatchResult(run_id=batch_id, stamp=stamp, run_dir=batch_dir, lines=lines, started=started, ended=clock(),
-                       rerun_targets=len(targets), reruns=reruns)
+                       rerun_targets=len(targets), reruns=reruns, paced_ms=paced["ms"],
+                       rate_limit_waits=paced["rate_limit_waits"])
 
 
 # ----------------------------------------------------------------------------- 3. 실행 조건 입력 파일
