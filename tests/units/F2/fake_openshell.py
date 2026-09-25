@@ -9,7 +9,9 @@ NIM은 쓰지 않는다. 네트워크를 쓰지 않는다. 환경변수(시험�
 
 동작(사례별): ok(COMPLETED 기록·보고서, 종료 0), failed(FAILED 기록, 종료 1), crash(실행 폴더 없음, 종료 1),
 exit3(실행 폴더 없음, 종료 3), link(실행 폴더에 호스트 파일을 가리키는 링크), fifo(이름 있는 파이프), layered(내려받기가 한
-겹 더 싸서 준다), download_fail(내려받기 종료 1), norecord(기록 없이 trace만, 종료 1).
+겹 더 싸서 준다), download_fail(내려받기 종료 1), norecord(기록 없이 trace만, 종료 1), unreadable(내려받은 뒤 링크를 든
+하위 폴더의 권한이 000), hardlink(일반 파일 둘이 하드링크), misplaced(최상위에 N6·N7 밖 이름의 파일), nat_missing(NAT
+프로파일 파일 없음). 보통 사례는 NAT 폴더에 nat_trace.jsonl과 프로파일 파일 5개를 쓴다.
 """
 import json
 import os
@@ -22,6 +24,9 @@ SCENARIO = json.loads(Path(os.environ["FAKE_OPENSHELL_SCENARIO"]).read_text(enco
 LOG = Path(os.environ["FAKE_OPENSHELL_LOG"])
 WATCHED_ENV = ("NVIDIA_API_KEY", "NVIDIA_INFERENCE_API_KEY", "DATA_GO_KR_SERVICE_KEY", "TRADESENTRY_SEALED_DIR")
 CLI = "/opt/tradesentry/bin/tradesentry"
+PROFILE_FILES = ("all_requests_profiler_traces.json", "inference_optimization.json", "standardized_data_all.csv",
+                 "workflow_profiling_metrics.json", "workflow_profiling_report.txt")
+COMPLETED_ACTIONS = ("ok", "link", "fifo", "layered", "download_fail", "unreadable", "hardlink", "misplaced", "nat_missing")
 MANIFEST = "/opt/tradesentry/image_manifest.json"
 STATE = ROOT / "state"
 
@@ -63,9 +68,12 @@ def run_case(argv: list[str]) -> int:
     nat = folder / f"workflow_nat_wrap-{stamp}"
     nat.mkdir()
     (nat / "nat_trace.jsonl").write_text("{}\n", encoding="utf-8")
+    if action != "nat_missing":
+        for name in PROFILE_FILES:
+            (nat / name).write_text("{}\n", encoding="utf-8")
     if action == "norecord":
         return 1
-    status = "COMPLETED" if action in ("ok", "link", "fifo", "layered", "download_fail") else "FAILED"
+    status = "COMPLETED" if action in COMPLETED_ACTIONS else "FAILED"
     (folder / f"runlog_run_record-{stamp}.json").write_text(json.dumps(record(run_id, case_id, mode, status)),
                                                              encoding="utf-8")
     if status == "COMPLETED":
@@ -73,7 +81,14 @@ def run_case(argv: list[str]) -> int:
     if action == "link":
         os.symlink(ROOT / "host_secret.txt", nat / "leak.txt")
     if action == "fifo":
-        os.mkfifo(folder / "pipe")
+        os.mkfifo(folder / f"pipe-{stamp}")
+    if action == "hardlink":
+        os.link(folder / f"runlog_trace-{stamp}.jsonl", nat / "twin.jsonl")
+    if action == "misplaced":
+        (folder / "notes.txt").write_text("x", encoding="utf-8")
+    if action == "unreadable":
+        (nat / "hidden").mkdir()
+        os.symlink(ROOT / "host_secret.txt", nat / "hidden" / "leak.txt")
     return 0 if status == "COMPLETED" else 1
 
 
@@ -104,6 +119,13 @@ def download(src: str, dest: str) -> int:
             os.mkfifo(target / entry.name)
         else:
             shutil.copyfile(entry, target / entry.name)
+    stamp = run_id.rsplit("-", 1)[1]
+    if action == "hardlink":  # 받은 트리 안에서도 하드링크로 둔다
+        nat = target / f"workflow_nat_wrap-{stamp}"
+        (nat / "twin.jsonl").unlink()
+        os.link(target / f"runlog_trace-{stamp}.jsonl", nat / "twin.jsonl")
+    if action == "unreadable":
+        os.chmod(target / f"workflow_nat_wrap-{stamp}" / "hidden", 0)
     return 0
 
 

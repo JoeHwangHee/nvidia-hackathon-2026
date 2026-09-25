@@ -20,6 +20,7 @@ from unittest import mock
 
 import harness_fixtures as hf
 from tradesentry.cli import dispatch
+from tradesentry.dal import query
 from tradesentry.evaluation import batch_run
 
 ARGV = ["evaluate", "--snapshot", "dev20", "--policy", "dev-0.1"]
@@ -110,10 +111,11 @@ class EvaluateTest(unittest.TestCase):
                            (["evaluate", "--snapshot", "real_sealed", "--policy", "dev-0.1"], "자료 묶음을 모른다"),
                            (["evaluate", "--snapshot", "controlled_fixture_v0", "--policy", "dev-0.1", "--mode", "full"],
                             "사례 목록 자리를 모르거나"),
-                           (["evaluate", "--snapshot", "kcs_202201_202412_v2", "--policy", "dev-0.1"], "DT7"),
+                           (["evaluate", "--snapshot", "kcs_202201_202412_v2", "--policy", "dev-0.1"],
+                            "사례 목록을 읽지 못했다(SnapshotError)"),  # 정본 빌드가 없는 자리(아래 SNAPSHOTS_ROOT)
                            (["evaluate", "--snapshot", "dev20", "--policy", "policy_v9", "--mode", "full"],
                             "묶음 입력이 규칙에 맞지 않는다")):
-            with self.subTest(argv=argv):
+            with self.subTest(argv=argv), mock.patch.object(query, "SNAPSHOTS_ROOT", self.root / "no_snapshots"):
                 code, out, err = call(argv)
                 self.assertEqual((code, out), (1, ""))
                 self.assertIn(text, err)
