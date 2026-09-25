@@ -59,7 +59,7 @@ class CommandOptionTableTest(unittest.TestCase):
             "snapshot-verify": {"snapshot": R, "policy": U, "mode": U},
             "detect": {"snapshot": R, "policy": R, "mode": U},
             "run-case": {"snapshot": R, "policy": R, "mode": R, "case": R},
-            "evaluate": {"snapshot": R, "policy": R, "mode": R},
+            "evaluate": {"snapshot": R, "policy": R, "mode": O},  # 사용자 결정 12(가): 모드를 주지 않으면 정해진 모드 전부
         })
 
     def test_each_command_keeps_every_value_it_was_given(self):
@@ -341,12 +341,57 @@ class OutputEncodingTest(unittest.TestCase):
         args.write_text(None, "가")  # 흐름이 없으면(AttributeError) 조용히 넘어간다
 
 
+class RunNameTest(unittest.TestCase):
+    """--run-name(사용자 결정 10(나)): 다섯 명령의 선택 옵션. N5 형식, 실행 이름 = 그 명령의 실행 이름, 실제 날짜·시각."""
+
+    def test_every_command_takes_its_own_run_name(self):
+        for command in args.COMMANDS:
+            name = f"{command.replace('-', '_')}-260925143015"
+            with self.subTest(command=command):
+                self.assertEqual(args.run_name_of(command), command.replace("-", "_"))
+                self.assertEqual(args.parse(argv_for(command) + ["--run-name", name]).run_name, name)
+                self.assertIsNone(args.parse(argv_for(command)).run_name)  # 옵션이 없으면 CLI가 확보한다
+
+    def test_bad_run_names_are_refused_without_echo(self):
+        bad = ["", "run_case", "run_case-2609251430", "run_case-2609251430151", "run-case-260925143015",
+               "detect-260925143015", "Run_case-260925143015", "run_case-260925143015\n", "run_case-260925143015\\n",
+               "run_case-261325143015", "run_case-260931143015", "run_case-260925246015", "run_case-26092514301５",
+               "../run_case-260925143015", "outputs/run_case-260925143015", "/srv/probe/run_case-260925143015",
+               "~run_case-260925143015", "run_case-260925143015 ", "_run_case-260925143015",
+               "run_case_" + "a" * 43 + "-260925143015"]
+        for value in bad:
+            with self.subTest(value=value):
+                code, err = parse_error(argv_for("run-case") + ["--run-name", value])
+                self.assertEqual(code, 2)
+                self.assertIn("--run-name", err)
+                self.assertNotIn("srv", err)
+                if value and value not in args.RUN_NAME_RULE:
+                    self.assertNotIn(value, err)  # 받은 값을 되풀이하지 않는다
+
+    def test_run_name_prefix_must_match_the_command(self):
+        code, err = parse_error(argv_for("evaluate") + ["--run-name", "run_case-260925143015"])
+        self.assertEqual(code, 2)
+        self.assertIn("실행 이름이 이 명령의 실행 이름과 다르다", err)
+
+    def test_run_name_twice_is_refused(self):
+        code, err = parse_error(argv_for("detect") + ["--run-name", "detect-260925143015",
+                                                      "--run-name=detect-260925143016"])
+        self.assertEqual(code, 2)
+        self.assertIn("--run-name 옵션을 두 번 적었다", err)
+
+    def test_evaluate_mode_is_optional(self):
+        request = args.parse(["evaluate", "--snapshot", "dev20", "--policy", "dev-0.1"])
+        self.assertIsNone(request.mode)
+        self.assertEqual(args.parse(["evaluate", "--snapshot", "dev20", "--policy", "dev-0.1", "--mode", "full"]).mode,
+                         "full")
+
+
 class RunTest(unittest.TestCase):
     def test_run_returns_the_request_fields(self):
         detect = ["detect", "--snapshot", "controlled_fixture_v0", "--policy", "dev-0.1"]
         self.assertEqual(args.run(detect),
                          {"command": "detect", "snapshot_id": "controlled_fixture_v0", "policy_version": "dev-0.1",
-                          "mode": None, "case": None})
+                          "mode": None, "case": None, "run_name": None})
         self.assertEqual(args.run(detect + ["--mode", "agent"])["mode"], "agent")  # 쓰지 않는 옵션도 받은 값 그대로
 
     def test_run_takes_only_a_list_of_strings(self):
