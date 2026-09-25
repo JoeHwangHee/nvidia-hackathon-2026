@@ -1,0 +1,3 @@
+{"case_ids": ["850431-XA-202401", "850432-XB-202402", "850450-XC-202403", "850490-XD-202404"],
+ "modes": ["checklist", "agent", "full"],
+ "order_seed": "dev-order-v1"}
