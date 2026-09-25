@@ -146,6 +146,13 @@ evaluate 배선(로드맵 MT7 첫 PR, 최종 연결은 조립 작업 AS3. 결정
   쓴다, 자료 계약 §8.2). 샌드박스 백엔드는 sandbox.name·sandbox.policy_yaml_sha256을, 두 백엔드 모두 reproduce_evaluate를
   더한다. 표준 출력에는 묶음 기록과 실행 조건 입력 파일의 outputs부터의 상대경로만 적는다. 사례 실행이 실패해도 묶음
   기록을 끝까지 썼으면 0이다(실패는 줄로 분모에 남는다).
+- 운영자 실행 조건(--conditions-extra <JSON 상대 경로>, 결정 기록 model-decision-conditions-extra): 하네스가 채우지
+  못하는 값(라이브 정책 조회 본문 sha256, 대조한 시험표 실행 폴더 이름, 스킬 호출 성공률, 채점기·산문 패턴 목록 커밋, 사전
+  점검 결과, A등급 조건 등. 단위 E1 OPERATOR_CONDITION_KEYS·OPERATOR_SUBKEYS)을 운영자가 JSON 객체로 넘기면 실행 폴더를
+  만들기 전에 읽고 검사하고(load_operator_conditions: 파일 없음·JSON 아님은 오류, 하네스 키·하위 키는 "두 번 줬다", 약속 밖
+  키·로컬 절대경로 모양·키 모양 값은 거부), 값이 모두 모인 뒤 실행 조건 입력 파일에 합친다(E1 merge_operator_conditions.
+  sandbox·prescoring_checks는 하네스 값에 하위 키를 더한다). reproduce_evaluate에 옵션과 경로를 그대로 적고, 표준 오류에
+  합친 키 이름 목록(값 없음)을 한 줄 알린다. 채점기가 이미 읽는 키를 채우는 배관이며 채점 규칙은 바꾸지 않는다.
 """
 import json
 import os
@@ -1680,9 +1687,34 @@ def _policy_file_sha256() -> str | None:
 
 
 def reproduce_command(request: args.Request) -> str:
-    """실행 조건 입력 파일 reproduce_evaluate(룰북 B7 재현 명령). --mode를 줬으면 그 값도 적는다(스모크 묶음 표시)."""
+    """실행 조건 입력 파일 reproduce_evaluate(룰북 B7 재현 명령). --mode를 줬으면 그 값도 적고(스모크 묶음 표시),
+    --conditions-extra를 줬으면 준 상대 경로 그대로 적는다(로컬 절대 경로는 F1이 받지 않고, 실행 조건 입력 파일 N13 검사도 막는다)."""
     command = f"tradesentry evaluate --snapshot {request.snapshot_id} --policy {request.policy_version}"
-    return command + (f" --mode {request.mode}" if request.mode else "")
+    command += f" --mode {request.mode}" if request.mode else ""
+    return command + (f" --{args.CONDITIONS_EXTRA_OPTION} {request.conditions_extra}" if request.conditions_extra else "")
+
+
+def load_operator_conditions(request: args.Request, dataset: str) -> dict | None:
+    """--conditions-extra 파일(운영자 실행 조건, JSON 객체)을 읽어 단위 E1 check_operator_conditions로 검사한다. 옵션이
+    없으면 None. 파일이 없거나 JSON이 아니면 RunCaseError(오류 문장에 경로·내용을 넣지 않는다, N13), 내용이 규칙에 맞지
+    않으면 BatchError가 그대로 올라간다. 소수는 Decimal로 읽는다(실행 조건 입력 파일은 float를 쓰지 않는다)."""
+    from decimal import Decimal
+
+    from tradesentry.evaluation import batch_run
+
+    if request.conditions_extra is None:
+        return None
+    try:
+        text = Path(request.conditions_extra).read_text(encoding="utf-8")
+    except (OSError, ValueError) as exc:
+        raise RunCaseError(f"오류: tradesentry evaluate가 --{args.CONDITIONS_EXTRA_OPTION} 파일을 읽지 못했다"
+                           f"({type(exc).__name__}). 저장소 폴더 기준 상대 경로의 JSON 파일이어야 한다.") from None
+    try:
+        doc = json.loads(text, parse_float=Decimal)
+    except ValueError:
+        raise RunCaseError(f"오류: tradesentry evaluate의 --{args.CONDITIONS_EXTRA_OPTION} 파일이 JSON이 아니다.") from None
+    batch_run.check_operator_conditions(doc, dataset)
+    return doc
 
 
 def select_real_dev_mvp(cases: list) -> list:
@@ -1764,6 +1796,14 @@ def _evaluate(request: args.Request) -> int:
                 "kcs_202201_202412_v2만 받는다. 봉인 묶음은 샌드박스 밖 실행기가 돌린다).")
         return EXIT_FAILED
     extra: dict = {"reproduce_evaluate": reproduce_command(request)}
+    try:  # 운영자 실행 조건(--conditions-extra)은 실행 폴더를 만들기 전에 읽고 검사한다. 합치기는 값이 모두 모인 뒤다
+        operator = load_operator_conditions(request, dataset)
+    except RunCaseError as exc:
+        _report(str(exc))
+        return EXIT_FAILED
+    except ValueError as exc:  # BatchError. 파일 내용은 되풀이하지 않고 검사 문장(키 이름까지)만 적는다
+        _report(f"오류: tradesentry evaluate의 --{args.CONDITIONS_EXTRA_OPTION} 파일이 규칙에 맞지 않는다: {exc}")
+        return EXIT_FAILED
     try:
         if dataset == DETECT_DATASET:  # real_dev: 실행 때 경보 목록을 만들고 DT7 규칙으로 고른다(AS3 두 번째 PR)
             cases, alerts = real_dev_cases(request)
@@ -1822,6 +1862,10 @@ def _evaluate(request: args.Request) -> int:
     summary = nat_eval.summarize_batch(result.run_dir)
     extra["prescoring_checks"] = {"final_status": final_status_text(spec, result),
                                   "seed_concurrency": seed_concurrency_text(pacing, result)}
+    if operator is not None:
+        merged = batch_run.merge_operator_conditions(extra, operator)  # 하위 키 충돌은 검사 단계가 이미 막았다
+        _report(f"알림: --{args.CONDITIONS_EXTRA_OPTION}의 운영자 실행 조건을 실행 조건 입력 파일에 합쳤다(키: "
+                f"{', '.join(merged)}).")
     doc = batch_run.build_run_conditions(dataset=dataset, cases=cases, modes=list(spec.modes), thresholds=thresholds,
                                          order_seed=DEV_ORDER_SEED, limits=limits,
                                          run_period=(result.started, result.ended), nat_profile_summary=summary,

@@ -47,6 +47,12 @@ S0 제안: 사례 실행은 묶음 폴더 안이 아니라 형제 폴더 outputs
    형식은 MVP 전 임시 형식이다(결정 D6, 채점기 DT8 1회차 보고 §5와 같은 키. F1 전에 확정한다). 봉인 묶음이면 봉인
    출력이 있어야 하는 값(nat_profile_summary, korean_sample_review)을 넣지 않는다. 값에 로컬 절대경로 모양이나 키
    모양이 있으면 쓰지 않는다(N13, 절대 규칙 1).
+   - 운영자 실행 조건(check_operator_conditions·merge_operator_conditions, 조립 AS3 `--conditions-extra`): 하네스가
+     채우지 못하고 운영자만 아는 값(라이브 정책 조회 본문 sha256, 대조한 시험표 실행 폴더 이름, 스킬 호출 성공률, 채점기·
+     산문 패턴 목록 커밋, 사전 점검 결과, A등급 조건 등)을 운영자가 JSON 객체로 준다. 키는 OPERATOR_CONDITION_KEYS(하네스가
+     채우는 키 HARNESS_CONDITION_KEYS를 뺀 CONDITION_KEYS)만 받고, sandbox·prescoring_checks는 하네스가 채우지 않는 하위
+     키(OPERATOR_SUBKEYS)만 받아 하네스 값과 합친다. 하네스가 채우는 키나 하위 키를 주면 "두 번 줬다" 오류로 멈춘다. 채점기가
+     이미 읽는 키를 채우는 배관이며 채점 규칙은 바꾸지 않는다(결정 기록 model-decision-conditions-extra).
 
 이 모듈은 .env를 읽지 않고 키 변수를 쓰지 않는다. 키가 필요한 모델 호출은 사례 실행 함수 안에서만 일어난다.
 """
@@ -83,6 +89,14 @@ CONDITION_KEYS = ("dataset", "planned_cases", "planned_modes", "snapshot", "poli
 CONDITION_REQUIRED = ("dataset", "planned_cases", "planned_modes", "policy_detection_thresholds")
 SEALED_FORBIDDEN = ("nat_profile_summary", "korean_sample_review")  # 봉인 출력이 있어야 하는 값(자료 계약 §8.2)
 LIMIT_KEYS = ("tool_attempts", "reinvestigation", "model_requests", "wall_time_s", "tokens")  # 요약 한도 칸(룰북 B7)
+# 하네스(evaluate 배선과 이 모듈)가 채우는 키. 운영자 실행 조건 파일(--conditions-extra)이 주면 "두 번 줬다"다.
+HARNESS_CONDITION_KEYS = ("dataset", "planned_cases", "planned_modes", "policy_detection_thresholds", "snapshot",
+                          "order_seed", "concurrency", "limits", "run_period", "nat_profile_summary", "reproduce_evaluate")
+# 운영자 실행 조건 파일이 줄 수 있는 최상위 키(채점기 요약 0절·4절이 읽는 키). sandbox·prescoring_checks는 하위 키를
+# OPERATOR_SUBKEYS로 좁혀 하네스 값과 합친다.
+OPERATOR_CONDITION_KEYS = tuple(k for k in CONDITION_KEYS if k not in HARNESS_CONDITION_KEYS)
+OPERATOR_SUBKEYS = {"sandbox": ("live_policy_sha256", "violation_tests_run"),  # 하네스: name·policy_yaml_sha256
+                    "prescoring_checks": ("version_keys", "mode_case_sets", "concurrency_record")}  # 하네스: final_status·seed_concurrency
 
 # 자료 묶음 → 예정 모드(평가 스킬 ② 실행 행렬, 룰북 B2. 실자료 묶음에는 참고용 agent를 넣지 않는다). controlled_fixture_v0은
 # 네 모드 모두 가능하다. 사용자 결정 12(2026-09-25 08:47): evaluate가 --mode 없이 돌 때 이 표의 모드 전부를 한 묶음으로 돈다
@@ -464,6 +478,64 @@ def check_run_conditions(doc: object) -> None:
         raise BatchError("실행 조건 입력 파일에 로컬 절대경로 모양의 값이 있다(N13)")
     if any(SECRET_SHAPE.search(s) for s in strings):
         raise BatchError("실행 조건 입력 파일에 키 모양의 값이 있다(절대 규칙 1)")
+
+
+def check_operator_conditions(doc: object, dataset: str) -> None:
+    """운영자 실행 조건 파일(--conditions-extra)의 내용 검사. 객체이고, 최상위 키는 OPERATOR_CONDITION_KEYS만, sandbox·
+    prescoring_checks는 OPERATOR_SUBKEYS의 하위 키만 든 객체다. 하네스가 채우는 키·하위 키는 "두 번 줬다"(약속 밖 키와
+    구분해 알린다). 봉인 묶음이면 SEALED_FORBIDDEN을 받지 않는다. 값의 로컬 절대경로 모양·키 모양은 합친 결과에도 다시
+    보지만(check_run_conditions) 묶음을 돌리기 전에 여기서 먼저 막는다."""
+    if not isinstance(doc, dict):
+        raise BatchError("운영자 실행 조건 파일은 JSON 객체다")
+    harness = sorted(k for k in doc if k in HARNESS_CONDITION_KEYS)
+    if harness:
+        raise BatchError(f"실행 조건 {', '.join(harness)}를 두 번 줬다(하네스가 채우는 키다)")
+    unknown = sorted(set(doc) - set(OPERATOR_CONDITION_KEYS))
+    if unknown:
+        raise BatchError(f"운영자 실행 조건 파일의 약속 밖 키: {', '.join(unknown)}")
+    for key, allowed in OPERATOR_SUBKEYS.items():
+        if key not in doc:
+            continue
+        sub = doc[key]
+        if not isinstance(sub, dict):
+            raise BatchError(f"운영자 실행 조건 {key}는 객체다")
+        bad = sorted(set(sub) - set(allowed))
+        if bad:
+            raise BatchError(f"실행 조건 {key}의 하위 키 {', '.join(bad)}는 하네스가 채우거나 약속 밖이다"
+                             f"(받는 하위 키: {', '.join(allowed)})")
+    if dataset in types.SEALED_DATASETS:
+        present = [k for k in SEALED_FORBIDDEN if k in doc]
+        if present:
+            raise BatchError(f"봉인 묶음에는 봉인 출력이 있어야 하는 값을 넣지 않는다: {', '.join(present)}")
+    strings = _strings(doc)
+    if any(PATH_SHAPE.search(s) for s in strings):
+        raise BatchError("운영자 실행 조건 파일에 로컬 절대경로 모양의 값이 있다(N13)")
+    if any(SECRET_SHAPE.search(s) for s in strings):
+        raise BatchError("운영자 실행 조건 파일에 키 모양의 값이 있다(절대 규칙 1)")
+
+
+def merge_operator_conditions(extra: dict, operator: dict) -> list[str]:
+    """운영자 실행 조건을 하네스의 extra(build_run_conditions에 넘길 객체)에 합친다. sandbox·prescoring_checks는 하네스
+    객체가 있으면 하위 키를 더하고(같은 하위 키가 있으면 "두 번 줬다"), 없으면 운영자 객체 그대로 둔다. 다른 키는 extra에
+    이미 있으면 "두 번 줬다". 합친 키 이름 목록(하위 키는 점으로 이어 씀. 값은 없다)을 돌려준다(표준 오류 알림용)."""
+    merged: list[str] = []
+    for key in sorted(operator):
+        value = operator[key]
+        if key in OPERATOR_SUBKEYS:
+            target = extra.setdefault(key, {})
+            if not isinstance(target, dict):
+                raise BatchError(f"실행 조건 {key}의 하네스 값이 객체가 아니다")
+            for sub in sorted(value):
+                if sub in target:
+                    raise BatchError(f"실행 조건 {key}.{sub}를 두 번 줬다")
+                target[sub] = value[sub]
+                merged.append(f"{key}.{sub}")
+            continue
+        if key in extra:
+            raise BatchError(f"실행 조건 {key}를 두 번 줬다")
+        extra[key] = value
+        merged.append(key)
+    return merged
 
 
 def conditions_path(run_dir: Path) -> Path:
