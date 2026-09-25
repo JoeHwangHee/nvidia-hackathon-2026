@@ -97,7 +97,8 @@ class FakePorts:
         report = {"report_id": f"r-{inp['run_id']}", "run_id": inp["run_id"], "case_id": inp["case"]["case_id"],
                   "mode": inp["mode"], "claims": d["claims"], "narrative": d["narrative"], "hypotheses": d["hypotheses"],
                   "review_status": d["review_status"], "signal_status": d["signal_status"],
-                  "unresolved_evidence": False, "evidence_ids": EV[:2], "validator_findings": [],
+                  "unresolved_evidence": d.get("unresolved_evidence", False), "evidence_ids": EV[:2],
+                  "validator_findings": [],
                   "report_hash": "0" * 64, "created_at": "2026-09-25T14:30:15+09:00",
                   "policy_version": inp["case"]["policy_version"], "snapshot_id": SNAP, "grouping_version": "g0"}
         return {"report": report, "rejected": list(self.rejected)}

@@ -429,30 +429,39 @@ def signal_families(claim: dict, case: dict) -> set[str]:
 # ---- 검증기 검사(freeform에서는 기록만) ----------------------------------------------------------------------
 
 
+def aggregate_status(signal_status: dict, signals: dict) -> tuple[str, bool] | None:
+    """계약 §3.1의 결정적 집계. 이 검증기의 기대값 계산과 흐름 조정(단위 I12)의 보고서 채우기가 함께 쓴다(사용자 결정
+    2026-09-25(금) 22:22 ①, 두 곳의 계산이 어긋나지 않게). 발동한 신호의 판정(NOT_TRIGGERED는 빼고)에서
+    review_status(MAINTAIN > HOLD > MONITOR)와 unresolved_evidence(MAINTAIN과 HOLD가 섞일 때만 true)를 돌려준다.
+    발동한 신호의 판정이 하나도 없으면 None이다. signal_status는 형식 검사(_status_schema)를 지난 객체여야 한다."""
+    triggered = [signal_status[signal] for signal in SIGNALS
+                 if (signals or {}).get(signal) == "TRIGGERED" and signal_status[signal] != "NOT_TRIGGERED"]
+    if not triggered:
+        return None
+    expected = "MAINTAIN" if "MAINTAIN" in triggered else "HOLD" if "HOLD" in triggered else "MONITOR"
+    return expected, ("MAINTAIN" in triggered and "HOLD" in triggered)
+
+
 def _status_consistency(report: dict, case: dict) -> list[dict]:
     """허용 상태: 발동하지 않은 신호는 NOT_TRIGGERED, 사례 상태는 MAINTAIN > HOLD > MONITOR 집계, unresolved_evidence는
     MAINTAIN과 HOLD가 섞일 때만 true다(계약 §3.1). 틀린 상태를 고치지 않고 사유만 적는다."""
     out = []
     signal_status = report["signal_status"]
-    triggered = []
     for signal in SIGNALS:
         stated, trigger = signal_status[signal], case["signals"][signal]
         if trigger == "NOT_TRIGGERED" and stated != "NOT_TRIGGERED":
             out.append(_f("validator", "STATUS_INCONSISTENT", f"signal_status.{signal}", None,
                           f"발동하지 않은 신호의 판정은 NOT_TRIGGERED여야 한다(적힌 값 {stated})"))
-        if trigger == "TRIGGERED":
-            if stated == "NOT_TRIGGERED":
-                out.append(_f("validator", "STATUS_INCONSISTENT", f"signal_status.{signal}", None,
-                              "발동한 신호의 판정이 NOT_TRIGGERED다"))
-            else:
-                triggered.append(stated)
-    if not triggered:
+        if trigger == "TRIGGERED" and stated == "NOT_TRIGGERED":
+            out.append(_f("validator", "STATUS_INCONSISTENT", f"signal_status.{signal}", None,
+                          "발동한 신호의 판정이 NOT_TRIGGERED다"))
+    aggregate = aggregate_status(signal_status, case["signals"])
+    if aggregate is None:
         return out
-    expected = "MAINTAIN" if "MAINTAIN" in triggered else "HOLD" if "HOLD" in triggered else "MONITOR"
+    expected, unresolved = aggregate
     if report["review_status"] != expected:
         out.append(_f("validator", "STATUS_INCONSISTENT", "review_status", None,
                       f"신호별 판정의 집계(MAINTAIN > HOLD > MONITOR)는 {expected}다. 적힌 값: {report['review_status']}"))
-    unresolved = "MAINTAIN" in triggered and "HOLD" in triggered
     if report["unresolved_evidence"] is not unresolved:
         out.append(_f("validator", "STATUS_INCONSISTENT", "unresolved_evidence", None,
                       f"MAINTAIN과 HOLD가 섞일 때만 true다. 이 신호별 판정에서는 {str(unresolved).lower()}가 맞다"))
