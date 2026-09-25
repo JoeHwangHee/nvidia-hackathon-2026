@@ -86,7 +86,7 @@
 
 ## 영향과 넘길 곳
 
-- 시험 기대값을 바꾼 곳(P3 `tests/units/P3/test_decide.py`): 관측은 빠지지 않은 1번 사유의 기대 판정 근거를 `data_insufficient`에서 `data_inconsistent`로 바꿨다. `test_unusable_decomposition_is_hold_not_maintain`(7곳), `test_comparability_issue_is_hold`(1곳), 불변식 (가) 시험(2곳, 이름을 `test_ga_stage1_reason_with_skipped_comparisons_is_hold`로 바꿈). 상태(`HOLD`)는 모두 그대로다. oracle A/B/C 시험과 P3·P4 골든은 바뀌지 않았다.
+- 시험 기대값을 바꾼 곳(P3 `tests/units/P3/test_decide.py`): 관측은 빠지지 않은 1번 사유의 기대 판정 근거를 `data_insufficient`에서 `data_inconsistent`로 바꿨다. `test_unusable_decomposition_is_hold_not_maintain`(7곳), `test_comparability_issue_is_hold`(1곳), 불변식 (가) 시험(2곳, 이름을 `test_ga_stage1_reason_with_skipped_comparisons_is_hold`로 바꿈). 상태(`HOLD`)는 모두 그대로다. oracle A/B/C 시험과 P3·P4 골든은 바뀌지 않았다. AS2 병합 뒤 조립 시험 `tests/units/F2/test_run_case_evidence.py` `test_null_decomposition_with_its_own_reason_is_hold`(1곳, 비교 가능성 조회의 `zero_weight` 사유)도 같은 까닭으로 `data_inconsistent`로 바꿨다(⑥).
 - 새 시험: P3 `HoldSplitTest`(겹침, 다른 계열의 빠진 관측, 신호 독립, P5 규칙과 일치), `Dev20InconsistentHoldTest`(dev20 불일치 보류 5건의 근거 상태 모양에서 `data_inconsistent`와 정답표의 필수 근거. 사례 식별자와 필수 근거만 옮기고, 옮긴 값을 정답표와 대조한다), 불변식 (가) 시험에 조기 종료 두 경우. P5 `test_inconsistent_hold_evidence_follows_user_decision_14`.
 - 짝 PR(데이터 트랙): 시나리오 명세의 §5.1 표의 `hold_inconsistent` 두 행 "단위 P5 판정 근거" 열을 `data_inconsistent`로, 점유율 행의 "없음(분모 불완전 규칙이 아직 없다)"을 `data_inconsistent`(④)로 적는다. `eval/datagen/holdout40_check.py` 88행 주석의 판정 근거 목록도 데이터 트랙이 맞춘다.
 - 조립 AS2(작업 중 main에 병합됨, PR #38. 이 PR은 그 위로 옮겼다)
