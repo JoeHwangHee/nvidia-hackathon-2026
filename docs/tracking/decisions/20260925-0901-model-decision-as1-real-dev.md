@@ -65,6 +65,11 @@
   - 같은 계열이 두 번 나옴(한 묶음 안이든 두 묶음 사이든)
   - 두 묶음의 합이 스냅샷의 계열(K3 메타의 수집 설정 HS6 × 상대국)과 다름
 - 이유: 배정에 없는 계열이 있으면 P2가 어차피 오류로 끝난다. 그런데 그 시점은 지표를 계산한 뒤다. 그래서 값을 읽기 전에 막는다.
+- 분할 기록 파일의 모양을 그대로 쓸지, 자료 계약에 올릴지(DT4 결정 기록 "공용 약속 여부" 행의 질문)에 대한 답: 그대로 쓰고, 이 PR에서 계약 객체로 올리지 않는다.
+  - 파일은 V5 출력 바이트 그대로다. V5 골든 쌍의 sha256 고정(`tests/units/V5/test_split.py`)과 정본 파일 시험(`test_real_split_file.py`)이 모양을 묶어 두므로, 조용히 바뀔 수 없다.
+  - 런타임에서 읽는 곳은 단위 F2 하나다. F2는 키 여섯 개를 순서까지 확인하고, 값은 `snapshot_id`·`real_dev`·`real_sealed`만 쓴다. 계약에 없는 `seed`·`ratio`·`method`는 읽지 않는다.
+  - 위치는 사용자 결정 8로 계획 경로 표에 오른다(DOCS2). 모양 설명은 그 행에 "단위 V5 출력(키 여섯 개)"으로 적는 것을 권한다.
+  - 두 번째 소비자(DT7 ③ 봉인 생성 경로 등)가 이 파일을 읽게 되면, 그때 모양을 계약 객체로 올릴지 다시 정한다. 계약에 올리는 일은 공용 약속 변경이라 사용자 승인 대상이다.
 
 ④ **P2 입력** — 확정
 
@@ -96,6 +101,12 @@
   - 출력 시험: `dataset`이 `real_dev`이고 사례·데이터 품질 행이 `real_dev` 계열뿐이다(합성 기대 출력에서 `real_dev` 계열 행만 고른 것과 같다).
   - `RealSplitRefusalTest`: 대응표 없음 1, 파일 없음·JSON 오류·목록 3, 모양·계열 불일치 11. 모두 1로 끝나고, K3 값 읽기(9개 메서드)·X1·X2·P1·P2 호출이 0이며, 빈 실행 폴더만 남는다.
   - `UnknownSourceKindRefusalTest`: 허용 목록 밖 출처 종류는 분할 기록도 열지 않고 거부한다.
+  - `TwoHs6PairNarrowingTest`(HS6 850450·850431 × 상대국 CN·JP 합성 스냅샷 `as1_detect_two_hs6`): 좁히기가 (hs6, partner) 쌍 단위임을 단언한다.
+    - `real_dev`: (850450, CN)·(850431, JP). `real_sealed`: (850450, JP)·(850431, CN)
+    - 공허하지 않음: 좁히지 않으면 네 쌍 모두 사례를 낸다.
+    - 행 조회 조건·반환 행·X1·P1·출력에 `real_sealed` 쌍이 없다.
+    - 변이 확인: 좁히기를 상대국 단위로 바꾸면 이 시험이 실패했다.
+    - 시험 도우미 `detect_fixture.py`의 응답 생성이 요청 코드(hsSgn)로 시작하는 HS10 행만 돌려주게 바꿨다. 기존 자료(HS6 하나)의 응답은 그대로다.
 - 변이 확인(시험 밖 일회 실행, 같은 합성 자료)
   - 정상 판: `real_sealed` 상대국 관측 행 0, `parent_series` 0, X1 0, 사례 3개(CN·FI·US)
   - `detect_series`가 분할 기록을 무시하게 바꾼 변이 판: `real_sealed` 상대국 관측 행 147, `parent_series` 5, X1 10. 사례는 P2 제한으로 여전히 3개(CN·FI·US)였다.
@@ -113,7 +124,7 @@
 ## 영향과 넘길 곳
 
 - 바꾼 파일
-  - `src/tradesentry/cli/dispatch.py`: 머리 설명의 "탐지 명령 detect" 절, `DETECT_SOURCE_KINDS`·`DETECT_DATASET`·`REAL_SPLIT_FILES`·`REAL_SPLIT_KEYS`·`DETECT_REFUSAL`·`DETECT_SPLIT_REFUSAL`, `SplitError`·`load_real_split`·`series_assignment`, `detect_series`·`detection_rows`의 계열 인자
+  - `src/tradesentry/cli/dispatch.py`(main의 AS2 #38을 병합한 뒤. `detection_rows`는 AS2가 만든 `detection_row`(계열 하나·비교월 하나, detect와 run-case가 같이 씀)를 부르고, 좁힌 계열 인자만 더했다. run-case 경로는 바꾸지 않았다): 머리 설명의 "탐지 명령 detect" 절, `DETECT_SOURCE_KINDS`·`DETECT_DATASET`·`REAL_SPLIT_FILES`·`REAL_SPLIT_KEYS`·`DETECT_REFUSAL`·`DETECT_SPLIT_REFUSAL`, `SplitError`·`load_real_split`·`series_assignment`, `detect_series`·`detection_rows`의 계열 인자
   - `tests/units/F2/test_detect_command.py`: 첫 PR의 실자료 거부 시험을 좁히기·거부 시험으로 바꿨다
   - `tests/units/F2/test_real_split_file.py`: 새 파일
   - `data/reference/real_split_kcs_202201_202412_v2.json`: 새 파일
@@ -125,5 +136,6 @@
   - ①(`real_dev` 경보·사례 목록)은 실자료 정본 빌드 설치(②)를 기다린다. 설치 뒤 `detect --snapshot kcs_202201_202412_v2`로 만든다.
   - ①의 대조값: DT4 ② 통계(`policy_v1` 제안값 30/10·최소 기준 100 USD/10 kg 단가만, 승격 규칙을 적용한 개발 빌드)는 `real_dev` 사례 221건(단가 201, 점유율 31, 둘 다 11)이다(`20260925-0846-user-decision-policy-v1-approval.md` 결정 2). 그 수는 D의 별도 통계 스크립트로 냈다. 승인된 `policy_v1`과 승격을 적용한 정본 빌드로 돌린 `detect`가 다른 수를 내면 기준값을 맞추지 않고 원인(빌드·배선 차이)을 찾는다.
   - ③(`real_sealed` 사례 목록)은 지금 코드로 만들 수 없다. `detect_series`는 `DETECT_DATASET`(`real_dev`)과 같은 계열만 남기도록 고정돼 있어, 봉인 사례 목록에는 P2만이 아니라 X1·X2·P1 앞의 좁히기부터 `real_sealed`로 바꿔 부르는 조립 경로가 필요하다. 이 PR은 작업 지시(묶음 `real_dev` 고정)대로 그 경로를 만들지 않았다. 누가 어떤 수단(봉인 생성 에이전트 전용 호출 등)으로 만들지는 DT7 ③ 해시 등록 병합 기한(2026-09-26(토) 12:00) 전에 오케스트레이터가 정한다.
+  - ③ 봉인 생성의 출력은 `outputs/`가 아니라 봉인 폴더에 둔다(병렬 개발 규칙 §7.3의 1, 자료 계약 §10.3 N10 "봉인 자료 생성 중의 명령 출력"). 지금 `_detect`는 늘 `outputs/detect-{시각}/`에 쓰므로, 그대로 쓸 수 없다. 봉인 생성용 입구(출력 위치와 묶음 `real_sealed`를 받는 호출)가 따로 필요하다.
   - 두 경우 모두 탐지 코드의 커밋을 결정 기록에 적는다(⑤).
 - D 검수: 분할 기록 정본 파일(①)

@@ -551,5 +551,72 @@ class RealDevNarrowingTest(RealSnapshotCase):
         self.assertEqual(self.output(run_dir, out)["dataset"], "real_dev")
 
 
+class TwoHs6PairNarrowingTest(DetectCase):
+    """좁히기는 상대국이 아니라 (hs6, partner) 쌍 단위다. HS6 두 개 × 상대국 두 개에서 같은 상대국이 한 HS6에서는 real_dev,
+    다른 HS6에서는 real_sealed다. real_sealed 쌍의 관측 행은 읽지 않고, 지표·P1·출력은 real_dev 쌍뿐이다."""
+
+    SPEC = df.TWO_HS6
+    BUILD_POLICY = None
+    SOURCE_KIND = "real"
+    TWO_ID = df.TWO_HS6["config"]["snapshot_id"]
+    DEV = [(df.HS6, "CN"), (df.SIBLING_HS6, "JP")]
+    SEALED = [(df.HS6, "JP"), (df.SIBLING_HS6, "CN")]
+
+    def setUp(self):
+        super().setUp()
+        record = {"snapshot_id": self.TWO_ID, "seed": 1, "ratio": {"real_dev": 1, "real_sealed": 1},
+                  "method": "hs6_stratified_sha256_rank",
+                  "real_dev": [{"hs6": h, "partner": p} for h, p in self.DEV],
+                  "real_sealed": [{"hs6": h, "partner": p} for h, p in self.SEALED]}
+        path = self.root / "real_split.json"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        patcher = mock.patch.dict(dispatch.REAL_SPLIT_FILES, {self.TWO_ID: str(path)}, clear=True)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_sealed_pairs_would_trigger_without_narrowing(self):
+        # 공허하지 않다: 출처 종류만 controlled로 보이게 하면(분할 기록을 쓰지 않음) 네 쌍 모두 202401에 사례를 낸다
+        with mock.patch.object(query.Snapshot, "source_kind", new_callable=mock.PropertyMock,
+                               return_value="controlled"):
+            code, out, err, run_dir = self.detect()
+        self.assertEqual((code, err), (0, ""))
+        self.assertEqual(sorted((c["hs6"], c["partner"]) for c in self.output(run_dir, out)["cases"]),
+                         sorted(self.DEV + self.SEALED))
+
+    def test_narrowing_is_by_hs6_partner_pair(self):
+        sealed = set(self.SEALED)
+        read_params: list[tuple] = []
+        read_rows: list[dict] = []
+        real_rows = query.Snapshot._rows
+
+        def rows_spy(snap, where, params):
+            found = real_rows(snap, where, params)
+            read_params.append(tuple(params))
+            read_rows.extend(found)
+            return found
+
+        with mock.patch.object(query.Snapshot, "_rows", autospec=True, side_effect=rows_spy), \
+                mock.patch.object(query.Snapshot, "parent_series", autospec=True,
+                                  side_effect=query.Snapshot.parent_series) as parent_series, \
+                mock.patch.object(unit_value, "run", wraps=unit_value.run) as x1, \
+                mock.patch.object(trigger, "run", wraps=trigger.run) as p1:
+            code, out, err, run_dir = self.detect()
+        self.assertEqual((code, err), (0, ""))
+        self.assertEqual(sorted(c.args[1:3] for c in parent_series.call_args_list), sorted(self.DEV))
+        # 상대국 행 조회 조건 (partner, hs6, hs4)에 real_sealed 쌍이 없다
+        self.assertEqual([p for p in read_params if len(p) >= 2 and (p[1], p[0]) in sealed], [])
+        # 돌려받은 상대국 행(HS6 이상 자릿수)에 real_sealed 쌍이 없다. ALL 분모 행은 두 묶음이 함께 쓴다
+        self.assertTrue(read_rows)
+        self.assertEqual([r for r in read_rows if len(r["hs_code"]) >= 6
+                          and (r["hs_code"][:6], r["partner_code"]) in sealed], [])
+        self.assertEqual(sorted({(c.args[0]["hs6"], c.args[0]["partner"]) for c in x1.call_args_list}), sorted(self.DEV))
+        [p1_call] = p1.call_args_list
+        self.assertEqual(sorted({(r["hs6"], r["partner"]) for r in p1_call.args[0]["rows"]}), sorted(self.DEV))
+        result = self.output(run_dir, out)
+        self.assertEqual(result["dataset"], "real_dev")
+        self.assertEqual(sorted((c["hs6"], c["partner"]) for c in result["cases"]), sorted(self.DEV))
+        self.assertEqual([q for q in result["data_quality"] if (q["hs6"], q["partner"]) in sealed], [])
+
+
 if __name__ == "__main__":
     unittest.main()
