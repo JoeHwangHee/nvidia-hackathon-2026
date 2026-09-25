@@ -278,7 +278,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 사례 목록(`cases.json`):
 
 ```json
-{"schema_version": 1, "dataset": "dev20", "snapshot_id": "<합성 스냅샷 ID>", "policy_version": "dev-0.1",
+{"schema_version": 2, "dataset": "dev20", "snapshot_id": "<합성 스냅샷 ID>", "policy_version": "dev-0.1",
  "snapshot_normalized_sha256": "<빌드한 스냅샷의 normalized_sha256>",
  "cases": [{"case_id": "<hs6>-<partner>-<YYYYMM>", "hs6": "<6자리>", "partner": "<2자리>", "month": "<YYYYMM>"}]}
 ```
@@ -288,7 +288,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 정답표(`answers.json`):
 
 ```json
-{"schema_version": 1, "dataset": "dev20", "snapshot_id": "<같은 ID>", "policy_version": "dev-0.1",
+{"schema_version": 2, "dataset": "dev20", "snapshot_id": "<같은 ID>", "policy_version": "dev-0.1",
  "thresholds": {"unit_value": 30, "share": 10},
  "cases": [{"case_id": "<같은 식별자>", "scenario_class": 1, "parent_series_id": "ps_<16자>",
             "rule": {"unit_value": "<규칙 키 또는 null>", "share": "<규칙 키 또는 null>"},
@@ -303,7 +303,7 @@ TradeSentry는 관세청 수입통계에서 kg당 단가와 상대국 점유율�
 - `thresholds`는 선택이며 그 묶음 정책 버전의 탐지 기준을 옮겨 적는다.
 - `required_evidence`는 발동한 신호가 하나면 목록, 두 신호가 모두 발동하면 `{"unit_value": [...], "share": [...]}`다(§5.1).
 
-부모 원본 계열 ID 목록(`parent_series_ids.json`): `{"schema_version": 1, "dataset": "dev20", "id_rule": "<§6의 설명>", "parent_series_ids": ["ps_…", …]}`(정렬, 중복 없음).
+부모 원본 계열 ID 목록(`parent_series_ids.json`): `{"schema_version": 2, "dataset": "dev20", "id_rule": "<§6의 설명>", "parent_series_ids": ["ps_…", …]}`(정렬, 중복 없음).
 
 ### 7.3 수집기 형식 원천과 스냅샷 빌드
 

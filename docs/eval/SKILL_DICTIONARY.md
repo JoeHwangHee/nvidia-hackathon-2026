@@ -143,7 +143,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 |---|---|---|
 | 2026-09-24(목) | X1(설치·기동 포함, 3시간 제한) | `openshell-cli`, `generate-sandbox-policy`, `debug-inference`, `nemoclaw-user-guide` |
 | 2026-09-25(금) | OpenShell 정책 YAML·위반 시험표, NemoClaw 경로, 런타임 `tradesentry` 스킬 작성, 오후 MVP 시험과 자기채점 | `generate-sandbox-policy`, `openshell-cli`, `nemoclaw-user-guide`, `tradesentry`, `tradesentry-eval`, `tradesentry-scorecard` |
-| 2026-09-26(토) | `RB-1` 동결(12:00) 뒤 봉인 자료 채점 대상 실행 시작 | `tradesentry-eval`, `openshell-cli` |
+| 2026-09-26(토) | `RB-1` 동결(18:00) 뒤 봉인 자료 채점 대상 실행 시작 | `tradesentry-eval`, `openshell-cli` |
 | 2026-09-27(일) | 결과 정리, 자기채점, README·재현 묶음 준비 | `tradesentry-scorecard`, `skill-card-generator` |
 | 2026-09-28(월) | 최종 자기채점, 스킬 이름 재대조, 제출서 Tech Stack 작성 | `tradesentry-scorecard` |
 
@@ -207,7 +207,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
   - dev20·`real_dev` 결과는 개선 과정에 노출된 값(D)이며 대표로 올리지 않는다.
 - 언제
   - 2026-09-25(금) MVP 시험: dev20 × 비교군 3개(`checklist`·`agent`·`full`) 점수표와 `real_dev`의 `freeform` vs `full` 첫 값. 이 값은 "개발 묶음 값, 대표 숫자 아님"으로 표기한다.
-  - 봉인 채점: `RB-1` 동결(2026-09-26(토) 12:00, 조정값) 뒤 시작한다. 시작 목표는 2026-09-26(토) 14:00, 늦어도 2026-09-27(일) 06:00이다.
+  - 봉인 채점: `RB-1` 동결(2026-09-26(토) 18:00, 조정값) 뒤 시작한다. 시작 목표는 2026-09-26(토) 20:00, 늦어도 2026-09-27(일) 06:00이다.
 
 ### 3.4 런타임 스킬 `tradesentry`
 
@@ -387,7 +387,7 @@ npx skills add NVIDIA/skills --skill nemo-relay-plugin-observability
 - **채점 대상 실행**: 채점에 들어갈 사례를 OpenShell 샌드박스 안에서 TradeSentry CLI로 돌리는 실행.
 - **정답 대조 채점**: 채점 대상 실행의 결과를 샌드박스 밖에서 독립 채점기가 정답·원본과 비교하는 일.
 - **독립 채점기**: 런타임 모듈을 가져다 쓰지 않고 따로 구현한 채점 프로그램(`eval/scorer/`).
-- **룰북·`RB-1`**: 평가 규칙 문서 `docs/eval/RULEBOOK.md`와 그 동결 버전 이름. `RB-1`은 2026-09-26(토) 12:00(조정값)에 동결한다.
+- **룰북·`RB-1`**: 평가 규칙 문서 `docs/eval/RULEBOOK.md`와 그 동결 버전 이름. `RB-1`은 2026-09-26(토) 18:00(조정값)에 동결한다.
 - **채점 규범**: 팀이 정한 자기채점 규범 `SCORING_GOLDEN_RULE.md`. 가중치·게이트·앵커는 `[DESIGN]`이다. "규범 1d"처럼 코드에 출처를 붙인다.
 - **자기채점**: 채점 규범과 룰북 Part A로 우리 저장소를 스스로 채점하는 일. `tradesentry-scorecard`가 수행한다.
 - **컴포넌트 삭제 시험**: 구성요소마다 "지우면 어떤 지표가 나빠지는가"를 적는 점검. 답이 없으면 개수 채우기로 본다.

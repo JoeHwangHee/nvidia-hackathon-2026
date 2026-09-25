@@ -18,6 +18,7 @@
 | 개발 환경(macOS, Docker 안 OpenShell(에이전트를 격리해 돌리는 NVIDIA 샌드박스 런타임) 게이트웨이(샌드박스의 정책과 provider(등록한 자격 증명 묶음) 설정을 보관하고 샌드박스에 내려보내는 OpenShell 제어면), 시스템 `python3` 3.9.6, Python 3.12·uv) | `docs/plan/DEV_PLAN.md` §3.5 |
 | 환경변수(`NVIDIA_API_KEY`, `DATA_GO_KR_SERVICE_KEY`는 `.env`, 봉인 폴더 위치는 `TRADESENTRY_SEALED_DIR`) | `docs/rules/PARALLEL_DEV_RULES.md` §10.2, `docs/rules/DATA_CONTRACT_V1.md` §10 |
 | 스냅샷 검사(`ingest.py verify`)를 기록을 덮지 않고 돌리는 법 | `docs/rules/PARALLEL_DEV_RULES.md` §10.1 |
+| 커밋 전 비밀값·로컬 경로 검사(`python3 scripts/secret_scan.py`, 커밋 범위는 인자로) | `docs/rules/PARALLEL_DEV_RULES.md` §10.3 |
 | NIM(NVIDIA 클라우드 추론 API) tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능) 왕복 확인 스크립트 | `docs/plan/DEV_PLAN.md` §3.5 |
 | X1(구현 첫날의 세로형 최소 통합 시험: 설치·기동, 키 주입, NAT(NVIDIA 에이전트 실행 추적·평가 도구 모음) 추적, 차단 로그) | `docs/plan/DEV_PLAN.md` §5.3, `docs/plan/ROADMAP.md` §2.2 |
 | NemoClaw(OpenShell 위에서 에이전트를 돌리는 NVIDIA 참조 스택)가 안 될 때의 대체 경로와 시한 | `docs/plan/DEV_PLAN.md` §5.4, `docs/plan/ROADMAP.md` §7.1 |
