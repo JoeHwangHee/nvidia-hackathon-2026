@@ -30,7 +30,7 @@ S0 제안: 사례 실행은 묶음 폴더 안이 아니라 형제 폴더 outputs
      "harness:" 뒤에 예외 이름이나 사유 이름만, 측정한 wall_ms)로 남긴다. 줄을 버리지 않는다(분모, 룰북 B5).
    - 모든 모드에 같은 자료·버전·사례 실행 함수를 쓴다.
    - 인프라 실패 재실행(룰북 B5, 조립 AS3 두 번째 PR): 첫 실행이 모두 끝난 뒤, 첫 실행 줄 가운데 단위 L3
-     infra_rerun_eligible(FAILED이고 원인이 PROVIDER_HTTP_5XX·PROVIDER_CONNECTION뿐)인 줄을 모두, 첫 실행 순서대로 같은
+     infra_rerun_eligible(FAILED이고 원인이 PROVIDER_HTTP_5XX·PROVIDER_CONNECTION·HTTP 429인 PROVIDER_HTTP_4XX뿐)인 줄을 모두, 첫 실행 순서대로 같은
      (사례, 모드)·같은 설정으로 한 번씩 다시 돌린다. 재실행마다 새 실행명을 확보하고 같은 묶음 기록에 줄을 더한다(원래 줄은
      그대로 둔다. 채점기의 재실행 모양 "FAILED 한 줄 뒤 재실행 한 줄"). 재실행 줄은 다시 재실행하지 않는다. 다른 실패
      (TIMEOUT·INVALID·BUDGET_EXCEEDED·CODE_ERROR 등)는 재실행하지 않는다. 대상 수와 재실행 수는 BatchResult에 남는다.
@@ -38,8 +38,9 @@ S0 제안: 사례 실행은 묶음 폴더 안이 아니라 형제 폴더 outputs
      모드) 사이를 띄운다. 모델을 쓰는 실행을 시작하기 전에, 직전 모델 실행의 시작 시각에서 max(최소 간격, 직전 실행 토큰
      수 ÷ 분당 토큰 예산 × 60초)가 지날 때까지 쉰다. 직전 모델 실행이 HTTP 429로 끝났으면 그 실행이 끝난 시각에서
      429 뒤 쉬는 시간도 지나야 한다. checklist는 모델을 부르지 않으므로 쉬지 않고 기준에서도 빠진다. 값은 모델 설정
-     (configs/model/model.json의 pacing)에서 부르는 쪽이 읽어 넘기고, 모든 모드에 같다. 429 실행은 지금처럼 실패로 남는다
-     (재실행 대상 아님, 사용자 결정 5). 쉰 시간의 합과 429 뒤 쉰 횟수는 BatchResult에 남는다.
+     (configs/model/model.json의 pacing)에서 부르는 쪽이 읽어 넘기고, 모든 모드에 같다. 429로 끝난 실행은 인프라 실패
+     재실행 대상이다(2026-09-25 15:52 사용자 결정, 사용자 결정 5 변경). 재실행도 모델 실행이라 같은 속도 조절을 받는다.
+     429 줄을 가르는 곳은 단위 L3 rate_limited_entry 하나다. 쉰 시간의 합과 429 뒤 쉰 횟수는 BatchResult에 남는다.
    - 봉인 묶음(holdout40·real_sealed)은 받지 않는다. 봉인 묶음은 샌드박스 밖 실행기 E2가 돌린다(자료 계약 §8.2).
 3. 실행 조건 입력 파일(build_run_conditions·write_run_conditions): 채점기가 모르는 실행 조건을 채점기에 넘기는 파일
    run_conditions-{시각}.json을 내려받기를 끝낸 호스트 쪽 프로그램이 확보한 실행 폴더에 배타 생성한다(자료 계약 §8.2).
@@ -197,7 +198,6 @@ class Pacing:
 
 
 PACING_KEYS = ("min_gap_ms", "tokens_per_minute", "after_rate_limit_ms")
-RATE_LIMIT_DETAIL = re.compile(r"\bHTTP 429\b")  # 단위 I7이 PROVIDER_HTTP_4XX(429 포함, 사용자 결정 5)에 적는 detail
 
 
 def pacing_from_config(raw: object) -> Pacing:
@@ -209,10 +209,8 @@ def pacing_from_config(raw: object) -> Pacing:
 
 
 def rate_limited(line: dict) -> bool:
-    """실행이 모델 제공자의 요청 한도(HTTP 429)로 끝났는가(원인 PROVIDER_HTTP_4XX, detail HTTP 429)."""
-    return any(isinstance(e, dict) and e.get("code") == cause_codes.PROVIDER_HTTP_4XX
-               and isinstance(e.get("detail"), str) and RATE_LIMIT_DETAIL.search(e["detail"])
-               for e in line.get("errors") or [])
+    """실행이 모델 제공자의 요청 한도(HTTP 429)로 끝났는가(원인 PROVIDER_HTTP_4XX, detail "HTTP 429…", 단위 L3가 가른다)."""
+    return any(cause_codes.rate_limited_entry(e) for e in line.get("errors") or [])
 
 
 def pacing_target(pacing: Pacing, start: datetime, end: datetime, line: dict) -> datetime:
