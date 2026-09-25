@@ -148,6 +148,13 @@ O는 그 단계에서 함수가 불림, -는 불리지 않음이다. 런타임 �
 | 5. 동작 불변 | 코드 동작을 바꾸지 않았다(더한 것은 시험 파일 하나). 모든 골든과 경계 시험, 조립 시험(F2의 `detect`·`run-case`·`evaluate`·채점기 시험)이 종료 코드 0이다. 출력 파일의 도메인명은 단위 표 그대로다(⑤의 3번, N4) | 단위별 `env -u … uv run --locked python -m unittest discover -s tests/units/<ID> -t tests` 54개 모두 0(건너뜀은 뼈대 단위 `approval_record`·`app`·E2·G2의 골든과 진입 함수가 없는 K1·S1의 골든 각 1). 전체 `env -u … uv run --locked python -m unittest discover -s tests -v` → 0 |
 | 6. 결정 기록 | 이 기록, 색인 한 줄, `docs/plan/UNITS.md` §3 판정 열과 판정 집계 | — |
 
+**재확인(`main` 따라가기)** `[사실]`
+
+| 시점 | 바탕 | 1단계 | 2단계 | 5단계 |
+|---|---|---|---|---|
+| 1회차 | `main` 6530b1c | 허용 밖 0, 순환 0, 채점기 닫힘 0 | ①의 명령 모두 0 | 골든 54개 폴더 모두 0, 전체 Ran 1343(ok 1337, skipped 6) → 0 |
+| 2회차 | 계약 v2 #46·실자료 정본 빌드 재설치 기록 #47 병합(`main` 98aae91)을 따라간 뒤. 합성 시험자료와 dev20을 새 계약으로 다시 만듦(`normalized_sha256` `eeb8af13…`·`fb802b8f…`, 계약 v2 결정 기록 `20260925-1215-data-decision-schema-v2.md`와 같음) | 1회차와 같은 표 | ①의 명령 모두 0, 커버리지 표 1회차와 같음, 실자료 경보 221건 | 골든 54개 폴더 모두 0, 전체 Ran 1344(ok 1338, skipped 6) → 0, ④ 시험 0 |
+
 ## 검토한 대안
 
 - 복사된 계약 상수를 이 PR에서 K1 import로 바꾸기: 값이 같아 동작 차이는 없지만, 동결 경로 세 단위(Codex 검토), 두 트랙에 걸친 파일(트랙별 PR), 계약 v2 PR과 겹치는 파일(X4)이 한 PR에 모인다. MVP 시험이 이 PR을 기다려 값 일치 시험만 두었다.
@@ -158,6 +165,6 @@ O는 그 단계에서 함수가 불림, -는 불리지 않음이다. 런타임 �
 ## 영향과 넘길 곳
 
 - 파일: `tests/test_contract_copies.py`(새 시험), 이 기록, `docs/tracking/decisions/index.md` 한 줄, `docs/plan/UNITS.md` §3 판정 열과 판정 집계 한 줄.
-- 계약 v2 PR(`data/schema-v2`)·AS3 후속 PR(`model/AS3-2-real-dev`): 이 PR은 그 두 PR이 고치는 파일을 고치지 않았다. 둘이 병합되면 이 PR이 `main`을 따라가 1·2·5단계를 다시 확인한다. 계약 v2가 K1과 X4의 `SCHEMA_VERSION`을 함께 2로 올리면 ④ 시험은 그대로 통과한다.
+- 계약 v2 PR(`data/schema-v2`, #46)·AS3 후속 PR(`model/AS3-2-real-dev`): 이 PR은 그 두 PR이 고치는 파일을 고치지 않았다. 계약 v2는 병합돼 2회차에서 따라갔고, K1과 X4의 `SCHEMA_VERSION`이 함께 2가 되어 ④ 시험이 그대로 통과했다. AS3 후속이 병합되면 `main`을 따라가 1·2·5단계를 다시 확인한다(단위 E1의 재실행 경로가 바뀐다).
 - MVP 시험(로드맵 V1): ⑥의 후보는 V1 범위 밖이다. `evaluate`의 모델 모드는 이 점검에서 가짜 모델로만 돌렸다.
 - `RB-1` 전 동결 경로 추가 수정 PR: ⑥의 P5·R3 `@` 검사 통일, P3 머리 설명, 동결 경로 셋의 상수 import 교체.
