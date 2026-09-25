@@ -11,7 +11,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 날짜 | 2026-09-25(금) 18:30(기록 시각). 바탕은 `main` 690f3eb |
+| 날짜 | 2026-09-25(금) 18:30(기록 시각). 바탕은 `main` 690f3eb. Codex 교차 검토 1회차 막음 세 가지(부모·하위 대조의 행 범위, 빠진 자료 상태의 두 시점·WRONG_VALUE, 비교국 상태 범위)를 같은 날 고쳤고, 고친 뒤 dev20 기록 재적용 결과는 아래와 같다 |
 | 제목 | 보고서를 만들 때 필수 근거 코드마다 §5.3 조건을 보고, 없으면 받은 봉투의 검증된 지표·자료 상태로 주장을 덧붙임 |
 | 결정 | 아래 ①~⑥ |
 | 결정 주체 | 규칙은 사용자(결정 1809). 코드의 세부는 소유 트랙(M) |
@@ -36,16 +36,16 @@
 | `partner_comparison_done` | `compare_partners` 봉투가 돌려준 비교국(스냅샷 비교 대상 표, 실행의 `grouping_version`. 채점기의 비교집합과 같은 표) 가운데 가나다순 첫 나라의 `comparison` 주장: 단가 `r_U`나 두 시점 `U`, 점유율 `d_s`나 두 시점 `s` |
 | `weight_share_decomposition` | 분해 셋(`within_effect`·`mix_effect`·`residual`) 모두 |
 | `per_child_unit_value_stable` | `decompose_hs` 봉투 `comparability.hs10`의 두 시점 하위 코드마다 `r_U@코드`나 두 시점 `U@코드`. 코드 하나라도 채울 수 없으면 덧붙이지 않는다 |
-| `parent_child_match_V_and_Q` | 두 시점 모두 하위 코드가 있을 때, `decompose_hs` 봉투가 읽은 행(봉투 `evidence_ids`에서 빠진 자료의 상태 행을 뺀 것)을 보고서 근거가 모두 인용하도록, 새로 덮는 행이 가장 많은 후보부터 고른다(대상국·두 시점 지표). 다 덮지 못하면 덧붙이지 않는다 |
+| `parent_child_match_V_and_Q` | 두 시점 모두 하위 코드가 있을 때, 시점마다 대상국 부모 HS6 행 묶음(그 월 대상국 `V` 지표의 근거, 없으면 `Q`·`U`)과 그 시점 하위 코드마다의 행 묶음(`decompose_hs`의 그 월 `U@코드` 지표 근거. 값이 없어도 근거는 있다)을 묶음마다 하나 이상 보고서 근거가 인용하도록, 새로 덮는 묶음이 가장 많은 후보부터 고른다(대상국·두 시점 지표). 봉투의 다른 행은 요구하지 않는다. 다 덮지 못하면 덧붙이지 않는다(Codex 검토 1회차로 고침: 처음에는 봉투의 상태 행 밖 모든 행을 요구했다) |
 | `precision_sensitivity_shown` | 대상국 두 시점 `V`·`Q` 값 주장 넷 |
 | `country_and_world_change_shown` | 대상국과 `ALL`의 두 시점 `V` 값 주장 넷 |
-| `missingness_listed`, `failure_vs_not_collected_distinguished` | 빠진 키(단가: 대상국 부모 HS6 키와 C형 HS10 하위 자료, 점유율: 대상국 부모 HS6 키와 `ALL`, 두 시점)마다 받은 자료 상태 주장 하나. 빠진 키가 없으면 `missingness_listed`는 비교국의 빠진 자료 상태 하나, `failure_vs_not_collected_distinguished`는 받은 자료 상태와 값이 다른 자료 상태 주장이 없으면 채운 것으로 본다 |
+| `missingness_listed`, `failure_vs_not_collected_distinguished` | 빠진 키(단가: 대상국 부모 HS6 키와 C형 HS10 하위 자료, 점유율: 대상국 부모 HS6 키와 `ALL`, 두 시점 각각. HS6 키는 그 월 관측 값 지표나 `OBSERVED` 상태가 있으면 빠진 키가 아니다)마다 받은 자료 상태 주장 하나. `failure_vs_not_collected_distinguished`는 여기에 더해 사례 품목·두 시점의 자료 상태 주장 가운데 받은 상태와 값이 다른 것(WRONG_VALUE)이 없어야 한다(있으면 모델 주장을 고치지 않으므로 unmet). 빠진 키가 없으면 `missingness_listed`는 비교국 자료 상태 하나(`compare_partners` 봉투의 빠진 자료에서 온 비교국 자신의 상태 행, 사례 품목 HS6 수준, 두 시점, `OBSERVED` 아님), `failure_vs_not_collected_distinguished`는 WRONG_VALUE가 없으면 채운다(Codex 검토 1회차로 고침: 처음에는 빠진 키가 있을 때 WRONG_VALUE를 보지 않았고, 비교국 상태의 출처·수준을 좁히지 않았다) |
 | `no_zero_fill`, 교정 근거 셋 | 덧붙일 것이 없다(부정 조건, v1에서 판정하지 않는 코드). trace에 `no_action`으로 남긴다 |
 
 - 여러 대상이 필요한 선택지는 모두 채울 수 있을 때만 덧붙인다(일부만 넣으면 조건을 채우지 못한다).
 - 받은 근거에 없는 대상(값이 없는 지표 포함. R1이 버린다)은 덧붙이지 않는다. 도구를 새로 부르지 않는다.
 - 같은 대상의 주장이 이미 있으면(유효하지 않아도, 예: freeform 주장이 근거를 덜 인용함) 다시 넣지 않고 다른 선택지를 본다. 코드·신호 사이에서도 같은 대상은 한 번만 넣는다(예: 대상국 `V`는 `precision_sensitivity_shown`과 `country_and_world_change_shown`에 함께 쓰인다).
-- 덧붙인 뒤 검증기 R3의 자료 상태 어긋남 규칙(`DATA_STATUS_CONFLICT`, R3의 `_data_status_conflicts`를 그대로 부른다)이 늘어나면 그 묶음은 넣지 않는다. 덧붙인 주장이 검증기 차단을 새로 만들지 않게 하려는 것이다.
+- 덧붙인 뒤 검증기 R3의 자료 상태 어긋남 규칙(`DATA_STATUS_CONFLICT`, R3의 `_data_status_conflicts`를 그대로 부른다)이 늘어나면 그 묶음은 넣지 않는다. 덧붙인 주장이 검증기 차단을 새로 만들지 않게 하려는 것이다. R3의 비공개 함수를 다른 단위에서 부르는 것은 같은 규칙을 두 곳에 두지 않으려는 것이다. 공개 이름으로 바꾸려면 R3 머리 주석·시험을 함께 고쳐야 해서 이 PR에서는 그대로 두었다(조립 점검 때 공개 이름으로 옮길 후보).
 
 ④ **주장 모양** — 덧붙인 주장은 단위 R1 틀 채우기가 검증된 지표·자료 상태에서 만든 typed claim이다(값·단위·방향·문장을 R1이 채운다). `freeform`에서도 같다: 모델 주장은 R1 freeform이 그대로 돌려주고, 덧붙일 주장은 R1의 `fill`을 한 번 더 불러 채운다. R1은 고치지 않았다(두 형식을 한 호출에 받지는 않지만, 두 번 불러 합치면 된다 `[추론]`). `claim_id`는 `e1`, `e2` …이고 보고서에 이미 있는 id는 건너뛴다. 주장 개수 상한은 스키마·검증기에 없다 `[사실: validate.py·investigator.py 검색]`.
 
@@ -55,7 +55,7 @@
 
 ## 시험
 
-- `tests/units/I12/test_evidence_claims.py`(17개): 코드 고르기(참고값과 같음·다름·없음), 코드마다 덧붙인 대상과 덧붙인 뒤 다시 보면 채워짐(단가·점유율 `comparability_ok`·`partner_comparison_done`, 분해, 하위 안정, 부모·하위 대조, 정밀도, 해당국·전체국가), 받은 근거에 없거나 값이 없으면 덧붙이지 않음, 덧붙일 것이 없는 코드, 모델 주장 불변, 같은 대상 한 번, `claim_id` 건너뛰기, freeform 주장이 차지한 대상, 자료 상태(빠진 키·비교국·값 주장과 어긋나면 넣지 않음), 흐름에서 네 모드(`agent`·`full`·`freeform`·`checklist`, 실제 R1·R2) 모두 덧붙이고 trace에 남김, `checklist`의 `country_and_world_change_shown`, 수정 단계가 있으면 두 보고서 모두.
+- `tests/units/I12/test_evidence_claims.py`(25개. Codex 검토 1회차 뒤 8개 더함: 두 시점 빠진 키 모두 요구, 틀린 모델 상태면 unmet, 관측된 키의 요청 상태 행은 빠진 키 아님, 비교국 상태의 범위(비교국 밖·HS10 수준·다른 도구 거부), 여러 비교국 가운데 첫 유효 후보, 부모·하위 대조에 쓰지 않는 행 요구 안 함·한 시점만 하위가 있으면 unmet, 판정 코드 고르기의 합집합·비발동 신호): 코드 고르기(참고값과 같음·다름·없음), 코드마다 덧붙인 대상과 덧붙인 뒤 다시 보면 채워짐(단가·점유율 `comparability_ok`·`partner_comparison_done`, 분해, 하위 안정, 부모·하위 대조, 정밀도, 해당국·전체국가), 받은 근거에 없거나 값이 없으면 덧붙이지 않음, 덧붙일 것이 없는 코드, 모델 주장 불변, 같은 대상 한 번, `claim_id` 건너뛰기, freeform 주장이 차지한 대상, 자료 상태(빠진 키·비교국·값 주장과 어긋나면 넣지 않음), 흐름에서 네 모드(`agent`·`full`·`freeform`·`checklist`, 실제 R1·R2) 모두 덧붙이고 trace에 남김, `checklist`의 `country_and_world_change_shown`, 수정 단계가 있으면 두 보고서 모두.
 - 골든 I12: trace 사건 목록에 `state_change` `evidence_claims` 한 줄이 초안 보고서의 `validator_result` 앞에 생겼다(골든 봉투에는 덧붙일 지표가 없어 보고서는 그대로). 기대값을 그 한 줄만 고쳤다.
 
 ## 시험 밖 점검(dev20 기록 재적용)

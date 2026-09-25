@@ -113,6 +113,16 @@ class EvidenceCodesTest(unittest.TestCase):
                                                "precision_sensitivity_shown"])
         self.assertEqual(codes["share"], list(p5.rule_evidence("share", "unexplained")))
 
+    def test_union_for_share_hold_and_untriggered_signal_is_absent(self):
+        signals = {"unit_value": "NOT_TRIGGERED", "share": "TRIGGERED"}
+        codes = orchestrate.evidence_codes(signals, {"unit_value": "NOT_TRIGGERED", "share": "HOLD"}, None)
+        self.assertEqual(codes, {"share": ["missingness_listed", "failure_vs_not_collected_distinguished",
+                                           "no_zero_fill", "country_and_world_change_shown", "comparability_ok"]})
+        ref = {"signal_status": {"unit_value": "NOT_TRIGGERED", "share": "HOLD"},
+               "basis": {"unit_value": "not_triggered", "share": "data_inconsistent"}}
+        self.assertEqual(orchestrate.evidence_codes(signals, {"share": "HOLD"}, ref),
+                         {"share": list(p5.rule_evidence("share", "data_inconsistent"))})
+
     def test_without_reference_unions_and_untriggered_or_unknown_statuses_get_nothing(self):
         signals = {"unit_value": "TRIGGERED", "share": "NOT_TRIGGERED"}
         self.assertEqual(orchestrate.evidence_codes(signals, {"unit_value": "MAINTAIN"}, None),
@@ -245,13 +255,84 @@ class DataStatusTest(unittest.TestCase):
         self.assertEqual(out["log"]["unmet"], [])
 
     def test_status_that_would_conflict_with_a_value_claim_is_not_added(self):
-        gap_history = envelope("get_history", metrics=[metric("m-V-b", "V", "1000", "USD", [PARENT_B], period=B)],
+        # 모델(freeform)이 빠진 키에 값 주장을 적었다: 자료 상태를 더하면 R3 DATA_STATUS_CONFLICT라 넣지 않는다
+        gap_history = envelope("get_history", metrics=[metric("m-U-t", "U", "6.00", "USD/kg", [PARENT_T])],
                                missingness=[self.GAP])
-        mine = filled("m-V-b", envelopes=[gap_history])
+        mine = [dict(filled("m-V-b")[0], claim_id="mine-1")]
         out = augment({"unit_value": ["missingness_listed"]}, claims=mine, envelopes=[gap_history])
         self.assertEqual(out["claims"], [])
         self.assertEqual(out["log"]["unmet"], [{"signal": "unit_value", "code": "missingness_listed"}])
 
+    def test_every_missing_key_of_both_months_is_required(self):
+        gap_t = dict(self.GAP, evidence_id=ev(902), month=T, observation_status="NOT_COLLECTED")
+        both = envelope("get_history", missingness=[self.GAP, gap_t])
+        out = augment({"unit_value": ["failure_vs_not_collected_distinguished"]}, envelopes=[both])
+        self.assertEqual(sorted((c["period"], c["value"]) for c in out["claims"]),
+                         [(B, "REQUEST_FAILED"), (T, "NOT_COLLECTED")])
+        # 한 시점만 적은 보고서는 채우지 못한 것이고, 빠진 다른 시점을 덧붙인다
+        first = augment({"unit_value": ["failure_vs_not_collected_distinguished"]}, envelopes=[both])["claims"][:1]
+        again = augment({"unit_value": ["failure_vs_not_collected_distinguished"]}, claims=first, envelopes=[both])
+        self.assertEqual(len(again["claims"]), 1)
+        self.assertNotEqual(again["claims"][0]["period"], first[0]["period"])
+
+    def test_wrong_status_claim_leaves_failure_vs_not_collected_unmet(self):
+        gap_history = envelope("get_history", missingness=[self.GAP])
+        wrong = dict(augment({"unit_value": ["missingness_listed"]}, envelopes=[gap_history])["claims"][0],
+                     claim_id="mine-1", value="NOT_COLLECTED")  # 받은 상태는 REQUEST_FAILED
+        out = augment({"unit_value": ["failure_vs_not_collected_distinguished"]}, claims=[wrong],
+                      envelopes=[gap_history])
+        self.assertEqual((out["claims"], out["log"]["unmet"]),
+                         ([], [{"signal": "unit_value", "code": "failure_vs_not_collected_distinguished"}]))
+
+    def test_request_status_row_of_an_observed_key_is_not_a_missing_key(self):
+        # 대상국 HS6 값이 관측된 월의 요청 상태 행은 빠진 키가 아니다(비교국 상태도 없으면 채울 수 없다)
+        observed = envelope("get_history", metrics=[metric("m-V-b", "V", "1000", "USD", [PARENT_B], period=B)],
+                            missingness=[self.GAP])
+        out = augment({"unit_value": ["missingness_listed"]}, envelopes=[observed])
+        self.assertEqual(out["claims"], [])
+
+    def test_peer_status_must_be_a_peer_hs6_status_from_compare_partners(self):
+        other = dict(self.PEER_GAP, evidence_id=ev(903), partner_code="KR")  # 비교국 밖
+        hs10 = dict(self.PEER_GAP, evidence_id=ev(904), hs_code=CHILD)  # 비교국이지만 HS10 수준
+        peer = envelope("compare_partners", metrics=[metric("m-rU-JP", "r_U", "1.5", "%", [PEER_B, PEER_T],
+                                                            partner=PEER, baseline=B)], missingness=[other, hs10])
+        elsewhere = envelope("get_history", missingness=[dict(self.PEER_GAP, evidence_id=ev(905))])  # 다른 도구
+        out = augment({"unit_value": ["missingness_listed"]}, envelopes=[peer, elsewhere])
+        self.assertEqual(out["claims"], [])
+        self.assertEqual(out["log"]["unmet"], [{"signal": "unit_value", "code": "missingness_listed"}])
+
+
+class PeerAndParentTest(unittest.TestCase):
+    """비교국 여럿 가운데 첫 유효 후보, 부모·하위 대조의 행 범위."""
+
+    def test_first_peer_with_a_usable_metric_is_used(self):
+        peers = envelope("compare_partners", metrics=[
+            metric("m-rU-KR", "r_U", None, "%", [ev(401), ev(402)], partner="KR", baseline=B),  # 값 없음
+            metric("m-rU-JP", "r_U", "1.5", "%", [PEER_B, PEER_T], partner=PEER, baseline=B)])
+        peers["scope"]["partners"] = ["AU", "KR", PEER, "ALL"]  # AU는 지표가 없다
+        out = augment({"unit_value": ["partner_comparison_done"]}, envelopes=[peers])
+        self.assertEqual(targets(out["claims"]), [("comparison", "r_U", PEER, T, B)])
+
+    def test_parent_child_needs_only_parent_and_child_rows(self):
+        extra = dict(DECOMPOSE, evidence_ids=list(DECOMPOSE["evidence_ids"]) + [ev(999)])  # 대조에 쓰지 않는 행
+        envelopes = [HISTORY, extra]
+        mine = filled("m-V-t", "m-V-b", "m-Uc-t", "m-Uc-b", envelopes=envelopes)
+        out = augment({"unit_value": ["parent_child_match_V_and_Q"]}, claims=mine, envelopes=envelopes)
+        self.assertEqual((out["claims"], out["log"]["unmet"], out["log"]["added"]), ([], [], []))
+        # 하위 행 하나(기준월)를 인용하지 않으면 그것만 채운다
+        partial = filled("m-V-t", "m-V-b", "m-Uc-t", envelopes=envelopes)
+        out = augment({"unit_value": ["parent_child_match_V_and_Q"]}, claims=partial, envelopes=envelopes)
+        self.assertEqual(len(out["claims"]), 1)
+        self.assertIn(CHILD_B, out["claims"][0]["evidence_ids"])
+
+    def test_parent_child_is_unmet_without_children_in_both_months(self):
+        one_month = dict(DECOMPOSE, comparability={"hs10": [{"month": T, "observation_status": "OBSERVED",
+                                                             "codes": [CHILD]},
+                                                            {"month": B, "observation_status": "REQUEST_FAILED",
+                                                             "codes": []}]})
+        out = augment({"unit_value": ["parent_child_match_V_and_Q"]}, envelopes=[HISTORY, one_month])
+        self.assertEqual((out["claims"], [u["code"] for u in out["log"]["unmet"]]),
+                         ([], ["parent_child_match_V_and_Q"]))
 
 def ports_for(mode, case, reference, checklist_status=None):
     """실제 R1·R2(unit_ports의 build_report)에 이 파일의 봉투를 주고, 검증기 자리는 통과로 둔다."""

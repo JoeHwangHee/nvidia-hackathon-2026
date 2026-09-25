@@ -522,14 +522,26 @@ class _EvidenceView:
     def peers(self) -> list:
         """비교집합의 비교국: compare_partners 봉투(스냅샷 비교 대상 표, 실행의 grouping_version)가 돌려준 상대국."""
         found = set()
-        for envelope in self.evidence:
-            if envelope.get("tool") != "compare_partners" or envelope.get("retryable_error") is not None:
-                continue
-            for metric in envelope.get("metrics") or []:
-                partner = (metric.get("inputs") or {}).get("partner") if isinstance(metric, dict) else None
-                if isinstance(partner, str) and partner not in (self.partner, "ALL"):
-                    found.add(partner)
+        for envelope in self.peer_envelopes():
+            partners = [(m.get("inputs") or {}).get("partner") for m in envelope.get("metrics") or []
+                        if isinstance(m, dict)]
+            scope = envelope.get("scope") if isinstance(envelope.get("scope"), dict) else {}
+            partners += scope.get("partners") if isinstance(scope.get("partners"), list) else []
+            found |= {p for p in partners if isinstance(p, str) and p not in (self.partner, "ALL")}
         return sorted(found)
+
+    def peer_envelopes(self) -> list:
+        return [e for e in self.evidence if e.get("tool") == "compare_partners" and e.get("retryable_error") is None]
+
+    def peer_statuses(self) -> list:
+        """비교국의 빠진 자료 상태 후보(§5.3 missingness_listed의 빠진 키가 없을 때): compare_partners 봉투의 빠진 자료에서
+        온 비교국 자신의 상태 행, 사례 품목 HS6 수준(observation_status), 두 시점, OBSERVED가 아닌 값."""
+        peers = set(self.peers())
+        rows = {item.get("evidence_id") for envelope in self.peer_envelopes()
+                for item in envelope.get("missingness") or [] if isinstance(item, dict)}
+        return [c for c in self.candidates if c["claim_type"] == "data_status" and c["partner"] in peers
+                and c["metric"] == "observation_status" and c["period"] in (self.t, self.b)
+                and c["value"] != "OBSERVED" and c["evidence_ids"] and set(c["evidence_ids"]) <= rows]
 
     def decompose(self) -> dict | None:
         found = [e for e in self.evidence if e.get("tool") == "decompose_hs" and e.get("retryable_error") is None]
@@ -554,11 +566,19 @@ class _EvidenceView:
                     or claim["period"] not in (self.t, self.b):
                 continue
             level = "hs10" if "@" in claim["metric"] else "hs6"
+            if level == "hs6" and self.observed(claim["partner"], claim["period"]):
+                continue  # 관측 값이 있는 키는 빠진 키가 아니다(요청 하나의 상태 행이 있어도)
             if claim["partner"] == self.partner and (family == "unit_value" or level == "hs6"):
                 found.setdefault((claim["partner"], level, claim["period"]), []).append(claim)
             elif claim["partner"] == "ALL" and family == "share":
                 found.setdefault(("ALL", level, claim["period"]), []).append(claim)
         return found
+
+    def observed(self, partner: str, period: str) -> bool:
+        """그 상대국·월의 사례 품목 HS6 값이 관측됐다(OBSERVED 자료 상태 후보나 HS6 수준 수 지표가 있다)."""
+        return any(c["partner"] == partner and c["period"] == period and "@" not in c["metric"]
+                   and (c["value"] == "OBSERVED" if c["claim_type"] == "data_status"
+                        else c["metric"] in ("V", "Q", "U")) for c in self.candidates)
 
     def status_options(self, claims: list) -> list:
         return [[(_target(c), c["value"])] for c in claims]
@@ -582,31 +602,57 @@ class _EvidenceView:
         return found
 
     def parent_child(self) -> str:
-        """두 시점 모두 대상국 HS10 하위 행이 있으면, 두 시점의 부모 HS6 행과 HS10 하위 행(decompose_hs가 읽은 행, 상태 행
-        제외)을 모두 인용하게 한다. 대조 결과(일치·불일치)는 조건이 아니다."""
-        envelope = self.decompose()
-        entries = ((envelope or {}).get("comparability") or {}).get("hs10") or []
-        months = {e.get("month"): e.get("codes") for e in entries if isinstance(e, dict)} \
-            if isinstance(entries, list) else {}
-        if envelope is None or not months.get(self.t) or not months.get(self.b):
+        """두 시점 모두 대상국 HS10 하위 행이 있으면, 두 시점마다 대상국 부모 HS6 행과 그 시점 HS10 하위 코드마다의 행을
+        보고서 근거가 인용하게 한다(§5.3). 행 묶음은 지표의 근거로 가른다: 부모는 대상국 그 월의 V(없으면 Q·U) 지표 근거,
+        하위는 decompose_hs의 그 월 U@코드 지표 근거(값이 없어도 근거는 있다). 묶음마다 행 하나 이상이면 된다(같은 키의
+        동등 행). 이 밖의 봉투 행은 요구하지 않는다. 대조 결과(일치·불일치)는 조건이 아니다."""
+        groups = self.parent_child_groups()
+        if groups is None:
             return "unmet"
-        status_rows = {item.get("evidence_id") for item in envelope.get("missingness") or [] if isinstance(item, dict)}
-        target = {e for e in envelope.get("evidence_ids") or [] if isinstance(e, str)} - status_rows
-        missing = target - self.cited()
+        cited = self.cited()
+        missing = [g for g in groups if not g & cited]
         if not missing:
             return "met"
         pool = [c for c in self.candidates if c["claim_type"] != "data_status" and c["partner"] == self.partner
                 and c["period"] in (self.t, self.b) and not self.taken(_target(c))]
-        group, seen_targets = [], set()
+        group: list = []
         while missing:
-            best = max(pool, key=lambda c: len(missing & set(c["evidence_ids"])), default=None)
-            if best is None or not missing & set(best["evidence_ids"]):
+            best = max(pool, key=lambda c: sum(1 for g in missing if g & set(c["evidence_ids"])), default=None)
+            if best is None or not any(g & set(best["evidence_ids"]) for g in missing):
                 return "unmet"
             group.append(best)
-            seen_targets.add(_target(best))
-            missing -= set(best["evidence_ids"])
-            pool = [c for c in pool if _target(c) not in seen_targets]
+            missing = [g for g in missing if not g & set(best["evidence_ids"])]
+            pool = [c for c in pool if _target(c) != _target(best)]
         return "added" if self.add(group) else "unmet"
+
+    def parent_child_groups(self) -> list | None:
+        """부모·하위 대조의 행 묶음 목록(두 시점 부모, 시점마다 하위 코드). 두 시점 모두 하위 코드가 없거나 묶음을 정할
+        지표가 없으면 None."""
+        envelope = self.decompose()
+        entries = ((envelope or {}).get("comparability") or {}).get("hs10") or []
+        codes = {e.get("month"): [c for c in e.get("codes") or [] if isinstance(c, str)]
+                 for e in entries if isinstance(e, dict)} if isinstance(entries, list) else {}
+        if envelope is None or not codes.get(self.t) or not codes.get(self.b):
+            return None
+        metrics = [m for m in _metrics_of(self.evidence) if isinstance(m.get("inputs"), dict)]
+
+        def rows(symbols: tuple, month: str, source: list) -> frozenset | None:
+            for symbol in symbols:
+                for metric in source:
+                    inputs = metric["inputs"]
+                    ids = metric.get("evidence_ids")
+                    if (inputs.get("metric"), inputs.get("hs6"), inputs.get("partner"), inputs.get("period")) \
+                            == (symbol, self.hs6, self.partner, month) and isinstance(ids, list) and ids:
+                        return frozenset(e for e in ids if isinstance(e, str))
+            return None
+        own = [m for m in (envelope.get("metrics") or []) if isinstance(m, dict) and isinstance(m.get("inputs"), dict)]
+        groups = []
+        for month in (self.t, self.b):
+            found = [rows(("V", "Q", "U"), month, metrics)] + [rows((f"U@{code}",), month, own) for code in codes[month]]
+            if any(g is None for g in found):
+                return None
+            groups += found
+        return groups
 
     def code(self, family: str, code: str) -> str:
         """코드 하나: met(이미 채움) | added(덧붙여 채움) | unmet(받은 근거로 채울 수 없음) | no_action(덧붙일 것이 없음)."""
@@ -634,14 +680,16 @@ class _EvidenceView:
         if code == "parent_child_match_V_and_Q":
             return self.parent_child()
         if code in ("missingness_listed", "failure_vs_not_collected_distinguished"):
+            # failure_vs_not_collected_distinguished는 빠진 키(두 시점)마다 맞는 상태 주장이 있고, 사례 품목·두 시점의
+            # 자료 상태 주장에 값이 틀린 것(WRONG_VALUE)이 없어야 한다. 틀린 모델 주장은 고치지 않으므로 그때는 unmet이다.
+            if code == "failure_vs_not_collected_distinguished" and self.wrong_status():
+                return "unmet"
             gaps = self.gaps(family)
             if gaps:
                 return self.fill_parts([self.status_options(claims) for claims in gaps.values()])
             if code == "failure_vs_not_collected_distinguished":
-                return "unmet" if self.wrong_status() else "met"
-            peers = set(self.peers())
-            peer_status = [c for c in self.candidates if c["claim_type"] == "data_status" and c["partner"] in peers
-                           and c["period"] in (t, b) and c["value"] != "OBSERVED"]
+                return "met"  # 빠진 키가 없으면 WRONG_VALUE가 없기만 하면 채운다(§5.3)
+            peer_status = self.peer_statuses()
             return self.fill_parts([self.status_options(peer_status)]) if peer_status else "unmet"
         return "unmet"
 
