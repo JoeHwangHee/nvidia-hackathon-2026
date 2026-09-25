@@ -182,6 +182,24 @@ class RulebookProseBoundaryTest(unittest.TestCase):
         claims = a_claims() + [fx.claim("dup", "comparison", "s", Decimal("6.0"), "%", "NA", [], partner="JP")]
         self.assertEqual(outcomes(prose("6.0%", claims)), [("6.0%", C)])
 
+    # EX-2 확장(룰북 B3-2 경계 23~25, 사용자 결정 2026-09-26(토) 08:10 ②): 검증기와 같은 집합만 뺀다
+    def test_23_hsk_and_digit_count_notation_excluded(self):
+        self.assertEqual(prose("HSK 10단위 8504501010과 6자리 기준 850450을 대조했다", a_claims()), [])
+        self.assertEqual(prose("HSK 8504.50-1010, HSK10, 10 자리 코드, 4자리 류", a_claims()), [])
+
+    def test_24_electrical_rating_units_excluded(self):
+        self.assertEqual(prose("16kVA 이하 변압기와 1kVA 초과 1.5MVA 미만 규격, 220 kV, 10kW, 500VA", a_claims()), [])
+        # 규격 숫자를 빼도 같은 문장의 채점 대상은 그대로 잡는다
+        self.assertEqual(outcomes(prose("16kVA 이하 변압기 단가가 40% 하락", a_claims())), [("40%", C), ("하락", C)])
+
+    def test_25_similar_but_not_in_extension_set_are_scored(self):
+        claims = one("r_U", Decimal("-40.0"), "%", "DOWN")
+        # 홑 글자 전기 단위(V·A)·중량·개수·"자릿수"·단위 없는 숫자는 집합에 없어 PT-3·PT-5로 채점한다
+        self.assertEqual(outcomes(prose("10 V와 5 A, 16kg, 10개국, 10자릿수, 16 이하", claims)),
+                         [("10", U), ("5", U), ("16kg", U), ("10", U), ("10", U), ("16 이하", U)])
+        # 단위 글자가 다른 낱말의 일부이면 빼지 않는다(kVAr·kWh)
+        self.assertEqual(outcomes(prose("16kVAr, 10kWh", claims)), [("16", U), ("10", U)])
+
 
 class ProseDetailsTest(unittest.TestCase):
     def test_claim_text_field_and_identifiers(self):
