@@ -82,6 +82,24 @@ class PolicyV1FileTest(unittest.TestCase):
         self.assertIn(APPROVAL_RECORD, status)
         self.assertTrue((ROOT / "docs" / "tracking" / "decisions" / APPROVAL_RECORD).is_file())
 
+    def test_key_set_matches_dev_policy(self):
+        """정책 파일 키 집합(최상위와 중첩 키)이 개발용 정책 configs/policy_dev.json과 같다(키를 새로 만들지 않음)."""
+        dev = json.loads((ROOT / "configs" / "policy_dev.json").read_text(encoding="utf-8"), parse_float=Decimal)
+
+        def keys(doc):
+            out = set()
+            for key, value in doc.items():
+                out.add(key)
+                if isinstance(value, dict):
+                    out |= {f"{key}.{sub}" for sub in keys(value)}
+            return out
+
+        self.assertEqual(set(self.document), set(dev))  # 최상위 키
+        # 중첩 키는 둘 다 객체인 칸에서만 비교한다(개발용은 승격 규칙이 null이라 그 아래 키가 없다)
+        for key in set(self.document) & set(dev):
+            if isinstance(self.document[key], dict) and isinstance(dev[key], dict):
+                self.assertEqual(keys(self.document[key]), keys(dev[key]), key)
+
     def test_oracle_abc_under_policy_v1(self):
         """oracle A/B/C: 단가 신호 발동, 점유율 신호 미발동, 데이터 품질 목록 0건(병렬 개발 규칙 §4.2 재검증)."""
         oracle = json.loads(ORACLE.read_text(encoding="utf-8"), parse_float=Decimal)
