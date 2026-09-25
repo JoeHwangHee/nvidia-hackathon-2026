@@ -81,10 +81,10 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| X1 | 단가·변화율 | `metrics_unit_value` | `src/tradesentry/metrics/unit_value.py` | 앱 | D | V·Q(t, t−12) → `U`, `r_U` | 유지(AS1 점검: `detect`에서 불림, 결정 기록 `20260925-0139-model-decision-as1-detect.md`) | 2·3 | — | — |
-| X2 | 점유율·변화 | `metrics_share` | `src/tradesentry/metrics/share.py` | 앱 | D | 상대국 V·`ALL` V(중복 제거) → `s`, `d_s`(pp) | 유지(AS1 점검: `detect`에서 불림, 결정 기록 `20260925-0139-model-decision-as1-detect.md`) | 2·3 | — | — |
-| X3 | 구성효과 분해 | `metrics_decompose` | `src/tradesentry/metrics/decompose.py` | 앱 | D | HS10 두 시점 → `within_effect`·`mix_effect`·`residual`, 부모 대조 | 유지 | 3 | — | 도구 `decompose_hs`(단위 I4)가 부른다 |
-| X4 | 자릿수·반올림 | `metrics_rounding` | `src/tradesentry/metrics/rounding.py` | 앱 | D | 값 → 표시 값(`ROUND_HALF_UP`)·중량 허용오차 판정 | 유지(AS1 점검: `detect`에서 X1·X2를 거쳐 불림, 결정 기록 `20260925-0139-model-decision-as1-detect.md`) | 2·3 | — | 공통 유틸이다. 소비자는 지표 단위 X1~X3과 보고서·검증기 단위 R2·R3(표시 자릿수와 반올림)이라 소비자가 둘 이상이다 |
+| X1 | 단가·변화율 | `metrics_unit_value` | `src/tradesentry/metrics/unit_value.py` | 앱 | D | V·Q(t, t−12) → `U`, `r_U` | 유지(AS1 점검: `detect`에서 불림, 결정 기록 `20260925-0139-model-decision-as1-detect.md`). AS2 점검: `run-case`에서도 불림(결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 2·3 | — | — |
+| X2 | 점유율·변화 | `metrics_share` | `src/tradesentry/metrics/share.py` | 앱 | D | 상대국 V·`ALL` V(중복 제거) → `s`, `d_s`(pp) | 유지(AS1 점검: `detect`에서 불림, 결정 기록 `20260925-0139-model-decision-as1-detect.md`). AS2 점검: `run-case`에서도 불림(결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 2·3 | — | — |
+| X3 | 구성효과 분해 | `metrics_decompose` | `src/tradesentry/metrics/decompose.py` | 앱 | D | HS10 두 시점 → `within_effect`·`mix_effect`·`residual`, 부모 대조 | 유지(AS2 점검: `run-case` 네 모드에서 도구 I4·I5를 거쳐 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | 도구 `decompose_hs`(단위 I4)가 부른다 |
+| X4 | 자릿수·반올림 | `metrics_rounding` | `src/tradesentry/metrics/rounding.py` | 앱 | D | 값 → 표시 값(`ROUND_HALF_UP`)·중량 허용오차 판정 | 유지(AS1 점검: `detect`에서 X1·X2를 거쳐 불림, 결정 기록 `20260925-0139-model-decision-as1-detect.md`). AS2 점검: `run-case`에서도 불림(결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 2·3 | — | 공통 유틸이다. 소비자는 지표 단위 X1~X3과 보고서·검증기 단위 R2·R3(표시 자릿수와 반올림)이라 소비자가 둘 이상이다 |
 
 ### 3.4 P — 판정 정책(5개)
 
@@ -92,15 +92,15 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 |---|---|---|---|---|---|---|---|---|---|---|
 | P1 | 신호 발동 | `policy_trigger` | `src/tradesentry/policy/trigger.py` | 앱 | M | 지표 + 정책 → 계열·월별 신호 발동 | 유지(AS1 점검: `detect`에서 불림, 결정 기록 `20260925-0139-model-decision-as1-detect.md`) | 2 | 예 | — |
 | P2 | 사례 만들기 | `policy_case_build` | `src/tradesentry/policy/case_build.py` | 앱 | M | 발동·분할 기록과 묶음 선택(실자료 스냅샷일 때, `real_dev`/`real_sealed`) → 사례(`case_id`·scope). 지정한 묶음의 시계열로 제한(수단은 S0 자문 Q18, 고르는 방법은 병렬 개발 규칙 §7.2의 5) | 합침 후보(→ P1). AS1 점검: `detect`에서 불리나 입력이 P1과 달라(P1 출력 + 출처 종류·묶음 배정) 합침 기준을 채우지 못해 유지 권고, 확정은 AS4(동결 경로), 결정 기록 `20260925-0139-model-decision-as1-detect.md` | 2 | 예 | `detect` 한 흐름 |
-| P3 | 신호별 판정 | `policy_signal_decide` | `src/tradesentry/policy/signal_decide.py` | 앱 | M | 근거 상태 → 신호별 `HOLD`·`MONITOR`·`MAINTAIN`·`NOT_TRIGGERED` | 유지 | 3 | 예 | — |
-| P4 | 사례 집계 | `policy_case_aggregate` | `src/tradesentry/policy/case_aggregate.py` | 앱 | M | 신호별 상태 → 최종(`MAINTAIN > HOLD > MONITOR`)·`unresolved_evidence` | 합침 후보(→ P3) | 3 | 예 | — |
-| P5 | 필수 근거 규칙 | `policy_required_evidence` | `src/tradesentry/policy/required_evidence.py` | 앱 | M | 신호 계열 → 필수 주장·근거 목록 | 유지 | 3 | 예 | 도구·검증기가 함께 쓰는 규칙 |
+| P3 | 신호별 판정 | `policy_signal_decide` | `src/tradesentry/policy/signal_decide.py` | 앱 | M | 근거 상태 → 신호별 `HOLD`·`MONITOR`·`MAINTAIN`·`NOT_TRIGGERED` | 유지(AS2 점검: `run-case`의 `checklist`에서만 불림. 모델 모드는 모델이 판정한다, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | 예 | — |
+| P4 | 사례 집계 | `policy_case_aggregate` | `src/tradesentry/policy/case_aggregate.py` | 앱 | M | 신호별 상태 → 최종(`MAINTAIN > HOLD > MONITOR`)·`unresolved_evidence` | 합침 후보(→ P3). AS2 점검: `run-case` 네 모드에서 불리나 입력이 P3과 달라(신호별 판정만) 합침 기준을 채우지 못해 유지 권고, 확정은 AS4(동결 경로), 결정 기록 `20260925-0605-model-decision-as2-run-case.md` | 3 | 예 | — |
+| P5 | 필수 근거 규칙 | `policy_required_evidence` | `src/tradesentry/policy/required_evidence.py` | 앱 | M | 신호 계열 → 필수 주장·근거 목록 | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | 예 | 도구·검증기가 함께 쓰는 규칙 |
 
 ### 3.5 G — 비교 대상(3개)
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| G1 | g0 고정 목록 | `grouping_g0` | `src/tradesentry/grouping/g0.py` | 앱 | M | v2 2023 수입액 → 대상국 뺀 상위 5개국(`data/reference/peer_group_g0.csv`) | 유지 | 3 | — | **고정 규칙과 충돌**: `g1`이 동결되지 않으면 채점의 대체 기본값이 `g0`이다(자료 계약 §4.2). 그래서 버릴 수 없다. HS6별 목록이다. 해석은 2026-09-24(목) 사용자 확인(로드맵 §6.1) |
+| G1 | g0 고정 목록 | `grouping_g0` | `src/tradesentry/grouping/g0.py` | 앱 | M | v2 2023 수입액 → 대상국 뺀 상위 5개국(`data/reference/peer_group_g0.csv`) | 유지(AS2 점검: `run-case` 실행 중에는 불리지 않음. 비교국은 미리 계산한 `peer_group` 행을 K3로 읽는다. 채점 대체 기본값 `g0` 고정 규칙으로 유지, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | **고정 규칙과 충돌**: `g1`이 동결되지 않으면 채점의 대체 기본값이 `g0`이다(자료 계약 §4.2). 그래서 버릴 수 없다. HS6별 목록이다. 해석은 2026-09-24(목) 사용자 확인(로드맵 §6.1) |
 | G2 | g1 유사도 | `grouping_g1` | `src/tradesentry/grouping/g1.py` | 앱 | M | BACI + 국가 코드 대응 → `peer_group_g1.csv` | 유지 | 1 | — | 결과는 D가 검수한다 |
 | G3 | 국가 코드 대응 | 없음(구성) | `data/reference/` 아래 국가 코드 대응표(파일 이름은 S0 자문 Q20) | 구성 | D | 관세청 2자리 ↔ BACI 코드, 대만 주석 | 유지 | 1 | — | 단위 G2의 입력 자료. D 소유 파일(`data/reference/`)이라 M 소유 단위 G2와 합치면 트랙 경계를 넘는다(병렬 개발 규칙 §1). 맡는 작업은 로드맵 DT1이다 |
 
@@ -108,28 +108,28 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| I1 | 비교 가능성 조회 | `tools_check_comparability` | `src/tradesentry/tools/check_comparability.py` | 앱 | M | scope → 봉투(기간·단위·분모·하위자료 상태) | 유지 | 3 | — | — |
-| I2 | 이력 조회 | `tools_get_history` | `src/tradesentry/tools/get_history.py` | 앱 | M | scope → 봉투(이력·전년동월 비교) | 유지 | 3 | — | — |
-| I3 | 비교국 조회 | `tools_compare_partners` | `src/tradesentry/tools/compare_partners.py` | 앱 | M | scope + 허용 비교국 → 봉투 | 유지 | 3 | — | — |
-| I4 | HS10 분해 조회 | `tools_decompose_hs` | `src/tradesentry/tools/decompose_hs.py` | 앱 | M | scope → 봉투(분해·부모 대조) | 유지 | 3 | — | — |
-| I5 | 근거 대조 | `tools_verify_evidence` | `src/tradesentry/tools/verify_evidence.py` | 앱 | M | 받은 근거·지표 → 원본 대조 결과 | 유지 | 3 | — | — |
-| I6 | 예산 집행 | `tools_budget` | `src/tradesentry/tools/budget.py` | 앱 | M | 시도 기록 → 허용·거부(8회, 재조사 1회·그 안의 조회 2회, 같은 인자, deadline) | 유지 | 3 | — | — |
-| I7 | NIM 호출 | `workflow_model_client` | `src/tradesentry/workflow/model_client.py` | 앱 | M | 메시지 → 응답(5xx 재전송 3회, 제한 시간, 토큰) | 유지 | 3 | — | — |
-| I8 | 기록 재생 | `workflow_replay` | `src/tradesentry/workflow/replay.py` | 앱 | M | 기록된 trace → 같은 응답(키 없는 스모크 시험) | 합침 후보(→ I7) | 3 | — | 같은 자리의 교체 구현 |
-| I9 | 프롬프트·모델 설정 | 없음(구성) | `configs/model/` 아래 프롬프트·모델 설정 파일 | 구성 | M | 텍스트·설정 → 조사자·Critic 프롬프트, 모델 ID, 추론 모드 | 유지 | 3 | — | — |
-| I10 | 조사자 | `workflow_investigator` | `src/tradesentry/workflow/investigator.py` | 앱 | M | 상태 → 다음 비교·초안 | 유지 | 3 | — | — |
-| I11 | Critic | `workflow_critic` | `src/tradesentry/workflow/critic.py` | 앱 | M | 초안 + 근거 → 구조화된 지적·재조회 요청 | 유지 | 3 | — | — |
-| I12 | 흐름 조정 | `workflow_orchestrate` | `src/tradesentry/workflow/orchestrate.py` | 앱 | M | 사례·모드 → 조사자 → Critic → 수정 1회 상태 기계 | 유지 | 3 | — | — |
-| I13 | NAT 감싸기 | `workflow_nat_wrap` | `src/tradesentry/workflow/nat_wrap.py` | 앱 | M | 흐름 → NAT 추적·프로파일 파일 | 유지 | 3 | — | NAT가 정하는 파일 이름과 이름 규칙의 대응은 자문 명세서 Q1의 4다 `[미확인]`. 정해지면 폴더 안 파일 이름을 이 행에 고정한다(자료 계약 §10.3 N6·N7) |
+| I1 | 비교 가능성 조회 | `tools_check_comparability` | `src/tradesentry/tools/check_comparability.py` | 앱 | M | scope → 봉투(기간·단위·분모·하위자료 상태) | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
+| I2 | 이력 조회 | `tools_get_history` | `src/tradesentry/tools/get_history.py` | 앱 | M | scope → 봉투(이력·전년동월 비교) | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
+| I3 | 비교국 조회 | `tools_compare_partners` | `src/tradesentry/tools/compare_partners.py` | 앱 | M | scope + 허용 비교국 → 봉투 | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
+| I4 | HS10 분해 조회 | `tools_decompose_hs` | `src/tradesentry/tools/decompose_hs.py` | 앱 | M | scope → 봉투(분해·부모 대조) | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
+| I5 | 근거 대조 | `tools_verify_evidence` | `src/tradesentry/tools/verify_evidence.py` | 앱 | M | 받은 근거·지표 → 원본 대조 결과 | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
+| I6 | 예산 집행 | `tools_budget` | `src/tradesentry/tools/budget.py` | 앱 | M | 시도 기록 → 허용·거부(8회, 재조사 1회·그 안의 조회 2회, 같은 인자, deadline) | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
+| I7 | NIM 호출 | `workflow_model_client` | `src/tradesentry/workflow/model_client.py` | 앱 | M | 메시지 → 응답(5xx 재전송 3회, 제한 시간, 토큰) | 유지(AS2 점검: `run-case` 모델 세 모드에서 전송, `checklist`는 설정·예산만, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
+| I8 | 기록 재생 | `workflow_replay` | `src/tradesentry/workflow/replay.py` | 앱 | M | 기록된 trace → 같은 응답(키 없는 스모크 시험) | 합침 후보(→ I7). AS2 점검: `run-case`에서 불리지 않음(기록 재생은 골든·키 없는 시험 전용). 시험 전용 유지나 합침은 AS4, 결정 기록 `20260925-0605-model-decision-as2-run-case.md` | 3 | — | 같은 자리의 교체 구현 |
+| I9 | 프롬프트·모델 설정 | 없음(구성) | `configs/model/` 아래 프롬프트·모델 설정 파일 | 구성 | M | 텍스트·설정 → 조사자·Critic 프롬프트, 모델 ID, 추론 모드 | 유지(AS2 점검: `run-case`가 모델 설정·프롬프트를 읽음, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
+| I10 | 조사자 | `workflow_investigator` | `src/tradesentry/workflow/investigator.py` | 앱 | M | 상태 → 다음 비교·초안 | 유지(AS2 점검: `run-case`의 모델 세 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
+| I11 | Critic | `workflow_critic` | `src/tradesentry/workflow/critic.py` | 앱 | M | 초안 + 근거 → 구조화된 지적·재조회 요청 | 유지(AS2 점검: `run-case`의 `full`·`freeform`에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
+| I12 | 흐름 조정 | `workflow_orchestrate` | `src/tradesentry/workflow/orchestrate.py` | 앱 | M | 사례·모드 → 조사자 → Critic → 수정 1회 상태 기계 | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
+| I13 | NAT 감싸기 | `workflow_nat_wrap` | `src/tradesentry/workflow/nat_wrap.py` | 앱 | M | 흐름 → NAT 추적·프로파일 파일 | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | NAT가 정하는 파일 이름과 이름 규칙의 대응은 자문 명세서 Q1의 4다 `[미확인]`. 정해지면 폴더 안 파일 이름을 이 행에 고정한다(자료 계약 §10.3 N6·N7) |
 
 ### 3.7 R — 보고서·검증기(4개)
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| R1 | typed claim 채우기 | `reports_claims` | `src/tradesentry/reports/claims.py` | 앱 | M | 검증된 `metric` → typed claim(모드별) | 유지 | 3 | — | — |
-| R2 | 한국어 보고서 틀 | `reports_render_ko` | `src/tradesentry/reports/render_ko.py` | 앱 | M | claim + 설명·가설 → 보고서·`report_hash` | 유지 | 3 | — | — |
-| R3 | 검증 규칙 | `validator_validate` | `src/tradesentry/validator/validate.py` | 앱 | M | 보고서·봉투·스냅샷 → findings(`validator_findings`) | 유지 | 3 | 예 | — |
-| R4 | 차단 판정 | `validator_gate` | `src/tradesentry/validator/gate.py` | 앱 | M | findings + 모드 → 통과·차단·기록만·`INVALID` | 합침 후보(→ R3) | 3 | 예 | — |
+| R1 | typed claim 채우기 | `reports_claims` | `src/tradesentry/reports/claims.py` | 앱 | M | 검증된 `metric` → typed claim(모드별) | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
+| R2 | 한국어 보고서 틀 | `reports_render_ko` | `src/tradesentry/reports/render_ko.py` | 앱 | M | claim + 설명·가설 → 보고서·`report_hash` | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | — | — |
+| R3 | 검증 규칙 | `validator_validate` | `src/tradesentry/validator/validate.py` | 앱 | M | 보고서·봉투·스냅샷 → findings(`validator_findings`) | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3 | 예 | — |
+| R4 | 차단 판정 | `validator_gate` | `src/tradesentry/validator/gate.py` | 앱 | M | findings + 모드 → 통과·차단·기록만·`INVALID` | 합침 후보(→ R3). AS2 점검: `run-case` 네 모드에서 R3 바로 뒤에 불림, 소비자 하나(I12)이나 입력이 R3과 달라(findings·모드·수정 사용) 확정은 AS4(동결 경로), 결정 기록 `20260925-0605-model-decision-as2-run-case.md` | 3 | 예 | — |
 
 ### 3.8 F — CLI·NVIDIA 연동(7개)
 
@@ -184,9 +184,9 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 | ID | 단위 | 도메인명 | 파일 | 형식 | 소유 | 입력 → 출력 | 조립 판정 후보(합칠 대상) | 조립체 | 동결 경로 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| L1 | trace 기록 | `runlog_trace` | `src/tradesentry/runlog/trace.py` | 앱 | 공동 | 이벤트 → trace JSONL(형식은 S0 자문 Q21) | 유지 | 3·4 | — | — |
-| L2 | 실행 결과 기록 | `runlog_run_record` | `src/tradesentry/runlog/run_record.py` | 앱 | 공동 | 실행 → 실행 결과 기록의 실행 쪽 키·`run_id` | 합침 후보(→ L1) | 3·4 | — | — |
-| L3 | 원인 분류 코드 | `runlog_cause_codes` | `src/tradesentry/runlog/cause_codes.py` | 앱 | 공동 | 실패 → `errors`의 원인 분류 코드 | 합침 후보(→ L1) | 3·4 | — | — |
+| L1 | trace 기록 | `runlog_trace` | `src/tradesentry/runlog/trace.py` | 앱 | 공동 | 이벤트 → trace JSONL(형식은 S0 자문 Q21) | 유지(AS2 점검: `run-case` 네 모드에서 불림, 결정 기록 `20260925-0605-model-decision-as2-run-case.md`) | 3·4 | — | — |
+| L2 | 실행 결과 기록 | `runlog_run_record` | `src/tradesentry/runlog/run_record.py` | 앱 | 공동 | 실행 → 실행 결과 기록의 실행 쪽 키·`run_id` | 합침 후보(→ L1). AS2 점검: `run-case` 네 모드에서 불림. 실행 결과 기록 파일 `runlog_run_record`, 결정 기록 `20260925-0605-model-decision-as2-run-case.md` | 3·4 | — | — |
+| L3 | 원인 분류 코드 | `runlog_cause_codes` | `src/tradesentry/runlog/cause_codes.py` | 앱 | 공동 | 실패 → `errors`의 원인 분류 코드 | 합침 후보(→ L1). AS2 점검: `run-case`의 실패 경로에서만 함수가 불림(성공 경로는 상수만). 소비자가 I7·I12·L2 셋이라 확정은 AS4, 결정 기록 `20260925-0605-model-decision-as2-run-case.md` | 3·4 | — | — |
 
 ## 4. 조립체 여덟 개와 CLI 조립 층
 

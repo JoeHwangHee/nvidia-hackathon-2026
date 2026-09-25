@@ -70,7 +70,18 @@ class ModelConfigTest(unittest.TestCase):
         self.assertIsInstance(cfg["request"]["temperature"], Decimal)
         self.assertIs(cfg["request"]["enable_thinking"], False)
         # model-0.2: 도구 없는 조사자 초안 요청에 response_format json_object(실측 뒤 켬, 결정 기록 ⑯)
-        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-0.2", "json_object"))
+        # model-0.3: 조사자·Critic 프롬프트에 신호별 판정 규칙·도구 인자·재조회 인자 모양(AS2 2회차, AS2 결정 기록 ⑬)
+        # model-0.4: 판정 규칙을 분해 보기의 판정 보조 값(rule_view, %)으로, 필수 근거 보기 압축(AS2 3회차)
+        # model-0.5: 세 상태의 뜻 표·narrative 일치 규칙, Critic 첫 점검(상태 뒤바뀜), freeform 주장 8개 이하(AS2 4회차)
+        # model-0.6: 초안 형식 줄·초안 요청 메시지의 상태 값 뜻 풀이를 뺌(모델이 값에 옮겨 적음), 지침 문장 압축(AS2 5회차)
+        # model-0.7: 규칙 참고값(코드가 계산한 P3 판정)을 전제로 판정 절 압축, Critic 참고값 점검(AS2 6회차)
+        # model-0.8: max_tokens 4096(실측 잘림, AS2 결정 기록 ⑱. MT4 결정 ⑪의 값을 대체)
+        # model-0.9: 증감 어휘는 지표 주장에만(narrative·가설 금지), compare_partners 설명(AS2 8회차, 결정 기록 ⑲)
+        # model-1.0: 판정 정책 설명 바로잡음(무역 검토 막음 1), 검증기 산문 패턴 목록, max_tokens 8192(AS2 9회차, ⑳)
+        # model-1.1: 도구 차례 max_tokens 1024(tool_turn_max_tokens), 계산 불가 안내·산문 수정 지시(AS2 10회차, ㉑)
+        # model-1.2: limits.tokens 128,000(사용자 결정 4), 지침 규칙 요약에 U4 반올림 불안정 → HOLD(사용자 결정 1, ㉒)
+        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-1.2", "json_object"))
+        self.assertEqual((cfg["request"]["max_tokens"], cfg["request"]["tool_turn_max_tokens"]), (8192, 1024))
         for value in walk(cfg):
             if isinstance(value, str):
                 self.assertNotRegex(value, r"(?i)bearer|secret")
@@ -78,7 +89,7 @@ class ModelConfigTest(unittest.TestCase):
     def test_limits_match_the_documented_adjustable_values(self):
         cfg = load()
         limits = cfg["limits"]
-        self.assertEqual(limits, {"model_requests": 10, "tokens": 32000, "wall_ms": 300000, "tool_attempts": 8,
+        self.assertEqual(limits, {"model_requests": 10, "tokens": 128000, "wall_ms": 300000, "tool_attempts": 8,
                                   "basic_tool_attempts": 5, "investigator_comparisons": 2, "revision_stages": 1,
                                   "revision_requeries": 2, "final_verify": 1})
         self.assertEqual(limits["basic_tool_attempts"] + limits["revision_requeries"] + limits["final_verify"],

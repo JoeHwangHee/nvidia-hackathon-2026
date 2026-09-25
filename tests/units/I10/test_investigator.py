@@ -265,5 +265,18 @@ class ModelViewTest(unittest.TestCase):
         self.assertEqual(failed["retryable_error"], {"code": "invalid_args"})
 
 
+class BasisLabelTest(unittest.TestCase):
+    def test_every_p5_basis_has_korean_label(self):
+        # 규칙 참고값 문구에 판정 근거 영문 이름이 그대로 나가지 않게, 단위 P5 규칙표의 판정 근거마다 한국어 이름이 있다(D17)
+        from tradesentry.policy import required_evidence as p5
+        bases = {basis for rules in p5.RULES.values() for basis, _status, _evidence in rules} | {p5.BASIS_NOT_TRIGGERED}
+        self.assertLessEqual(bases, set(inv.BASIS_LABELS))
+        text = inv.reference_text({"unit_value": "TRIGGERED", "share": "NOT_TRIGGERED"},
+                                  {"unit_value": "HOLD", "share": "NOT_TRIGGERED"},
+                                  {"unit_value": "data_inconsistent", "share": "not_triggered"})
+        self.assertIn("HOLD(자료가 맞지 않아 검증 불가)", text)
+        self.assertNotIn("data_inconsistent", text)
+
+
 if __name__ == "__main__":
     unittest.main()
