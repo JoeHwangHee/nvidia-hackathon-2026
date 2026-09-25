@@ -590,20 +590,22 @@ def detection_rows(snap, series: list[tuple[str, str]] | None = None) -> list[di
     return rows
 
 
-def build_case_list(snap, policy: dict) -> object:
-    """스냅샷 하나의 경보 사례 목록(단위 P2 출력). detect와 evaluate(real_dev 사례 목록, AS3 두 번째 PR)가 같이 쓴다.
+def build_case_list(snap, policy: dict, dataset: str = DETECT_DATASET) -> object:
+    """스냅샷 하나의 경보 사례 목록(단위 P2 출력). detect와 evaluate(real_dev 사례 목록, AS3 두 번째 PR)와 봉인용 탐지
+    입구(detect_dataset_cases, AS1 세 번째 PR)가 같이 쓴다.
 
-    실자료는 분할 기록(load_real_split)을 먼저 읽어 real_dev 계열만 남긴 뒤에 관측 값을 읽는다(병렬 개발 규칙 §7.2의 5).
-    분할 기록을 쓸 수 없으면 SplitError(관측 값을 읽기 전). 출처 종류 확인은 부르는 쪽이 먼저 한다.
+    실자료는 분할 기록(load_real_split)을 먼저 읽어 묶음 dataset의 계열만 남긴 뒤에 관측 값을 읽는다(병렬 개발 규칙 §7.2의
+    5). dataset의 기본값은 real_dev이고 detect·evaluate는 이 값만 쓴다. real_sealed는 봉인용 탐지 입구만 넘긴다. 분할 기록을
+    쓸 수 없으면 SplitError(관측 값을 읽기 전). 출처 종류 확인은 부르는 쪽이 먼저 한다.
     """
     from tradesentry.policy import case_build, trigger
 
     case_input: dict[str, object] = {"snapshot_id": snap.snapshot_id, "source_kind": snap.source_kind}
     split = None
-    if snap.source_kind == "real":  # 값을 읽기 전에 real_dev 계열로 좁힌다
+    if snap.source_kind == "real":  # 값을 읽기 전에 묶음 계열로 좁힌다
         split = load_real_split(snap)
-        case_input.update(dataset=DETECT_DATASET, series_assignment=series_assignment(split))
-    rows = detection_rows(snap, detect_series(snap, split))
+        case_input.update(dataset=dataset, series_assignment=series_assignment(split))
+    rows = detection_rows(snap, detect_series(snap, split, dataset))
     detection = trigger.run({"policy": policy, "rows": rows})
     return case_build.run({**case_input, "detection": detection})
 
@@ -701,8 +703,9 @@ def detect_dataset_cases(snapshot_id: str, policy_version: str, dataset: str, ou
     준 폴더 out_dir에 단위 P2 출력 그대로 한 파일(policy_case_build-{시각}.json)을 쓴다.
 
     - 경로는 CLI detect의 실자료 경로와 같다: K4 load_policy → K3 open_snapshot(정본 빌드, 읽기 전용) → 출처 종류 real 확인 →
-      분할 기록(load_real_split) → detect_series로 그 묶음 계열만 남긴다(관측 값을 읽기 전) → detection_rows(K3 조회 → X1·X2)
-      → P1 → P2(dataset과 분할 기록 전체의 배정). dataset이 real_dev면 출력 바이트가 CLI detect의 출력 파일과 같다.
+      build_case_list(snap, policy, dataset): 분할 기록(load_real_split) → detect_series로 그 묶음 계열만 남긴다(관측 값을 읽기
+      전) → detection_rows(K3 조회 → X1·X2) → P1 → P2(dataset과 분할 기록 전체의 배정). dataset이 real_dev면 출력 바이트가
+      CLI detect의 출력 파일과 같다.
     - 출력은 out_dir 하나에만 쓴다. outputs/에는 아무것도 쓰지 않고 실행명도 확보하지 않는다(자료 계약 §10.3 N10 "봉인 자료
       생성 중의 명령 출력"). out_dir은 이미 있는 폴더여야 하고, 저장소(본 작업 폴더와 이 worktree) 안이면 거부한다.
       봉인 폴더 위치(TRADESENTRY_SEALED_DIR)는 이 함수가 읽지 않는다. 부르는 쪽이 정한다.
@@ -717,7 +720,6 @@ def detect_dataset_cases(snapshot_id: str, policy_version: str, dataset: str, ou
     """
     from tradesentry.contract import policy_load
     from tradesentry.dal import query
-    from tradesentry.policy import case_build, trigger
 
     if dataset not in ENTRY_DATASETS:  # 스냅샷·정책을 열기 전에 확인한다
         raise DatasetEntryError("묶음은 real_dev나 real_sealed여야 한다")
@@ -726,11 +728,7 @@ def detect_dataset_cases(snapshot_id: str, policy_version: str, dataset: str, ou
     with query.open_snapshot(snapshot_id) as snap:
         if snap.source_kind != "real":  # 분할 기록이 있는 실자료만. 값을 읽기 전에 거부한다
             raise DatasetEntryError("봉인용 탐지 입구는 실자료 스냅샷(source_kind가 real)만 탐지한다")
-        split = load_real_split(snap)  # 관측 값을 읽기 전(SplitError)
-        rows = detection_rows(snap, detect_series(snap, split, dataset))
-        detection = trigger.run({"policy": policy, "rows": rows})
-        result = case_build.run({"snapshot_id": snap.snapshot_id, "source_kind": snap.source_kind, "dataset": dataset,
-                                 "series_assignment": series_assignment(split), "detection": detection})
+        result = build_case_list(snap, policy, dataset)  # detect와 같은 조립. 분할 기록은 관측 값을 읽기 전(SplitError)
     if not isinstance(result, dict) or set(result) != CASE_BUILD_KEYS or result["dataset"] != dataset:
         raise WiringError("단위 P2(case_build)의 출력이 요청한 묶음의 snapshot_id·dataset·policy_version·cases·data_quality "
                           "객체가 아니다")

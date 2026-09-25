@@ -40,11 +40,12 @@
   2. 단위 K4 `load_policy`
   3. 단위 K3 `open_snapshot`(정본 빌드, 읽기 전용)
   4. 출처 종류가 `real`인지 확인. 아니면 거부한다. 분할 기록이 없는 합성 스냅샷은 입구의 대상이 아니다.
-  5. `load_real_split`(분할 기록 검사, 두 번째 기록 ③. 관측 값을 읽기 전)
-  6. `detect_series(snap, split, dataset)`로 그 묶음 계열만 남긴다.
-  7. `detection_rows`(K3 조회 → X1·X2) → P1 → P2. P2에는 `dataset`과 분할 기록 전체의 배정을 넘긴다(두 번째 기록 ④).
-- `detect_series`에 키워드 인자 `dataset`(기본값 `real_dev`)을 더했다. CLI `detect`는 이 인자를 넘기지 않으므로 동작이 그대로다(기존 detect 조립 시험 21개 통과).
-- `_detect`는 고치지 않았다. 같은 시각에 열린 AS3 두 번째 PR(#48)이 `_detect`의 본문을 `build_case_list`로 옮기므로, 충돌을 피하려고 입구는 같은 함수들(`load_real_split`·`detect_series`·`detection_rows`·`trigger.run`·`case_build.run`)을 직접 부른다. 두 경로가 같다는 것은 아래 시험의 바이트 대조가 묶는다. #48이 병합되면 `build_case_list`에 묶음 인자를 더해 입구가 그것을 부르게 합치는 것은 조립 점검(AS4) 후보다.
+  5. `build_case_list(snap, policy, dataset)`: `detect`와 `evaluate`가 쓰는 조립 함수(AS3 두 번째 PR #48이 `_detect`에서 떼어 냄)를 그대로 부른다.
+     - `load_real_split`(분할 기록 검사, 두 번째 기록 ③. 관측 값을 읽기 전)
+     - `detect_series(snap, split, dataset)`로 그 묶음 계열만 남긴다.
+     - `detection_rows`(K3 조회 → X1·X2) → P1 → P2. P2에는 `dataset`과 분할 기록 전체의 배정을 넘긴다(두 번째 기록 ④).
+- `build_case_list`와 `detect_series`에 키워드 인자 `dataset`(기본값 `real_dev`)을 더했다. `_detect`와 `evaluate`는 이 인자를 넘기지 않으므로 동작이 그대로다(기존 detect 조립 시험 통과).
+- 조립이 한 벌이다. 입구가 따로 조립을 두지 않으므로 `real_sealed` 사례 목록과 `real_dev` 사례 목록이 같은 코드에서 나온다. 아래 시험의 바이트 대조가 이것을 다시 확인한다.
 - 이유: 봉인 사례 목록이 개발 사례 목록과 다른 코드로 만들어지면, `real_sealed` 결과가 `real_dev`와 같은 탐지 규칙에서 나왔다고 말할 수 없다.
 
 ③ **출력 위치: 부르는 쪽이 준 저장소 밖 폴더에만 한 파일** — 확정
@@ -105,14 +106,14 @@
 - 출력 폴더를 `TRADESENTRY_SEALED_DIR`에서 입구가 직접 정하는 안: 런타임 코드가 봉인 폴더 위치를 알게 되고, 해시 등록 전에 지울 임시 위치를 쓸 수 없다. 버렸다.
 - 입구가 폴더를 만들어 주는 안: 오타 난 경로에 새 폴더가 생겨 봉인 폴더 밖에 봉인 자료가 흩어질 수 있다. 버렸다.
 - 파일에 `code_version` 키를 더하는 안: 두 번째 기록 ⑤와 같은 이유로 버렸다.
-- `_detect`를 입구와 같이 쓰도록 이 PR에서 고치는 안: #48과 같은 자리를 고쳐 충돌한다. 바이트 대조 시험으로 같은 경로임을 묶고, 합치기는 뒤로 미뤘다(②).
+- 입구가 조립 함수들을 직접 불러 두 번째 조립을 두는 안: #48 병합 전의 첫 판이 이렇게 했다. #48이 `build_case_list`를 만든 뒤 그것에 묶음 인자를 더해 한 벌로 합쳤다(②). 두 벌이면 한쪽만 고쳐질 위험이 있다.
 
 ## 영향과 넘길 곳
 
 - 바꾼 파일
   - `src/tradesentry/cli/dispatch.py`
     - `json_output_bytes`(`write_output`에서 떼어 냄)
-    - `detect_series`의 `dataset` 인자
+    - `build_case_list`·`detect_series`의 `dataset` 인자
     - 새 구역 "봉인용 탐지 입구": `ENTRY_DATASETS`·`DatasetEntryError`·`_repo_roots`·`_entry_out_dir`·`detect_dataset_cases`
   - `tests/units/F2/test_detect_dataset_entry.py`: 새 파일
 - DT7 ③(격리된 생성 에이전트)
@@ -121,4 +122,3 @@
   - 출력을 저장소 밖 임시 폴더에 받았다면 해시 등록 전에 지운다.
 - 문서 PR
   - 자료 계약 §10.3 N10, 병렬 개발 규칙 §7.3의 1, 단위 표 V3·V6 행의 "출력 위치를 바꾸는 방법(함수 호출이나 CLI 인자)은 S0 결정 항목으로 둔다 `[미확인]`"을 "함수 호출 `tradesentry.cli.dispatch.detect_dataset_cases`(이 기록)"로 고칠 것을 권한다. V3(holdout40)은 `detect`를 부르지 않으므로 V6만 해당할 수 있다.
-- 조립 점검(AS4): #48의 `build_case_list`와 이 입구의 조립을 하나로 합치는 일(②).
