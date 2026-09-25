@@ -122,6 +122,8 @@ evaluate 배선(로드맵 MT7 첫 PR, 최종 연결은 조립 작업 AS3. 결정
   build_case_list(detect와 같은 길, real_dev 계열로 좁힌 뒤)로 경보 목록을 만들고 DT7 결정 기록의 규칙(select_real_dev_mvp)
   으로 20건을 고른다(파일을 쓰지 않는다). 경보 목록 전체는 실행 조건 입력 파일 snapshot.real_dev_alerts에, 고른 사례는
   planned_cases에 남는다. controlled_fixture_v0의 사례 목록 자리는 없어 실행 폴더를 만들기 전에 분명한 오류로 끝난다.
+- 속도 조절(AS3 세 번째 PR): 모델 설정 configs/model/model.json의 pacing(evaluate_pacing, 모든 모드 같음)을 단위 E1에
+  넘긴다. 쓴 값과 쉰 시간 합·429 뒤 쉰 횟수는 실행 조건 입력 파일 prescoring_checks.seed_concurrency에 적는다.
 - 인프라 실패 재실행(룰북 B5)은 단위 E1이 묶음 끝에 한다. 실행 조건 입력 파일 prescoring_checks.final_status에 줄 없는
   조합 수와 재실행 대상·재실행 수를 적는다(값이 있으면 재실행 규칙을 적용한 묶음이다).
 - 모드(사용자 결정 12(가)): --mode를 주지 않으면 단위 E1 PLANNED_MODES[자료 묶음]의 모드 전부를 한 묶음(순서 seed
@@ -1533,6 +1535,27 @@ def real_dev_cases(request: args.Request) -> tuple[list[dict], dict]:
     return chosen, record
 
 
+def evaluate_pacing():
+    """모델 설정(configs/model/model.json)의 pacing(속도 조절, AS3 세 번째 PR)을 단위 E1 Pacing으로 읽는다. 모든 모드에 같다.
+    CLI 옵션·환경변수로 바꾸지 않는다. 없거나 모양이 틀리면 ValueError(BatchError·ConfigError)."""
+    from tradesentry.evaluation import batch_run
+    from tradesentry.workflow import model_client
+
+    try:
+        raw = json.loads((model_client.DEFAULT_CONFIG_DIR / "model.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        raise model_client.ConfigError("모델 설정을 읽지 못했다") from None
+    return batch_run.pacing_from_config(raw.get("pacing") if isinstance(raw, dict) else None)
+
+
+def seed_concurrency_text(pacing, result) -> str:
+    """실행 조건 입력 파일 prescoring_checks.seed_concurrency(평가 스킬 ② 채점 전 확인 5의 순서 seed·동시성 적용): 순서
+    seed·동시성과 속도 조절 값, 쉰 시간의 합, HTTP 429 뒤 더 쉰 횟수."""
+    return (f"참: 순서 seed {DEV_ORDER_SEED}, 동시성 1, 속도 조절(모델 실행 사이 최소 {pacing.min_gap_ms // 1000}초, "
+            f"분당 토큰 {pacing.tokens_per_minute}, HTTP 429 뒤 {pacing.after_rate_limit_ms // 1000}초), 쉰 시간 합 "
+            f"{result.paced_ms // 1000}초, 429 뒤 더 쉰 횟수 {result.rate_limit_waits}")
+
+
 def final_status_text(spec, result) -> str:
     """실행 조건 입력 파일 prescoring_checks.final_status(평가 스킬 ② 채점 전 확인 1): 예정 실행 가운데 줄이 없는 조합 수와
     인프라 실패 재실행(룰북 B5) 대상·재실행 수. 이 값이 있으면 재실행 규칙을 적용한 묶음이다("0건"과 "미기재"가 갈린다)."""
@@ -1581,6 +1604,7 @@ def _evaluate(request: args.Request) -> int:
         thresholds = orchestrate.policy_thresholds(policy_load.load_policy(request.policy_version))
         run_limits = model_client.load_model_config().limits
         limits = batch_run.limits_from_run_limits(run_limits)
+        pacing = evaluate_pacing()
         versions = evaluate_versions(request, dataset)
         spec = batch_run.BatchSpec(dataset=dataset, cases=tuple(cases), modes=tuple(modes),
                                    order_seed=DEV_ORDER_SEED, versions=versions)
@@ -1607,12 +1631,13 @@ def _evaluate(request: args.Request) -> int:
     if request.run_name is not None:
         reserved = reserve_run_dir(batch_run.BATCH_RUN_NAME, given=request.run_name)
     result = batch_run.execute_batch(spec, runner, parent=OUTPUT_PARENT, other_parent=OUTPUT_PARENT / SEALED_NAME,
-                                     reserved=reserved)
+                                     reserved=reserved, pacing=pacing)
     _emit(f"{OUTPUT_LABEL}/{result.run_id}/{result.batch_file.name}")
     for incident in getattr(runner, "incidents", []):
         _report(f"사건: {incident}")
     summary = nat_eval.summarize_batch(result.run_dir)
-    extra["prescoring_checks"] = {"final_status": final_status_text(spec, result)}
+    extra["prescoring_checks"] = {"final_status": final_status_text(spec, result),
+                                  "seed_concurrency": seed_concurrency_text(pacing, result)}
     doc = batch_run.build_run_conditions(dataset=dataset, cases=cases, modes=list(spec.modes), thresholds=thresholds,
                                          order_seed=DEV_ORDER_SEED, limits=limits,
                                          run_period=(result.started, result.ended), nat_profile_summary=summary,

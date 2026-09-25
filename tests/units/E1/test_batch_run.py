@@ -9,6 +9,7 @@ import json
 import tempfile
 import threading
 import unittest
+from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -176,6 +177,84 @@ class InfraRerunTest(TempOutputs, unittest.TestCase):
     def test_no_targets_means_zero_reruns(self):
         result = self.execute(hf.FakeRunner(self.clock), spec(hf.dev20_cases(2)))
         self.assertEqual((result.rerun_targets, result.reruns, len(result.lines)), (0, 0, 6))
+
+
+class PacingTest(TempOutputs, unittest.TestCase):
+    """속도 조절(AS3 세 번째 PR): 모델 실행 사이 최소 간격, 직전 토큰 수에 비례한 쉼, HTTP 429 뒤 더 쉼. checklist는 쉬지 않는다."""
+
+    PACING = batch_run.Pacing(min_gap_ms=60000, tokens_per_minute=50000, after_rate_limit_ms=120000)
+
+    def runner(self, tokens: dict, rate_limited: set, run_ms: int = 20000):
+        starts: list = []
+
+        def run(call):
+            starts.append((call.case["case_id"], call.mode, self.clock()))
+            self.clock.advance_ms(run_ms)
+            record = hf.completed_record(call, tokens_in=tokens.get(call.case["case_id"], 9000), tokens_out=0)
+            if (call.case["case_id"], call.mode) in rate_limited:
+                attempts = {"tool_attempts": 2, "model_requests": 1, "tokens_in": 0, "tokens_out": 0, "wall_ms": run_ms}
+                record = {**record, "review_status_final": None, "signal_status": None, "execution_status": "FAILED",
+                          "tool_attempts": 2, "model_requests": 1, "tokens_in": 0, "tokens_out": 0, "wall_ms": run_ms,
+                          "critic_used": False,
+                          "errors": [cause_codes.error_entry(cause_codes.PROVIDER_HTTP_4XX, "basic", attempts, [],
+                                                             "HTTP 429")]}
+            return record
+
+        return run, starts
+
+    def test_model_runs_are_spaced_by_gap_and_tokens(self):
+        cases = hf.dev20_cases(3)
+        tokens = {cases[0]["case_id"]: 150000, cases[1]["case_id"]: 9000, cases[2]["case_id"]: 9000}
+        run, starts = self.runner(tokens, set())
+        result = batch_run.execute_batch(spec(cases), run, parent=self.parent, other_parent=self.sealed,
+                                         clock=self.clock, sleep=self.clock.sleep, pacing=self.PACING)
+        model = [(c, m, t) for c, m, t in starts if m != "checklist"]
+        for (case_a, _, t_a), (_, _, t_b) in zip(model, model[1:]):
+            gap = max(60000, tokens[case_a] * 60000 // 50000)  # 15만 토큰 뒤에는 3분
+            self.assertGreaterEqual((t_b - t_a).total_seconds() * 1000, gap)
+        self.assertGreater(result.paced_ms, 0)
+        self.assertEqual(result.rate_limit_waits, 0)
+        # checklist는 앞 실행 바로 뒤에 시작한다(쉬지 않는다)
+        checks = [i for i, (_, m, _) in enumerate(starts) if m == "checklist" and i > 0]
+        for i in checks:
+            self.assertLess((starts[i][2] - starts[i - 1][2]).total_seconds(), 25)
+
+    def test_rate_limited_run_makes_the_next_model_run_wait_longer(self):
+        cases = hf.dev20_cases(2)
+        order = batch_run.plan_order([c["case_id"] for c in cases], ["agent", "full"], "dev-order-v1")
+        run, starts = self.runner({}, {order[0]})
+        result = batch_run.execute_batch(spec(cases, modes=("agent", "full")), run, parent=self.parent,
+                                         other_parent=self.sealed, clock=self.clock, sleep=self.clock.sleep,
+                                         pacing=self.PACING)
+        first_end = starts[0][2] + timedelta(milliseconds=20000)
+        self.assertGreaterEqual((starts[1][2] - first_end).total_seconds(), 120)
+        self.assertEqual(result.rate_limit_waits, 1)
+        failed = [x for x in result.lines if x["execution_status"] == "FAILED"]
+        self.assertEqual(len(failed), 1)  # 429는 실패로 남고 재실행하지 않는다(사용자 결정 5)
+        self.assertEqual((result.rerun_targets, result.reruns), (0, 0))
+
+    def test_no_pacing_means_no_wait(self):
+        run, starts = self.runner({}, set())
+        result = batch_run.execute_batch(spec(hf.dev20_cases(2)), run, parent=self.parent, other_parent=self.sealed,
+                                         clock=self.clock, sleep=self.clock.sleep)
+        self.assertEqual(result.paced_ms, 0)
+
+    def test_pacing_config_shape(self):
+        self.assertEqual(batch_run.pacing_from_config({"min_gap_ms": 1, "tokens_per_minute": 2,
+                                                       "after_rate_limit_ms": 3}), batch_run.Pacing(1, 2, 3))
+        for bad in (None, {}, {"min_gap_ms": 1, "tokens_per_minute": 2}, {"min_gap_ms": -1, "tokens_per_minute": 2,
+                    "after_rate_limit_ms": 3}, {"min_gap_ms": True, "tokens_per_minute": 2, "after_rate_limit_ms": 3},
+                    {"min_gap_ms": 1.5, "tokens_per_minute": 2, "after_rate_limit_ms": 3},
+                    {"min_gap_ms": 1, "tokens_per_minute": 2, "after_rate_limit_ms": 3, "x": 0}):
+            with self.subTest(bad=bad), self.assertRaises(batch_run.BatchError):
+                batch_run.pacing_from_config(bad)
+
+    def test_only_http_429_counts_as_rate_limited(self):
+        entry = cause_codes.error_entry(cause_codes.PROVIDER_HTTP_4XX, "basic",
+                                        {k: 0 for k in cause_codes.ATTEMPT_KEYS}, [], "HTTP 429")
+        self.assertTrue(batch_run.rate_limited({"errors": [entry]}))
+        self.assertFalse(batch_run.rate_limited({"errors": [dict(entry, detail="HTTP 400")]}))
+        self.assertFalse(batch_run.rate_limited({"errors": [dict(entry, code=cause_codes.CODE_ERROR)]}))
 
 
 class NameCollisionTest(TempOutputs, unittest.TestCase):
