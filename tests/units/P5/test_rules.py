@@ -28,10 +28,10 @@ def claim(**fields):
 class RuleTableTest(unittest.TestCase):
     def test_basis_status_follows_dev_plan_6_3(self):
         expected = {
-            p5.UNIT_VALUE: {"data_insufficient": "HOLD", "comparison_incomplete": "HOLD", "rounding_unstable": "HOLD",
-                            "resolved_after_correction": "MONITOR", "composition_explained": "MONITOR",
-                            "unexplained": "MAINTAIN"},
-            p5.SHARE: {"data_insufficient": "HOLD", "comparison_incomplete": "HOLD",
+            p5.UNIT_VALUE: {"data_insufficient": "HOLD", "data_inconsistent": "HOLD", "comparison_incomplete": "HOLD",
+                            "rounding_unstable": "HOLD", "resolved_after_correction": "MONITOR",
+                            "composition_explained": "MONITOR", "unexplained": "MAINTAIN"},
+            p5.SHARE: {"data_insufficient": "HOLD", "data_inconsistent": "HOLD", "comparison_incomplete": "HOLD",
                        "resolved_after_correction": "MONITOR", "unexplained": "MAINTAIN"},
         }
         for family, table in expected.items():
@@ -66,8 +66,13 @@ class RuleTableTest(unittest.TestCase):
         self.assertEqual(p5.required_comparisons(p5.SHARE, "unexplained"),
                          ("comparability", "partners", "country_and_world"))
         for family in p5.SIGNAL_CODES:
-            for basis in ("data_insufficient", "comparison_incomplete", "resolved_after_correction"):
+            for basis in ("data_insufficient", "data_inconsistent", "comparison_incomplete",
+                          "resolved_after_correction"):
                 self.assertEqual(p5.required_comparisons(family, basis), ())
+        # 앞 단계에서 끝나는 판정 근거는 필수 근거에 비교 코드가 있어도 판정 전 비교 완료를 따지지 않는다(D17)
+        self.assertEqual(p5.required_comparisons(p5.UNIT_VALUE, "rounding_unstable"), ())
+        self.assertIn("comparability_ok", p5.rule_evidence(p5.SHARE, "data_inconsistent"))
+        self.assertEqual(p5.GATED_BASES, ("composition_explained", "unexplained"))
         self.assertLessEqual(set(p5.COMPARISON_EVIDENCE.values()), set(p5.EVIDENCE_DESCRIPTIONS))
         self.assertEqual(p5.COMPARISON_STATES, ("done", "incomplete", "not_performed"))
 
@@ -75,6 +80,17 @@ class RuleTableTest(unittest.TestCase):
         for family in p5.SIGNAL_CODES:
             self.assertEqual(p5.rule_evidence(family, "comparison_incomplete"),
                              p5.rule_evidence(family, "data_insufficient"))
+
+    def test_inconsistent_hold_evidence_follows_user_decision_14(self):
+        # 사용자 결정 14(2026-09-25(금) 08:47): 관측은 모두 있는데 성립하지 않는 보류의 필수 근거(순서 그대로).
+        # 빠진 관측 보류(data_insufficient)는 지금 규칙 그대로다
+        self.assertEqual(p5.rule_evidence(p5.UNIT_VALUE, "data_inconsistent"),
+                         ("parent_child_match_V_and_Q", "comparability_ok", "no_zero_fill"))
+        self.assertEqual(p5.rule_evidence(p5.SHARE, "data_inconsistent"),
+                         ("country_and_world_change_shown", "comparability_ok", "no_zero_fill"))
+        for family in p5.SIGNAL_CODES:
+            self.assertEqual(p5.rule_evidence(family, "data_insufficient"),
+                             ("missingness_listed", "failure_vs_not_collected_distinguished", "no_zero_fill"))
 
     def test_unit_value_rules_match_oracle_required_evidence(self):
         oracle = json.loads(ORACLE.read_text(encoding="utf-8"), parse_float=Decimal)

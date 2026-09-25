@@ -23,9 +23,15 @@ MT1 판정 정책 결정 기록(`*-model-decision-mt1-policy.md`)에 있다.
   그럴듯한 `HOLD`나 `MAINTAIN`으로 바뀌지 않게 하려는 것이다(개발 플랜 §7.5).
 
 발동한 신호의 판정 순서(앞에서 걸리면 멈춘다)
-1. 자료 부족 → `HOLD`(`data_insufficient`): 비교월·기준월의 빠진 관측, 비교 가능성을 깨는 문제(`comparability_issues`),
-   단가 신호의 구성 분해를 쓸 수 없음(분해 null, 분해 값 null, 부모·하위 대조 불일치, 하위품목 단가 변화 null,
-   기준월 단가 없음). 필요한 자료가 없으면 "설명되지 않는다"는 이유로 `MAINTAIN`을 내지 않는다(개발 플랜 §6.3 표 아래).
+1. 자료 보류 → `HOLD`. 필요한 자료가 없거나 성립하지 않으면 "설명되지 않는다"는 이유로 `MAINTAIN`을 내지 않는다(개발
+   플랜 §6.3 1행과 표 아래). 사유별로 판정 근거가 둘이다(사용자 결정 14, 결정 기록 `*-model-decision-mt1-d17-hold-split.md`).
+   - `data_insufficient`(빠진 관측): 그 계열에 배정된 비교월·기준월의 빠진 관측(`missing_observation`)이 하나라도 있다.
+   - `data_inconsistent`(성립하지 않음): 빠진 관측은 없는데 비교 가능성을 깨는 문제(`comparability_issues`: 단위·HS 정의
+     차이, 점유율 분모가 대상국 금액보다 작음 등)가 있거나, 단가 신호의 구성 분해를 쓸 수 없다(분해 null(두 달 HS10
+     집합이 다름 등), 분해 값 null, 부모·하위 대조 불일치, 하위품목 단가 변화 null(하위 중량 0 등), 기준월 단가 없음).
+   - 둘 다 있으면 `data_insufficient`다. 빠진 관측은 분해 불가 같은 뒤따르는 사유를 함께 부르고(oracle C: HS10 조회 실패 →
+     분해 불가·대조 불가), 보고서가 남길 수 있는 근거는 빠진 관측의 목록과 상태 구분이다. 분해·대조 근거는 빠진 자료
+     때문에 남길 수 없다. `gaps`에는 두 사유의 항목을 모두 싣는다.
 2. 반올림 불안정(단가 신호만) → `HOLD`(`rounding_unstable`). 입력의 참거짓 값을 쓴다. 만드는 쪽은 아직 없다(잠정).
 3. 자료 교정 뒤 동결 정책으로 경보 해소 → `MONITOR`(`resolved_after_correction`). 입력의 참거짓 값을 쓴다. 동결
    스냅샷 하나로 도는 v1 실행에서는 만드는 쪽이 없어 늘 거짓이다. 조회 범위를 고친 재조회(룰북 시나리오 9)에는 쓰지 않는다.
@@ -53,12 +59,15 @@ MT1 판정 정책 결정 기록(`*-model-decision-mt1-policy.md`)에 있다.
   있으므로, 대상국 행의 상태 표시는 HS10 하위 자료가 빠졌다는 뜻이다(자료 계약 §2.3.2 행 규칙 4, oracle C).
 - 빠진 것으로 보는 상태는 `REQUEST_FAILED`, `NOT_COLLECTED`, `UNRESOLVED_ZERO`다. `CONFIRMED_NO_TRADE`(승격된 무거래
   확정)는 0으로 다루는 관측이라 그 자체로는 빠진 것이 아니다. 그 결과 하위품목 집합이 달라지면 구성 분해 값이 null로
-  와서 1번에 걸린다.
+  와서 1번의 `data_inconsistent`에 걸린다.
 
 `comparability_issues`에는 비교 가능성을 깨는 문제만 넣는다
 - 비교월과 기준월의 값을 같은 정의로 비교할 수 없는 경우다: 두 달의 단위(USD·kg)가 다름, 두 달의 HS 코드 정의(코드
-  체계·개정판)가 다름.
-- 빠진 달·분모·하위자료는 `missingness`와 `decomposition`으로, 부모·하위 대조는 `decomposition.parent_child_match`로 넘긴다.
+  체계·개정판)가 다름. 점유율 계열에서는 관측된 전체국가(`ALL`) 분모가 대상국 금액보다 작은 달(분모가 전체 국가를 담지
+  못해 점유율이 100%를 넘음)도 여기에 넣는다. 문자열의 글자는 근거 상태를 만드는 쪽(조립 AS2)이 정하고 이 단위는 읽지
+  않는다(하나라도 있으면 `HOLD`).
+- 빠진 달·분모·하위자료(관측 상태가 빠짐)는 `missingness`와 `decomposition`으로, 부모·하위 대조는
+  `decomposition.parent_child_match`로 넘긴다.
 - 두 달의 정의가 같은데 정보만 모자란 표시(예: 개정판을 확인하지 못한 `HSK` 코드 체계가 두 달에 같게 쓰임)는 넣지 않는다.
 - 문자열이 하나라도 있으면 그 계열은 `HOLD`다. 비교 조건 점검 자체를 끝내지 못했으면 목록이 아니라
   `comparisons.comparability`에 적는다(빠진 관측 때문이면 `incomplete`, 수행하지 않았으면 `not_performed`).
@@ -89,14 +98,16 @@ MT1 판정 정책 결정 기록(`*-model-decision-mt1-policy.md`)에 있다.
   발동하지 않은 신호의 블록은 없어도 되고, 있으면 읽지 않는다.
 
 출력(JSON 객체): {`case_id`, `signal_status`(자료 계약 §3.1 모양), `basis`(신호별 판정 근거), `gaps`(신호별로 1번이나
-5번에 걸린 항목 목록)}. 항목마다 `reason`은 `missing_observation`, `comparability_issue`, `decomposition_unavailable`,
+5번에 걸린 항목 목록)}. 판정 근거는 `not_triggered`, `data_insufficient`, `data_inconsistent`, `comparison_incomplete`,
+`rounding_unstable`, `resolved_after_correction`, `composition_explained`, `unexplained` 가운데 하나다. 항목마다 `reason`은 `missing_observation`, `comparability_issue`, `decomposition_unavailable`,
 `parent_child_mismatch`, `child_unit_value_unavailable`, `baseline_unit_value_unavailable`, `comparison_incomplete`
 가운데 하나이고 세부 키가 붙는다.
 """
 from fractions import Fraction
 
 from tradesentry.policy.required_evidence import (ALL_PARTNER, BASIS_COMPARISON_INCOMPLETE,
-                                                  BASIS_COMPOSITION_EXPLAINED, BASIS_DATA_INSUFFICIENT,
+                                                  BASIS_COMPOSITION_EXPLAINED, BASIS_DATA_INCONSISTENT,
+                                                  BASIS_DATA_INSUFFICIENT,
                                                   BASIS_NOT_TRIGGERED, BASIS_RESOLVED_AFTER_CORRECTION,
                                                   BASIS_ROUNDING_UNSTABLE, BASIS_UNEXPLAINED, COMPARISON_INCOMPLETE,
                                                   COMPARISON_NOT_PERFORMED, COMPARISON_STATES, NOT_COLLECTED,
@@ -107,6 +118,7 @@ from tradesentry.policy.trigger import (HS6_RE, MONTH_RE, PARTNER_RE, baseline_o
                                         policy_values)
 
 GAP_STATUSES = (REQUEST_FAILED, NOT_COLLECTED, UNRESOLVED_ZERO)
+MISSING_OBSERVATION = "missing_observation"  # 빠진 관측의 gaps 사유. 이것이 있으면 data_insufficient다
 MISSING_FIELDS = ("partner_code", "hs_code", "month", "observation_status")
 BLOCK_KEYS = {
     UNIT_VALUE: frozenset({"comparability_issues", "comparisons", "U_baseline", "decomposition", "children",
@@ -187,7 +199,7 @@ def _missing_gaps(missingness: object, case: dict) -> dict[str, list[dict]]:
             continue
         family = SHARE if partner == ALL_PARTNER else UNIT_VALUE if partner == case["partner"] else None
         if family is not None:
-            gaps[family].append({"reason": "missing_observation", "partner_code": partner, "hs_code": hs_code,
+            gaps[family].append({"reason": MISSING_OBSERVATION, "partner_code": partner, "hs_code": hs_code,
                                  "month": month, "observation_status": status})
     return gaps
 
@@ -249,7 +261,10 @@ def _decide(family: str, block: dict, missing: list[dict], threshold: Fraction) 
         decomposition_gaps, explained = _decomposition_gaps(block, threshold)
         gaps += decomposition_gaps
     if gaps:
-        return BASIS_DATA_INSUFFICIENT, gaps
+        # 빠진 관측이 하나라도 있으면 빠진 관측 보류가 먼저다(분해 불가 같은 뒤따르는 사유를 함께 부른다)
+        if any(gap["reason"] == MISSING_OBSERVATION for gap in gaps):
+            return BASIS_DATA_INSUFFICIENT, gaps
+        return BASIS_DATA_INCONSISTENT, gaps
     if rounding_unstable:
         return BASIS_ROUNDING_UNSTABLE, []
     if resolved:

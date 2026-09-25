@@ -194,10 +194,14 @@ class ScorerKeysTest(unittest.TestCase):
         self.assertEqual((out["required_evidence_ok"], out["numeric_ok"], out["provenance_ok"]), (False, False, False))
 
     def test_real_dataset_has_null_required_evidence(self):
+        # 사용자 결정 7(20260925-0847 기록): 실자료 묶음은 정답표가 없어 null. 런타임이 값을 적어도 null로 덮는다
         report = self.reports["A-composition"]
-        line = self.line_for(report, dataset="real_dev")
-        out = c3.result_line(line, report, scored(self.rows, report), None, c3.case_context(None, line), self.snap)
-        self.assertEqual((out["required_evidence_ok"], out["numeric_ok"]), (None, True))
+        for dataset in ("real_dev", "real_sealed"):
+            with self.subTest(dataset=dataset):
+                line = self.line_for(report, dataset=dataset, required_evidence_ok=True)
+                out = c3.result_line(line, report, scored(self.rows, report), None, c3.case_context(None, line),
+                                     self.snap)
+                self.assertEqual((out["required_evidence_ok"], out["numeric_ok"]), (None, True))
 
     def test_run_keeps_batch_order(self):
         reports = list(self.reports.values())

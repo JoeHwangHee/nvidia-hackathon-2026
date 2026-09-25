@@ -60,12 +60,17 @@
   만든다 → P1 → 단위 P2 → P2 출력을 outputs/detect-{시각}/policy_case_build-{시각}.json에 쓰고 그 상대경로를 한 줄 적는다.
   metric 객체의 value(표시 자릿수로 반올림한 값)는 P1에 넘기지 않는다. 경계에서 발동 여부가 뒤집히기 때문이다(DT2 결정 ②,
   MT1 결정 ②).
-- 출처 종류(source_kind)는 호출자가 아니라 스냅샷 메타에서 읽는다(MT1 결정 ⑭의 AS1 항목). 이 판은 합성 스냅샷
-  (controlled)만 탐지한다. 그 밖(실자료 real)은 지표를 계산하거나 K3로 값을 읽기 전에 거부하고 1로 끝난다. 실자료는 분할
-  기록의 정본 위치가 계획 경로 표에 올라 사용자 승인을 받은 뒤, AS1의 두 번째 PR이 지표·P1 앞에서 real_dev 계열로 좁혀
-  잇는다(병렬 개발 규칙 §7.2의 5). 새 CLI 옵션은 두지 않는다.
-- 계열은 수집 설정의 HS6 × 상대국이다(비교국 표의 계획 밖 국가는 대상이 아니다). 비교월 t는 기준월 t−12도 스냅샷 기간
-  안인 달만이다. 지표 입력은 계열마다 두 달(t−12, t)씩 넘긴다.
+- 출처 종류(source_kind)는 호출자가 아니라 스냅샷 메타에서 읽는다(MT1 결정 ⑭의 AS1 항목). 허용 목록은 합성
+  (controlled)과 실자료(real)다. 그 밖의 값은 지표를 계산하거나 K3로 값을 읽기 전에 거부하고 1로 끝난다.
+- 실자료(real)는 분할 기록(REAL_SPLIT_FILES: 스냅샷 ID → 정본 파일. 지금은 kcs_202201_202412_v2 →
+  data/reference/real_split_kcs_202201_202412_v2.json 하나, 2026-09-25 사용자 결정 8)을 읽어 real_dev 계열만 남긴 뒤에
+  K3로 값을 읽고 지표(X1·X2)와 신호 발동(P1)을 부른다(병렬 개발 규칙 §7.2의 5, MT1 결정 ⑭). real_sealed 계열의 관측 값은
+  읽지 않는다. 단위 P2에는 dataset=real_dev와 분할 기록 전체의 배정(series_assignment, [{hs6, partner, dataset}])을 넘긴다.
+  P2의 묶음 제한은 마지막 방어선이다. 묶음은 real_dev로 고정이고 새 CLI 옵션은 두지 않는다. 대응표에 없는 실자료
+  스냅샷(v1 등)이나, 분할 기록이 없거나 모양이 틀리거나 스냅샷의 계열(수집 설정의 HS6 × 상대국)과 맞지 않으면 값을 읽기
+  전에 1로 끝난다(SplitError). 결정 기록 model-decision-as1-real-dev.
+- 계열은 수집 설정의 HS6 × 상대국이다(비교국 표의 계획 밖 국가는 대상이 아니다). 실자료는 그 가운데 real_dev 계열이다.
+  비교월 t는 기준월 t−12도 스냅샷 기간 안인 달만이다. 지표 입력은 계열마다 두 달(t−12, t)씩 넘긴다.
 - 어댑터(K3 월 값 → 지표 단위의 역할별 입력 행, DT2 결정 ①): 값이 있는 달(OBSERVED)은 행 하나, 무거래 확정 달
   (CONFIRMED_NO_TRADE)은 V·Q 칸이 빈 행 하나(근거 ID는 K3가 준 상태 행 전부), 빠진 달은 K3 missingness 항목마다 상태 행
   하나(근거 ID 하나)다. 전체국가(ALL) 분모는 K3가 중복을 뺀(행 규칙 6) 뒤 고른 HS10 행의 근거 ID를 K3 resolve로 풀어 HS10
@@ -73,9 +78,12 @@
 - P1 입력 행에는 X1의 r_U 입력(V_0·Q_0·V_1·Q_1)에서 부모 HS6 행의 금액·중량을 옮긴다(네 값이 모두 정수일 때). 정책의
   min_amount·min_weight가 있을 때 P1이 읽는다.
 - 출력은 P2 출력 그대로 한 파일이다({snapshot_id, dataset, policy_version, cases, data_quality}. 합성 스냅샷은 dataset이
-  null). 도메인명은 그 출력을 만든 단위 P2의 policy_case_build다(N4·N6). P1 전체 발동표와 metric 객체는 쓰지 않는다.
+  null, 실자료는 real_dev). 도메인명은 그 출력을 만든 단위 P2의 policy_case_build다(N4·N6). P1 전체 발동표와 metric 객체는
+  쓰지 않는다. 탐지 코드의 커밋(code_version)은 출력에 넣지 않는다(자료 계약 §8의 code_version은 사례 실행 기록의 키이고,
+  N6은 도메인명 하나에 파일 하나다. 실자료 사례 목록의 code_version은 로드맵 DT7이 결정 기록에 적는다).
 - 종료 코드: 0 성공(사례가 없어도), 1 정책을 읽지 못함(PolicyError, 스냅샷을 열지 않는다)·스냅샷을 열지 못했거나 행 규칙에
-  맞지 않음(SnapshotError)·실자료 스냅샷 거부·단위의 입력 오류(예상 밖 예외), 4 조립체 출력이 기대한 모양이 아님
+  맞지 않음(SnapshotError)·허용 목록 밖 출처 종류·분할 기록 오류(SplitError)·단위의 입력 오류(예상 밖 예외), 4 조립체 출력이
+  기대한 모양이 아님
   (WiringError). 오류 문장에는 받은 값(스냅샷 ID·정책 이름)과 스냅샷 안의 값을 넣지 않고 예외 이름만 적는다(N13, MT5 결정 ⑧).
 - 쓰지 않는 공통 옵션 --mode는 요청에 남지만 단위에 넘기지 않는다.
 
@@ -317,11 +325,66 @@ def _snapshot_verify(request: args.Request) -> int:
 # ------------------------------------------------------------------------------ detect(조립체 2, 조립 작업 AS1)
 DETECT_RUN_NAME = "detect"  # 실행 이름(N5: 명령 이름의 하이픈을 밑줄로 바꾼 것)
 DETECT_DOMAIN = "policy_case_build"  # 출력을 만드는 단위 P2의 도메인명(docs/plan/UNITS.md §3.4, N4·N6)
-DETECT_SOURCE_KINDS = ("controlled",)  # 이 판에서 탐지하는 출처 종류(허용 목록). 실자료는 AS1의 두 번째 PR에서 잇는다
+DETECT_SOURCE_KINDS = ("controlled", "real")  # 탐지하는 출처 종류(허용 목록). real은 real_dev 계열로 좁힌다
+DETECT_DATASET = "real_dev"  # 실자료 detect의 묶음(고정. CLI 옵션을 두지 않는다, MT1 결정 ⑭)
+# 실자료 스냅샷 ID → 분할 기록 정본 파일(저장소 루트 기준). 2026-09-25(금) 사용자 결정 8. 단위 V5 출력과 바이트가 같다.
+REAL_SPLIT_FILES = {"kcs_202201_202412_v2": "data/reference/real_split_kcs_202201_202412_v2.json"}
+REAL_SPLIT_KEYS = ("snapshot_id", "seed", "ratio", "method", "real_dev", "real_sealed")  # 단위 V5 출력 키(DT4 ①)
 CASE_BUILD_KEYS = frozenset({"snapshot_id", "dataset", "policy_version", "cases", "data_quality"})  # 단위 P2 출력 키
-DETECT_REFUSAL = ("오류: tradesentry detect는 지금 합성 스냅샷(source_kind가 controlled)만 탐지한다. 이 스냅샷은 합성 "
-                  "스냅샷이 아니어서 지표를 계산하지 않고 끝냈다. 실자료 스냅샷은 분할 기록의 정본 위치가 사용자 승인을 받은 "
-                  "뒤, 조립 작업 AS1의 두 번째 PR이 real_dev 계열로 좁혀 잇는다.")
+DETECT_REFUSAL = ("오류: tradesentry detect는 합성 스냅샷(source_kind가 controlled)과 실자료 스냅샷(real)만 탐지한다. 이 "
+                  "스냅샷의 출처 종류는 둘 다 아니어서 지표를 계산하지 않고 끝냈다.")
+DETECT_SPLIT_REFUSAL = ("오류: tradesentry detect가 이 실자료 스냅샷의 분할 기록을 읽지 못했거나, 기록이 스냅샷의 계열과 맞지 "
+                        "않는다(SplitError). 실자료는 data/reference/ 아래 분할 기록 정본 파일의 real_dev 계열로만 탐지하므로 "
+                        "지표를 계산하지 않고 끝냈다.")
+
+
+class SplitError(Exception):
+    """실자료 분할 기록을 쓸 수 없다(대응표에 없는 스냅샷, 파일 없음, 모양이 틀림, 스냅샷 계열과 다름). 문장에 값을 넣지 않는다."""
+
+
+def load_real_split(snap) -> dict[tuple[str, str], str]:
+    """실자료 스냅샷의 분할 기록을 읽어 계열 (HS6, 상대국) → 묶음(real_dev/real_sealed) 표를 돌려준다.
+
+    K3로 관측 값을 읽기 전에 부른다. 읽는 것은 분할 기록 파일과, K3가 열 때 읽은 메타(수집 설정의 HS6·상대국)뿐이다.
+    기록의 키는 단위 V5 출력 키 여섯 개, snapshot_id는 이 스냅샷, 두 묶음은 겹치지 않고 합이 스냅샷의 계열 전체와 같아야
+    한다. 하나라도 어긋나면 SplitError다.
+    """
+    from tradesentry.contract import types
+    from tradesentry.dal import query
+    from tradesentry.policy import trigger
+
+    relative = REAL_SPLIT_FILES.get(snap.snapshot_id)
+    if relative is None:
+        raise SplitError("이 실자료 스냅샷에는 분할 기록 정본 파일이 없다")
+    try:
+        record = json.loads((query.REPO_ROOT / relative).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise SplitError(f"분할 기록 파일을 읽지 못했다({type(exc).__name__})") from None
+    if not isinstance(record, dict) or tuple(record) != REAL_SPLIT_KEYS or record["snapshot_id"] != snap.snapshot_id:
+        raise SplitError("분할 기록의 키가 단위 V5 출력 키가 아니거나 snapshot_id가 이 스냅샷이 아니다")
+    table: dict[tuple[str, str], str] = {}
+    for dataset in (DETECT_DATASET, "real_sealed"):
+        items = record[dataset]
+        if not isinstance(items, list) or not items:
+            raise SplitError(f"분할 기록의 {dataset}가 비어 있지 않은 목록이 아니다")
+        for item in items:
+            if not isinstance(item, dict) or set(item) != {"hs6", "partner"} \
+                    or not isinstance(item["hs6"], str) or not trigger.HS6_RE.match(item["hs6"]) \
+                    or not isinstance(item["partner"], str) or not trigger.PARTNER_RE.match(item["partner"]) \
+                    or item["partner"] == types.ALL_PARTNER:
+                raise SplitError(f"분할 기록의 {dataset} 항목이 hs6·partner 객체가 아니다")
+            key = (item["hs6"], item["partner"])
+            if key in table:
+                raise SplitError("분할 기록에 같은 계열이 두 번 있다")
+            table[key] = dataset
+    if set(table) != set(detect_series(snap)):
+        raise SplitError("분할 기록의 계열이 스냅샷의 계열(수집 설정의 HS6 × 상대국)과 다르다")
+    return table
+
+
+def series_assignment(table: dict[tuple[str, str], str]) -> list[dict]:
+    """분할 표 → 단위 P2의 series_assignment([{hs6, partner, dataset}], 계열 순)."""
+    return [{"hs6": hs6, "partner": partner, "dataset": table[(hs6, partner)]} for hs6, partner in sorted(table)]
 
 
 def detect_pairs(months: tuple[str, ...] | list[str]) -> list[tuple[str, str]]:
@@ -332,9 +395,15 @@ def detect_pairs(months: tuple[str, ...] | list[str]) -> list[tuple[str, str]]:
     return [(month, trigger.baseline_of(month)) for month in months if trigger.baseline_of(month) in present]
 
 
-def detect_series(snap) -> list[tuple[str, str]]:
-    """탐지할 계열 (HS6, 상대국): 수집 설정의 HS6 × 상대국. 비교국 표가 가리키는 계획 밖 국가는 넣지 않는다."""
-    return [(hs6, partner) for hs6 in snap.hs6_codes for partner in snap.partners]
+def detect_series(snap, split: dict[tuple[str, str], str] | None = None) -> list[tuple[str, str]]:
+    """탐지할 계열 (HS6, 상대국): 수집 설정의 HS6 × 상대국. 비교국 표가 가리키는 계획 밖 국가는 넣지 않는다.
+
+    split(load_real_split의 표)을 주면 그 가운데 real_dev 계열만 남긴다. 관측 값은 읽지 않는다(메타만 쓴다).
+    """
+    series = [(hs6, partner) for hs6 in snap.hs6_codes for partner in snap.partners]
+    if split is None:
+        return series
+    return [key for key in series if split.get(key) == DETECT_DATASET]
 
 
 def _status_rows(value: dict) -> list[dict]:
@@ -416,7 +485,7 @@ def detection_row(snapshot_id: str, hs6: str, partner: str, month: str, baseline
 
     r_U·d_s는 X1·X2의 exact_value(반올림 전 정확값)다. 부모 HS6 행의 금액·중량(P1이 정책의 min_amount·min_weight에 쓴다)은
     X1 r_U 입력의 V_0·Q_0·V_1·Q_1에서 옮긴다(네 값이 모두 정수일 때만. 값이 없으면 r_U가 null이라 P1이 읽지 않는다).
-    detect(모든 계열)와 run-case(사례의 계열 하나, 조립 작업 AS2)가 같이 쓴다.
+    detect(탐지 계열 전체. 실자료는 real_dev 계열)와 run-case(사례의 계열 하나, 조립 작업 AS2)가 같이 쓴다.
     """
     from tradesentry.metrics import share, unit_value
 
@@ -433,8 +502,9 @@ def detection_row(snapshot_id: str, hs6: str, partner: str, month: str, baseline
     return row
 
 
-def detection_rows(snap) -> list[dict]:
-    """계열·비교월마다 단위 X1·X2를 불러 단위 P1의 입력 행을 만든다(행 하나는 detection_row).
+def detection_rows(snap, series: list[tuple[str, str]] | None = None) -> list[dict]:
+    """계열·비교월마다 단위 X1·X2를 불러 단위 P1의 입력 행을 만든다(행 하나는 detection_row). series가 없으면
+    detect_series(snap) 전체다. 실자료는 _detect가 real_dev로 좁힌 계열을 넘긴다(관측 값을 읽기 전에 좁힌다).
 
     K3는 계열마다 parent_series, HS6마다 world_series를 한 번씩 부르고, ALL 행은 HS6·달마다 한 번만 다시 만든다.
     """
@@ -444,7 +514,7 @@ def detection_rows(snap) -> list[dict]:
     months = sorted({month for pair in pairs for month in pair})
     worlds: dict[str, dict[str, list[dict]]] = {}
     rows: list[dict] = []
-    for hs6, partner in detect_series(snap):
+    for hs6, partner in (detect_series(snap) if series is None else series):
         if hs6 not in worlds:
             worlds[hs6] = {value["month"]: world_rows(snap, value) for value in snap.world_series(hs6, months)}
         world = worlds[hs6]
@@ -474,9 +544,18 @@ def _detect(request: args.Request) -> int:
             if snap.source_kind not in DETECT_SOURCE_KINDS:  # 값을 읽기 전에 거부한다(위 "탐지 명령 detect")
                 _report(DETECT_REFUSAL)
                 return EXIT_FAILED
-            detection = trigger.run({"policy": policy, "rows": detection_rows(snap)})
-            result = case_build.run({"snapshot_id": snap.snapshot_id, "source_kind": snap.source_kind,
-                                     "detection": detection})
+            case_input: dict[str, object] = {"snapshot_id": snap.snapshot_id, "source_kind": snap.source_kind}
+            split = None
+            if snap.source_kind == "real":  # 값을 읽기 전에 real_dev 계열로 좁힌다(병렬 개발 규칙 §7.2의 5)
+                try:
+                    split = load_real_split(snap)
+                except SplitError:
+                    _report(DETECT_SPLIT_REFUSAL)
+                    return EXIT_FAILED
+                case_input.update(dataset=DETECT_DATASET, series_assignment=series_assignment(split))
+            rows = detection_rows(snap, detect_series(snap, split))
+            detection = trigger.run({"policy": policy, "rows": rows})
+            result = case_build.run({**case_input, "detection": detection})
     except query.SnapshotError:
         _report("오류: tradesentry detect가 스냅샷을 열지 못했거나 스냅샷 자료가 행 규칙에 맞지 않는다(SnapshotError). "
                 "--snapshot의 정본 빌드(data/snapshots/ 아래 snapshot_build.sqlite)를 확인한다.")
