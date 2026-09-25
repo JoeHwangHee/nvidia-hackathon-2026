@@ -79,15 +79,17 @@ class Dev20ShapeBatchTest(TempOutputs, unittest.TestCase):
 
     def test_one_line_per_planned_pair_in_plan_order(self):
         self.assertEqual(self.result.run_id, "evaluate-260925100000")
-        self.assertEqual(len(self.lines), 60)
+        self.assertEqual(len(self.lines), 63)  # 계획 60 + 인프라 실패 재실행 3(룰북 B5)
         self.assertEqual(self.lines, json.loads(json.dumps(self.result.lines), parse_float=Decimal))
         order = batch_run.plan_order([c["case_id"] for c in hf.dev20_cases()], list(hf.DEV20_MODES), "dev-order-v1")
-        self.assertEqual([(line["case_id"], line["mode"]) for line in self.lines], order)
-        self.assertEqual([(c.case["case_id"], c.mode) for c in self.runner.calls], order)
+        reruns = [pair for pair in order if pair[0] == "850431-XA-202401"]  # 첫 실행 순서 그대로
+        self.assertEqual([(line["case_id"], line["mode"]) for line in self.lines], order + reruns)
+        self.assertEqual([(c.case["case_id"], c.mode) for c in self.runner.calls], order + reruns)
+        self.assertEqual((self.result.rerun_targets, self.result.reruns), (3, 3))
 
     def test_run_ids_unique_and_case_dirs_are_siblings(self):
         run_ids = [line["run_id"] for line in self.lines]
-        self.assertEqual(len(set(run_ids)), 60)
+        self.assertEqual(len(set(run_ids)), 63)  # 재실행도 새 실행명
         self.assertTrue(all(r.startswith("run_case-") for r in run_ids))
         self.assertTrue(all((self.parent / r).is_dir() for r in run_ids))  # 채점기가 <run_dir>.parent / run_id를 연다
         self.assertEqual(sorted(p.name for p in self.parent.iterdir()), sorted(run_ids + [self.result.run_id]))
@@ -99,8 +101,8 @@ class Dev20ShapeBatchTest(TempOutputs, unittest.TestCase):
         by_status: dict[str, int] = {}
         for line in self.lines:
             by_status[line["execution_status"]] = by_status.get(line["execution_status"], 0) + 1
-        # infra 사례 3줄(FAILED 5xx) + raise 3 + invalid 3 + mismatch 3 = FAILED 12, budget 1
-        self.assertEqual(by_status, {"COMPLETED": 47, "FAILED": 12, "BUDGET_EXCEEDED": 1})
+        # infra 사례 3줄(FAILED 5xx)과 그 재실행 3줄(가짜는 또 5xx) + raise 3 + invalid 3 + mismatch 3 = FAILED 15, budget 1
+        self.assertEqual(by_status, {"COMPLETED": 47, "FAILED": 15, "BUDGET_EXCEEDED": 1})
         harness = [line for line in self.lines if line["errors"] and line["errors"][0]["detail"].startswith("harness:")]
         self.assertEqual(sorted({line["errors"][0]["detail"] for line in harness}),
                          ["harness:RuntimeError", "harness:invalid_record", "harness:record_mismatch"])
@@ -123,13 +125,57 @@ class Dev20ShapeBatchTest(TempOutputs, unittest.TestCase):
         self.assertEqual({line["dataset"] for line in self.lines}, {"dev20"})
         self.assertEqual({line["snapshot_id"] for line in self.lines}, {"dev20"})
         pairs = [(line["case_id"], line["mode"]) for line in self.lines]
-        self.assertEqual(len(set(pairs)), len(pairs))
         planned = {(c["case_id"], m) for c in hf.dev20_cases() for m in hf.DEV20_MODES}
         self.assertEqual(set(pairs), planned)
+        # 조합마다 한 줄, 또는 채점기 재실행 모양(실행명 시각 순으로 FAILED 한 줄 뒤 재실행 한 줄)
+        for pair in planned:
+            rows = sorted((line for line in self.lines if (line["case_id"], line["mode"]) == pair),
+                          key=lambda line: line["run_id"])
+            self.assertLessEqual(len(rows), 2)
+            if len(rows) == 2:
+                self.assertEqual(rows[0]["execution_status"], "FAILED")
+                self.assertTrue(cause_codes.infra_rerun_eligible(rows[0]["execution_status"], rows[0]["errors"]))
 
     def test_batch_file_is_exclusive(self):
         with self.assertRaises(FileExistsError):
             open(self.result.batch_file, "x").close()
+
+
+class InfraRerunTest(TempOutputs, unittest.TestCase):
+    """룰북 B5: 원인이 PROVIDER_HTTP_5XX·PROVIDER_CONNECTION뿐인 FAILED만 첫 실행이 끝난 뒤 한 번 다시 돈다."""
+
+    def test_only_infra_failures_rerun_once_after_the_first_pass(self):
+        cases = hf.dev20_cases(4)
+        seen: dict = {}
+        plan = {cases[0]["case_id"]: "infra", cases[1]["case_id"]: "budget", cases[2]["case_id"]: "raise"}
+        base = hf.FakeRunner(self.clock, plan)
+
+        def runner(call):
+            key = (call.case["case_id"], call.mode)
+            seen[key] = seen.get(key, 0) + 1
+            if key == (cases[0]["case_id"], "full") and seen[key] == 2:  # 재실행은 성공한다
+                return hf.completed_record(call)
+            if key[0] == cases[3]["case_id"] and key[1] == "agent":  # 연결 실패도 재실행 대상이다
+                return hf.failed_record(call, cause_codes.PROVIDER_CONNECTION)
+            return base(call)
+
+        result = self.execute(runner, spec(cases))
+        lines = hf.read_jsonl(result.batch_file)
+        self.assertEqual((result.rerun_targets, result.reruns), (4, 4))  # infra 3모드 + 연결 실패 1
+        first, extra = lines[:12], lines[12:]
+        self.assertEqual({(x["case_id"], x["mode"]) for x in extra},
+                         {(cases[0]["case_id"], m) for m in hf.DEV20_MODES} | {(cases[3]["case_id"], "agent")})
+        order = [(x["case_id"], x["mode"]) for x in first]
+        self.assertEqual([(x["case_id"], x["mode"]) for x in extra],
+                         [pair for pair in order if pair in {(x["case_id"], x["mode"]) for x in extra}])
+        self.assertEqual(max(seen.values()), 2)  # 재실행의 실패는 다시 돌리지 않는다
+        rerun_full = [x for x in extra if x["mode"] == "full" and x["case_id"] == cases[0]["case_id"]]
+        self.assertEqual(rerun_full[0]["execution_status"], "COMPLETED")
+        self.assertTrue(all(x["run_id"] > y["run_id"] for x in extra for y in first))  # 새 실행명, 더 늦은 시각
+
+    def test_no_targets_means_zero_reruns(self):
+        result = self.execute(hf.FakeRunner(self.clock), spec(hf.dev20_cases(2)))
+        self.assertEqual((result.rerun_targets, result.reruns, len(result.lines)), (0, 0, 6))
 
 
 class NameCollisionTest(TempOutputs, unittest.TestCase):

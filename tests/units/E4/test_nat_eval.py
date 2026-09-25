@@ -65,17 +65,17 @@ class BatchSummaryTest(unittest.TestCase):
 
     def test_dev20_shape_summary(self):
         summary = nat_eval.summarize_batch(self.result.run_dir)
-        self.assertEqual(summary["runs"], 60)
-        # 프로파일: checklist 밖 모드의 ok·infra 사례(raise 사례 2줄은 프로파일을 쓰지 않았다)
-        self.assertEqual(summary["runs_with_profile"], 38)
-        self.assertEqual(summary["profile_files_complete"], 38)
-        self.assertEqual((summary["runs_with_nat_trace"], summary["runs_workflow_end"]), (38, 38))
+        self.assertEqual(summary["runs"], 63)  # 계획 60 + infra 사례의 인프라 실패 재실행 3(E1, 룰북 B5)
+        # 프로파일: checklist 밖 모드의 ok·infra 사례와 그 재실행 2(raise 사례 2줄은 프로파일을 쓰지 않았다)
+        self.assertEqual(summary["runs_with_profile"], 40)
+        self.assertEqual(summary["profile_files_complete"], 40)
+        self.assertEqual((summary["runs_with_nat_trace"], summary["runs_workflow_end"]), (40, 40))
         self.assertEqual(list(summary["by_mode"]), ["checklist", "agent", "full"])
         full = summary["by_mode"]["full"]
-        self.assertEqual((full["runs"], full["runs_with_profile"]), (20, 19))
+        self.assertEqual((full["runs"], full["runs_with_profile"]), (21, 20))
         self.assertEqual(full["nat_llm_calls"], {"median": 2, "min": 2, "max": 2})
         self.assertEqual(full["nat_llm_ms"], {"median": 3600, "min": 3600, "max": 3600})
-        self.assertEqual(full["stage_spans"], {"basic": 19, "critic": 19, "revision": 0, "final": 0, "other": 0})
+        self.assertEqual(full["stage_spans"], {"basic": 20, "critic": 20, "revision": 0, "final": 0, "other": 0})
         self.assertEqual(summary["by_mode"]["checklist"]["model_requests"], {"median": 0, "min": 0, "max": 0})
         self.assertEqual(summary["by_mode"]["agent"]["wall_ms"]["max"], 40000)
         # 비용 칸은 COMPLETED 줄만 센다(하네스 실패 줄의 0이 섞이지 않는다). full: infra 1줄·raise 1줄은 빠진다

@@ -146,6 +146,10 @@ class EvaluateToScorerTest(NoNetworkMixin, unittest.TestCase):
         self.assertEqual(summary["runs"], 60)
         self.assertEqual(summary["runs_with_profile"], 60)  # NAT 폴더 이름이 E4와 맞다(MT7 "AS3에 넘길 것" 5)
         self.assertEqual(summary["runs_with_nat_trace"], 60)
+        self.assertEqual(summary["profile_files_complete"], 60)  # 받은 뒤 확인(NAT 파일 5개)과 같은 기준
+        # 룰북 B5: 가짜 전송은 HTTP 400(재실행 대상 아님)이라 재실행 0건. 규칙을 적용했다는 기록은 남는다
+        self.assertEqual(doc["prescoring_checks"]["final_status"],
+                         "참: 예정 실행 60건 가운데 줄 없는 조합 0건, 인프라 실패 재실행(룰북 B5) 대상 0건·재실행 0건")
         self.assertEqual(doc["planned_modes"], ["checklist", "agent", "full"])
         self.assertEqual(len(doc["planned_cases"]), 20)
 

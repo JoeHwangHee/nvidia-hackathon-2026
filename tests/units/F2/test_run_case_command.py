@@ -443,7 +443,7 @@ class RefusalTest(RunCaseBase):
                     stack.enter_context(spy)
                 code, out, err = call(argv("850450-CN-202401", "checklist", snapshot_id="as1_detect_world_gap"))
         self.assertEqual((code, out, reads), (1, "", []))
-        self.assertIn("합성 스냅샷(source_kind가 controlled)만 조사한다", err)
+        self.assertEqual(err, dispatch.RUN_CASE_SPLIT_REFUSAL + "\n")  # 분할 기록이 없는 실자료(AS3 두 번째 PR)
 
     def test_unlisted_synthetic_snapshot_has_no_dataset(self):
         code, _, err = call(argv(rf.UNIT_ONLY_PROBLEM, "checklist", snapshot_id=rf.TWO_WAY_ID))
