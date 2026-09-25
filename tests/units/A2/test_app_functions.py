@@ -78,6 +78,7 @@ class RunDirListingTest(unittest.TestCase):
             (self.outputs / name).mkdir(parents=True)
         (self.outputs / "sealed" / "run_case-260926090000").mkdir()
         (self.outputs / "run_case-260926099999.txt").write_text("", encoding="utf-8")  # 파일은 폴더가 아니다
+        (self.outputs / "run_case-260926071400").symlink_to(self.outputs / "run_case-260926071424")  # 심볼릭 링크는 뺀다
 
     def test_lists_only_top_level_run_case_dirs_newest_first(self):
         self.assertEqual(app.list_run_dirs(self.outputs),

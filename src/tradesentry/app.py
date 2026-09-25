@@ -24,14 +24,14 @@
 쓰지 않는다(폴더는 outputs/부터의 상대 경로만).
 
 "사례 실행" 패널(오케스트레이터 추가 지시): CLI와 같은 진입점(python -m tradesentry.cli run-case …, 하위 프로세스)으로
-사례 1건만 돌린다. evaluate·detect·봉인 묶음은 돌리지 않는다. 앱은 .env를 읽지 않는다. 실제 NIM 실행은 스트림릿 프로세스
+사례 1건만 돌린다. evaluate·detect·봉인 묶음은 돌리지 않는다. 앱은 .env를 읽지 않는다. 실제 NIM 실행은 Streamlit 프로세스
 환경에 NVIDIA_API_KEY가 있을 때만 되고, 없으면 재생 실행(--replay, eval/dev/smoke/{case_id}.json이 있을 때)만 된다.
 키는 있는지 여부만 보고 값은 어디에도 쓰지 않는다. 실행 폴더는 CLI와 똑같이 outputs/run_case-{시각}/에 남는다(자료 계약
 §10.3 N5·N6). 화면에서 시작한 실행과 재생 실행은 점수표 근거가 아니다.
 
 구성: 화면 논리는 순수 함수(폴더 나열, 실행 폴더 읽기, 조회 이유·도구·주장·타임라인·차트 자료 만들기, 근거 ID 풀기,
 실행 인자 조립)로 나눠 streamlit 없이 시험한다(tests/units/A2/). streamlit은 화면 함수 안에서만 import한다(경계 시험과
-기본 환경 시험이 streamlit 없이 돈다). 진입 함수 run(inp)은 화면 모형(순수 자료)을 돌려주고, 스트림릿 진입점 main()이
+기본 환경 시험이 streamlit 없이 돈다). 진입 함수 run(inp)은 화면 모형(순수 자료)을 돌려주고, Streamlit 진입점 main()이
 그 모형을 그린다. 수는 int와 Decimal만 쓰고, float는 차트를 그리는 순간에만 만든다.
 """
 import csv
@@ -111,14 +111,14 @@ _KEY_SHAPE_RE = re.compile("nv" + r"api-[A-Za-z0-9_\-]{8,}")  # 키 모양(방�
 
 
 def list_run_dirs(outputs_root: Path) -> list[str]:
-    """outputs/ 바로 아래 run_case-{시각} 실행 폴더 이름(새 것부터). outputs/sealed/와 .download-*·.quarantine-*는 빼고
-    그 안으로 내려가지 않는다."""
+    """outputs/ 바로 아래 run_case-{시각} 실행 폴더 이름(새 것부터). outputs/sealed/와 .download-*·.quarantine-*, 심볼릭 링크는
+    빼고 그 안으로 내려가지 않는다."""
     if not outputs_root.is_dir():
         return []
     names = []
     for entry in outputs_root.iterdir():
         name = entry.name
-        if name == SEALED_NAME or name.startswith(EXCLUDED_PREFIXES) or not entry.is_dir():
+        if name == SEALED_NAME or name.startswith(EXCLUDED_PREFIXES) or entry.is_symlink() or not entry.is_dir():
             continue
         if RUN_DIR_RE.fullmatch(name):
             names.append(name)
@@ -768,7 +768,7 @@ def _render_run_panel(st, repo_root: Path, outputs_root: Path) -> None:
         case_id = st.text_input("사례 식별자({hs6}-{partner}-{month})", placeholder="예: 850432-CN-202301")
     replay_path = replay_file_for(case_id, repo_root) if case_id else None
     use_replay = st.checkbox(f"재생 파일 사용(키 없이 돈다{'' if replay_path else '. 이 사례의 재생 파일이 없다'})",
-                             value=not has_key, disabled=replay_path is None) and replay_path is not None
+                             value=replay_path is not None, disabled=replay_path is None) and replay_path is not None
     can_run = bool(snapshot_id and case_id) and (use_replay or has_key)
     if not can_run and snapshot_id and case_id and not has_key:
         st.caption("키가 없고 재생 파일도 없어 이 사례는 지금 돌릴 수 없다.")
@@ -934,7 +934,7 @@ def _render_evidence(st, model: dict) -> None:
 
 
 def main() -> None:
-    """스트림릿 진입점: uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py"""
+    """Streamlit 진입점: uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py --client.showErrorDetails=false"""
     import streamlit as st
 
     st.set_page_config(page_title="TradeSentry 사례 보기", layout="wide")
@@ -963,8 +963,8 @@ def main() -> None:
         return
     try:
         model = screen_model(outputs_root / target, repo_root=repo_root)
-    except (OSError, ValueError) as exc:
-        st.error(f"실행 폴더를 읽지 못했다({type(exc).__name__}). {OUTPUTS_NAME}/{target}의 기록 파일을 확인한다.")
+    except Exception as exc:  # noqa: BLE001 — 깨진 기록의 어떤 예외도 브라우저에 traceback(로컬 경로)을 보이지 않는다(N13)
+        st.error(f"기록을 읽지 못했다({type(exc).__name__}). {OUTPUTS_NAME}/{target}의 기록 파일을 확인한다.")
         return
     last = st.session_state.get("last_run") or {}
     if (last.get("new_run_dirs") or [None])[0] == target:

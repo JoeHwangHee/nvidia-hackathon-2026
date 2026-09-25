@@ -105,13 +105,13 @@ OpenShell 샌드박스 안 실행(이미지 스테이징, 정책 적용, 위반 
 
 ### 화면(선택)
 
-Streamlit(파이썬 웹 화면 라이브러리) 화면 1개 "사례 보기": 실행 폴더 `outputs/run_case-{시각}/` 하나를 골라 사례별 조회 이유(발동 지표와 정책 기준값), 기준월·비교월의 kg당 단가·점유율 차트, 실제 실행한 도구(trace), 반대 근거와 보고서(typed claim, 코드가 덧붙인 주장 표시), 판정 전후 타임라인(조사 전 경보 → 최종 판정), 원본 행 링크(근거 ID → 스냅샷 행)를 보인다. 사이드바의 "사례 실행" 패널은 CLI와 같은 진입점으로 사례 1건을 돌리고 결과 폴더를 바로 띄운다(키가 없으면 재생 파일이 있는 합성 사례의 재생 실행만 된다). 화면은 기록을 보여 줄 뿐 판정·지표를 다시 계산하지 않고, 화면에서 시작한 실행과 재생 실행은 점수표 근거가 아니다.
+Streamlit(파이썬 웹 화면 라이브러리) 화면 1개 "사례 보기": 실행 폴더 `outputs/run_case-{시각}/` 하나를 골라 사례별 조회 이유(발동 지표와 정책 기준값), 기준월·비교월의 kg당 단가·점유율 차트, 실제 실행한 도구(trace, 실행 추적 기록), 반대 근거와 보고서(typed claim, 코드가 덧붙인 주장 표시), 판정 전후 타임라인(조사 전 경보 → 최종 판정), 원본 행 링크(근거 ID → 스냅샷 행)를 보인다. 사이드바의 "사례 실행" 패널은 CLI와 같은 진입점으로 사례 1건을 돌리고 결과 폴더를 바로 띄운다(키가 없으면 재생 파일이 있는 합성 사례의 재생 실행만 된다). 화면은 기록을 보여 줄 뿐 판정·지표를 다시 계산하지 않고, 화면에서 시작한 실행과 재생 실행은 점수표 근거가 아니다.
 
 ```bash
-uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py   # streamlit은 lock 밖(--with)에서 받는다. 브라우저 http://localhost:8501
+uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py --client.showErrorDetails=false   # streamlit은 lock 밖(--with)에서 받는다. 브라우저 http://localhost:8501
 ```
 
-앱은 `.env`를 읽지 않는다. 실제 NIM 실행은 스트림릿 프로세스 환경에 `NVIDIA_API_KEY`가 있을 때만 된다(예: `python3 spikes/x1/with_nvidia_key.py --env-file .env -- uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py`). `outputs/sealed/`(봉인 묶음 출력)는 나열·표시하지 않는다. 정본: `docs/operations.md`("화면 1 실행"), 결정 기록 `docs/tracking/decisions/20260926-0732-model-decision-ui-screen-1.md`.
+앱은 `.env`를 읽지 않는다. 실제 NIM 실행은 Streamlit(파이썬 웹 화면 라이브러리) 프로세스 환경에 `NVIDIA_API_KEY`가 있을 때만 된다(예: `python3 spikes/x1/with_nvidia_key.py --env-file .env -- uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py --client.showErrorDetails=false`). `outputs/sealed/`(봉인 묶음 출력)는 나열·표시하지 않는다. 정본: `docs/operations.md`("화면 1 실행"), 결정 기록 `docs/tracking/decisions/20260926-0732-model-decision-ui-screen-1.md`.
 
 ## 6. 평가 방법과 결과 위치
 
