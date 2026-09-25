@@ -98,6 +98,7 @@
   - 정본 빌드는 본 작업 폴더의 `data/snapshots/kcs_202201_202412_v2/snapshot_build.sqlite`(DT7 재설치본)를 읽기 전용으로 읽었다.
   - 이 브랜치 코드로 CLI `detect --snapshot kcs_202201_202412_v2 --policy policy_v1`(종료 코드 0)과 입구 `real_dev`(저장소 밖 임시 폴더)를 돌렸다.
   - 두 출력 바이트가 같다: sha256 `0a2ef10daf86451ad4a6b6ee676b2a09e812009a8ce43cdd587e9b4c1dce400b`.
+  - 이 sha256은 DT7 ① 기록(`20260925-0925-data-decision-dt7-real-dev-mvp-selection.md`)에 적힌 `detect` 출력의 sha256과 같다. 그러므로 이 PR 뒤에도 CLI `detect`의 v2 출력은 바이트까지 그대로다.
   - 사례 221건, 데이터 품질 154행. DT7 재설치 기록(`20260925-1231-orchestrator-decision-dt7-reinstall-v2.md`)의 221건과 같다.
 
 ## 검토한 대안
