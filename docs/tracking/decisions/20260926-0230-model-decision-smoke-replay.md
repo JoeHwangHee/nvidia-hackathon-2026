@@ -27,7 +27,7 @@
 
 ② **재생 파일 형식** — JSON 객체 `{"trace": [...], "requests": [], "source": {...}}`. `trace`는 원 실행 trace(단위 L1)의 `model_request`·`model_response`·`model_error` 레코드만 기록 순서대로(레코드 필드 `seq`·`ts`·`run_id`·`event`·`stage`·`data` 그대로. 도구 봉투는 넣지 않는다 — 도구 5개는 재생 때도 합성 픽스처로 실제로 돈다). `requests`는 단위 I8 골든 입력 `{"trace", "requests"}`와 모양을 맞추려 두되 비운다(CLI는 요청을 흐름이 만든다). `source`는 원 실행의 `run_id`, `case_id`, `snapshot_id`, `policy_version`, `mode`, `code_version`, `model_config`(run_start의 설정 버전), `execution_status`, `review_status_final`. 원 실행이 `COMPLETED`가 아니면 재생 파일을 만들지 않는다.
 
-③ **커밋 위치와 이름** — `eval/dev/smoke/{case_id}.json`(합성 픽스처 A `850450-XA-202412`·B `850431-XB-202412`·C `850432-XC-202412`, 정책 `policy_v1`, 모드 `full`). 이 PR에는 A·C 둘을 넣었다. B는 오케스트레이터가 실행 폴더를 주면 같은 도구로 더한다(재생 시험은 폴더의 파일을 모두 돌리므로 파일만 더하면 된다).
+③ **커밋 위치와 이름** — `eval/dev/smoke/{case_id}.json`(합성 픽스처 A `850450-XA-202412`·B `850431-XB-202412`·C `850432-XC-202412`, 정책 `policy_v1`, 모드 `full`). 이 PR에는 A·C 둘을 넣었다. B는 오케스트레이터가 실행 폴더를 주면 같은 도구로 더한다(재생 시험은 폴더의 파일을 모두 돌리므로 파일만 더하면 된다). 후속: 2026-09-26(토) 03:51 실제 NIM 실행 `run_case-260926035100`(B, `full`, COMPLETED·MAINTAIN, code_version 3d1e75f, model-1.7, 모델 오류 0회)의 trace로 `eval/dev/smoke/850431-XB-202412.json`(모델 레코드 8개)을 같은 도구로 만들어 뒤 PR에서 더했다. 키 없는 재생은 종료 코드 0·MAINTAIN이었다. 재생 시험의 "다른 사례" 항목은 첫 재생 파일의 사례와 다른 ID를 고르도록 고쳤다(B 파일이 더해져 정렬 첫 파일이 B가 됐기 때문).
 
 ④ **만드는 도구** — `scripts/make_smoke_replay.py <실행 폴더> <재생 파일 경로>`(`uv run --locked python scripts/make_smoke_replay.py outputs/run_case-{시각} eval/dev/smoke/{case_id}.json`). 만든 파일의 모든 문자열에 로컬 절대 경로 모양(단위 E1 `PATH_SHAPE`)·키 모양(`SECRET_SHAPE`)이 없어야 쓰고, 이미 있는 파일은 덮지 않는다(`xb`).
 
@@ -48,6 +48,6 @@ uv run --locked tradesentry run-case --snapshot controlled_fixture_v0 --policy p
 
 ## 남은 것
 
-- B(`850431-XB-202412`) 재생 파일: 오케스트레이터가 실제 실행 폴더를 주면 ④의 도구로 더한다.
+- B(`850431-XB-202412`) 재생 파일: 오케스트레이터가 실제 실행 폴더를 주면 ④의 도구로 더한다. → 2026-09-26(토) 03:52에 더했다(③의 후속 문장).
 - 재생 파일은 지금 지침·모델 설정(`configs/model/`, model-1.7)이 만드는 요청 본문에 묶여 있다. 지침·요청 구성이 바뀌면 스모크 시험이 해시 불일치로 깨지고, 그때는 실제 NIM 실행으로 재생 파일을 다시 만든다.
 - README(P1)는 별도 문서 PR이 쓴다.

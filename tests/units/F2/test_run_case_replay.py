@@ -187,7 +187,9 @@ class ReplayFailureTest(ReplayBase):
         missing = os.path.relpath(self.tmp / "none.json", ROOT)
         not_json = self.tmp / "bad.json"
         not_json.write_text("{", encoding="utf-8")
-        other_case = dict(self.doc, source=dict(self.doc["source"], case_id="850431-XB-202412"))
+        # 재생 파일의 사례와 다른 사례 ID를 고른다(첫 재생 파일이 어느 사례든 상관없이. B 파일이 더해져 정렬 첫 파일이 B가 됐다)
+        other_id = next(c for c in ("850450-XA-202412", "850431-XB-202412", "850432-XC-202412") if c != self.case_id)
+        other_case = dict(self.doc, source=dict(self.doc["source"], case_id=other_id))
         cases = {
             "없는 파일": (missing, "읽지 못했다"),
             "JSON 아님": (os.path.relpath(not_json, ROOT), "JSON이 아니다"),
