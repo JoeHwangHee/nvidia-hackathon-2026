@@ -1434,7 +1434,7 @@
   "grouping_reason": "합성 묶음은 자료 안 peer_group을 쓴다"
  },
  "meta": {
-  "schema_version": 1,
+  "schema_version": 2,
   "prose_patterns_sha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
   "snapshot_file": "data/snapshots/controlled_fixture_v0/snapshot_build.sqlite",
   "snapshot_file_sha256": "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef"

@@ -46,7 +46,7 @@ import re
 from decimal import Decimal
 from fractions import Fraction
 
-SCHEMA_VERSION = 1  # 자료 계약 버전(인수 조건 1)
+SCHEMA_VERSION = 2  # 자료 계약 버전(인수 조건 1). contract.types.SCHEMA_VERSION과 같게 둔다
 FORMULA_VERSION = "1"  # 자료 계약 §11.2 공식의 첫 구현. 공식을 바꾸면 올린다(§2.3.4)
 
 # 자료 계약 §3 관측 상태 코드. 계약 커널(단위 K1)이 생기면 그쪽 정의와 같아야 한다.

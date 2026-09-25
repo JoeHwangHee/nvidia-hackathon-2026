@@ -14,7 +14,7 @@ docs/rules/DATA_CONTRACT_V1.md §2.3.2 행 규칙, §3.4, §4.4, §5.1.
 - `open_snapshot(snapshot_id)`은 정본 빌드 `data/snapshots/{snapshot_id}/snapshot_build.sqlite`(단위 S2가 만들고 승인·동결
   뒤 옮긴 파일)를 읽기 전용 URI(`mode=ro`)로 열고 `query_only`를 켠다. `path=`를 주면 그 파일(예: 승인 전 개발 빌드
   `outputs/snapshot_build-{시각}/snapshot_build-{시각}.sqlite`)을 연다. 어느 쪽이든 파일 안 메타의 `snapshot_id`가 부른
-  이름과 같고 `schema_version`이 1이어야 연다(수집기의 `snapshot.sqlite`는 이 메타가 없어 열지 않는다).
+  이름과 같고 `schema_version`이 계약 버전(`types.SCHEMA_VERSION`)이어야 연다(수집기의 `snapshot.sqlite`는 이 메타가 없어 열지 않는다).
 - 파일 경로는 모델에게서 받지 않는다(§5.1). `path=`는 호출하는 코드(CLI 처리 함수·시험)만 준다.
 
 행 규칙(§2.3.2)
@@ -97,7 +97,7 @@ class Snapshot:
                 raise SnapshotError("스냅샷 빌드 파일이 아니다(표 snapshot_meta·observation·collection_receipt·peer_group)")
             self.meta = {key: json.loads(value) for key, value in self._con.execute("SELECT key, value FROM snapshot_meta")}
             if self.meta.get("schema_version") != types.SCHEMA_VERSION or self.meta.get("snapshot_id") != snapshot_id:
-                raise SnapshotError(f"메타의 schema_version이 1이 아니거나 snapshot_id가 {snapshot_id}가 아니다")
+                raise SnapshotError(f"메타의 schema_version이 {types.SCHEMA_VERSION}가 아니거나 snapshot_id가 {snapshot_id}가 아니다")
             plan = self.meta.get("collection_plan") or {}
             period = self.meta["period"]
             self.hs6_codes = tuple(plan.get("hs6", []))

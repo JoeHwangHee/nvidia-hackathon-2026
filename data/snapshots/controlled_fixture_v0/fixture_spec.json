@@ -1,6 +1,6 @@
 {
  "_status": "합성 시험자료 controlled_fixture_v0의 생성 규칙(단위 S4 src/tradesentry/snapshot/fixture.py의 입력). 모든 금액·중량과 상대국은 합성이다. 실제 통계나 실제 사건이 아니다. 상대국 XA~XJ는 어느 나라에도 배정되지 않은 두 글자 코드다(관세청 2자리 형식, ISO 3166-1의 사용자 지정 범위). 사례 A/B/C의 부모 HS6 행·HS10 행 금액·중량과 전체국가 금액은 oracle 사례 A/B/C의 입력과 같다(시험이 대조한다). 판정 결과는 이 파일에 적지 않는다. 결정 기록 docs/tracking/decisions/20260925-0140-data-decision-dt3-fixture.md",
- "schema_version": 1,
+ "schema_version": 2,
  "snapshot_id": "controlled_fixture_v0",
  "source_kind": "controlled",
  "generated_at": "2026-09-25T01:30:00+09:00",

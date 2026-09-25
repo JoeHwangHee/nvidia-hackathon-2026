@@ -120,7 +120,7 @@ class Rows:
 
     def meta_rows(self) -> list[dict]:
         """snapshot_meta 행(값은 JSON 글자, 스냅샷 빌드와 같은 직렬화)."""
-        values = {"schema_version": 1, "snapshot_id": self.snapshot_id, "source_kind": "controlled",
+        values = {"schema_version": 2, "snapshot_id": self.snapshot_id, "source_kind": "controlled",
                   "collection_plan": self.plan, "period": self.plan["period"]}
         return [{"rowid": i, "key": key, "value": json.dumps(value, ensure_ascii=False, sort_keys=True,
                                                              separators=(",", ":"))}

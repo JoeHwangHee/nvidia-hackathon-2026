@@ -1,9 +1,9 @@
 {
- "schema_version": 1,
+ "schema_version": 2,
  "dataset": "dev20",
  "snapshot_id": "dev20",
  "policy_version": "dev-0.1",
- "snapshot_normalized_sha256": "e10b41a985ae36098f32723f9627c86fa09f2ea048edd1b614bdbcf474d47c16",
+ "snapshot_normalized_sha256": "fb802b8ffc562551583e5cfc4f5adaed70eefb84b8623c31224e43f8537e8b9d",
  "cases": [
   {
    "case_id": "850431-XL-202406",

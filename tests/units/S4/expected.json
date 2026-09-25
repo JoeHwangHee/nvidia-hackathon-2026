@@ -1,9 +1,9 @@
 {
  "snapshot_id": "controlled_fixture_v0",
- "schema_version": 1,
+ "schema_version": 2,
  "source_kind": "controlled",
  "raw_sha256": "2f8b7f899a1d5fb8b315864c72d12e843cb2e981df9d48e3457337f0e6b9501a",
- "normalized_sha256": "7453bf78c9b7bbab9781aeba316132a2945c6d11fdd61b56007e931c02241cae",
+ "normalized_sha256": "eeb8af139a9cced7ddcb06ec8aeb53d412802dbdc77b2ae31a6e68f10e5571e9",
  "row_counts": {
   "collection_receipt": 131,
   "observation": 8330,

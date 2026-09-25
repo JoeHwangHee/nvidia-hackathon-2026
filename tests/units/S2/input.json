@@ -2,7 +2,7 @@
  "snapshot_id": "unit_fixture_s2",
  "policy": {
   "_status": "시험용 정책(승격 규칙 있음). 실제 정책이 아니다",
-  "schema_version": 1,
+  "schema_version": 2,
   "policy_version": "dev-9.9",
   "thresholds": {
    "unit_value": 30,
