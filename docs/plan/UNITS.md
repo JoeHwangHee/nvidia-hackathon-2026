@@ -178,7 +178,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | C1 | 주장 채점 | `scorer_claims` | `eval/scorer/claims.py` | 앱 | D | 주장·정답표·원본 행 → 필드별 판정(룰북 B3-1). 주장 채점 기록 `scorer_claims-{시각}.jsonl` | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | — |
 | C2 | 산문 채점 | `scorer_prose` | `eval/scorer/prose.py` | 앱 | D | 보고서 산문 → 패턴 판정(룰북 B3-2) | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | 잡은 표현은 주장 채점 기록(`source`가 `prose`)으로 `scorer_claims-{시각}.jsonl`에 함께 들어간다 |
 | C3 | 채점 결과 기록 | `scorer_results` | `eval/scorer/results.py` | 앱 | D | 판정 → 실행 쪽 키에 채점 키 세 개(`required_evidence_ok`·`numeric_ok`·`provenance_ok`)를 더한 실행 결과 기록 `scorer_results-{시각}.jsonl` | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | — |
-| C4 | 보조 지표·요약 | `scorer_summary` | `eval/scorer/summary.py` | 앱 | D | 판정 → 보조 지표·Wilson 구간(비율의 신뢰구간 계산법), 요약 `scorer_summary-{시각}.md` | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | — |
+| C4 | 보조 지표·요약 | `scorer_summary` | `eval/scorer/summary.py` | 앱 | D | 판정·실행 추적(trace) 사실 → 보조 지표·Wilson 구간(비율의 신뢰구간 계산법), 룰북 B7 공개 값(덧붙인 주장 수·`review_status` 집계 변경·버린 초안·HOLD 합의 생략·덧붙이기 전 기준 오류율·뒷받침된 산문 표현 수), 요약 `scorer_summary-{시각}.md` | 유지. AS4 점검: 채점기에서 불림(결정 기록 `20260925-1240-orchestrator-decision-as4-assembly-check.md`) | 5 | — | 룰북 B7 공개 값은 사례 실행 폴더의 `runlog_trace-{시각}.jsonl`을 `__main__.py`가 읽기만 해 넘긴 사건 목록으로 이 단위가 센다(새 단위 파일을 두지 않았다. 결정 기록 `20260926-0730-data-decision-b7-public-values.md`) |
 
 ### 3.13 L — 실행 기록(3개)
 
