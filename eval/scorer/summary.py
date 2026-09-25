@@ -35,6 +35,7 @@ DATASET_MODES = {"dev20": ("checklist", "agent", "full"), "holdout40": ("checkli
 FAILURE_STATUSES = ("FAILED", "TIMEOUT", "INVALID", "BUDGET_EXCEEDED")
 PROSE_FIELD_GROUPS = ("narrative", "hypotheses", "claims[].text")
 MIN_VALID_REPORTS = 20  # 룰북 B3-3 조건 5(조정값)
+SCHEMA_VERSION = 2  # 자료 계약 §1.2 계약 버전. 채점기는 tradesentry를 import하지 않으므로 따로 둔다(contract.types와 같게)
 
 
 # ----------------------------------------------------------------------------- 통계
@@ -383,7 +384,7 @@ def _conditions_lines(inp: dict, plan: Plan, results: list[dict]) -> list[str]:
                  f"순서 seed·동시성 적용 {cell(checks.get('seed_concurrency'))}, "
                  f"동시성을 올렸다면 근거 결정 기록 {cell(checks.get('concurrency_record'))}")
     lines.append(f"- 사전 점검 결과 {cell(_get(cond, 'precheck'))}")
-    lines.append(f"- 계약 버전 schema_version {meta.get('schema_version', 1)}, 자료 묶음 {inp['dataset']}, "
+    lines.append(f"- 계약 버전 schema_version {meta.get('schema_version', SCHEMA_VERSION)}, 자료 묶음 {inp['dataset']}, "
                  f"평가 묶음 실행 {inp['batch_run']}, 채점 실행 {inp['scoring_run']}")
     lines.append(f"- 채점기가 읽은 스냅샷 파일 {cell(meta.get('snapshot_file'))}, 바이트 sha256 "
                  f"{cell(meta.get('snapshot_file_sha256'))}")

@@ -81,7 +81,7 @@ def _check_tables(con: sqlite3.Connection, report: _Report) -> bool:
 def _check_meta(meta: dict, snapshot_id: str, report: _Report) -> bool:
     problems = []
     if meta.get("schema_version") != types.SCHEMA_VERSION:
-        problems.append("schema_version이 1이 아니다")
+        problems.append(f"schema_version이 {types.SCHEMA_VERSION}가 아니다")
     if meta.get("snapshot_id") != snapshot_id:
         problems.append("snapshot_id가 부른 이름과 다르다")
     expected = {"schema_version", *types.SNAPSHOT_KEYS} - {"normalized_sha256"}

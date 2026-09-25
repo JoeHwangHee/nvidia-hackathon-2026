@@ -43,7 +43,7 @@ class EvaluateTest(unittest.TestCase):
         self.addCleanup(os.chdir, cwd)
         self.cases_file = self.root / "cases.json"
         self.cases = hf.dev20_cases(2)
-        self.cases_file.write_text(json.dumps({"schema_version": 1, "dataset": "dev20", "snapshot_id": "dev20",
+        self.cases_file.write_text(json.dumps({"schema_version": 2, "dataset": "dev20", "snapshot_id": "dev20",
                                                "cases": self.cases}), encoding="utf-8")
 
     def wired(self):

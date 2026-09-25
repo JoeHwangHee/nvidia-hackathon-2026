@@ -110,7 +110,7 @@ def oracle_summary_input(dataset: str = "dev20", modes: tuple = ("checklist", "a
             "scoring_run": "score-260925110000", "planned": {"cases": cases, "modes": list(modes)}, "results": results,
             "claims": records, "answers": oracle, "report_stats": stats, "reports_unread": [],
             "conditions": {"dataset": dataset, "scorer_commit": "1234567", "concurrency": 1, "order_seed": "7"},
-            "meta": {"schema_version": 1, "prose_patterns_sha256": "cd" * 32,
+            "meta": {"schema_version": 2, "prose_patterns_sha256": "cd" * 32,
                      "snapshot_file": "data/snapshots/controlled_fixture_v0/snapshot_build.sqlite",
                      "snapshot_file_sha256": "ef" * 32}}
 
@@ -209,7 +209,7 @@ class RepresentativeMetricsTest(unittest.TestCase):
                 "results": results, "claims": records, "answers": None, "report_stats": {}, "reports_unread": [],
                 "conditions": {"a_grade": {"rb1_frozen": True, "hash_recheck_match": True,
                                            "scorer_prevalidation": True, "scored_once": True}},
-                "meta": {"schema_version": 1}}
+                "meta": {"schema_version": 2}}
 
     def test_report_level_errors(self):
         inp = self.real_input("real_dev")

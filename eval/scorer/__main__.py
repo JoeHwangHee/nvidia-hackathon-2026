@@ -365,8 +365,8 @@ def load_snapshot(path: Path, snapshot_id: str) -> tuple[c1.Snapshot, str]:
     if ids - {snapshot_id}:
         _fail("스냅샷 행의 snapshot_id가 실행 기록의 snapshot_id와 다르다")
     meta = {row.get("key"): row.get("value") for row in tables.get("snapshot_meta", {}).values()}
-    if meta.get("snapshot_id") != c1.dumps_json(snapshot_id).replace(" ", "") or meta.get("schema_version") != "1":
-        _fail("스냅샷 메타의 snapshot_id가 실행 기록과 다르거나 schema_version이 1이 아니다(스냅샷 빌드 파일이 아니다)")
+    if meta.get("snapshot_id") != c1.dumps_json(snapshot_id).replace(" ", "") or meta.get("schema_version") != str(c4.SCHEMA_VERSION):
+        _fail(f"스냅샷 메타의 snapshot_id가 실행 기록과 다르거나 schema_version이 {c4.SCHEMA_VERSION}가 아니다(스냅샷 빌드 파일이 아니다)")
     return c1.Snapshot(snapshot_id, tables), digest.hexdigest()
 
 
@@ -543,7 +543,7 @@ def score_batch(run_dir: Path, sealed: bool, repo_root: Path, environ: dict, sco
         "planned": {"cases": conditions["planned_cases"], "modes": conditions["planned_modes"]},
         "results": results, "claims": records, "answers": answers_doc, "report_stats": stats,
         "reports_unread": unread, "conditions": conditions,
-        "meta": {"schema_version": 1, "prose_patterns_sha256": c2.pattern_list_sha256(),
+        "meta": {"schema_version": c4.SCHEMA_VERSION, "prose_patterns_sha256": c2.pattern_list_sha256(),
                  "snapshot_file": _relative(snap_path.resolve(), repo_root), "snapshot_file_sha256": snap_digest}}
     return records, results, c4.render(summary_input)
 

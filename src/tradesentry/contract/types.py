@@ -21,8 +21,9 @@ from datetime import timedelta, timezone
 from decimal import Decimal
 from typing import Any, TypedDict
 
-# §1.2 계약 버전(명세 §4.7 원문 "schema_version=1").
-SCHEMA_VERSION = 1
+# §1.2 계약 버전(명세 §4.7 원문 "schema_version=1"). 2026-09-25(금) 사용자 결정으로 2로 올렸다(값 집합 변경, 자료 계약
+# §13.2. 결정 기록 docs/tracking/decisions/20260925-1215-data-decision-schema-v2.md).
+SCHEMA_VERSION = 2
 
 # §3 명세 §4.1 원문: 판정 상태와 신호.
 REVIEW_STATUSES = ("MAINTAIN", "MONITOR", "HOLD")  # 사례별(`review_status`, `review_status_final`)

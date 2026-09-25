@@ -215,7 +215,7 @@ class MetricTableTest(unittest.TestCase):
         self.assertTrue(types.RUN_ID_RE.fullmatch("run_case-260925143015"))
         for bad in ("Run_case-260925143015", "run-case-260925143015", "run_case-2609251430"):
             self.assertIsNone(types.RUN_ID_RE.fullmatch(bad), bad)
-        self.assertEqual(types.SCHEMA_VERSION, 1)
+        self.assertEqual(types.SCHEMA_VERSION, 2)
         self.assertIn("`schema_version=1`", CONTRACT)
         self.assertEqual(types.Number, int | Decimal)
 

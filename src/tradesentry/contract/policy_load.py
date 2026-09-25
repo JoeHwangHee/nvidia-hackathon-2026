@@ -17,7 +17,7 @@
 
 파일 형식(자료 계약이 키 구조를 정하지 않아 이 단위가 정했다. 두 파일이 같은 형식을 쓴다)
     {
-      "schema_version": 1,                                   # §1.2 JSON의 계약 버전 표시
+      "schema_version": 2,                                   # §1.2 JSON의 계약 버전 표시
       "policy_version": "dev-0.1",                           # §1.3
       "thresholds": {"unit_value": 30, "share": 10},        # 탐지 기준값. 단위는 §11.2(30%는 30, 10pp는 10)
       "min_amount": null,                                    # USD. null이면 적용하지 않는다

@@ -76,7 +76,7 @@ EXPECTED = {
 }
 
 # 최소 기준이 있는 시험 정책(dev-9.8). 실제 정책이 아니다. 단가 신호에만 적용된다(MT1 결정 ③, 잠정 U2).
-MIN_POLICY = {"_status": "시험용 정책(최소 기준 있음). 실제 정책이 아니다", "schema_version": 1,
+MIN_POLICY = {"_status": "시험용 정책(최소 기준 있음). 실제 정책이 아니다", "schema_version": 2,
               "policy_version": "dev-9.8", "thresholds": {"unit_value": 30, "share": 10}, "min_amount": 400,
               "min_weight": 8, "tolerance": {"amount_usd": 0, "weight_rounding_kg": 0.5}, "confirmed_no_trade": None}
 EXPECTED_MIN = {

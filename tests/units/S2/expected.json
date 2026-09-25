@@ -1,6 +1,6 @@
 {
  "journal_mode": "delete",
- "normalized_sha256": "881cb7e32b3cf46823f3ccbb689e2be1dca687b8c1798ea606f4649ed5850dc5",
+ "normalized_sha256": "0754f038e8d8ed4707c15c8b44c5c58e99dec0bd842891f4c5fe793f01399375",
  "tables": {
   "collection_receipt": {
    "columns": ["request_id", "endpoint", "params_json", "status", "http_status", "attempts", "response_hash", "row_count", "result_code", "result_msg", "error", "elapsed_ms", "raw_file_id", "timestamp"],
@@ -107,7 +107,7 @@
     [6, "period", "{\"end\":\"202302\",\"start\":\"202301\"}"],
     [7, "precision_rule", "\"amount exact integer USD; weight integer kg rounded per row (total-row diff observed 2kg over 6-73 rows)\""],
     [8, "raw_sha256", "\"15374eb6ae479a570cb829a489c9402e2cbcc07aaa93f4493dbf230b3ffa7e1c\""],
-    [9, "schema_version", "1"],
+    [9, "schema_version", "2"],
     [10, "snapshot_id", "\"unit_fixture_s2\""],
     [11, "source_kind", "\"real\""],
     [12, "source_url", "[\"https://www.data.go.kr/data/15100475/openapi.do\",\"https://www.data.go.kr/data/15101609/openapi.do\"]"],
