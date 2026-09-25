@@ -251,6 +251,122 @@ class StageToolTest(unittest.TestCase):
         with self.assertRaises(stage.StageError):
             stage.stage(self.repo, self.dest, [])
 
+    # --overlay: 반입 도구(scripts/import_sealed_holdout40.py)가 만든 폴더 모양으로 겹침 폴더를 만든다
+    def overlay(self, name: str = "overlay", snapshot_id: str = "holdout40", *, files: dict | None = None) -> Path:
+        base = self.base / name
+        peer = b"peer-holdout\n"
+        record = {"snapshot_id": snapshot_id, "normalized_sha256": "b" * 64,
+                  "peer_group_files": [{"file_name": f"peer_group_{snapshot_id}.csv",
+                                        "sha256": hashlib.sha256(peer).hexdigest()}]}
+        default = {f"data/snapshots/{snapshot_id}/snapshot_build.sqlite": b"db-holdout",
+                   f"data/snapshots/{snapshot_id}/snapshot_build.json": json.dumps(record).encode("utf-8"),
+                   f"data/reference/peer_group_{snapshot_id}.csv": peer,
+                   "eval/dev/holdout40/input/cases.json": b'{"dataset": "holdout40", "cases": []}\n',
+                   "import_manifest.json": b'{"files": []}\n'}
+        for rel, data in (default if files is None else files).items():
+            path = base / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+        return base
+
+    def test_overlay_adds_files_and_marks_source(self):
+        overlay = self.overlay()
+        record = stage.stage(self.repo, self.dest, [], [overlay])
+        by_path = {entry["path"]: entry for entry in record["files"]}
+        for rel in ("data/snapshots/holdout40/snapshot_build.sqlite", "data/snapshots/holdout40/snapshot_build.json",
+                    "data/reference/peer_group_holdout40.csv", "eval/dev/holdout40/input/cases.json"):
+            with self.subTest(rel=rel):
+                self.assertEqual(by_path[rel]["source"], "overlay")
+                self.assertEqual((self.dest / "app" / rel).read_bytes(), (overlay / rel).read_bytes())
+        self.assertNotIn("import_manifest.json", by_path)
+        self.assertFalse((self.dest / "app" / "import_manifest.json").exists())
+        self.assertTrue(all(entry["source"] == "repo" for path, entry in by_path.items() if not path.startswith(
+            ("data/snapshots/holdout40/", "data/reference/peer_group_holdout40.csv", "eval/dev/holdout40/"))))
+        self.assertEqual(record["overlays"], [{"overlay": 1, "files": 4, "import_manifest_sha256": hashlib.sha256(
+            (overlay / "import_manifest.json").read_bytes()).hexdigest()}])
+        snap = next(s for s in record["snapshots"] if s["snapshot_id"] == "holdout40")
+        self.assertEqual((snap["normalized_sha256"], snap["peer_group_files"][0]["file_name"]),
+                         ("b" * 64, "peer_group_holdout40.csv"))
+        manifest = json.loads((self.dest / "app" / stage.MANIFEST_NAME).read_text(encoding="utf-8"))
+        self.assertEqual(manifest["files"], record["files"])
+        self.assertEqual(manifest["overlays"], record["overlays"])
+        self.assertNotIn(str(self.base), json.dumps(manifest))
+
+    def test_without_overlay_marks_all_repo_and_no_overlays(self):
+        record = stage.stage(self.repo, self.dest, [])
+        self.assertTrue(all(entry["source"] == "repo" for entry in record["files"]))
+        self.assertEqual(record["overlays"], [])
+
+    def test_overlay_refuses_paths_that_exist_in_repo(self):
+        for rel in ("configs/policy_dev.json", "CONFIGS/policy_dev.json", "src/tradesentry/placeholder.txt"):
+            with self.subTest(rel=rel):
+                overlay = self.overlay(f"ov_{rel.replace('/', '_')}", files={rel: b"x\n"})
+                with self.assertRaises(stage.StageError) as caught:
+                    stage.stage(self.repo, self.dest, [], [overlay])
+                self.assertIn("저장소에 있다", str(caught.exception))
+                self.assertFalse(self.dest.exists())
+
+    def test_overlay_applies_block_rules(self):
+        blocked = {
+            ".env": b"x", "outputs/run/x.json": b"x", "artifacts/eval/score-1/x": b"x", "eval/scorer/core.py": b"x",
+            "eval/datagen/dev20.py": b"x", "eval/dev/holdout40/answers/answers.json": b"x",
+            "eval/dev/holdout40/input/answers.json": b"x", "eval/dev/holdout40/input/parent_series_ids.json": b"x",
+            "eval/dev/holdout40/input/generation_rules.json": b"x", "eval/dev/holdout40/cases.json": b"x",
+            "eval/dev/holdout40/input/sample_seed.json": b"x", "eval/sealed_manifest.json": b"x",
+            "data/snapshots/holdout40/raw/a.xml": b"x", "data/snapshots/holdout40/manifest.json": b"x",
+            "data/snapshots/holdout40/snapshot.sqlite": b"x", "data/snapshots/holdout40/fixture_spec.json": b"x",
+            "Eval/dev/holdout40/Answers/x.json": b"x", "sealed_input/holdout40/oracle.json": b"x",
+        }
+        for number, (rel, data) in enumerate(blocked.items()):
+            with self.subTest(rel=rel):
+                overlay = self.overlay(f"ov_blocked_{number}", files={rel: data})
+                with self.assertRaises(stage.StageError):
+                    stage.stage(self.repo, self.dest, [], [overlay])
+                self.assertFalse(self.dest.exists())
+        self.assertIsNone(stage.blocked_reason("eval/dev/holdout40/input/cases.json", from_add=False, from_overlay=True))
+        self.assertIsNotNone(stage.blocked_reason("eval/dev/holdout40/input/cases.json", from_add=False))
+        self.assertIsNotNone(stage.blocked_reason("eval/dev/holdout40/input/cases.json", from_add=True))
+        self.assertIsNone(stage.blocked_reason("eval/dev/dev20/input/cases.json", from_add=False, from_overlay=True))
+
+    def test_overlay_refuses_symlink_duplicate_and_bad_folder(self):
+        overlay = self.overlay()
+        os.symlink(self.repo / ".env", overlay / "data" / "reference" / "linked.csv")
+        with self.assertRaises(stage.StageError):
+            stage.stage(self.repo, self.dest, [], [overlay])
+        (overlay / "data" / "reference" / "linked.csv").unlink()
+        second = self.overlay("overlay2")
+        with self.assertRaises(stage.StageError) as caught:
+            stage.stage(self.repo, self.dest, [], [overlay, second])
+        self.assertIn("겹침 폴더 사이", str(caught.exception))
+        with self.assertRaises(stage.StageError):
+            stage.stage(self.repo, self.dest, [], [self.base / "no_such_overlay"])
+        inside = self.overlay("inside_repo")
+        shutil.move(str(inside), str(self.repo / "inside_repo"))
+        with self.assertRaises(stage.StageError):
+            stage.stage(self.repo, self.dest, [], [self.repo / "inside_repo"])
+        (self.base / "sealed" / "ov").mkdir(parents=True)
+        with self.assertRaises(stage.StageError):
+            stage.stage(self.repo, self.dest, [], [self.base / "sealed" / "ov"])
+        self.assertFalse(self.dest.exists())
+
+    def test_overlay_peer_sha_mismatch_refuses(self):
+        overlay = self.overlay()
+        (overlay / "data" / "reference" / "peer_group_holdout40.csv").write_bytes(b"changed\n")
+        with self.assertRaises(stage.StageError):
+            stage.stage(self.repo, self.dest, [], [overlay])
+        self.assertFalse(self.dest.exists())
+
+    def test_main_overlay_prints_counts_only(self):
+        overlay = self.overlay()
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(stage, "REPO_ROOT", self.repo), contextlib.redirect_stdout(out), \
+                contextlib.redirect_stderr(err):
+            code = stage.main(["--dest", str(self.dest), "--overlay", str(overlay)])
+        self.assertEqual(code, 0, err.getvalue())
+        self.assertIn("overlay 1 files=4 import_manifest_sha256=", out.getvalue())
+        self.assertIn("snapshot holdout40 normalized_sha256=" + "b" * 64, out.getvalue())
+        self.assertNotIn(str(self.base), out.getvalue() + err.getvalue())
+
     def test_main_prints_no_local_path(self):
         out, err = io.StringIO(), io.StringIO()
         with mock.patch.object(stage, "REPO_ROOT", self.repo), contextlib.redirect_stdout(out), \
