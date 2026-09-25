@@ -20,7 +20,7 @@
 
 ① **위치** — 독립 채점기 `eval/scorer/` 안이다. 파일 읽기는 `eval/scorer/__main__.py`(`read_trace`·`trace_entry`)가, 사건 해석과 모드별 집계·요약 줄은 단위 C4 `eval/scorer/summary.py`("실행 추적 집계" 절: `parse_trace`·`attached_claim_ids`·`trace_facts`·`without_attached`·`before_after`·`trace_mode_stats`·`_trace_lines`·`_trace_b7_lines`)가 맡는다. 새 단위 파일을 두지 않았다. 까닭: 채점 요약 1~4절에 모드별로 함께 적혀야 하고, "덧붙이기 전 기준 오류율"은 채점기의 산문 뒷받침 판정(단위 C1·C2)을 그대로 다시 쓰기 때문이다. 새 단위(C5)로 두면 등록부(`src/tradesentry/units/registry.py`, 런타임)와 단위 수 65개를 적은 문서(`CLAUDE.md`·`AGENTS.md`·`docs/README.md`·로드맵)를 함께 고쳐야 해 이 작업의 범위(런타임 불변)와 맞지 않았다. 채점기는 여전히 `tradesentry`·`eval.datagen`을 import하지 않는다(경계 시험 그대로).
 
-② **입력** — `<run_dir>`(`outputs/evaluate-{시각}/`)와 같은 부모 폴더의 사례 실행 폴더 `{run_id}/`에 있는 `runlog_trace-{시각}.jsonl`을 **읽기만** 한다. 묶음 기록의 줄마다 읽되, 집계에는 사례마다 고른 최종 행(재실행이 있으면 실행명 시각이 가장 늦은 줄, 룰북 B5)만 쓴다. 샌드박스가 쓴 믿지 않는 입력이라 심볼릭 링크·크기 상한(16 MiB)·UTF-8 아님·한 줄이라도 JSON 객체가 아님·`event` 없음·`run_id` 불일치·사건 0건은 "읽을 수 없음"으로, 폴더·파일이 없으면 "trace 없음"으로 둔다. 어느 쪽도 채점을 멈추지 않는다. 한 모드의 최종 행 가운데 trace가 없거나 읽을 수 없는 것이 하나라도 있으면 그 모드의 여섯 값을 모두 `집계하지 않음(trace 없음 n/m건)`으로 적는다(커밋 사본 `artifacts/eval/score-{시각}/{run_id}/`에는 보고서 원문만 있어 재채점할 때가 그렇다). 부분 집계는 하지 않는다(값이 표본 일부로 만들어졌다는 오해를 막는다).
+② **입력** — `<run_dir>`(`outputs/evaluate-{시각}/`)와 같은 부모 폴더의 사례 실행 폴더 `{run_id}/`에 있는 `runlog_trace-{시각}.jsonl`을 **읽기만** 한다. 묶음 기록의 줄마다 읽되, 집계에는 사례마다 고른 최종 행(재실행이 있으면 실행명 시각이 가장 늦은 줄, 룰북 B5)만 쓴다. 샌드박스가 쓴 믿지 않는 입력이라 심볼릭 링크·크기 상한(16 MiB)·권한·입출력 오류(`OSError`)·UTF-8 아님·한 줄이라도 JSON 객체가 아님·`event` 없음·`run_id` 불일치·사건 0건은 "trace를 읽을 수 없음"으로, 폴더·파일이 없으면 "trace 없음"으로, 사건은 읽었지만 `state_change` 사건의 필드 모양(`stage` 문자열, `data.phase` 문자열, `evidence_claims`의 `added` 목록과 항목의 `code` 문자열·`claims` 목록·`claim_id` 문자열, `code_finding`의 `skipped_for_hold` 문자열 목록, `after_critic`의 `requery_dropped` 목록. 골든 `tests/units/I12/`·`tests/units/I8/input.json`의 필드 이름)이 다르거나 완료 보고서의 `claims`가 목록이 아니면 "trace 모양 다름"으로 둔다(0건으로 세지 않는다. Codex 채점기 검토 1회차 지적 1·2·3). 어느 쪽도 채점을 멈추지 않는다. 한 모드의 최종 행 가운데 위 셋 가운데 하나라도 있으면 그 모드의 여섯 값을 모두 `집계하지 않음(사유 n/m건)`(사유가 여럿이면 `집계하지 않음(trace 없음 a·trace를 읽을 수 없음 b·trace 모양 다름 c, n/m건)`)으로 적는다. 요약 문구와 룰북 B7 문장은 같다(지적 4)(커밋 사본 `artifacts/eval/score-{시각}/{run_id}/`에는 보고서 원문만 있어 재채점할 때가 그렇다). 부분 집계는 하지 않는다(값이 표본 일부로 만들어졌다는 오해를 막는다).
 
 ③ **계산 규칙(모드별, 결정적)**
 
@@ -53,12 +53,12 @@
 
 **한 곳이 다르다**: 참고 구현은 "최종 보고서의 자기 계열 주장 덧붙임"을 stage `final`의 `evidence_claims` 사건에서만 세어 dev20 5차 `agent`를 0으로 냈다. 채점기는 1이다. 그 실행은 `agent` 모드(Critic·최종 단계 없음)라 `evidence_claims` 사건이 basic 단계 하나뿐이고, 거기서 덧붙인 `signal_claim` 주장(`e3`)이 최종 보고서에 그대로 남아 있다. 공개 값의 뜻("최종 보고서에 남은 덧붙인 주장", 결정 1809 ④·2225 ⑦)에는 채점기 규칙(마지막 사건 ∩ 최종 보고서)이 맞고, 참고 구현의 final 단계 제한은 최종 단계가 없는 모드를 놓친다. 참고 구현의 보고서당 중앙값·범위는 보고서의 `e{번호}` 정규식으로 세어 채점기와 같았다(같은 실행이 합계에는 들어 있었다).
 
-⑦ **시험** — `tests/test_scorer_summary.py` `TraceAggregationTest`(골든 trace 조각: 덧붙인 주장이 산문을 뒷받침하는 보고서 1건, `review_status` 집계 변경 1건, (나) 수정본 버림 1건, trace 없는 실행 1건. ①~⑥의 기대값, 믿지 않는 trace 모양 거부, 실패·미읽음·미실행 행이 전·뒤 모두 오류로 남음, 요약 문자열, trace 입력이 없을 때 "집계하지 않음"), `tests/test_scorer_main.py` `test_rulebook_b7_public_values_come_from_trace_files`(명령 끝까지: trace 없는 실행이 있으면 집계하지 않음·종료 코드 0, 모두 있으면 값, JSON 아님·`run_id` 다름은 읽을 수 없음, `scorer_results` 키 불변), 단위 C4 골든 `tests/units/C4/expected.json` 갱신(trace 입력이 없는 기존 입력 → 집계하지 않음 줄). 경계 시험은 바꾸지 않았다(새 import 없음).
+⑦ **시험** — `tests/test_scorer_summary.py` `TraceAggregationTest`(골든 trace 조각: 덧붙인 주장이 산문을 뒷받침하는 보고서 1건, `review_status` 집계 변경 1건, (나) 수정본 버림 1건, trace 없는 실행 1건. ①~⑥의 기대값, 믿지 않는 trace 모양 거부, 골든 필드 이름 기준 모양 검사와 사유별 "집계하지 않음" 문구, 실패·미읽음·미실행 행이 전·뒤 모두 오류로 남음, 요약 문자열, trace 입력이 없을 때 "집계하지 않음"), `tests/test_scorer_main.py` `test_rulebook_b7_public_values_come_from_trace_files`(명령 끝까지: trace 없는 실행이 있으면 집계하지 않음·종료 코드 0, 모두 있으면 값, 깨진 줄·`run_id` 다름·권한 0 파일은 읽을 수 없음, `added`가 목록 아님·`stage` 없음은 모양 다름, `claims` 비리스트 보고서는 집계 불가, `scorer_results` 키 불변), 단위 C4 골든 `tests/units/C4/expected.json` 갱신(trace 입력이 없는 기존 입력 → 집계하지 않음 줄). 경계 시험은 바꾸지 않았다(새 import 없음).
 
 ## 한계
 
 - trace는 샌드박스가 쓴 자기 보고다. 채점기는 모양만 검사하고 내용의 참을 보증하지 않는다. 그래서 대표 지표(정답 대조)는 trace를 쓰지 않고, 이 값들은 참고·공개 항목이다.
 - 덧붙인 주장을 `claim_id`로만 가른다(`metric_id`는 대조하지 않는다). 런타임이 같은 `claim_id`를 다른 주장에 다시 쓰면 잘못 셀 수 있다. 실제 실행 227건에서는 그런 일이 없었다.
-- 한 모드에 trace 없는 최종 실행이 하나라도 있으면 그 모드 전체를 집계하지 않는다(부분 집계 없음). 증거 사본만으로 재채점한 요약에는 이 값들이 모두 "집계하지 않음"이다.
+- 한 모드에 trace가 없거나 읽을 수 없거나 모양이 다른 최종 실행이 하나라도 있으면 그 모드 전체를 집계하지 않는다(부분 집계 없음). 증거 사본만으로 재채점한 요약에는 이 값들이 모두 "집계하지 않음"이다.
 - `scorer_results-{시각}.jsonl`의 사례별 키(⑤)는 사용자 승인 대기다.
 - 자료 계약 §8.2의 실행 조건 입력 파일 `[미확인]` 문장과 평가 스킬 ② "결과 보고"의 대응 문장은 이 PR의 소유 범위 밖이라 고치지 않았다(문서 PR 대상).

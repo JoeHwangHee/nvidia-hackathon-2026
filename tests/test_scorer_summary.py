@@ -322,6 +322,38 @@ class TraceAggregationTest(unittest.TestCase):
         self.assertIsNone(c4.parse_trace('{"data": {}}\n', r1))  # event 없음
         self.assertIsNone(c4.parse_trace("\n\n", r1))
 
+    def test_trace_shape_check_follows_golden_field_names(self):
+        r1 = self.run_ids[0]
+        self.assertTrue(c4.trace_shape_ok(self.traces[r1]))
+        self.assertTrue(c4.trace_shape_ok(self.traces[self.run_ids[1]]))
+        self.assertTrue(c4.trace_shape_ok([trace_event(1, r1, "after_critic", "critic", needs_revision=False)]))  # requery_dropped 없어도 된다
+        bad = [
+            [{k: v for k, v in trace_event(1, r1, "draft").items() if k != "stage"}],  # stage 없음
+            [dict(trace_event(1, r1, "draft"), data=[])],  # data가 객체 아님
+            [dict(trace_event(1, r1, "draft"), data={"review_status": "HOLD"})],  # phase 없음
+            [trace_event(1, r1, "evidence_claims", added={"code": "x"})],  # added가 목록 아님
+            [trace_event(1, r1, "evidence_claims", added=[{"code": 1, "claims": []}])],  # code가 문자열 아님
+            [trace_event(1, r1, "evidence_claims", added=[{"code": "comparability_ok", "claims": [{"metric_id": "m"}]}])],  # claim_id 없음
+            [trace_event(1, r1, "code_finding", skipped_for_hold="compare_partners")],
+            [trace_event(1, r1, "after_critic", "critic", requery_dropped={})],
+        ]
+        for events in bad:
+            with self.subTest(events=events):
+                self.assertFalse(c4.trace_shape_ok(events))
+        self.assertTrue(c4.trace_shape_ok([{"event": "tool_call", "stage": "basic", "data": 3}]))  # state_change가 아닌 사건은 보지 않는다
+
+    def test_not_aggregated_text_names_each_reason(self):
+        self.assertEqual(c4.not_aggregated_text({c4.TRACE_NONE: 1}, 1, 4), "집계하지 않음(trace 없음 1/4건)")
+        self.assertEqual(c4.not_aggregated_text({c4.TRACE_MALFORMED: 2}, 2, 4), "집계하지 않음(trace 모양 다름 2/4건)")
+        self.assertEqual(c4.not_aggregated_text({c4.TRACE_MALFORMED: 1, c4.TRACE_NONE: 1, c4.TRACE_UNREADABLE: 1}, 3, 4),
+                         "집계하지 않음(trace 없음 1·trace를 읽을 수 없음 1·trace 모양 다름 1, 3/4건)")
+        self.assertEqual(c4.not_aggregated_text({}, 0, 0), "집계하지 않음(trace 없음 0/0건)")
+        plan = c4.Plan(self.cases, ["full"], self.results)
+        stats = self.trace_stats(self.run_ids[:2])
+        stats[self.run_ids[2]] = {"available": False, "reason": c4.TRACE_MALFORMED}
+        text = c4.trace_mode_stats(plan, c4.ClaimIndex(self.records), set(), stats, "full")["not_aggregated"]
+        self.assertEqual(text, "집계하지 않음(trace 없음 1·trace 모양 다름 1, 2/4건)")
+
     def test_attached_claims_come_from_the_last_evidence_claims_event(self):
         r1 = self.run_ids[0]
         self.assertEqual(c4.attached_claim_ids(self.traces[r1]), {"e1": c4.REQUIRED_EVIDENCE, "e7": c4.SIGNAL_CLAIM})

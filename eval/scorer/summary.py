@@ -196,6 +196,7 @@ def _get(conditions: dict, *path: str) -> object:
 STATE_CHANGE = "state_change"
 TRACE_NONE = "trace 없음"
 TRACE_UNREADABLE = "trace를 읽을 수 없음"
+TRACE_MALFORMED = "trace 모양 다름"  # 사건은 읽었지만 state_change 사건의 필드 모양이 골든(tests/units/I12/)과 다르다
 REQUIRED_EVIDENCE = "required_evidence"
 SIGNAL_CLAIM = "signal_claim"
 ZERO_WEIGHT_CLAIM = "zero_weight_claim"
@@ -221,6 +222,37 @@ def parse_trace(text: str, run_id: str) -> list[dict] | None:
             return None
         events.append(event)
     return events or None
+
+
+def trace_shape_ok(events: list[dict]) -> bool:
+    """state_change 사건의 필드 모양이 골든(tests/units/I12/·I8)과 맞는가. stage는 문자열, data는 phase(문자열)를 가진 객체다.
+    evidence_claims의 added는 목록이고 항목마다 code(문자열)와 claims(목록, 항목마다 claim_id 문자열)가 있다. code_finding의
+    skipped_for_hold와 after_critic의 requery_dropped는 있으면 목록이다. 하나라도 어긋나면 그 trace는 집계하지 않는다(0건으로
+    세지 않는다)."""
+    for event in events:
+        if event.get("event") != STATE_CHANGE:
+            continue
+        data = event.get("data")
+        if not isinstance(event.get("stage"), str) or not isinstance(data, dict) or not isinstance(data.get("phase"), str):
+            return False
+        phase = data["phase"]
+        if phase == "evidence_claims":
+            added = data.get("added", [])
+            if not isinstance(added, list):
+                return False
+            for entry in added:
+                if not isinstance(entry, dict) or not isinstance(entry.get("code"), str) \
+                        or not isinstance(entry.get("claims"), list) \
+                        or not all(isinstance(c, dict) and isinstance(c.get("claim_id"), str) for c in entry["claims"]):
+                    return False
+        elif phase == "code_finding":
+            if not isinstance(data.get("skipped_for_hold", []), list) \
+                    or not all(isinstance(t, str) for t in data.get("skipped_for_hold", [])):
+                return False
+        elif phase == "after_critic":
+            if not isinstance(data.get("requery_dropped", []), list):
+                return False
+    return True
 
 
 def _state_changes(events: list[dict], phase: str) -> list[dict]:
@@ -265,6 +297,7 @@ def trace_facts(events: list[dict], report: dict | None, completed: bool) -> dic
                 present.add(claim_id)
     aggregated = _state_changes(events, "status_aggregated")
     return {
+        "report_shape_ok": report is None or claims is not None,  # 완료 보고서의 claims가 목록이 아니면 집계 불가(0으로 세지 않는다)
         "attached_ids": present,
         "attached_count": sum(by_code.values()) if claims is not None else None,
         "attached_by_code": by_code,
@@ -470,7 +503,11 @@ def trace_mode_stats(plan: Plan, index: ClaimIndex, unread: set[str], trace_stat
     missing = [f for f in rows if not (trace_stats.get(f["run_id"]) or {}).get("available")]
     out = {"planned": len(plan.cases), "rows": len(rows), "trace_missing": len(missing), "not_aggregated": None}
     if not rows or missing:
-        out["not_aggregated"] = f"{TRACE_NOT_AGGREGATED}({TRACE_NONE} {len(missing)}/{len(rows)}건)"
+        reasons: dict[str, int] = {}
+        for f in missing:
+            reason = (trace_stats.get(f["run_id"]) or {}).get("reason") or TRACE_NONE
+            reasons[reason] = reasons.get(reason, 0) + 1
+        out["not_aggregated"] = not_aggregated_text(reasons, len(missing), len(rows))
         return out
     valid = [f for f in rows if f["execution_status"] == c3.COMPLETED and f["run_id"] not in unread]
     facts = {f["run_id"]: trace_stats[f["run_id"]] for f in rows}
@@ -496,6 +533,15 @@ def trace_mode_stats(plan: Plan, index: ClaimIndex, unread: set[str], trace_stat
         "valid": len(valid),
     })
     return out
+
+
+def not_aggregated_text(reasons: dict[str, int], missing: int, rows: int) -> str:
+    """"집계하지 않음(사유 n/m건)". 사유가 여럿이면 사유별 건수를 가운뎃점으로 잇고 합계를 뒤에 적는다(룰북 B7 문구와 같다)."""
+    ordered = [r for r in (TRACE_NONE, TRACE_UNREADABLE, TRACE_MALFORMED) if reasons.get(r)] \
+        + sorted(r for r in reasons if r not in (TRACE_NONE, TRACE_UNREADABLE, TRACE_MALFORMED))
+    if len(ordered) <= 1:
+        return f"{TRACE_NOT_AGGREGATED}({ordered[0] if ordered else TRACE_NONE} {missing}/{rows}건)"
+    return f"{TRACE_NOT_AGGREGATED}({'·'.join(f'{r} {reasons[r]}' for r in ordered)}, {missing}/{rows}건)"
 
 
 def _per_mode(stats: dict[str, dict], value) -> str:
@@ -541,7 +587,8 @@ def _trace_b7_lines(stats: dict[str, dict]) -> list[str]:
         "- HOLD 합의 신호에 내지 않은 도구 지적 수(2026-09-25(금) 22:22 사용자 결정 ③): "
         + _per_mode(stats, lambda s: str(s["hold_skipped_findings"])),
         "- 실행 추적 집계 범위: 사례 실행 폴더의 runlog_trace 파일(읽기만)에서 센다. 모드별 trace 있는 최종 실행 "
-        + ", ".join(f"{mode} {s['rows'] - s['trace_missing']}/{s['rows']}건" for mode, s in stats.items()),
+        + ", ".join(f"{mode} {s['rows'] - s['trace_missing']}/{s['rows']}건" for mode, s in stats.items())
+        + f". 없거나 읽을 수 없거나 모양이 다른 실행이 있는 모드는 여섯 값을 집계하지 않는다(사유: {TRACE_NONE}·{TRACE_UNREADABLE}·{TRACE_MALFORMED})",
     ]
     mismatch = {mode: s.get("attached_missing_in_report", 0) for mode, s in stats.items() if not s["not_aggregated"]}
     if any(mismatch.values()):

@@ -478,25 +478,33 @@ def read_report(run_dir: Path, line: dict, sealed: bool) -> tuple[dict | None, s
 
 def read_trace(run_dir: Path, line: dict) -> tuple[list[dict] | None, str | None]:
     """사례 실행 폴더의 실행 추적 runlog_trace-{시각}.jsonl을 읽기만 한다(룰북 B7 공개 값, 단위 C4 "실행 추적 집계").
-    (사건 목록, None) 또는 (None, 사유). 사유는 "trace 없음"(폴더·파일 없음. 증거 사본만으로 다시 채점할 때)과 "trace를 읽을
-    수 없음"(심볼릭 링크, 크기 상한, JSON 아님, run_id 불일치) 둘뿐이다. 어느 쪽도 채점을 멈추지 않는다."""
-    case_dir = run_dir.parent / line["run_id"]
-    if case_dir.is_symlink() or not case_dir.is_dir():
-        return None, c4.TRACE_NONE
-    path = case_dir / f"{TRACE_DOMAIN}-{line['run_id'].rsplit('-', 1)[1]}.jsonl"
-    if path.is_symlink():
+    (사건 목록, None) 또는 (None, 사유). 사유는 "trace 없음"(폴더·파일 없음. 증거 사본만으로 다시 채점할 때), "trace를 읽을
+    수 없음"(심볼릭 링크, 크기 상한, 입출력·권한 오류, UTF-8·JSON 아님, run_id 불일치), "trace 모양 다름"(state_change 사건의
+    필드 모양이 골든과 다름) 셋뿐이다. 어느 쪽도 채점을 멈추지 않는다."""
+    try:
+        case_dir = run_dir.parent / line["run_id"]
+        if case_dir.is_symlink() or not case_dir.is_dir():
+            return None, c4.TRACE_NONE
+        path = case_dir / f"{TRACE_DOMAIN}-{line['run_id'].rsplit('-', 1)[1]}.jsonl"
+        if path.is_symlink():
+            return None, c4.TRACE_UNREADABLE
+        if not path.is_file():
+            return None, c4.TRACE_NONE
+        with open(path, "rb") as fh:
+            data = fh.read(MAX_INPUT_BYTES + 1)
+    except OSError:  # 권한·입출력 오류(문장에 경로를 넣지 않는다, N13)
         return None, c4.TRACE_UNREADABLE
-    if not path.is_file():
-        return None, c4.TRACE_NONE
-    with open(path, "rb") as fh:
-        data = fh.read(MAX_INPUT_BYTES + 1)
     if len(data) > MAX_INPUT_BYTES:
         return None, c4.TRACE_UNREADABLE
     try:
         events = c4.parse_trace(data.decode("utf-8"), line["run_id"])
     except UnicodeDecodeError:
         return None, c4.TRACE_UNREADABLE
-    return (events, None) if events is not None else (None, c4.TRACE_UNREADABLE)
+    if events is None:
+        return None, c4.TRACE_UNREADABLE
+    if not c4.trace_shape_ok(events):
+        return None, c4.TRACE_MALFORMED
+    return events, None
 
 
 def trace_entry(run_dir: Path, line: dict, report: dict | None, records: list[dict], snap, snapshot_id: str,
@@ -508,6 +516,8 @@ def trace_entry(run_dir: Path, line: dict, report: dict | None, records: list[di
     if events is None:
         return {"available": False, "reason": reason}
     facts = c4.trace_facts(events, report, line["execution_status"] == c3.COMPLETED)
+    if not facts["report_shape_ok"]:  # 완료 보고서의 claims가 목록이 아니면 덧붙인 주장을 0으로 세지 않고 집계 불가로 둔다
+        return {"available": False, "reason": c4.TRACE_MALFORMED}
     entry = {"available": True, **{k: v for k, v in facts.items() if k != "attached_ids"}}
     if report is not None:
         try:

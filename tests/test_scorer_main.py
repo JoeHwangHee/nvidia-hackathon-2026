@@ -191,17 +191,45 @@ class DevelopmentBatchTest(ScorerCommandBase):
         results = [c1.loads_json(line) for line in (self.score_dir("260925150005") / "scorer_results-260925150005.jsonl")
                    .read_text(encoding="utf-8").splitlines()]
         self.assertEqual([tuple(r) for r in results], [tuple(cli.c3.RESULT_KEYS)] * 3)  # 결과 기록의 키는 늘리지 않는다
-        for name, body in (("json 아님", "{not json}\n"), ("run_id 다름", dump(self.trace_state("run_case-000000000000", 1, "draft", "basic")) + "\n")):
+        cases = {  # (trace 본문 또는 None(권한 0 파일), 기대 사유). 채점은 모두 종료 코드 0으로 끝난다
+            "깨진 줄": ("{not json}\n", "trace를 읽을 수 없음"),
+            "run_id 다름": (dump(self.trace_state("run_case-000000000000", 1, "draft", "basic")) + "\n", "trace를 읽을 수 없음"),
+            "모양 다른 사건(added가 목록 아님)": (dump(self.trace_state(c["run_id"], 1, "evidence_claims", "final", added={"code": "x"})) + "\n",
+                                           "trace 모양 다름"),
+            "모양 다른 사건(stage 없음)": (dump({k: v for k, v in self.trace_state(c["run_id"], 1, "draft", "basic").items() if k != "stage"}) + "\n",
+                                       "trace 모양 다름"),
+            "읽기 실패(권한 0)": (None, "trace를 읽을 수 없음"),
+        }
+        for offset, (name, (body, reason)) in enumerate(cases.items(), start=2):
             with self.subTest(name=name):
-                self.write_trace(c, None, body)
-                clock = FakeClock(START + timedelta(seconds=10 if name == "json 아님" else 15))
+                path = self.write_trace(c, None, body or "")
+                if body is None:
+                    if os.geteuid() == 0:
+                        self.skipTest("root는 권한 0 파일도 읽는다")
+                    path.chmod(0)
+                    self.addCleanup(path.chmod, 0o600)
+                clock = FakeClock(START + timedelta(seconds=5 * offset))
                 out, err = io.StringIO(), io.StringIO()
                 code = cli.main(["--run", str(self.batch_dir)], repo_root=self.root, environ=self.environ, clock=clock.now,
                                 sleep=clock.sleep, out=out, err=err)
                 self.assertEqual((code, err.getvalue()), (0, ""))
-                stamp = "260925150010" if name == "json 아님" else "260925150015"
-                self.assertIn("full 집계하지 않음(trace 없음 1/3건)",
-                              (self.score_dir(stamp) / f"scorer_summary-{stamp}.md").read_text(encoding="utf-8"))
+                stamp = (START + timedelta(seconds=5 * offset)).strftime(cli.STAMP_FORMAT)
+                summary = (self.score_dir(stamp) / f"scorer_summary-{stamp}.md").read_text(encoding="utf-8")
+                self.assertIn(f"full 집계하지 않음({reason} 1/3건)", summary)
+                if body is None:
+                    path.chmod(0o600)
+
+    def test_report_without_claim_list_is_not_counted_as_zero_attached(self):
+        """완료 보고서의 claims가 목록이 아니면 덧붙인 주장 0으로 세지 않고 그 실행을 집계 불가(모양 오류)로 둔다."""
+        a = self.reports["A-composition"]
+        self.write_trace(a, [self.trace_state(a["run_id"], 1, "draft", "basic")])
+        line = fx.batch_line(a["run_id"], "A-composition", mode="full", dataset=self.dataset, review=a["review_status"])
+        snap = c1.Snapshot.from_json(self.rows.doc())
+        entry = cli.trace_entry(self.batch_dir, line, dict(a, claims={"c1": 1}), [], snap, self.rows.snapshot_id,
+                                fx.oracle_context("A-composition"), [])
+        self.assertEqual(entry, {"available": False, "reason": "trace 모양 다름"})
+        self.assertEqual(cli.c4.trace_facts([], dict(a, claims="x"), True)["report_shape_ok"], False)
+        self.assertIsNone(cli.c4.trace_facts([], dict(a, claims="x"), True)["attached_count"])
 
     def test_rerun_shape_of_rulebook_b5(self):
         self.write_inputs(lines=[self.rerun("260925090000", "FAILED")] + self.lines)
