@@ -80,7 +80,7 @@ class ModelConfigTest(unittest.TestCase):
         # model-1.0: 판정 정책 설명 바로잡음(무역 검토 막음 1), 검증기 산문 패턴 목록, max_tokens 8192(AS2 9회차, ⑳)
         # model-1.1: 도구 차례 max_tokens 1024(tool_turn_max_tokens), 계산 불가 안내·산문 수정 지시(AS2 10회차, ㉑)
         # model-1.2: limits.tokens 128,000(사용자 결정 4), 지침 규칙 요약에 U4 반올림 불안정 → HOLD(사용자 결정 1, ㉒)
-        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-1.3", "json_object"))
+        self.assertEqual((cfg["config_version"], cfg["request"]["structured_output"]), ("model-1.4", "json_object"))
         self.assertEqual((cfg["request"]["max_tokens"], cfg["request"]["tool_turn_max_tokens"]), (8192, 1024))
         for value in walk(cfg):
             if isinstance(value, str):
@@ -94,7 +94,7 @@ class ModelConfigTest(unittest.TestCase):
                                   "revision_requeries": 2, "final_verify": 1})
         self.assertEqual(limits["basic_tool_attempts"] + limits["revision_requeries"] + limits["final_verify"],
                          limits["tool_attempts"])
-        self.assertEqual(cfg["retry"]["max_5xx_retries"], 3)
+        self.assertEqual(cfg["retry"], {"max_5xx_retries": 3, "backoff_base_ms": 5000, "backoff_factor": 2})  # model-1.4: 5xx·429 대기 5·10·20초
         self.assertEqual(cfg["timeouts"]["request_cap_ms"], 60000)
         self.assertLess(cfg["timeouts"]["end_reserve_ms"], limits["wall_ms"])
 
