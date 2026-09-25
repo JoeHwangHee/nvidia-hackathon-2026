@@ -135,6 +135,102 @@ class DevelopmentBatchTest(ScorerCommandBase):
         summary = (self.score_dir() / "scorer_summary-260925150000.md").read_text(encoding="utf-8")
         self.assertIn("미실행 1건", summary)
 
+    def write_trace(self, report: dict, events: list[dict] | None, text: str | None = None) -> Path:
+        """사례 실행 폴더에 실행 추적 runlog_trace-{시각}.jsonl을 둔다(events가 None이면 text를 그대로 쓴다)."""
+        stamp = report["run_id"].rsplit("-", 1)[1]
+        path = self.root / "outputs" / report["run_id"] / f"runlog_trace-{stamp}.jsonl"
+        body = text if events is None else "".join(dump(e) + "\n" for e in events)
+        path.write_text(body, encoding="utf-8")
+        return path
+
+    def trace_state(self, run_id: str, seq: int, phase: str, stage: str, **data) -> dict:
+        return {"seq": seq, "ts": "2026-09-25T14:00:00+09:00", "run_id": run_id, "event": "state_change", "stage": stage,
+                "data": {"phase": phase, "review_status": "MONITOR", "signal_status": {"unit_value": "MONITOR", "share": "NOT_TRIGGERED"},
+                         **data}}
+
+    def test_rulebook_b7_public_values_come_from_trace_files(self):
+        """룰북 B7 공개 값: 사례 실행 폴더의 trace를 읽기만 해서 모드별 건수·비율을 요약에 적는다. trace가 없는 실행이 있으면
+        "집계하지 않음(trace 없음)"이고 채점은 실패하지 않는다(증거 사본만으로 다시 채점할 때)."""
+        a, b, c = (self.reports[k] for k in ("A-composition", "B-residual", "C-missing-hs10"))
+        # A: c1(r_U −40.0%)이 코드가 덧붙인 주장이라고 trace가 적는다 → 덧붙이기 전에는 산문 "40.0% 낮아졌다"가 뒷받침되지 않는다
+        self.write_trace(a, [self.trace_state(a["run_id"], 1, "draft", "basic"),
+                             self.trace_state(a["run_id"], 2, "evidence_claims", "final", required={}, unmet=[], no_action=[],
+                                              added=[{"signal": "unit_value", "code": "comparability_ok",
+                                                      "claims": [{"claim_type": "change", "metric_id": "r_U-1", "claim_id": "c1"}]},
+                                                     {"signal": "unit_value", "code": "zero_weight_claim",
+                                                      "claims": [{"claim_type": "value", "metric_id": "w@1", "claim_id": "c6"}]}])])
+        # B: review_status 집계로 바뀜(final), HOLD 합의로 뺀 도구 지적 1, (가) 재조회 버림 1
+        self.write_trace(b, [self.trace_state(b["run_id"], 1, "status_aggregated", "final", model_review_status="HOLD",
+                                              model_unresolved_evidence=None, unresolved_evidence=False),
+                             self.trace_state(b["run_id"], 2, "code_finding", "basic", missing_tools=[], skipped_for_hold=["compare_partners"]),
+                             self.trace_state(b["run_id"], 3, "after_critic", "critic", needs_revision=False, findings=0, requery=0,
+                                              problems=[], requery_dropped=[{"tool": "decompose_hs", "args": {}, "reason": "x", "signals": ["unit_value"]}])])
+        self.write_inputs()
+        code, out, err = self.run_scorer()  # C는 trace 없음
+        self.assertEqual((code, err), (0, ""), err)
+        summary = (self.score_dir() / "scorer_summary-260925150000.md").read_text(encoding="utf-8")
+        self.assertIn("full 집계하지 않음(trace 없음 1/3건)", summary)
+        self.assertIn("모드별 trace 있는 최종 실행 full 2/3건", summary)
+        # C: (나) 수정본 버림 1 → 세 실행 모두 trace가 있어 집계한다
+        self.write_trace(c, [self.trace_state(c["run_id"], 1, "revision_discarded", "final", blocked_by="validator",
+                                              would_be_cause="VALIDATOR_BLOCKED", kept_report_id="r1")])
+        clock_shift = FakeClock(START + timedelta(seconds=5))
+        out, err = io.StringIO(), io.StringIO()
+        code = cli.main(["--run", str(self.batch_dir)], repo_root=self.root, environ=self.environ, clock=clock_shift.now,
+                        sleep=clock_shift.sleep, out=out, err=err)
+        self.assertEqual((code, err.getvalue()), (0, ""), err.getvalue())
+        summary = (self.score_dir("260925150005") / "scorer_summary-260925150005.md").read_text(encoding="utf-8")
+        self.assertIn("full 전 1/3 → 뒤 0/3", summary)
+        self.assertIn("- 덧붙인 주장 덕분에 뒷받침된 산문 표현 수: full 1", summary)
+        self.assertIn("full 보고서당 0(0~2), 합계 2(필수 근거 1·자기 계열 0·중량 0 1), 완료 보고서 3건", summary)
+        self.assertIn("괄호는 어느 단계든 바뀐 보고서 수): full 1(1)", summary)
+        self.assertIn("(나) 수정본 버림 full 1; (가) 재조회 버림 full 1", summary)
+        self.assertIn("HOLD 합의 신호에 내지 않은 도구 지적 수(2026-09-25(금) 22:22 사용자 결정 ③): full 1", summary)
+        self.assertIn("덧붙이기 전 기준의 보고서 단위 오류율(덧붙인 필수 근거 주장을 빼고 같은 채점 규칙으로 다시 계산. 2026-09-25(금) 18:56 사용자 "
+                      "결정. 괄호는 덧붙이기 뒤): full 1/3 = 33.3% (6.1%~79.2%) (뒤 0/3)", summary)
+        results = [c1.loads_json(line) for line in (self.score_dir("260925150005") / "scorer_results-260925150005.jsonl")
+                   .read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([tuple(r) for r in results], [tuple(cli.c3.RESULT_KEYS)] * 3)  # 결과 기록의 키는 늘리지 않는다
+        cases = {  # (trace 본문 또는 None(권한 0 파일), 기대 사유). 채점은 모두 종료 코드 0으로 끝난다
+            "깨진 줄": ("{not json}\n", "trace를 읽을 수 없음"),
+            "run_id 다름": (dump(self.trace_state("run_case-000000000000", 1, "draft", "basic")) + "\n", "trace를 읽을 수 없음"),
+            "모양 다른 사건(added가 목록 아님)": (dump(self.trace_state(c["run_id"], 1, "evidence_claims", "final", added={"code": "x"})) + "\n",
+                                           "trace 모양 다름"),
+            "모양 다른 사건(stage 없음)": (dump({k: v for k, v in self.trace_state(c["run_id"], 1, "draft", "basic").items() if k != "stage"}) + "\n",
+                                       "trace 모양 다름"),
+            "읽기 실패(권한 0)": (None, "trace를 읽을 수 없음"),
+        }
+        for offset, (name, (body, reason)) in enumerate(cases.items(), start=2):
+            with self.subTest(name=name):
+                path = self.write_trace(c, None, body or "")
+                if body is None:
+                    if os.geteuid() == 0:
+                        self.skipTest("root는 권한 0 파일도 읽는다")
+                    path.chmod(0)
+                    self.addCleanup(path.chmod, 0o600)
+                clock = FakeClock(START + timedelta(seconds=5 * offset))
+                out, err = io.StringIO(), io.StringIO()
+                code = cli.main(["--run", str(self.batch_dir)], repo_root=self.root, environ=self.environ, clock=clock.now,
+                                sleep=clock.sleep, out=out, err=err)
+                self.assertEqual((code, err.getvalue()), (0, ""))
+                stamp = (START + timedelta(seconds=5 * offset)).strftime(cli.STAMP_FORMAT)
+                summary = (self.score_dir(stamp) / f"scorer_summary-{stamp}.md").read_text(encoding="utf-8")
+                self.assertIn(f"full 집계하지 않음({reason} 1/3건)", summary)
+                if body is None:
+                    path.chmod(0o600)
+
+    def test_report_without_claim_list_is_not_counted_as_zero_attached(self):
+        """완료 보고서의 claims가 목록이 아니면 덧붙인 주장 0으로 세지 않고 그 실행을 집계 불가(모양 오류)로 둔다."""
+        a = self.reports["A-composition"]
+        self.write_trace(a, [self.trace_state(a["run_id"], 1, "draft", "basic")])
+        line = fx.batch_line(a["run_id"], "A-composition", mode="full", dataset=self.dataset, review=a["review_status"])
+        snap = c1.Snapshot.from_json(self.rows.doc())
+        entry = cli.trace_entry(self.batch_dir, line, dict(a, claims={"c1": 1}), [], snap, self.rows.snapshot_id,
+                                fx.oracle_context("A-composition"), [])
+        self.assertEqual(entry, {"available": False, "reason": "trace 모양 다름"})
+        self.assertEqual(cli.c4.trace_facts([], dict(a, claims="x"), True)["report_shape_ok"], False)
+        self.assertIsNone(cli.c4.trace_facts([], dict(a, claims="x"), True)["attached_count"])
+
     def test_rerun_shape_of_rulebook_b5(self):
         self.write_inputs(lines=[self.rerun("260925090000", "FAILED")] + self.lines)
         self.assertEqual(self.run_scorer()[0], 0)  # FAILED 한 줄 뒤 재실행 한 줄만 받는다
