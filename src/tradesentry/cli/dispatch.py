@@ -34,6 +34,8 @@
   단위 안에 outputs 기본값을 따로 두지 않는다(S0 결정 ⑥). 샌드박스 안 CLI의 출력 위치는 로드맵 MT5의 두 번째 PR에서 정한다.
 - 실행명 {실행 이름}-{yymmddhhmmss}는 실행을 시작하기 전에 reserve_run_dir로 확보한다(N8, 시각은 명시적 KST). 단위를
   부르기 전에 확보하므로 단위가 실패하면 빈 실행 폴더가 남는다. 그 실행명은 다시 쓰지 않는다.
+- --run-name(사용자 결정 10(나), 다섯 명령): 호스트가 먼저 확보한 실행명을 받으면 CLI는 그 이름의 실행 폴더를 이미 있으면
+  실패하는 방식으로 만든다(reserve_given_run_dir. 다음 초로 넘어가지 않는다). 만들지 못하면 종료 코드 1(RunNameError).
 - 출력 파일은 이미 있으면 실패하는 방식("xb")으로 쓴다. 표준 출력에는 outputs부터의 상대경로만 적는다.
 
 스냅샷 명령(결정 D18: 배선은 로드맵 MT5가, 단위 S2·S3 구현은 로드맵 DT1이 맡는다)
@@ -103,26 +105,31 @@ model-decision-as2-run-case)
 평가 하네스는 모듈 단위로만 허용한다. 호스트 전용 샌드박스 밖 실행기(단위 E2, tradesentry.evaluation.sealed_runner)는
 CLI가 부르지 않는다.
 
-evaluate 배선(로드맵 MT7 첫 PR. 최종 연결은 조립 작업 AS3)
-- 사례 실행(run-case) 처리 함수가 아직 자리표시(_not_wired)이거나, 묶음이 부를 사례 실행 함수(EVALUATE_CASE_RUNNER)와
-  묶음 버전 키 함수(EVALUATE_VERSIONS)가 아직 없으면, 실행 폴더를 만들기 전에 분명한 오류 문장과 종료 코드 1로 끝난다.
-  두 자리는 run-case를 잇는 조립(AS2)과 같은 조립이 채운다(AS3). 사례 실행 함수의 모양은 단위 E1의 CaseCall → 실행 쪽 키
-  21개의 객체다. 버전 키 함수는 (요청, 자료 묶음) → policy_version·rulebook_version·snapshot_id·grouping_version·
-  code_version 다섯 키의 객체다.
+evaluate 배선(로드맵 MT7 첫 PR, 최종 연결은 조립 작업 AS3. 결정 기록 model-decision-as3-evaluate)
 - 자료 묶음은 --snapshot으로 정한다 `[해석]`: dev20 → dev20, controlled_fixture_v0 → controlled_fixture_v0,
-  kcs_202201_202412_v2 → real_dev(봉인 묶음은 evaluate가 돌리지 않는다. 샌드박스 밖 실행기 E2의 일). 사례 목록은
-  dev20만 정본 자리 eval/dev/dev20/input/cases.json(DT5)에서 읽는다. controlled_fixture_v0·real_dev의 사례 목록 자리는
-  아직 없어 분명한 오류로 끝난다(AS3이 정한다. real_dev는 DT7의 경보 목록).
-- 모드 목록은 지금 명령 표 그대로 --mode 한 값이다(MT5 결정 ②의 잠정). 사용자 결정 12(2026-09-25 08:47)로 AS3이 --mode를
-  선택 옵션으로 바꾼다: 주지 않으면 E1 PLANNED_MODES[자료 묶음]의 모드 전부를 한 묶음으로, 주면 그 모드 하나만(스모크용,
-  점수표로 합치지 않음) 돈다. 채점기는 dev20·real_dev 묶음의 계획 모드가 그 표 전부가 아니면 채점하지 않는다.
-- 실행명은 사용자 결정 10(나)대로 호스트가 먼저 확보하고 샌드박스 안 CLI에 --run-name으로 넘긴다(CLI 쪽과 샌드박스
-  실행기는 AS3).
-- 순서: 단위 E1 execute_batch(순서 seed DEV_ORDER_SEED, 동시성 1) → 단위 E4 summarize_batch(NAT 사후 평가) → 실행 조건
-  입력 파일 run_conditions-{시각}.json을 묶음 실행 폴더에 배타 생성(E1 write_run_conditions). 표준 출력에는 묶음 기록과
-  실행 조건 입력 파일의 outputs부터의 상대경로만 적는다. 사례 실행이 실패해도 묶음 기록을 끝까지 썼으면 0이다(실패는
-  줄로 분모에 남는다). evaluate를 샌드박스 안에서 돌릴 때는 실행 조건 입력 파일을 샌드박스가 쓰면 안 된다(자료 계약 §8.2:
-  내려받기를 끝낸 호스트 쪽 프로그램이 쓴다). 그 경로의 분기는 AS3·MT5가 정한다.
+  kcs_202201_202412_v2 → real_dev. 봉인 묶음(holdout40·real_sealed)은 evaluate가 돌리지 않는다(샌드박스 밖 실행기 E2의 일,
+  F1 뒤). 사례 목록은 dev20만 정본 자리 eval/dev/dev20/input/cases.json(DT5)에서 읽는다. real_dev(DT7 ①의 경보 목록)와
+  controlled_fixture_v0의 사례 목록 자리는 없어 실행 폴더를 만들기 전에 분명한 오류로 끝난다.
+- 모드(사용자 결정 12(가)): --mode를 주지 않으면 단위 E1 PLANNED_MODES[자료 묶음]의 모드 전부를 한 묶음(순서 seed
+  DEV_ORDER_SEED로 섞음, 동시성 1)으로 돈다. 주면 그 모드 하나만 돌고, 실행 조건 입력 파일의 planned_modes가 그 모드
+  하나이며 reproduce_evaluate에 --mode가 남는다(스모크 표시). 채점기는 dev20·real_dev 묶음의 계획 모드가 정해진 모드 전부가
+  아니면 채점하지 않으므로 점수표로 합쳐지지 않는다. 표준 오류에 스모크 알림 한 줄을 쓴다.
+- 사례 실행 백엔드(EVALUATE_BACKEND, 기본 샌드박스): 샌드박스 백엔드(SandboxCaseRunner)는 사례마다 묶음(E1)이 호스트 쪽
+  outputs/run_case-{시각}/을 확보하면(N8) `openshell sandbox exec`으로 채점 대상 실행 샌드박스(SCORED_SANDBOX) 안 run-case에
+  --run-name으로 그 실행명을 넘기고, MT5 결정 기록 ④·⑯ 절차로 내려받아 실행 결과 기록을 돌려준다. 받지 못하면 그 사례는
+  FAILED 줄(CODE_ERROR, harness:{예외 이름})로 분모에 남는다. 호스트 백엔드(host_case_runner)는 같은 프로세스에서 run-case와
+  같은 조립(run_case_in → investigate_case)을 부른다(시험·스모크용, 점수표 근거 아님). 백엔드는 CLI 옵션·환경변수로 고르지
+  않는다(계약 밖 이름을 만들지 않는다).
+- 샌드박스 백엔드는 실행 폴더를 만들기 전에 사전 점검한다(sandbox_preflight): openshell 명령, 이미지 기록의 코드 커밋(dirty
+  거짓), 그 커밋 = 호스트 code_version. 샌드박스 안 run-case의 code_version은 이미지 기록에서 온다(code_version 참고).
+- 하위 프로세스는 샌드박스 백엔드의 openshell 호출뿐이다(_openshell: "openshell"로 시작하는 목록, 셸 없음, 키 변수와 봉인
+  폴더 변수를 뺀 환경). 샌드박스 안에서 evaluate를 부르면 openshell이 없어 사전 점검에서 끝난다.
+- --run-name(사용자 결정 10(나))이 있으면 그 이름의 묶음 실행 폴더를 이미 있으면 실패하는 방식으로 만들고 E1에 넘긴다.
+- 순서: 사전 점검 → 단위 E1 execute_batch → 단위 E4 summarize_batch(NAT 사후 평가) → 실행 조건 입력 파일
+  run_conditions-{시각}.json을 묶음 실행 폴더에 배타 생성(E1 write_run_conditions. 내려받기를 끝낸 호스트 쪽 프로그램이
+  쓴다, 자료 계약 §8.2). 샌드박스 백엔드는 sandbox.name·sandbox.policy_yaml_sha256을, 두 백엔드 모두 reproduce_evaluate를
+  더한다. 표준 출력에는 묶음 기록과 실행 조건 입력 파일의 outputs부터의 상대경로만 적는다. 사례 실행이 실패해도 묶음
+  기록을 끝까지 썼으면 0이다(실패는 줄로 분모에 남는다).
 """
 import json
 import os
@@ -161,14 +168,26 @@ ASSEMBLIES = {
     "evaluate": "조립체 4(평가 실행). 조립 작업 AS3이 잇는다",
 }
 
-# evaluate 배선(위 "evaluate 배선"). 스냅샷 ID → 자료 묶음 `[해석]`, dev20 사례 목록 자리(DT5), 개발 묶음 순서 seed.
+# evaluate 배선(위 "evaluate 배선"). 스냅샷 ID → 자료 묶음 `[해석]`, 사례 목록 자리, 개발 묶음 순서 seed.
 EVALUATE_DATASETS = {"dev20": "dev20", "controlled_fixture_v0": "controlled_fixture_v0",
                      "kcs_202201_202412_v2": "real_dev"}
+# 사례 목록 자리. dev20은 DT5의 정본 입력. real_dev는 로드맵 DT7 ①의 경보 목록 자리가 정해지면 더한다(그 전에는 분명한
+# 오류). controlled_fixture_v0은 커밋된 입력 사례 목록이 없다(정답 파일 eval/dev/oracle_ABC.json을 입력으로 쓰지 않는다).
 EVALUATE_CASE_LISTS = {"dev20": Path("eval") / "dev" / "dev20" / "input" / "cases.json"}
 DEV_ORDER_SEED = "dev-order-v1"
-# AS2·AS3이 채우는 자리: 사례 실행 함수(단위 E1 CaseCall → 실행 쪽 키 21개)와 버전 키 함수((요청, 자료 묶음) → 버전 키 5개).
-EVALUATE_CASE_RUNNER: Callable[[object], dict] | None = None
-EVALUATE_VERSIONS: Callable[[object, str], dict] | None = None
+# 사례 실행 백엔드(AS3 결정 기록 ③). 기본값은 샌드박스다: 채점 대상 실행은 채점 대상 실행 샌드박스 안에서 돈다(자료 계약
+# §8.2·§10.3 방식 (나)). 호스트 백엔드(같은 프로세스에서 run_case_in을 부른다)는 시험과 스모크용이고 CLI 옵션·환경변수로
+# 고르지 않는다(이 값을 바꿔 끼운다). 호스트에서 돈 묶음은 점수표 근거가 아니다(MT7 결정 기록 "AS3에 넘길 것" 3).
+SANDBOX_BACKEND, HOST_BACKEND = "sandbox", "host"
+EVALUATE_BACKEND = SANDBOX_BACKEND
+SCORED_SANDBOX = "ts-scored"  # 개발 평가용 채점 대상 실행 샌드박스 이름(MT5 위반 시험표 artifacts/openshell/의 이름)
+SANDBOX_CLI = "/opt/tradesentry/bin/tradesentry"  # 이미지 안 CLI 실행기(MT5 결정 기록 ⑧, configs/openshell/image/)
+SANDBOX_OUTPUTS = "/sandbox/outputs"  # 샌드박스 쪽 실행 폴더의 부모(MT5 결정 기록 ③: exec 기본 작업 폴더 /sandbox)
+SANDBOX_IMAGE_MANIFEST = "/opt/tradesentry/image_manifest.json"
+SANDBOX_CHECK_TIMEOUT_S = 60  # 받기 전 확인·이미지 기록 읽기·내려받기 한 번의 제한 시간
+SANDBOX_EXEC_MARGIN_S = 120  # 사례 실행 exec의 제한 시간 = 모델 설정의 사례당 wall time + 이 여유
+CHILD_ENV_DROP = ("NVIDIA_API_KEY", "NVIDIA_INFERENCE_API_KEY", "DATA_GO_KR_SERVICE_KEY", "TRADESENTRY_SEALED_DIR")
+OPENSHELL_POLICY_FILE = Path("configs") / "openshell" / "policy.yaml"  # 채점 대상 실행 샌드박스 정책(MT5 결정 기록 ①)
 
 
 class WiringError(Exception):
@@ -206,9 +225,34 @@ def _wait_until(target: datetime, clock: Callable[[], datetime], sleep: Callable
         sleep(remaining)
 
 
-def reserve_run_dir(run_name: str, *, clock: Callable[[], datetime] = now_kst,
+def reserve_given_run_dir(run_name: str, given: str) -> tuple[str, str, Path]:
+    """호스트가 먼저 확보해 --run-name으로 넘긴 실행명의 실행 폴더를 만든다(사용자 결정 10(나)).
+
+    이름이 N5 형식이고 실행 이름이 run_name이어야 한다(단위 F1이 이미 봤지만 다시 본다). OUTPUT_PARENT 아래에 그 이름의 폴더를
+    이미 있으면 실패하는 방식(os.mkdir)으로 만들고, 다른 부모 폴더(OUTPUT_PARENT/sealed)에 같은 이름이 있으면 방금 만든 빈
+    폴더를 지우고 실패한다. 다음 초로 넘어가지 않는다(이름은 호스트가 정했다). 오류 문장에는 받은 값을 넣지 않는다(N13).
+    """
+    if args.RUN_NAME_RE.fullmatch(given) is None or given.rsplit("-", 1)[0] != run_name:
+        raise RunNameError(f"--run-name의 실행명이 이 명령의 실행명 형식({run_name}-{{시각}})이 아니다")
+    parent = OUTPUT_PARENT
+    parent.mkdir(parents=True, exist_ok=True)
+    run_dir = parent / given
+    try:
+        os.mkdir(run_dir)
+    except FileExistsError:
+        raise RunNameError("--run-name의 실행 폴더가 이미 있다(덮어쓰지 않는다, 자료 계약 §10.3 N8)") from None
+    if os.path.lexists(parent / SEALED_NAME / given):
+        os.rmdir(run_dir)
+        raise RunNameError("--run-name의 실행명이 outputs/sealed/에 이미 있다(자료 계약 §10.3 N8)")
+    return given, given.rsplit("-", 1)[1], run_dir
+
+
+def reserve_run_dir(run_name: str, *, given: str | None = None, clock: Callable[[], datetime] = now_kst,
                     sleep: Callable[[float], None] = time.sleep) -> tuple[str, str, Path]:
     """실행명을 확보하고 (실행명, 시각, 실행 폴더)를 돌려준다(자료 계약 §10.3 N8).
+
+    given(--run-name 값)이 있으면 reserve_given_run_dir로 그 이름의 폴더만 만든다(사용자 결정 10(나)). 없으면 아래대로 CLI가
+    확보한다.
 
     OUTPUT_PARENT 아래에 {실행 이름}-{yymmddhhmmss} 폴더를 이미 있으면 실패하는 방식(os.mkdir)으로 만든다. 그 이름의 초가 될
     때까지 기다린 뒤 만들고, 만든 뒤 다른 부모 폴더(OUTPUT_PARENT/sealed)에 같은 이름이 있으면 방금 만든 빈 폴더를 지우고
@@ -216,6 +260,8 @@ def reserve_run_dir(run_name: str, *, clock: Callable[[], datetime] = now_kst,
     다시 둔 것이다(CLI는 tradesentry.units를 import하지 않는다). 런타임의 실행명 확보(단위 L2)와는 조립 점검(AS4)에서 합칠
     후보다.
     """
+    if given is not None:
+        return reserve_given_run_dir(run_name, given)
     parent = OUTPUT_PARENT
     other = OUTPUT_PARENT / SEALED_NAME
     parent.mkdir(parents=True, exist_ok=True)
@@ -275,7 +321,7 @@ def _snapshot_build(request: args.Request) -> int:
     from tradesentry.contract import policy_load
     from tradesentry.snapshot import build
 
-    run_id, stamp, run_dir = reserve_run_dir("snapshot_build")
+    run_id, stamp, run_dir = reserve_run_dir("snapshot_build", given=request.run_name)
     policy = None
     if request.policy_version is not None:
         try:
@@ -301,7 +347,7 @@ def _snapshot_verify(request: args.Request) -> int:
     """snapshot-verify: 조립체 1의 단위 S3를 부르고 검증 보고를 실행 폴더에 쓴다. 합격 표시 ok로 종료 코드를 정한다."""
     from tradesentry.snapshot import verify  # 명령을 부를 때만 import한다
 
-    run_id, stamp, run_dir = reserve_run_dir("snapshot_verify")
+    run_id, stamp, run_dir = reserve_run_dir("snapshot_verify", given=request.run_name)
     report = verify.run(snapshot_verify_input(request))
     shown = write_output(run_dir, run_id, "snapshot_verify", stamp, "json", report)
     _emit(shown)
@@ -462,7 +508,7 @@ def _detect(request: args.Request) -> int:
     from tradesentry.dal import query
     from tradesentry.policy import case_build, trigger
 
-    run_id, stamp, run_dir = reserve_run_dir(DETECT_RUN_NAME)
+    run_id, stamp, run_dir = reserve_run_dir(DETECT_RUN_NAME, given=request.run_name)
     try:
         policy = policy_load.load_policy(request.policy_version)
     except policy_load.PolicyError:
@@ -492,12 +538,15 @@ RUN_CASE_RUN_NAME = "run_case"  # 실행 이름(N5)
 RUN_CASE_SOURCE_KINDS = ("controlled",)  # 이 판에서 조사하는 출처 종류(허용 목록). 실자료는 분할 기록 정본 위치 승인 뒤 잇는다
 # 합성 스냅샷 → 실행 결과 기록의 dataset(자료 계약 §4.2·§8.1). 표에 없는 합성 스냅샷은 묶음을 정할 수 없어 거부한다
 # (dev20 스냅샷 ID가 정해지면 이 표에 한 줄을 더한다).
-RUN_CASE_DATASETS = {"controlled_fixture_v0": "controlled_fixture_v0"}
+RUN_CASE_DATASETS = {"controlled_fixture_v0": "controlled_fixture_v0", "dev20": "dev20"}  # dev20: DT5 스냅샷 ID(AS3)
 REAL_GROUPING_VERSION = "g0"  # 실자료의 비교 대상 집합(MVP까지 g0). 실자료를 거부하는 이 판에서는 쓰이지 않는다
 RUN_RECORD_DOMAIN = "runlog_run_record"  # 실행 결과 기록을 만드는 단위 L2의 도메인명(UNITS.md §3.13, N4·N6)
+RUN_RECORD_MAX_BYTES = 1 << 20  # 샌드박스에서 받은 실행 결과 기록을 읽는 크기 상한
 REPORT_DOMAIN = "reports_render_ko"  # 최종 보고서를 만드는 단위 R2의 도메인명(UNITS.md §3.7)
 NAT_DOMAIN = "workflow_nat_wrap"  # NAT 추적·프로파일 N7 폴더(단위 I13)
-UNKNOWN_CODE_VERSION = "unknown"  # git 메타를 읽을 수 없을 때의 code_version(샌드박스·휠 설치)
+UNKNOWN_CODE_VERSION = "unknown"  # git 메타와 이미지 기록을 모두 읽을 수 없을 때의 code_version
+IMAGE_MANIFEST = "image_manifest.json"  # 샌드박스 이미지 기록(앱 뿌리 바로 아래, MT5 결정 기록 ⑧)
+IMAGE_MANIFEST_MAX_BYTES = 1 << 20
 PEER_ROW_SCAN_MAX = 100_000  # 비교국 표의 grouping_version을 읽을 때 훑는 rowid 상한
 # 반올림 불안정(U4). 2026-09-25(금) 08:41 사용자 결정(policy_v1 승인, U4 → HOLD 채택)으로 켰다. 규칙은 rounding_unstable,
 # 결정 기록 docs/tracking/decisions/20260925-0846-user-decision-policy-v1-approval.md. 끄는 곳도 이 한 줄이다.
@@ -516,13 +565,42 @@ class RunCaseError(Exception):
     """run-case가 사례를 조사하지 않고 끝내는 까닭(종료 코드 1). 문장에는 받은 값·스냅샷 안의 값을 넣지 않는다(N13)."""
 
 
+def image_code_version(root: Path) -> str:
+    """샌드박스 이미지 기록(<앱 뿌리>/image_manifest.json, 스테이징 도구 scripts/stage_sandbox_image.py가 쓴다)의 git 커밋.
+
+    이미지 안에는 .git이 없으므로 샌드박스 안 실행의 code_version은 이 값으로 채운다(MT5 결정 기록 ⑧). 커밋이 40자 16진수이고
+    추적 파일 변경 없음(dirty가 거짓)일 때만 그 커밋이고, 아니면 UNKNOWN_CODE_VERSION이다(고친 코드를 커밋 해시로 적지 않는다).
+    """
+    try:
+        path = root / IMAGE_MANIFEST
+        if path.is_symlink() or not path.is_file():
+            return UNKNOWN_CODE_VERSION
+        with open(path, "rb") as handle:
+            data = handle.read(IMAGE_MANIFEST_MAX_BYTES + 1)
+        doc = json.loads(data.decode("utf-8")) if len(data) <= IMAGE_MANIFEST_MAX_BYTES else None
+    except (OSError, UnicodeError, ValueError, RecursionError):
+        return UNKNOWN_CODE_VERSION
+    version = doc.get("code_version") if isinstance(doc, dict) else None
+    commit = version.get("git_commit") if isinstance(version, dict) else None
+    if isinstance(commit, str) and re.fullmatch(r"[0-9a-f]{40}", commit) and version.get("dirty") is False:
+        return commit
+    return UNKNOWN_CODE_VERSION
+
+
 def code_version(root: Path | None = None) -> str:
     """실행한 코드의 git 커밋 해시(자료 계약 §8.1 code_version). 하위 프로세스 없이 git 메타 파일을 읽는다.
 
-    작업 폴더(git worktree)의 .git 파일(gitdir)과 commondir, packed-refs를 따른다. 읽을 수 없거나 40자 16진수가 아니면
-    UNKNOWN_CODE_VERSION이다. 경로는 돌려주지 않는다(N13). 작업 트리의 고치지 않은 변경은 표시하지 않는다.
+    작업 폴더(git worktree)의 .git 파일(gitdir)과 commondir, packed-refs를 따른다. git 메타를 읽을 수 없으면(샌드박스 이미지)
+    이미지 기록의 커밋(image_code_version)을 쓴다. 둘 다 없거나 40자 16진수가 아니면 UNKNOWN_CODE_VERSION이다. 경로는
+    돌려주지 않는다(N13). 작업 트리의 고치지 않은 변경은 표시하지 않는다.
     """
     root = Path(__file__).resolve().parents[3] if root is None else Path(root)
+    found = _git_code_version(root)
+    return found if found != UNKNOWN_CODE_VERSION else image_code_version(root)
+
+
+def _git_code_version(root: Path) -> str:
+    """git 메타 파일에서 읽은 커밋(code_version의 첫 출처)."""
 
     def checked(value: str) -> str:
         return value if re.fullmatch(r"[0-9a-f]{40}", value) else UNKNOWN_CODE_VERSION
@@ -900,42 +978,60 @@ def investigate_case(snap, policy: dict, case: dict, request: args.Request, run_
             "trace": f"{OUTPUT_LABEL}/{run_id}/{trace_file.name}", "nat": f"{OUTPUT_LABEL}/{run_id}/{nat_dir.name}"}
 
 
+def run_case_in(request: args.Request, run_id: str, stamp: str, run_dir: Path) -> tuple[dict, list[str]]:
+    """확보한 빈 실행 폴더(run_dir)에서 사례 1건을 조사하고 출력 파일을 쓴다. run-case 처리 함수와 evaluate의 호스트 백엔드
+    (host_case_runner)가 같이 쓴다(AS2 결정 기록 "AS3" 항목: investigate_case 배선을 그대로 써서 필수 조회·초안 차례·
+    참고값 세 포트가 켜진다).
+
+    돌려주는 값: (실행 쪽 키 21개, 표준 출력에 적을 상대경로 목록: trace·NAT 폴더·실행 결과 기록·보고서(있을 때)).
+    정책(PolicyError)·모델 설정(ConfigError)·스냅샷(SnapshotError·ScopeError)을 읽지 못하거나 사례가 아니면(RunCaseError)
+    예외를 낸다. 예외 문장에는 받은 값·스냅샷 안의 값을 넣지 않는다(N13).
+    """
+    # 명령을 부를 때만 import한다(도움말·인자 오류는 조립체를 불러오지 않는다). 모듈 속성으로 불러 시험 대역이 걸리게 한다.
+    from tradesentry.contract import policy_load
+    from tradesentry.dal import query
+    from tradesentry.workflow import model_client
+
+    policy = policy_load.load_policy(request.policy_version)
+    model_client.load_model_config()
+    with query.open_snapshot(request.snapshot_id) as snap:
+        if snap.source_kind not in RUN_CASE_SOURCE_KINDS:  # 관측 값을 읽기 전에 거부한다(머리 설명)
+            raise RunCaseError(RUN_CASE_REFUSAL)
+        # 실자료를 잇는 자리(분할 기록 정본 위치 승인 뒤): 사례 계열이 real_dev에 배정된 경우만 받고 real_sealed는 관측
+        # 값을 읽기 전에 거부한다. dataset은 real_dev, 비교 대상 집합은 REAL_GROUPING_VERSION(결정 기록 AS2 ⑩).
+        dataset = RUN_CASE_DATASETS.get(snap.snapshot_id)
+        if dataset is None:
+            raise RunCaseError("오류: tradesentry run-case가 이 합성 스냅샷의 자료 묶음(dataset)을 정하지 못했다"
+                               "(RUN_CASE_DATASETS에 없다).")
+        grouping_version = snapshot_grouping_version(snap)
+        case = rebuild_case(snap, policy, request.case)
+        outcome = investigate_case(snap, policy, case, request, run_id, stamp, run_dir, dataset=dataset,
+                                   grouping_version=grouping_version)
+    record, report = outcome["record"], outcome["report"]
+    shown = [outcome["trace"], outcome["nat"], _write_json(run_dir, run_id, RUN_RECORD_DOMAIN, stamp, record)]
+    if report is not None:
+        shown.append(_write_json(run_dir, run_id, REPORT_DOMAIN, stamp, report))
+    return record, shown
+
+
 def _run_case(request: args.Request) -> int:
     """run-case: 조립체 3으로 사례 1건을 조사해 실행 폴더에 trace·NAT 추적·실행 결과 기록·보고서를 쓴다(머리 설명 "사례
-    조사 명령 run-case")."""
-    # 명령을 부를 때만 import한다(도움말·인자 오류는 조립체를 불러오지 않는다). 모듈 속성으로 불러 시험 대역이 걸리게 한다.
+    조사 명령 run-case"). --run-name이 있으면 호스트가 확보한 그 실행명을 쓴다(사용자 결정 10(나))."""
     from tradesentry.contract import policy_load
     from tradesentry.dal import query
     from tradesentry.runlog import cause_codes
     from tradesentry.workflow import model_client
 
-    run_id, stamp, run_dir = reserve_run_dir(RUN_CASE_RUN_NAME)
+    run_id, stamp, run_dir = reserve_run_dir(RUN_CASE_RUN_NAME, given=request.run_name)
     try:
-        policy = policy_load.load_policy(request.policy_version)
+        record, shown = run_case_in(request, run_id, stamp, run_dir)
     except policy_load.PolicyError:
         _report("오류: tradesentry run-case가 --policy의 정책을 읽지 못했다(PolicyError). "
                 "정책 버전 이름과 configs/의 정책 파일을 확인한다.")
         return EXIT_FAILED
-    try:
-        model_client.load_model_config()
     except model_client.ConfigError:
         _report("오류: tradesentry run-case가 모델 설정(configs/model/)을 읽지 못했다(ConfigError).")
         return EXIT_FAILED
-    try:
-        with query.open_snapshot(request.snapshot_id) as snap:
-            if snap.source_kind not in RUN_CASE_SOURCE_KINDS:  # 관측 값을 읽기 전에 거부한다(머리 설명)
-                _report(RUN_CASE_REFUSAL)
-                return EXIT_FAILED
-            # 실자료를 잇는 자리(분할 기록 정본 위치 승인 뒤): 사례 계열이 real_dev에 배정된 경우만 받고 real_sealed는 관측
-            # 값을 읽기 전에 거부한다. dataset은 real_dev, 비교 대상 집합은 REAL_GROUPING_VERSION(결정 기록 AS2 ⑩).
-            dataset = RUN_CASE_DATASETS.get(snap.snapshot_id)
-            if dataset is None:
-                raise RunCaseError("오류: tradesentry run-case가 이 합성 스냅샷의 자료 묶음(dataset)을 정하지 못했다"
-                                   "(RUN_CASE_DATASETS에 없다).")
-            grouping_version = snapshot_grouping_version(snap)
-            case = rebuild_case(snap, policy, request.case)
-            outcome = investigate_case(snap, policy, case, request, run_id, stamp, run_dir, dataset=dataset,
-                                       grouping_version=grouping_version)
     except RunCaseError as exc:
         _report(str(exc))
         return EXIT_FAILED
@@ -946,12 +1042,8 @@ def _run_case(request: args.Request) -> int:
     except query.ScopeError:
         _report("오류: tradesentry run-case의 조회가 스냅샷의 분석 범위 밖이다(ScopeError).")
         return EXIT_FAILED
-    record, report = outcome["record"], outcome["report"]
-    _emit(outcome["trace"])
-    _emit(outcome["nat"])
-    _emit(_write_json(run_dir, run_id, RUN_RECORD_DOMAIN, stamp, record))
-    if report is not None:
-        _emit(_write_json(run_dir, run_id, REPORT_DOMAIN, stamp, report))
+    for line in shown:
+        _emit(line)
     if record.get("execution_status") == cause_codes.COMPLETED:
         return EXIT_OK
     codes = [e.get("code") for e in record.get("errors") or [] if isinstance(e, dict)]
@@ -977,19 +1069,271 @@ def evaluate_cases(dataset: str, snapshot_id: str) -> list[dict]:
     return doc["cases"]
 
 
+def evaluate_versions(request: args.Request, dataset: str) -> dict:
+    """묶음의 버전 키 5개(단위 E1 VERSION_KEYS). 정책·스냅샷은 요청, 룰북은 커널 K1, 비교 대상 집합은 스냅샷(합성은 비교국
+    표 행의 값, 실자료는 REAL_GROUPING_VERSION), 코드는 code_version()이다. 샌드박스 백엔드는 code_version을 이미지 기록과
+    대조한다(sandbox_preflight)."""
+    from tradesentry.contract import types
+    from tradesentry.dal import query
+
+    with query.open_snapshot(request.snapshot_id) as snap:
+        grouping = snapshot_grouping_version(snap) if snap.source_kind in RUN_CASE_SOURCE_KINDS \
+            else REAL_GROUPING_VERSION
+    return {"policy_version": request.policy_version, "rulebook_version": types.RULEBOOK_VERSION,
+            "snapshot_id": request.snapshot_id, "grouping_version": grouping, "code_version": code_version()}
+
+
+def host_case_runner(call) -> dict:
+    """호스트 백엔드의 사례 실행 함수(단위 E1 CaseCall → 실행 쪽 키 21개). 묶음이 확보한 사례 실행 폴더에서 run_case_in을
+    부른다(실행명을 다시 확보하지 않는다). 사례를 조사하지 못하면 예외를 내고, 묶음이 그 사례를 FAILED 줄로 남긴다."""
+    request = args.Request(command="run-case", snapshot_id=call.versions["snapshot_id"],
+                           policy_version=call.versions["policy_version"], mode=call.mode, case=call.case["case_id"],
+                           run_name=call.run_id)
+    record, _ = run_case_in(request, call.run_id, call.stamp, call.run_dir)
+    return record
+
+
+# ------------------------------------------------------------------------------ 샌드박스 백엔드(AS3 결정 기록 ③~⑥)
+class SandboxError(Exception):
+    """샌드박스 백엔드가 사례 실행 기록을 받지 못했다. 묶음은 하위 클래스 이름을 사유로 FAILED 줄(원인 CODE_ERROR,
+    detail harness:{이름})을 남긴다(MT5 결정 기록 ⑯: 분모에 남는 실패). 문장에는 값·경로를 넣지 않는다."""
+
+
+class SandboxExecFailed(SandboxError):
+    """openshell sandbox exec을 부르지 못했거나(openshell 없음·제한 시간 초과) 실행 폴더 없이 끝났다."""
+
+
+class SandboxOutputMissing(SandboxError):
+    """받기 전 확인(샌드박스 쪽 실행 폴더가 링크가 아닌 폴더인가)이 통과하지 않았다."""
+
+
+class DownloadFailed(SandboxError):
+    """openshell sandbox download가 0이 아닌 종료 코드로 끝났다."""
+
+
+class DownloadRejected(SandboxError):
+    """받은 내용에 심볼릭 링크나 일반 파일·폴더가 아닌 항목이 있거나, 한 겹 더 싸인 모양이다. 옮기지 않았다."""
+
+
+class DownloadMoveConflict(SandboxError):
+    """받는 곳(확보한 사례 실행 폴더)이 비어 있지 않거나, 옮길 이름이 이미 있다."""
+
+
+class RunRecordMissing(SandboxError):
+    """받은 실행 폴더에 실행 결과 기록 파일이 없거나 읽을 수 없다."""
+
+
+def _child_env() -> dict:
+    """openshell 하위 프로세스 환경: 키 변수와 봉인 폴더 변수를 뺀다(값을 읽지 않고 이름으로만 거른다)."""
+    return {key: value for key, value in os.environ.items() if key not in CHILD_ENV_DROP}
+
+
+def _openshell(argv: list, timeout: float):
+    """openshell 하위 프로세스를 부른다. argv는 "openshell"로 시작하는 목록이다(셸을 쓰지 않는다). 부를 수 없거나 제한
+    시간을 넘으면 None, 아니면 subprocess.CompletedProcess."""
+    import subprocess
+
+    if not argv or argv[0] != "openshell":
+        raise WiringError("openshell 하위 프로세스는 openshell로 시작하는 목록으로만 부른다")
+    try:
+        return subprocess.run(argv, capture_output=True, timeout=timeout, env=_child_env(), stdin=subprocess.DEVNULL)
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def sandbox_preflight(sandbox: str, host_code_version: str) -> str | None:
+    """샌드박스 백엔드의 사전 점검(실행 폴더를 만들기 전). 문제가 없으면 None, 있으면 오류 문장.
+
+    1) openshell 명령이 있는가 2) 이미지 기록(SANDBOX_IMAGE_MANIFEST)의 code_version.git_commit이 40자 16진수이고 dirty가
+    거짓인가 3) 그 커밋이 호스트 code_version과 같은가(다르면 사례 기록의 code_version이 묶음 값과 달라 모든 줄이 실패한다).
+    """
+    import shutil
+
+    if shutil.which("openshell") is None:
+        return ("오류: tradesentry evaluate의 샌드박스 백엔드가 openshell 명령을 찾지 못했다. evaluate는 호스트에서 "
+                "부르고, 사례는 채점 대상 실행 샌드박스 안에서 돈다.")
+    done = _openshell(["openshell", "sandbox", "exec", "-n", sandbox, "--timeout", str(SANDBOX_CHECK_TIMEOUT_S), "--",
+                       "cat", SANDBOX_IMAGE_MANIFEST], SANDBOX_CHECK_TIMEOUT_S + 30)
+    try:
+        doc = json.loads(done.stdout.decode("utf-8")) if done is not None and done.returncode == 0 else None
+    except (UnicodeError, ValueError, RecursionError):
+        doc = None
+    version = doc.get("code_version") if isinstance(doc, dict) else None
+    commit = version.get("git_commit") if isinstance(version, dict) else None
+    if not isinstance(commit, str) or re.fullmatch(r"[0-9a-f]{40}", commit) is None:
+        return (f"오류: tradesentry evaluate가 샌드박스 {sandbox}의 이미지 기록에서 코드 커밋을 읽지 못했다"
+                "(샌드박스가 없거나 이미지 기록이 없다).")
+    if version.get("dirty") is not False:
+        return ("오류: 샌드박스 이미지가 추적 파일을 고친 작업 트리에서 만들어졌거나(dirty) 그 여부를 모른다. 커밋한 "
+                "코드로 이미지를 다시 만든다(MT5 결정 기록 ⑧).")
+    if commit != host_code_version:
+        return ("오류: 샌드박스 이미지의 코드 커밋이 evaluate를 부른 코드의 커밋과 다르다. 같은 커밋에서 이미지를 다시 "
+                "만들거나 그 커밋에서 evaluate를 부른다.")
+    return None
+
+
+def _scan_download(temp: Path, run_id: str) -> tuple[list[Path], list[Path]]:
+    """받은 임시 폴더를 링크를 따라가지 않고(os.lstat) 훑는다. (심볼릭 링크 목록, 일반 파일·폴더가 아닌 항목 목록).
+    내용이 {실행명} 폴더 하나로 한 겹 더 싸여 있으면(T-DL1과 다른 모양) DownloadRejected."""
+    import stat
+
+    top = list(os.scandir(temp))
+    if len(top) == 1 and top[0].name == run_id and top[0].is_dir(follow_symlinks=False):
+        raise DownloadRejected("받은 내용이 실행명 폴더로 한 겹 더 싸여 있다")
+    links, others = [], []
+    for folder, dirnames, filenames in os.walk(temp, followlinks=False):
+        for name in dirnames + filenames:
+            path = Path(folder) / name
+            mode = os.lstat(path).st_mode
+            if stat.S_ISLNK(mode):
+                links.append(path)
+            elif not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
+                others.append(path)
+    return links, others
+
+
+class SandboxCaseRunner:
+    """샌드박스 백엔드의 사례 실행 함수(단위 E1 CaseCall → 실행 쪽 키 21개, AS3 결정 기록 ④).
+
+    1) exec: `openshell sandbox exec -n <샌드박스> --timeout <초> -- /opt/tradesentry/bin/tradesentry run-case --snapshot …
+       --policy … --mode … --case … --run-name <call.run_id>`(사용자 결정 10(나): 호스트가 확보한 실행명을 넘긴다. 샌드박스 안
+       CLI는 /sandbox/outputs/<실행명>/에 쓴다)
+    2) 받기 전 확인(MT5 결정 기록 ⑯ T-DL4): `sh -c 'test -d …/<실행명> && ! test -L …/<실행명> && ! test -L /sandbox/outputs'`
+    3) 내려받기(MT5 결정 기록 ④): 같은 부모(outputs/) 아래 새 임시 폴더 .download-*에 받고, os.lstat으로 링크·특수 파일을
+       거부하고(링크만 os.unlink로 지우고 임시 폴더를 .quarantine-*로 격리), 확보한 빈 사례 실행 폴더로 os.rename한다
+    4) 받은 실행 결과 기록(runlog_run_record-{시각}.json)을 읽어 돌려준다. 샌드박스 쪽 종료 코드가 1이어도(실행이 COMPLETED가
+       아님) 기록이 있으면 그 기록이다(실제 원인 분류 코드). 기록을 받지 못하면 SandboxError 하위 예외를 내고, 묶음이 FAILED
+       줄로 분모에 남긴다(MT5 결정 기록 ⑯)
+    """
+
+    def __init__(self, sandbox: str = SCORED_SANDBOX, *, exec_timeout_s: int):
+        self.sandbox = sandbox
+        self.exec_timeout_s = exec_timeout_s
+        self.incidents: list[str] = []
+
+    def __call__(self, call) -> dict:
+        request = sandbox_request(call)
+        remote = f"{SANDBOX_OUTPUTS}/{call.run_id}"
+        done = _openshell(["openshell", "sandbox", "exec", "-n", self.sandbox, "--timeout", str(self.exec_timeout_s),
+                           "--", SANDBOX_CLI, "run-case", "--snapshot", request.snapshot_id, "--policy",
+                           request.policy_version, "--mode", request.mode, "--case", request.case, "--run-name",
+                           request.run_name], self.exec_timeout_s + 30)
+        if done is None:
+            raise SandboxExecFailed("openshell sandbox exec을 부르지 못했거나 제한 시간을 넘었다")
+        check = _openshell(["openshell", "sandbox", "exec", "-n", self.sandbox, "--timeout",
+                            str(SANDBOX_CHECK_TIMEOUT_S), "--", "sh", "-c",
+                            f"test -d {remote} && ! test -L {remote} && ! test -L {SANDBOX_OUTPUTS}"],
+                           SANDBOX_CHECK_TIMEOUT_S + 30)
+        if check is None or check.returncode != 0:
+            if done.returncode not in (EXIT_OK, EXIT_FAILED):
+                raise SandboxExecFailed("샌드박스 안 run-case가 실행 폴더 없이 끝났다")
+            raise SandboxOutputMissing("받기 전 확인이 통과하지 않았다")
+        self.download(call, remote)
+        return self.read_record(call)
+
+    def download(self, call, remote: str) -> None:
+        """MT5 결정 기록 ④의 2~6단계. 받는 곳은 묶음이 확보한 빈 사례 실행 폴더(call.run_dir)다."""
+        import tempfile
+
+        target = call.run_dir
+        if target.is_symlink() or not target.is_dir() or any(target.iterdir()):
+            raise DownloadMoveConflict("받는 곳이 확보한 빈 폴더가 아니다")
+        temp = Path(tempfile.mkdtemp(prefix=".download-", dir=target.parent))
+        got = _openshell(["openshell", "sandbox", "download", self.sandbox, remote, str(temp)],
+                         SANDBOX_CHECK_TIMEOUT_S + 30)
+        if got is None or got.returncode != 0:
+            self._discard(temp)
+            raise DownloadFailed("openshell sandbox download가 실패했다")
+        links, others = _scan_download(temp, call.run_id)
+        if links or others:
+            for link in links:
+                os.unlink(link)  # 링크 자체만 지운다(대상을 따라가지 않는다)
+            quarantine = temp.with_name(".quarantine-" + temp.name.lstrip(".").split("-", 1)[-1])
+            os.rename(temp, quarantine)
+            self.incidents.append(f"{call.run_id}: 링크 {len(links)}개·특수 항목 {len(others)}개를 거부하고 "
+                                  f"{quarantine.name}로 격리했다")
+            raise DownloadRejected("받은 내용에 링크나 특수 항목이 있다")
+        for entry in sorted(os.listdir(temp)):
+            if os.path.lexists(target / entry):
+                raise DownloadMoveConflict("옮길 이름이 받는 곳에 이미 있다")
+            os.rename(temp / entry, target / entry)
+        os.rmdir(temp)
+
+    @staticmethod
+    def _discard(temp: Path) -> None:
+        """실패한 받기의 임시 폴더를 지운다. 링크를 따라가지 않는다(shutil.rmtree는 링크를 지우기만 한다)."""
+        import shutil
+
+        shutil.rmtree(temp, ignore_errors=True)
+
+    @staticmethod
+    def read_record(call) -> dict:
+        """받은 실행 결과 기록 runlog_run_record-{시각}.json을 읽는다(링크·크기 상한 확인)."""
+        from tradesentry.runlog import trace as trace_log
+
+        path = call.run_dir / f"{RUN_RECORD_DOMAIN}-{call.stamp}.json"
+        if path.is_symlink() or not path.is_file():
+            raise RunRecordMissing("받은 실행 폴더에 실행 결과 기록이 없다")
+        with open(path, "rb") as handle:
+            data = handle.read(RUN_RECORD_MAX_BYTES + 1)
+        if len(data) > RUN_RECORD_MAX_BYTES:
+            raise RunRecordMissing("실행 결과 기록이 크기 상한을 넘는다")
+        try:
+            record = trace_log.loads(data.decode("utf-8"))
+        except (UnicodeError, ValueError, RecursionError):
+            raise RunRecordMissing("실행 결과 기록이 JSON이 아니다") from None
+        if not isinstance(record, dict):
+            raise RunRecordMissing("실행 결과 기록이 객체가 아니다")
+        return record
+
+
+def sandbox_request(call) -> args.Request:
+    """샌드박스 안 run-case에 넘길 값을 단위 F1의 검사 함수로 다시 본다(명령 인자로 나가는 값이라). 틀리면 WiringError
+    (묶음이 그 사례를 FAILED 줄로 남긴다). 문장에는 값을 넣지 않는다."""
+    values = (call.versions.get("snapshot_id"), call.versions.get("policy_version"), call.mode,
+              call.case.get("case_id"), call.run_id)
+    if not all(isinstance(value, str) for value in values):
+        raise WiringError("샌드박스에 넘길 값이 문자열이 아니다")
+    snapshot_id, policy_version, mode, case_id, run_id = values
+    try:
+        args.check_snapshot_id(snapshot_id)
+        args.check_policy_version(policy_version)
+        args.check_case(case_id)
+        args.check_run_name_for("run-case")(run_id)
+    except Exception:  # argparse.ArgumentTypeError(값을 되풀이하지 않는 문장)
+        raise WiringError("샌드박스에 넘길 값이 CLI 인자 형식이 아니다") from None
+    if mode not in args.MODES or run_id != f"{RUN_CASE_RUN_NAME}-{call.stamp}":
+        raise WiringError("샌드박스에 넘길 모드나 사례 실행명이 형식이 아니다")
+    return args.Request(command="run-case", snapshot_id=snapshot_id, policy_version=policy_version, mode=mode,
+                        case=case_id, run_name=run_id)
+
+
+def _policy_file_sha256() -> str | None:
+    """채점 대상 실행 샌드박스 정책 파일의 sha256(실행 조건 입력 파일 sandbox.policy_yaml_sha256). 없으면 None."""
+    import hashlib
+
+    path = Path(__file__).resolve().parents[3] / OPENSHELL_POLICY_FILE
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+def reproduce_command(request: args.Request) -> str:
+    """실행 조건 입력 파일 reproduce_evaluate(룰북 B7 재현 명령). --mode를 줬으면 그 값도 적는다(스모크 묶음 표시)."""
+    command = f"tradesentry evaluate --snapshot {request.snapshot_id} --policy {request.policy_version}"
+    return command + (f" --mode {request.mode}" if request.mode else "")
+
+
 def _evaluate(request: args.Request) -> int:
     """evaluate: 단위 E1 묶음 실행 → 단위 E4 NAT 사후 평가 → 실행 조건 입력 파일(위 "evaluate 배선")."""
-    if HANDLERS["run-case"] is _not_wired or EVALUATE_CASE_RUNNER is None or EVALUATE_VERSIONS is None:
-        _report("오류: tradesentry evaluate는 사례 실행(run-case)이 아직 조립되지 않아 돌 수 없다. "
-                f"{ASSEMBLIES['run-case']}. evaluate의 최종 연결은 조립 작업 AS3이 한다.")
-        return EXIT_FAILED
     # 명령을 부를 때만 import한다. 모듈 속성으로 불러 시험 대역이 걸리게 한다.
     from tradesentry.contract import policy_load
     from tradesentry.evaluation import batch_run, nat_eval
     from tradesentry.workflow import model_client, orchestrate
 
     dataset = EVALUATE_DATASETS.get(request.snapshot_id)
-    if dataset is None:
+    if dataset is None or dataset not in batch_run.UNSEALED_DATASETS:
         _report("오류: tradesentry evaluate가 --snapshot의 자료 묶음을 모른다(dev20·controlled_fixture_v0·"
                 "kcs_202201_202412_v2만 받는다. 봉인 묶음은 샌드박스 밖 실행기가 돌린다).")
         return EXIT_FAILED
@@ -997,30 +1341,59 @@ def _evaluate(request: args.Request) -> int:
         cases = evaluate_cases(dataset, request.snapshot_id)
     except LookupError:
         _report(f"오류: tradesentry evaluate가 자료 묶음 {dataset}의 사례 목록 자리를 모르거나 파일이 없다"
-                "(dev20은 eval/dev/dev20/input/cases.json. 다른 묶음의 자리는 조립 작업 AS3이 정한다).")
+                "(dev20은 eval/dev/dev20/input/cases.json. real_dev는 로드맵 DT7 ①의 경보 목록 자리가 정해지면 잇는다).")
         return EXIT_FAILED
     except ValueError as exc:
         _report(f"오류: tradesentry evaluate가 사례 목록을 읽지 못했다({type(exc).__name__}).")
         return EXIT_FAILED
+    modes = (request.mode,) if request.mode else batch_run.PLANNED_MODES[dataset]  # 사용자 결정 12(가)
     try:
         thresholds = orchestrate.policy_thresholds(policy_load.load_policy(request.policy_version))
-        limits = batch_run.limits_from_run_limits(model_client.load_model_config().limits)
-        versions = EVALUATE_VERSIONS(request, dataset)
-        spec = batch_run.BatchSpec(dataset=dataset, cases=tuple(cases), modes=(request.mode,),
+        run_limits = model_client.load_model_config().limits
+        limits = batch_run.limits_from_run_limits(run_limits)
+        versions = evaluate_versions(request, dataset)
+        spec = batch_run.BatchSpec(dataset=dataset, cases=tuple(cases), modes=tuple(modes),
                                    order_seed=DEV_ORDER_SEED, versions=versions)
         batch_run.check_spec(spec)
-    except ValueError as exc:  # PolicyError·ConfigError·BatchError는 ValueError다. 예외 이름만 적는다(N13)
+    except ValueError as exc:  # PolicyError·ConfigError·BatchError·SnapshotError는 ValueError다. 예외 이름만 적는다(N13)
         _report(f"오류: tradesentry evaluate의 묶음 입력이 규칙에 맞지 않는다({type(exc).__name__}).")
         return EXIT_FAILED
-    result = batch_run.execute_batch(spec, EVALUATE_CASE_RUNNER, parent=OUTPUT_PARENT,
-                                     other_parent=OUTPUT_PARENT / SEALED_NAME)
+    extra: dict = {"reproduce_evaluate": reproduce_command(request)}
+    if EVALUATE_BACKEND == SANDBOX_BACKEND:
+        problem = sandbox_preflight(SCORED_SANDBOX, versions["code_version"])
+        if problem is not None:
+            _report(problem)
+            return EXIT_FAILED
+        runner = SandboxCaseRunner(SCORED_SANDBOX, exec_timeout_s=limits["wall_time_s"] + SANDBOX_EXEC_MARGIN_S)
+        sandbox = {"name": SCORED_SANDBOX}
+        policy_sha = _policy_file_sha256()
+        if policy_sha is not None:
+            sandbox["policy_yaml_sha256"] = policy_sha
+        extra["sandbox"] = sandbox
+    elif EVALUATE_BACKEND == HOST_BACKEND:
+        runner = host_case_runner
+    else:
+        raise WiringError("evaluate의 사례 실행 백엔드가 sandbox·host가 아니다")
+    reserved = None
+    if request.run_name is not None:
+        reserved = reserve_run_dir(batch_run.BATCH_RUN_NAME, given=request.run_name)
+    result = batch_run.execute_batch(spec, runner, parent=OUTPUT_PARENT, other_parent=OUTPUT_PARENT / SEALED_NAME,
+                                     reserved=reserved)
     _emit(f"{OUTPUT_LABEL}/{result.run_id}/{result.batch_file.name}")
+    for incident in getattr(runner, "incidents", []):
+        _report(f"사건: {incident}")
     summary = nat_eval.summarize_batch(result.run_dir)
     doc = batch_run.build_run_conditions(dataset=dataset, cases=cases, modes=list(spec.modes), thresholds=thresholds,
                                          order_seed=DEV_ORDER_SEED, limits=limits,
-                                         run_period=(result.started, result.ended), nat_profile_summary=summary)
+                                         run_period=(result.started, result.ended), nat_profile_summary=summary,
+                                         extra=extra)
     path = batch_run.write_run_conditions(result.run_dir, doc)
     _emit(f"{OUTPUT_LABEL}/{result.run_id}/{path.name}")
+    if request.mode:
+        _report(f"알림: --mode {request.mode} 하나만 돈 스모크 묶음이다. 점수표로 합치지 않는다(사용자 결정 12). 채점기는 "
+                "dev20·real_dev 묶음의 계획 모드가 정해진 모드 전부가 아니면 채점하지 않는다.")
+    if EVALUATE_BACKEND == HOST_BACKEND:
+        _report("알림: 호스트 백엔드로 돈 묶음이다(시험·스모크용). 점수표 근거가 아니다.")
     return EXIT_OK
 
 
@@ -1055,6 +1428,9 @@ def call_handler(request: args.Request) -> int:
     except WiringError as exc:
         _report(f"오류: tradesentry {command}의 배선 계약 위반이다. {exc}.")
         return EXIT_WIRING
+    except RunNameError as exc:  # 문장은 이 모듈이 만든 것뿐이다(받은 값을 넣지 않는다, N13)
+        _report(f"오류: tradesentry {command}가 실행명을 확보하지 못했다. {exc}.")
+        return EXIT_FAILED
     except SystemExit:
         _report(f"오류: tradesentry {command}의 처리 함수가 종료 코드를 돌려주지 않고 SystemExit로 끝났다.")
         return EXIT_WIRING
