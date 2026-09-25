@@ -9,13 +9,14 @@
 
 S0 제안: 사례 실행은 묶음 폴더 안이 아니라 형제 폴더 outputs/run_case-{시각}/에 두고, 묶음 기록의 줄마다 적는 run_id로 잇는다.
 
-호스트 전용 샌드박스 밖 실행기 E2(tradesentry.evaluation.sealed_runner)를 import하지 않는다(경계 시험이 본다).
+호스트 전용 샌드박스 밖 실행기 E2(tradesentry.evaluation.sealed_runner)를 import하지 않는다(경계 시험이 본다). E2는 이
+모듈을 import해 같은 묶음 고리를 쓴다(MT7 두 번째 PR에서 경계를 한쪽으로 열었다. 이 모듈은 사례를 호스트에서 돌리지 않는다).
 
 정본: docs/plan/UNITS.md E1 행, 자료 계약 docs/rules/DATA_CONTRACT_V1.md §8·§10.3 N5·N6·N8, 룰북 docs/eval/RULEBOOK.md B2·B5.
 
 세 가지를 한다.
 1. 실행 순서(run): (사례, 모드) 목록을 고정 seed로 섞는다(룰북 B5 교차 배치). 순수 함수라 골든 시험의 대상이다.
-   섞는 법(바이트 수준으로 고정. 샌드박스 밖 실행기 E2는 이 모듈을 import할 수 없으므로 같은 규칙을 따로 구현한다):
+   섞는 법(바이트 수준으로 고정. 파이썬 판과 관계없이 같은 순서다. E2도 이 함수를 쓴다):
    (사례, 모드)마다 열쇠 = sha256(UTF-8 바이트 "{seed}\\n{case_id}\\n{mode}")의 16진수 소문자 64자를 만들고, 열쇠 →
    case_id → mode 순으로 오름차순 정렬한다. seed와 목록이 같으면 파이썬 판과 관계없이 같은 순서다.
 2. 묶음 실행(execute_batch): 묶음 실행 폴더 outputs/evaluate-{시각}/를 확보하고, 순서대로 동시성 1로 사례마다 새
@@ -41,7 +42,10 @@ S0 제안: 사례 실행은 묶음 폴더 안이 아니라 형제 폴더 outputs
      (configs/model/model.json의 pacing)에서 부르는 쪽이 읽어 넘기고, 모든 모드에 같다. 429로 끝난 실행은 인프라 실패
      재실행 대상이다(2026-09-25 15:52 사용자 결정, 사용자 결정 5 변경). 재실행도 모델 실행이라 같은 속도 조절을 받는다.
      429 줄을 가르는 곳은 단위 L3 rate_limited_entry 하나다. 쉰 시간의 합과 429 뒤 쉰 횟수는 BatchResult에 남는다.
-   - 봉인 묶음(holdout40·real_sealed)은 받지 않는다. 봉인 묶음은 샌드박스 밖 실행기 E2가 돌린다(자료 계약 §8.2).
+   - 봉인 묶음(holdout40·real_sealed)은 기본값(sealed=False)으로는 받지 않는다. 봉인 묶음은 샌드박스 밖 실행기 E2가
+     sealed=True로 이 함수를 불러 돌린다(로드맵 MT7 두 번째 PR): 그때는 자료 묶음이 봉인 묶음이고 부모가 outputs/sealed/
+     아래여야 하며, 실행 이름(run_name)과 묶음 기록 도메인명(domain)은 E2의 값(sealed_evaluate·evaluation_sealed_runner)이다
+     (자료 계약 §8.2·§10.3 N5·N10). 그 밖의 절차(순서·실행명 확보·줄 쓰기·재실행·속도 조절)는 같다.
 3. 실행 조건 입력 파일(build_run_conditions·write_run_conditions): 채점기가 모르는 실행 조건을 채점기에 넘기는 파일
    run_conditions-{시각}.json을 내려받기를 끝낸 호스트 쪽 프로그램이 확보한 실행 폴더에 배타 생성한다(자료 계약 §8.2).
    형식은 MVP 전 임시 형식이다(결정 D6, 채점기 DT8 1회차 보고 §5와 같은 키. F1 전에 확정한다). 봉인 묶음이면 봉인
@@ -193,6 +197,7 @@ class BatchResult:
     lines: list
     started: datetime
     ended: datetime
+    domain: str = DOMAIN  # 묶음 기록 도메인명(E1은 evaluation_batch_run, E2는 evaluation_sealed_runner)
     rerun_targets: int = 0  # 첫 실행 줄 가운데 인프라 실패 재실행 대상 수(룰북 B5)
     reruns: int = 0  # 실제로 다시 돌린 수(사례 실행명을 확보하지 못해 멈추면 대상보다 적다)
     paced_ms: int = 0  # 속도 조절로 쉰 시간의 합(밀리초)
@@ -200,7 +205,7 @@ class BatchResult:
 
     @property
     def batch_file(self) -> Path:
-        return self.run_dir / f"{DOMAIN}-{self.stamp}.jsonl"
+        return self.run_dir / f"{self.domain}-{self.stamp}.jsonl"
 
 
 @dataclass(frozen=True)
@@ -244,9 +249,11 @@ def pacing_target(pacing: Pacing, start: datetime, end: datetime, line: dict) ->
 CaseRunner = Callable[[CaseCall], dict]
 
 
-def check_spec(spec: BatchSpec) -> None:
-    """묶음 입력 검사(폴더를 만들기 전에)."""
-    if spec.dataset not in UNSEALED_DATASETS:
+def check_spec(spec: BatchSpec, sealed: bool = False) -> None:
+    """묶음 입력 검사(폴더를 만들기 전에). sealed가 참이면(E2) 봉인 묶음만, 거짓이면 봉인 묶음이 아닌 것만 받는다."""
+    if sealed and spec.dataset not in types.SEALED_DATASETS:
+        raise BatchError("봉인 실행(sealed)은 봉인 묶음(holdout40·real_sealed)만 돌린다")
+    if not sealed and spec.dataset not in UNSEALED_DATASETS:
         raise BatchError("묶음 실행 E1은 봉인 묶음이 아닌 자료 묶음(controlled_fixture_v0·dev20·real_dev)만 돌린다")
     cases = list(spec.cases)
     for case in cases:
@@ -289,16 +296,17 @@ def accept_record(call: CaseCall, record: object) -> tuple[dict | None, str | No
     return line, None
 
 
-def _check_reserved(reserved: object, parent: Path) -> tuple[str, str, Path]:
-    """이미 확보한 묶음 실행 폴더(실행명, 시각, 폴더)를 받는다. 실행명이 evaluate-{시각}이고, 폴더가 parent 바로 아래의 그
-    이름이며, 비어 있어야 한다(사용자 결정 10: 호스트가 확보한 실행명을 --run-name으로 받은 경우)."""
+def _check_reserved(reserved: object, parent: Path, run_name: str = BATCH_RUN_NAME) -> tuple[str, str, Path]:
+    """이미 확보한 묶음 실행 폴더(실행명, 시각, 폴더)를 받는다. 실행명이 {run_name}-{시각}이고, 폴더가 parent 바로 아래의 그
+    이름이며, 비어 있어야 한다(사용자 결정 10: 호스트가 확보한 실행명을 --run-name으로 받은 경우. E2는 첫 줄 출력을 위해
+    먼저 확보한 폴더를 넘긴다)."""
     if not isinstance(reserved, tuple) or len(reserved) != 3:
         raise BatchError("확보한 묶음 실행 폴더는 (실행명, 시각, 폴더) 셋이다")
     run_id, stamp, folder = reserved
     if not isinstance(run_id, str) or not isinstance(stamp, str) or not isinstance(folder, Path) \
-            or trace_log.RUN_ID_RE.fullmatch(run_id) is None or run_id != f"{BATCH_RUN_NAME}-{stamp}" \
+            or trace_log.RUN_ID_RE.fullmatch(run_id) is None or run_id != f"{run_name}-{stamp}" \
             or folder != parent / run_id:
-        raise BatchError("확보한 묶음 실행 폴더가 outputs/evaluate-{시각}/ 모양이 아니다")
+        raise BatchError(f"확보한 묶음 실행 폴더가 {run_name}-{{시각}}/ 모양이 아니다")
     if folder.is_symlink() or not folder.is_dir() or any(folder.iterdir()):
         raise BatchError("확보한 묶음 실행 폴더가 빈 폴더가 아니다")
     return run_id, stamp, folder
@@ -307,8 +315,10 @@ def _check_reserved(reserved: object, parent: Path) -> tuple[str, str, Path]:
 def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_parent: Path,
                   clock: Callable[[], datetime] | None = None,
                   sleep: Callable[[float], None] | None = None,
-                  reserved: tuple[str, str, Path] | None = None, pacing: Pacing | None = None) -> BatchResult:
-    """묶음 하나를 돌린다(머리 설명 2). parent는 outputs/, other_parent는 outputs/sealed/다(N8).
+                  reserved: tuple[str, str, Path] | None = None, pacing: Pacing | None = None,
+                  run_name: str = BATCH_RUN_NAME, domain: str = DOMAIN, sealed: bool = False) -> BatchResult:
+    """묶음 하나를 돌린다(머리 설명 2). parent는 outputs/, other_parent는 outputs/sealed/다(N8). 봉인 실행(sealed=True,
+    E2)이면 parent가 outputs/sealed/, other_parent가 outputs/이고 run_name·domain은 E2의 값이다.
 
     reserved를 주면 묶음 실행 폴더를 다시 확보하지 않고 그 폴더(이미 확보한 빈 폴더, 사용자 결정 10의 --run-name)에 쓴다.
     사례 실행명을 확보하지 못하면(RunNameError) 거기서 멈춘다. 쓴 줄은 남고, 남은 계획 조합은 미실행으로 분모에 남는다.
@@ -316,11 +326,15 @@ def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_pa
     """
     import time
 
-    check_spec(spec)
-    if sealed_place(parent / BATCH_RUN_NAME):
+    check_spec(spec, sealed)
+    if not sealed and sealed_place(parent / run_name):
         raise BatchError("묶음 실행 E1은 outputs/sealed/ 아래에 쓰지 않는다(봉인 묶음은 E2)")
+    if sealed and not sealed_place(parent / run_name):
+        raise BatchError("봉인 실행(sealed)은 outputs/sealed/ 아래에만 쓴다(자료 계약 §10.3 N10)")
+    if not run_record.RUN_NAME_RE.match(run_name) or not run_record.RUN_NAME_RE.match(domain):
+        raise BatchError("묶음 실행 이름과 묶음 기록 도메인명은 이름 규칙(N1)에 맞는 이름이다")
     if reserved is not None:
-        reserved = _check_reserved(reserved, parent)
+        reserved = _check_reserved(reserved, parent, run_name)
     clock = clock or trace_log.now_kst
     reserve_kw: dict = {"clock": clock}
     if sleep is not None:
@@ -329,7 +343,7 @@ def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_pa
     cases = {c["case_id"]: dict(c) for c in spec.cases}
     versions = {k: spec.versions[k] for k in VERSION_KEYS}
     if reserved is None:
-        batch_id, stamp, batch_dir = run_record.reserve_run_dir(parent, other_parent, BATCH_RUN_NAME, **reserve_kw)
+        batch_id, stamp, batch_dir = run_record.reserve_run_dir(parent, other_parent, run_name, **reserve_kw)
     else:
         batch_id, stamp, batch_dir = reserved
     started = clock()
@@ -338,7 +352,7 @@ def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_pa
     reruns = 0
     wait = sleep or time.sleep
     paced = {"ms": 0, "rate_limit_waits": 0, "last": None}  # last: 직전 모델 실행 (시작, 끝, 줄)
-    with open(batch_dir / f"{DOMAIN}-{stamp}.jsonl", "x", encoding="utf-8", newline="\n") as out:
+    with open(batch_dir / f"{domain}-{stamp}.jsonl", "x", encoding="utf-8", newline="\n") as out:
 
         def pace(mode: str) -> None:
             if pacing is None or mode == "checklist" or paced["last"] is None:
@@ -382,7 +396,7 @@ def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_pa
             run_one(case_id, mode)
             reruns += 1
     return BatchResult(run_id=batch_id, stamp=stamp, run_dir=batch_dir, lines=lines, started=started, ended=clock(),
-                       rerun_targets=len(targets), reruns=reruns, paced_ms=paced["ms"],
+                       domain=domain, rerun_targets=len(targets), reruns=reruns, paced_ms=paced["ms"],
                        rate_limit_waits=paced["rate_limit_waits"])
 
 

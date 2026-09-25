@@ -11,7 +11,9 @@ NIM은 쓰지 않는다. 네트워크를 쓰지 않는다. 환경변수(시험�
 exit3(실행 폴더 없음, 종료 3), link(실행 폴더에 호스트 파일을 가리키는 링크), fifo(이름 있는 파이프), layered(내려받기가 한
 겹 더 싸서 준다), download_fail(내려받기 종료 1), norecord(기록 없이 trace만, 종료 1), unreadable(내려받은 뒤 링크를 든
 하위 폴더의 권한이 000), hardlink(일반 파일 둘이 하드링크), misplaced(최상위에 N6·N7 밖 이름의 파일), nat_missing(NAT
-프로파일 파일 없음). 보통 사례는 NAT 폴더에 nat_trace.jsonl과 프로파일 파일 5개를 쓴다.
+프로파일 파일 없음), infra(HTTP 503으로 FAILED인 기록, 종료 1. 룰북 B5 인프라 실패 재실행 대상. 단위 E2 시험이 쓴다). 보통
+사례는 NAT 폴더에 nat_trace.jsonl과 프로파일 파일 5개를 쓴다. 보고서 파일은 run_id·case_id·mode만 든 최소 객체다(채점기가 줄과
+맞춰 보고 "채점할 수 없는 보고서"로 세되 묶음은 채점한다).
 """
 import json
 import os
@@ -40,14 +42,15 @@ def log(argv: list[str]) -> None:
         handle.write(json.dumps({"argv": argv, "env": sorted(k for k in WATCHED_ENV if k in os.environ)}) + "\n")
 
 
-def record(run_id: str, case_id: str, mode: str, status: str) -> dict:
+def record(run_id: str, case_id: str, mode: str, status: str, infra: bool = False) -> dict:
     completed = status == "COMPLETED"
+    code, detail = ("PROVIDER_HTTP_5XX", "HTTP 503") if infra else ("PROVIDER_HTTP_4XX", "HTTP 400")
     return {"run_id": run_id, "case_id": case_id, "dataset": SCENARIO["dataset"], "mode": mode, **SCENARIO["versions"],
             "review_status_final": "HOLD" if completed else None,
             "signal_status": {"unit_value": "HOLD", "share": "NOT_TRIGGERED"} if completed else None,
             "unresolved_evidence": False, "execution_status": status, "tool_attempts": 3, "model_requests": 0,
             "tokens_in": 0, "tokens_out": 0, "wall_ms": 1200, "critic_used": False, "revision_used": False,
-            "errors": [] if completed else [{"code": "PROVIDER_HTTP_4XX", "stage": "basic", "detail": "HTTP 400",
+            "errors": [] if completed else [{"code": code, "stage": "basic", "detail": detail,
                                              "attempts": {"tool_attempts": 3, "model_requests": 0, "tokens_in": 0,
                                                           "tokens_out": 0, "wall_ms": 1200},
                                              "last_good_evidence": []}]}
@@ -74,10 +77,11 @@ def run_case(argv: list[str]) -> int:
     if action == "norecord":
         return 1
     status = "COMPLETED" if action in COMPLETED_ACTIONS else "FAILED"
-    (folder / f"runlog_run_record-{stamp}.json").write_text(json.dumps(record(run_id, case_id, mode, status)),
-                                                             encoding="utf-8")
+    (folder / f"runlog_run_record-{stamp}.json").write_text(
+        json.dumps(record(run_id, case_id, mode, status, infra=action == "infra")), encoding="utf-8")
     if status == "COMPLETED":
-        (folder / f"reports_render_ko-{stamp}.json").write_text(json.dumps({"run_id": run_id}), encoding="utf-8")
+        (folder / f"reports_render_ko-{stamp}.json").write_text(
+            json.dumps({"run_id": run_id, "case_id": case_id, "mode": mode}), encoding="utf-8")
     if action == "link":
         os.symlink(ROOT / "host_secret.txt", nat / "leak.txt")
     if action == "fifo":

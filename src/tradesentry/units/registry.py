@@ -21,6 +21,9 @@ from typing import Callable
 
 HEADER_LABELS = ("단위 ID", "도메인명", "소유", "입력", "출력", "허용 import")
 STDLIB_TOKEN = "표준 라이브러리"
+# 단위 표(docs/plan/UNITS.md)가 어느 단위의 보조 파일로 적은 모듈(새 단위 ID가 아니다. 저장소 루트 기준 경로 → 단위 ID).
+# 등록부의 단위가 아니어도 단위 패키지 아래에 둘 수 있는 파일은 이것뿐이다(tests/test_units_registry.py가 본다).
+AUXILIARY_FILES = {"src/tradesentry/evaluation/sandbox_exec.py": "E2"}
 
 
 @dataclass(frozen=True)
