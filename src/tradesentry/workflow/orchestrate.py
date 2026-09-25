@@ -15,12 +15,22 @@
    건너뛰고 수정 단계로 간다. 허용 상태 조합(발동 여부·집계)은 형식 문제가 아니다: 조사자가 관찰(status_notes)로
    돌려주면 trace에 남기고, 판정은 검증기(R3 STATUS_INCONSISTENT)가 모드 규칙대로 한다(full·agent 차단, freeform 기록).
 2. critic(full·freeform만): Critic 한 차례(도구 없음). agent는 Critic이 없다. critic_used는 Critic 단계를 연 때 참이다.
+   흐름 수정 (가)(AS2 ㉔): Critic의 재조회 요청 가운데 그 사례에서 발동(TRIGGERED)하지 않은 신호에만 쓰는 도구
+   (SIGNAL_ONLY_TOOLS, 지금은 단가 신호 전용 decompose_hs) 요청은 코드가 버린다. 버린 요청은 수정 지시 메시지와 수정 단계의
+   필수 조회(requested)에 들지 않고, trace after_critic의 requery_dropped에 남는다. needs_revision은 바꾸지 않는다.
 3. verify_evidence(기본 경로의 예약 1회) → 검증기 판정. 수정이 필요 없으면(스키마 통과, 검증기 통과 또는 freeform,
    Critic이 수정을 요청하지 않음) 여기서 COMPLETED.
 4. revision(1회): 조사자가 지적을 받고 재조회(최대 2회) 뒤 고친 초안을 쓴다. Critic은 다시 부르지 않는다. 비교 불가
    사례는 수정 단계에서도 도구를 주지 않는다(조기 종료, 개발 플랜 §6.6).
 5. final: verify_evidence(최종 예약 1회) → 스키마·검증기 판정. 두 번째 수정 단계는 없다: 스키마 실패는
    SCHEMA_INVALID, 검증기 차단(freeform 밖)은 VALIDATOR_BLOCKED로 INVALID다(budget_block revision_limit).
+   흐름 수정 (나)(AS2 ㉔, 모든 모델 모드 같은 규칙): ① 수정 단계를 연 까닭이 Critic의 수정 요구뿐이고(초안 형식 문제·
+   스키마 실패·수정 전 검증기 막음·코드 지적이 없다) ② 수정 전 초안이 verify 단계 검사(스키마, freeform 밖은 검증기까지)를
+   통과했는데 ③ 수정본이 최종 단계에서 막히면(초안 형식 검사·스키마 검사 실패, freeform 밖은 검증기 막음) INVALID로 끝내지
+   않고 수정 전 초안의 보고서와 그 verify 단계 판정으로 COMPLETED한다. 도구·모델 요청과 검사를 더 하지 않는다. 막힌
+   validator_result는 그대로 남고, state_change revision_discarded가 수정본을 버린 사실을 남긴다(budget_block revision_limit
+   은 내지 않는다). critic_used·revision_used는 그대로 참이다. agent는 Critic이 없어 ①이 성립하지 않는다. deadline·예산·
+   연결 오류 같은 RunStop은 이 규칙을 거치지 않는다(예외로 곧바로 멈춘다).
 
 checklist: 모델 없이 check_comparability → get_history → decompose_hs(단가 신호 발동) → compare_partners(신호 발동)
 → 정책으로 초안 → verify_evidence → 스키마·검증기. 막히면 수정 없이 곧바로 INVALID다(결정 D1). 비교 불가면 조회를
@@ -73,6 +83,10 @@ errors는 원인 분류 코드 항목 하나다(단위 L3: 원인, 누적 시도
   ValueError로 멈춘다(모드·사례 키 검사와 같다). 필수 근거(단위 P5) 계산은 흐름 안에서 해 실패도 CODE_ERROR로 남긴다.
 - trace 추가 값: state_change의 draft·revised에 problem_list(형식 문제)·status_notes(허용 상태 관찰), after_critic에
   Critic problems, validator_result에 rejected_requests(틀 채우기가 채우지 못해 버린 요청, 단위 R1 rejected).
+  after_critic의 requery는 흐름 수정 (가)로 거르고 남은 요청 수이고, requery_dropped는 버린 요청 목록
+  [{tool, args, reason "signal_not_triggered", signals}]이다. 흐름 수정 (나)로 수정본을 버리면 final 단계에
+  state_change phase revision_discarded(review_status·signal_status는 둔 수정 전 초안의 것, blocked_by draft_format·
+  schema·validator, would_be_cause SCHEMA_INVALID·VALIDATOR_BLOCKED, kept_report_id)가 final 앞에 나온다.
 """
 from dataclasses import dataclass
 from decimal import Decimal
@@ -106,6 +120,25 @@ COMPARISON_TOOLS = {"comparability": "check_comparability", "partners": "compare
                     "country_and_world": "get_history"}
 FAMILY_COMPARISONS = {"unit_value": ("comparability", "partners"),
                       "share": ("comparability", "partners", "country_and_world")}
+# 흐름 수정 (가)(AS2 ㉔): 특정 신호에만 쓰는 도구 -> 그 신호. 사례에서 이 신호가 하나도 발동하지 않았으면 Critic의 재조회
+# 요청 가운데 이 도구 요청을 버린다. 여기 없는 도구는 거르지 않는다. 신호별 필수 도구 규칙(cli.dispatch.required_tools)과
+# 어긋나지 않는지는 시험이 대조한다(workflow는 cli를 import하지 않는다).
+SIGNAL_ONLY_TOOLS = {"decompose_hs": ("unit_value",)}
+
+
+def split_requery(requery: list, signals: dict | None) -> tuple[list, list]:
+    """Critic 재조회 요청을 (남길 것, 버릴 것)으로 나눈다(흐름 수정 (가)). 버릴 것에는 까닭(reason_code
+    signal_not_triggered, 그 도구가 쓰는 신호)을 붙인다. 순서는 원래 순서를 지킨다."""
+    fired = {code for code, value in (signals or {}).items() if value == "TRIGGERED"}
+    kept, dropped = [], []
+    for item in requery or []:
+        only = SIGNAL_ONLY_TOOLS.get(item.get("tool")) if isinstance(item, dict) else None
+        if only is not None and not fired.intersection(only):
+            dropped.append({"tool": item.get("tool"), "args": item.get("args"), "reason": "signal_not_triggered",
+                            "signals": list(only)})
+        else:
+            kept.append(item)
+    return kept, dropped
 
 
 @dataclass
@@ -729,6 +762,7 @@ class _Flow:
         draft, problems = turn["draft"], turn["problems"]
         self.state("draft", draft, problems=len(problems), problem_list=problems, status_notes=turn["status_notes"])
         report, check, findings = None, None, []
+        kept_draft = None  # 흐름 수정 (나): 수정본이 막히면 둘 수정 전 초안(보고서, 초안, verify 단계 판정)
         if draft is not None and not problems:
             report = self.build(draft)
             check = self.check(report, "draft", schema_only=True)
@@ -743,8 +777,11 @@ class _Flow:
                 self.critic_used = True  # Critic 단계를 연 때 참(요청 중에 멈춰도 Critic을 쓴 실행으로 센다)
                 review = critic.review(self.client, prompts, self.case, draft, self.evidence,
                                        self.limits.revision_requeries, reference=self.reference_text)
+                # 흐름 수정 (가): 발동하지 않은 신호에만 쓰는 도구의 재조회 요청은 버린다(needs_revision은 그대로)
+                kept, dropped = split_requery(review["requery"], self.signals)
+                review = dict(review, requery=kept)
                 self.state("after_critic", draft, needs_revision=review["needs_revision"],
-                           findings=len(review["findings"]), requery=len(review["requery"]),
+                           findings=len(review["findings"]), requery=len(kept), requery_dropped=dropped,
                            problems=review["problems"])
                 self.sink.emit("stage_end", "critic", {"stage": "critic"})
                 self.stage = "basic"
@@ -757,6 +794,10 @@ class _Flow:
                 self.state("code_finding", draft, missing_tools=code_missing)
             self.verify(draft, "verify")
             check = self.check(report, "verify")
+            if review is not None and review["needs_revision"] and not code_missing and check["schema_ok"] \
+                    and (self.mode == "freeform" or check["validator_ok"]):
+                # 흐름 수정 (나)의 조건 ①·②: 수정을 여는 까닭이 Critic의 수정 요구뿐이고 수정 전 검사를 통과했다
+                kept_draft = (report, draft, check)
             if not check["schema_ok"]:
                 problems, findings = ["보고서 스키마 검사 실패"], check["findings"]
             elif self.mode != "freeform" and not check["validator_ok"]:
@@ -782,14 +823,29 @@ class _Flow:
         self.stage = "final"
         self.sink.emit("stage_start", "final", {"stage": "final"})
         if draft is None or problems:
-            raise self.invalid(cause_codes.SCHEMA_INVALID, "수정 1회 뒤에도 초안 형식 검사에 실패했다")
+            return self.blocked_revision(kept_draft, cause_codes.SCHEMA_INVALID, "draft_format",
+                                         "수정 1회 뒤에도 초안 형식 검사에 실패했다")
         report = self.build(draft)
         self.verify(draft, "final_verify")
         check = self.check(report, "final")
         if not check["schema_ok"]:
-            raise self.invalid(cause_codes.SCHEMA_INVALID, "수정 1회 뒤에도 보고서 스키마 검사에 실패했다")
+            return self.blocked_revision(kept_draft, cause_codes.SCHEMA_INVALID, "schema",
+                                         "수정 1회 뒤에도 보고서 스키마 검사에 실패했다")
         if self.mode != "freeform" and not check["validator_ok"]:
-            raise self.invalid(cause_codes.VALIDATOR_BLOCKED, "수정 1회 뒤에도 검증기가 막았다")
+            return self.blocked_revision(kept_draft, cause_codes.VALIDATOR_BLOCKED, "validator",
+                                         "수정 1회 뒤에도 검증기가 막았다")
+        return self.complete(report, draft, check)
+
+    def blocked_revision(self, kept_draft: tuple | None, code: str, blocked_by: str, detail: str) -> dict:
+        """수정본이 최종 단계에서 막혔다. 흐름 수정 (나)(AS2 ㉔): 수정을 연 까닭이 Critic의 수정 요구뿐이고 수정 전 초안이
+        수정 전 검사를 통과했으면(kept_draft) 수정본을 버리고 수정 전 초안의 보고서와 그 verify 단계 판정으로 끝낸다.
+        도구·모델 요청을 더 쓰지 않고 검사도 다시 하지 않는다. trace state_change revision_discarded(막은 곳 blocked_by,
+        그대로였다면 났을 원인 would_be_cause). 아니면 지금처럼 INVALID다(budget_block revision_limit)."""
+        if kept_draft is None:
+            raise self.invalid(code, detail)
+        report, draft, check = kept_draft
+        self.state("revision_discarded", draft, blocked_by=blocked_by, would_be_cause=code,
+                   kept_report_id=report.get("report_id") if isinstance(report, dict) else None)
         return self.complete(report, draft, check)
 
 
