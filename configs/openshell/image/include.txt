@@ -30,6 +30,9 @@ configs/nat/workflow.yml
 data/reference/country_map.csv
 data/reference/peer_group_g0.csv
 ?data/reference/peer_group_g1.csv
+# 실자료 분할 기록(run-case가 real_dev 계열만 조사하려고 관측 값을 읽기 전에 읽는다, 조립 AS3 두 번째 PR). 계열 배정만
+# 담고 봉인 표본·정답은 없다(표본은 봉인 폴더에만 있다)
+data/reference/real_split_kcs_202201_202412_v2.json
 
 # 스냅샷 빌드. 합성 시험자료는 `uv run --locked python -c "from tradesentry.snapshot import fixture; fixture.materialize()"`로
 # 만든 빌드 두 파일만 들인다. 실자료 v2 정본 빌드는 로드맵 DT7 ②가 옮긴 뒤에 생긴다(선택 항목)

@@ -29,7 +29,7 @@ class ExtractTest(unittest.TestCase):
         않는다. 봉인 묶음 폴더를 흉내 낸 임시 폴더일 뿐 실제 봉인 묶음이 아니다)."""
         s = batch_run.BatchSpec(dataset="dev20", cases=tuple(hf.dev20_cases(4)), modes=hf.DEV20_MODES,
                                 order_seed="dev-order-v1", versions=dict(hf.VERSIONS))
-        result = batch_run.execute_batch(s, hf.FakeRunner(self.clock, PLAN), parent=self.outputs,
+        result = batch_run.execute_batch(s, hf.FakeRunner(self.clock, PLAN, recover=True), parent=self.outputs,
                                          other_parent=self.outputs / "sealed", clock=self.clock, sleep=self.clock.sleep)
         if parent != self.outputs:
             parent.mkdir(parents=True, exist_ok=True)
@@ -41,9 +41,9 @@ class ExtractTest(unittest.TestCase):
         result = self.batch(self.outputs)
         run_id, counts = extract.extract(result.run_dir, outputs=self.outputs, expected_versions=dict(hf.VERSIONS),
                                          clock=self.clock, sleep=self.clock.sleep)
-        self.assertEqual(counts["lines"], 12)
+        self.assertEqual(counts["lines"], 15)  # 계획 12 + 인프라 실패 재실행 3(E1, 룰북 B5. 재실행은 완료)
         self.assertEqual(counts["execution_status"],
-                         {"COMPLETED": 5, "FAILED": 6, "TIMEOUT": 0, "INVALID": 0, "BUDGET_EXCEEDED": 1})
+                         {"COMPLETED": 8, "FAILED": 6, "TIMEOUT": 0, "INVALID": 0, "BUDGET_EXCEEDED": 1})
         self.assertEqual(counts["cause_codes"]["PROVIDER_HTTP_5XX"], 3)
         self.assertEqual(counts["cause_codes"]["CODE_ERROR"], 3)
         self.assertEqual(counts["cause_codes"]["BUDGET_TOKENS"], 1)
@@ -53,7 +53,8 @@ class ExtractTest(unittest.TestCase):
         self.assertTrue(run_id.startswith("evaluation_extract-"))
         stamp = run_id.rsplit("-", 1)[1]
         targets = hf.read_jsonl(run_dir / f"evaluation_extract-{stamp}.jsonl")
-        infra_lines = [x for x in result.lines if x["case_id"] == "850431-XA-202401"]
+        infra_lines = [x for x in result.lines if x["case_id"] == "850431-XA-202401"
+                       and x["execution_status"] == "FAILED"]
         self.assertEqual(targets, [{k: x[k] for k in ("run_id", "case_id", "mode")} for x in infra_lines])  # 첫 실행 순서
         self.assertEqual(trace_log.loads((run_dir / f"evaluation_extract-{stamp}.json").read_text()), counts)
         text = trace_log.dumps(counts)
@@ -67,7 +68,7 @@ class ExtractTest(unittest.TestCase):
         self.assertEqual(counts["version_keys"]["code_version"], {"distinct": 1, "match": True, "mismatch": None})
         _, counts = extract.extract(result.run_dir, outputs=self.outputs, clock=self.clock, sleep=self.clock.sleep,
                                     expected_versions={**hf.VERSIONS, "code_version": "other"})
-        self.assertEqual(counts["version_keys"]["code_version"], {"distinct": 1, "match": False, "mismatch": 12})
+        self.assertEqual(counts["version_keys"]["code_version"], {"distinct": 1, "match": False, "mismatch": 15})
 
     def test_sealed_batch_output_stays_under_sealed_and_stdout_has_counts_only(self):
         sealed_parent = self.outputs / "sealed"

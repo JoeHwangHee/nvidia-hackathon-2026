@@ -28,8 +28,12 @@ S0 제안: 사례 실행은 묶음 폴더 안이 아니라 형제 폴더 outputs
    - 사례 실행 함수가 예외를 내거나, 돌려준 기록이 단위 L2 검사를 통과하지 못하거나, 실행 전에 정해지는 키(실행명·
      사례·자료 묶음·모드·버전 키 5개)가 묶음이 준 값과 다르면, 그 사례를 FAILED 줄(원인 CODE_ERROR, detail은
      "harness:" 뒤에 예외 이름이나 사유 이름만, 측정한 wall_ms)로 남긴다. 줄을 버리지 않는다(분모, 룰북 B5).
-   - 모든 모드에 같은 자료·버전·사례 실행 함수를 쓴다. 묶음 안에서 인프라 실패 재실행은 하지 않는다(한 번 돈다).
-     재실행 대상 목록은 단위 E3가 만들고, 재실행을 원래 실행과 잇는 방법은 로드맵 MT7의 다음 PR에서 정한다.
+   - 모든 모드에 같은 자료·버전·사례 실행 함수를 쓴다.
+   - 인프라 실패 재실행(룰북 B5, 조립 AS3 두 번째 PR): 첫 실행이 모두 끝난 뒤, 첫 실행 줄 가운데 단위 L3
+     infra_rerun_eligible(FAILED이고 원인이 PROVIDER_HTTP_5XX·PROVIDER_CONNECTION뿐)인 줄을 모두, 첫 실행 순서대로 같은
+     (사례, 모드)·같은 설정으로 한 번씩 다시 돌린다. 재실행마다 새 실행명을 확보하고 같은 묶음 기록에 줄을 더한다(원래 줄은
+     그대로 둔다. 채점기의 재실행 모양 "FAILED 한 줄 뒤 재실행 한 줄"). 재실행 줄은 다시 재실행하지 않는다. 다른 실패
+     (TIMEOUT·INVALID·BUDGET_EXCEEDED·CODE_ERROR 등)는 재실행하지 않는다. 대상 수와 재실행 수는 BatchResult에 남는다.
    - 봉인 묶음(holdout40·real_sealed)은 받지 않는다. 봉인 묶음은 샌드박스 밖 실행기 E2가 돌린다(자료 계약 §8.2).
 3. 실행 조건 입력 파일(build_run_conditions·write_run_conditions): 채점기가 모르는 실행 조건을 채점기에 넘기는 파일
    run_conditions-{시각}.json을 내려받기를 끝낸 호스트 쪽 프로그램이 확보한 실행 폴더에 배타 생성한다(자료 계약 §8.2).
@@ -168,6 +172,8 @@ class BatchResult:
     lines: list
     started: datetime
     ended: datetime
+    rerun_targets: int = 0  # 첫 실행 줄 가운데 인프라 실패 재실행 대상 수(룰북 B5)
+    reruns: int = 0  # 실제로 다시 돌린 수(사례 실행명을 확보하지 못해 멈추면 대상보다 적다)
 
     @property
     def batch_file(self) -> Path:
@@ -264,8 +270,11 @@ def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_pa
         batch_id, stamp, batch_dir = reserved
     started = clock()
     lines: list[dict] = []
+    targets: list[tuple[str, str]] = []
+    reruns = 0
     with open(batch_dir / f"{DOMAIN}-{stamp}.jsonl", "x", encoding="utf-8", newline="\n") as out:
-        for case_id, mode in order:
+
+        def run_one(case_id: str, mode: str) -> dict:
             run_id, case_stamp, case_dir = run_record.reserve_run_dir(parent, other_parent, CASE_RUN_NAME,
                                                                       **reserve_kw)
             call = CaseCall(run_id=run_id, stamp=case_stamp, run_dir=case_dir, case=dict(cases[case_id]), mode=mode,
@@ -282,7 +291,17 @@ def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_pa
             out.write(trace_log.dumps(line) + "\n")
             out.flush()
             lines.append(line)
-    return BatchResult(run_id=batch_id, stamp=stamp, run_dir=batch_dir, lines=lines, started=started, ended=clock())
+            return line
+
+        for case_id, mode in order:
+            line = run_one(case_id, mode)
+            if cause_codes.infra_rerun_eligible(line["execution_status"], line["errors"]):
+                targets.append((case_id, mode))
+        for case_id, mode in targets:  # 첫 실행이 모두 끝난 뒤, 첫 실행 순서대로 한 번씩(룰북 B5)
+            run_one(case_id, mode)
+            reruns += 1
+    return BatchResult(run_id=batch_id, stamp=stamp, run_dir=batch_dir, lines=lines, started=started, ended=clock(),
+                       rerun_targets=len(targets), reruns=reruns)
 
 
 # ----------------------------------------------------------------------------- 3. 실행 조건 입력 파일

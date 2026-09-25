@@ -92,7 +92,9 @@
 사례 조사 명령 run-case(조립체 3: 단위 X1~X4·P3~P5·G1·I1~I13·R1~R4·L1~L3. 배선은 조립 작업 AS2, 결정 기록
 model-decision-as2-run-case)
 - 순서: 실행명 확보(N8) → 단위 K4 load_policy → 모델 설정(단위 I9, configs/model/) 읽기 → 단위 K3 open_snapshot(정본 빌드,
-  읽기 전용) → 출처 종류 확인(합성만, 실자료는 관측 값을 읽기 전에 거부하고 1) → 자료 묶음(RUN_CASE_DATASETS)과 비교 대상
+  읽기 전용) → 출처 종류 확인(합성·실자료. 실자료는 real_case_scope가 분할 기록으로 사례 계열이 real_dev인지 관측 값을
+  읽기 전에 보고, 아니면(real_sealed 포함) 1로 거부한다. 실자료의 묶음은 real_dev, 비교 대상 집합은 g0. AS3 두 번째 PR)
+  → 자료 묶음(RUN_CASE_DATASETS)과 비교 대상
   집합(합성은 비교국 표 행의 grouping_version 그대로) → 사례 다시 만들기(rebuild_case: --case의 case_id `{hs6}-{partner}-
   {month}`를 풀고 그 계열·비교월 하나만 detect와 같은 어댑터 → X1·X2 → P1 → P2로 계산. 사례가 아니면 1) → 흐름 조정(단위
   I12)을 NAT(단위 I13)로 감싸 돌린다 → 출력.
@@ -116,8 +118,12 @@ CLI가 부르지 않는다.
 evaluate 배선(로드맵 MT7 첫 PR, 최종 연결은 조립 작업 AS3. 결정 기록 model-decision-as3-evaluate)
 - 자료 묶음은 --snapshot으로 정한다 `[해석]`: dev20 → dev20, controlled_fixture_v0 → controlled_fixture_v0,
   kcs_202201_202412_v2 → real_dev. 봉인 묶음(holdout40·real_sealed)은 evaluate가 돌리지 않는다(샌드박스 밖 실행기 E2의 일,
-  F1 뒤). 사례 목록은 dev20만 정본 자리 eval/dev/dev20/input/cases.json(DT5)에서 읽는다. real_dev(DT7 ①의 경보 목록)와
-  controlled_fixture_v0의 사례 목록 자리는 없어 실행 폴더를 만들기 전에 분명한 오류로 끝난다.
+  F1 뒤). 사례 목록은 dev20은 정본 자리 eval/dev/dev20/input/cases.json(DT5)에서 읽는다. real_dev는 실행 때
+  build_case_list(detect와 같은 길, real_dev 계열로 좁힌 뒤)로 경보 목록을 만들고 DT7 결정 기록의 규칙(select_real_dev_mvp)
+  으로 20건을 고른다(파일을 쓰지 않는다). 경보 목록 전체는 실행 조건 입력 파일 snapshot.real_dev_alerts에, 고른 사례는
+  planned_cases에 남는다. controlled_fixture_v0의 사례 목록 자리는 없어 실행 폴더를 만들기 전에 분명한 오류로 끝난다.
+- 인프라 실패 재실행(룰북 B5)은 단위 E1이 묶음 끝에 한다. 실행 조건 입력 파일 prescoring_checks.final_status에 줄 없는
+  조합 수와 재실행 대상·재실행 수를 적는다(값이 있으면 재실행 규칙을 적용한 묶음이다).
 - 모드(사용자 결정 12(가)): --mode를 주지 않으면 단위 E1 PLANNED_MODES[자료 묶음]의 모드 전부를 한 묶음(순서 seed
   DEV_ORDER_SEED로 섞음, 동시성 1)으로 돈다. 주면 그 모드 하나만 돌고, 실행 조건 입력 파일의 planned_modes가 그 모드
   하나이며 reproduce_evaluate에 --mode가 남는다(스모크 표시). 채점기는 dev20·real_dev 묶음의 계획 모드가 정해진 모드 전부가
@@ -183,6 +189,12 @@ EVALUATE_DATASETS = {"dev20": "dev20", "controlled_fixture_v0": "controlled_fixt
 # 오류). controlled_fixture_v0은 커밋된 입력 사례 목록이 없다(정답 파일 eval/dev/oracle_ABC.json을 입력으로 쓰지 않는다).
 EVALUATE_CASE_LISTS = {"dev20": Path("eval") / "dev" / "dev20" / "input" / "cases.json"}
 DEV_ORDER_SEED = "dev-order-v1"
+# real_dev MVP 사례 고르기(DT7 결정 기록 docs/tracking/decisions/20260925-0925-data-decision-dt7-real-dev-mvp-selection.md
+# "고르는 방법" ①~③). 목록 파일을 두지 않고 evaluate가 실행 때 경보 목록에서 다시 고른다.
+REAL_DEV_MVP_PREFIX = "real_dev-mvp-20260925"
+REAL_DEV_MVP_TAKE = 20
+REAL_DEV_MVP_RULE = ("sha256(\"real_dev-mvp-20260925:\" + case_id) 오름차순 앞 20건(DT7 결정 기록 "
+                     "20260925-0925-data-decision-dt7-real-dev-mvp-selection.md)")
 # 사례 실행 백엔드(AS3 결정 기록 ③). 기본값은 샌드박스다: 채점 대상 실행은 채점 대상 실행 샌드박스 안에서 돈다(자료 계약
 # §8.2·§10.3 방식 (나)). 호스트 백엔드(같은 프로세스에서 run_case_in을 부른다)는 시험과 스모크용이고 CLI 옵션·환경변수로
 # 고르지 않는다(이 값을 바꿔 끼운다). 호스트에서 돈 묶음은 점수표 근거가 아니다(MT7 결정 기록 "AS3에 넘길 것" 3).
@@ -570,13 +582,30 @@ def detection_rows(snap, series: list[tuple[str, str]] | None = None) -> list[di
     return rows
 
 
+def build_case_list(snap, policy: dict) -> object:
+    """스냅샷 하나의 경보 사례 목록(단위 P2 출력). detect와 evaluate(real_dev 사례 목록, AS3 두 번째 PR)가 같이 쓴다.
+
+    실자료는 분할 기록(load_real_split)을 먼저 읽어 real_dev 계열만 남긴 뒤에 관측 값을 읽는다(병렬 개발 규칙 §7.2의 5).
+    분할 기록을 쓸 수 없으면 SplitError(관측 값을 읽기 전). 출처 종류 확인은 부르는 쪽이 먼저 한다.
+    """
+    from tradesentry.policy import case_build, trigger
+
+    case_input: dict[str, object] = {"snapshot_id": snap.snapshot_id, "source_kind": snap.source_kind}
+    split = None
+    if snap.source_kind == "real":  # 값을 읽기 전에 real_dev 계열로 좁힌다
+        split = load_real_split(snap)
+        case_input.update(dataset=DETECT_DATASET, series_assignment=series_assignment(split))
+    rows = detection_rows(snap, detect_series(snap, split))
+    detection = trigger.run({"policy": policy, "rows": rows})
+    return case_build.run({**case_input, "detection": detection})
+
+
 def _detect(request: args.Request) -> int:
     """detect: 조립체 2(단위 X1·X2·X4·P1·P2)를 불러 단위 P2의 출력(사례 목록·데이터 품질 목록)을 실행 폴더에 쓴다(위 "탐지
     명령 detect")."""
     # 명령을 부를 때만 import한다(도움말·인자 오류는 조립체를 불러오지 않는다). 모듈 속성으로 불러 시험 대역이 걸리게 한다.
     from tradesentry.contract import policy_load
     from tradesentry.dal import query
-    from tradesentry.policy import case_build, trigger
 
     run_id, stamp, run_dir = reserve_run_dir(DETECT_RUN_NAME, given=request.run_name)
     try:
@@ -590,18 +619,11 @@ def _detect(request: args.Request) -> int:
             if snap.source_kind not in DETECT_SOURCE_KINDS:  # 값을 읽기 전에 거부한다(위 "탐지 명령 detect")
                 _report(DETECT_REFUSAL)
                 return EXIT_FAILED
-            case_input: dict[str, object] = {"snapshot_id": snap.snapshot_id, "source_kind": snap.source_kind}
-            split = None
-            if snap.source_kind == "real":  # 값을 읽기 전에 real_dev 계열로 좁힌다(병렬 개발 규칙 §7.2의 5)
-                try:
-                    split = load_real_split(snap)
-                except SplitError:
-                    _report(DETECT_SPLIT_REFUSAL)
-                    return EXIT_FAILED
-                case_input.update(dataset=DETECT_DATASET, series_assignment=series_assignment(split))
-            rows = detection_rows(snap, detect_series(snap, split))
-            detection = trigger.run({"policy": policy, "rows": rows})
-            result = case_build.run({**case_input, "detection": detection})
+            try:
+                result = build_case_list(snap, policy)
+            except SplitError:
+                _report(DETECT_SPLIT_REFUSAL)
+                return EXIT_FAILED
     except query.SnapshotError:
         _report("오류: tradesentry detect가 스냅샷을 열지 못했거나 스냅샷 자료가 행 규칙에 맞지 않는다(SnapshotError). "
                 "--snapshot의 정본 빌드(data/snapshots/ 아래 snapshot_build.sqlite)를 확인한다.")
@@ -614,11 +636,11 @@ def _detect(request: args.Request) -> int:
 
 # ------------------------------------------------------------------------------ run-case(조립체 3, 조립 작업 AS2)
 RUN_CASE_RUN_NAME = "run_case"  # 실행 이름(N5)
-RUN_CASE_SOURCE_KINDS = ("controlled",)  # 이 판에서 조사하는 출처 종류(허용 목록). 실자료는 분할 기록 정본 위치 승인 뒤 잇는다
+RUN_CASE_SOURCE_KINDS = ("controlled", "real")  # 조사하는 출처 종류(허용 목록). real은 real_dev 계열의 사례만(AS3 두 번째 PR)
 # 합성 스냅샷 → 실행 결과 기록의 dataset(자료 계약 §4.2·§8.1). 표에 없는 합성 스냅샷은 묶음을 정할 수 없어 거부한다
 # (dev20 스냅샷 ID가 정해지면 이 표에 한 줄을 더한다).
 RUN_CASE_DATASETS = {"controlled_fixture_v0": "controlled_fixture_v0", "dev20": "dev20"}  # dev20: DT5 스냅샷 ID(AS3)
-REAL_GROUPING_VERSION = "g0"  # 실자료의 비교 대상 집합(MVP까지 g0). 실자료를 거부하는 이 판에서는 쓰이지 않는다
+REAL_GROUPING_VERSION = "g0"  # 실자료의 비교 대상 집합(MVP까지 g0, DT7 최종 빌드와 같다)
 RUN_RECORD_DOMAIN = "runlog_run_record"  # 실행 결과 기록을 만드는 단위 L2의 도메인명(UNITS.md §3.13, N4·N6)
 RUN_RECORD_MAX_BYTES = 1 << 20  # 샌드박스에서 받은 실행 결과 기록을 읽는 크기 상한
 REPORT_DOMAIN = "reports_render_ko"  # 최종 보고서를 만드는 단위 R2의 도메인명(UNITS.md §3.7)
@@ -635,9 +657,12 @@ RESOLVED_AFTER_CORRECTION = False
 # 점유율 comparability_issues 값(이 조립이 정했다, 잠정): 전체국가(ALL) 분모 금액이 대상국 금액보다 작은 달. "{이름}:{달}".
 DENOMINATOR_BELOW_PARTNER = "denominator_below_partner"
 GAP_STATUSES = ("REQUEST_FAILED", "NOT_COLLECTED", "UNRESOLVED_ZERO")  # 빠진 관측으로 보는 상태(P3와 같다)
-RUN_CASE_REFUSAL = ("오류: tradesentry run-case는 지금 합성 스냅샷(source_kind가 controlled)만 조사한다. 이 스냅샷은 합성 "
-                    "스냅샷이 아니어서 관측 값을 읽지 않고 끝냈다. 실자료 스냅샷은 분할 기록의 정본 위치가 사용자 승인을 받은 "
-                    "뒤 real_dev 사례로 좁혀 잇는다.")
+RUN_CASE_REFUSAL = ("오류: tradesentry run-case는 합성 스냅샷(source_kind가 controlled)과 실자료 스냅샷(real)만 조사한다. "
+                    "이 스냅샷의 출처 종류는 둘 다 아니어서 관측 값을 읽지 않고 끝냈다.")
+RUN_CASE_SPLIT_REFUSAL = ("오류: tradesentry run-case가 이 실자료 스냅샷의 분할 기록을 읽지 못했거나 기록이 스냅샷의 계열과 맞지 "
+                          "않는다(SplitError). 관측 값을 읽지 않고 끝냈다.")
+RUN_CASE_SEALED_REFUSAL = ("오류: tradesentry run-case는 실자료에서 분할 기록의 real_dev 계열 사례만 조사한다. 이 사례의 계열은 "
+                           "real_dev가 아니어서(real_sealed 포함) 관측 값을 읽지 않고 끝냈다(병렬 개발 규칙 §7.2의 5).")
 
 
 class RunCaseError(Exception):
@@ -733,10 +758,30 @@ def snapshot_grouping_version(snap) -> str:
     return next(iter(found))
 
 
-def rebuild_case(snap, policy: dict, case_arg: str) -> dict:
+def real_case_scope(snap, case_arg: str) -> dict:
+    """실자료 사례의 묶음 확인(관측 값을 읽기 전). 분할 기록(load_real_split)으로 --case 계열 (HS6, 상대국)이 real_dev인지
+    본다. 아니면(real_sealed·기록에 없음) RunCaseError. 돌려주는 값은 단위 P2에 더할 입력(dataset=real_dev,
+    series_assignment)이다. 읽는 것은 분할 기록 파일과 스냅샷 메타뿐이다(병렬 개발 규칙 §7.2의 5)."""
+    from tradesentry.policy import case_build
+
+    try:
+        split = load_real_split(snap)
+    except SplitError:
+        raise RunCaseError(RUN_CASE_SPLIT_REFUSAL) from None
+    try:
+        wanted = case_build.parse_case_id(case_arg)
+    except ValueError:
+        raise RunCaseError("오류: tradesentry run-case의 --case가 사례 식별자 형식({hs6}-{partner}-{month})이 아니다.") from None
+    if split.get((wanted["hs6"], wanted["partner"])) != DETECT_DATASET:
+        raise RunCaseError(RUN_CASE_SEALED_REFUSAL)
+    return {"dataset": DETECT_DATASET, "series_assignment": series_assignment(split)}
+
+
+def rebuild_case(snap, policy: dict, case_arg: str, case_input: dict | None = None) -> dict:
     """--case(case_id `{hs6}-{partner}-{month}`)의 사례를 스냅샷과 정책으로 다시 만든다(탐지와 같은 길: K3 → 어댑터 → X1·X2 →
     P1 → P2). 그 계열·비교월 하나만 계산한다(다른 계열의 지표를 만들지 않는다). 사례가 아니면 RunCaseError다.
-    돌려주는 값은 사례 객체의 8필드(자료 계약 §2.3.5, P2의 scope는 뗀다)다."""
+    돌려주는 값은 사례 객체의 8필드(자료 계약 §2.3.5, P2의 scope는 뗀다)다. 실자료는 case_input(real_case_scope의 dataset·
+    series_assignment)을 P2에 더한다."""
     from tradesentry.contract import types
     from tradesentry.policy import case_build, trigger
 
@@ -753,7 +798,8 @@ def rebuild_case(snap, policy: dict, case_arg: str) -> dict:
     world = {value["month"]: world_rows(snap, value) for value in snap.world_series(hs6, [baseline, month])}
     row = detection_row(snap.snapshot_id, hs6, partner, month, baseline, parent, world)
     detection = trigger.run({"policy": policy, "rows": [row]})
-    built = case_build.run({"snapshot_id": snap.snapshot_id, "source_kind": snap.source_kind, "detection": detection})
+    built = case_build.run({"snapshot_id": snap.snapshot_id, "source_kind": snap.source_kind, "detection": detection,
+                            **(case_input or {})})
     found = [c for c in built["cases"] if c["case_id"] == case_arg]
     if not found:
         raise RunCaseError("오류: tradesentry run-case의 --case는 이 스냅샷과 정책으로 신호가 발동한 사례가 아니다.")
@@ -1076,14 +1122,19 @@ def run_case_in(request: args.Request, run_id: str, stamp: str, run_dir: Path) -
     with query.open_snapshot(request.snapshot_id) as snap:
         if snap.source_kind not in RUN_CASE_SOURCE_KINDS:  # 관측 값을 읽기 전에 거부한다(머리 설명)
             raise RunCaseError(RUN_CASE_REFUSAL)
-        # 실자료를 잇는 자리(분할 기록 정본 위치 승인 뒤): 사례 계열이 real_dev에 배정된 경우만 받고 real_sealed는 관측
-        # 값을 읽기 전에 거부한다. dataset은 real_dev, 비교 대상 집합은 REAL_GROUPING_VERSION(결정 기록 AS2 ⑩).
-        dataset = RUN_CASE_DATASETS.get(snap.snapshot_id)
-        if dataset is None:
-            raise RunCaseError("오류: tradesentry run-case가 이 합성 스냅샷의 자료 묶음(dataset)을 정하지 못했다"
-                               "(RUN_CASE_DATASETS에 없다).")
-        grouping_version = snapshot_grouping_version(snap)
-        case = rebuild_case(snap, policy, request.case)
+        if snap.source_kind == "real":
+            # 실자료: 사례 계열이 분할 기록의 real_dev인지 관측 값을 읽기 전에 본다(아니면 거부). 도구의 조회 범위(비교국·
+            # 전체국가 분모)는 좁히지 않는다(병렬 개발 규칙 §7.2의 5). dataset은 real_dev, 비교 대상 집합은 g0(AS2 ⑩).
+            case_input = real_case_scope(snap, request.case)
+            dataset, grouping_version = DETECT_DATASET, REAL_GROUPING_VERSION
+        else:
+            case_input = None
+            dataset = RUN_CASE_DATASETS.get(snap.snapshot_id)
+            if dataset is None:
+                raise RunCaseError("오류: tradesentry run-case가 이 합성 스냅샷의 자료 묶음(dataset)을 정하지 못했다"
+                                   "(RUN_CASE_DATASETS에 없다).")
+            grouping_version = snapshot_grouping_version(snap)
+        case = rebuild_case(snap, policy, request.case, case_input)
         outcome = investigate_case(snap, policy, case, request, run_id, stamp, run_dir, dataset=dataset,
                                    grouping_version=grouping_version)
     record, report = outcome["record"], outcome["report"]
@@ -1251,23 +1302,40 @@ def sandbox_preflight(sandbox: str, host_code_version: str) -> str | None:
     return None
 
 
-def _scan_download(temp: Path, run_id: str) -> tuple[list[Path], list[Path], bool]:
-    """받은 임시 폴더를 링크를 따라가지 않고(os.lstat) 훑는다. (심볼릭 링크 목록, 일반 파일·폴더가 아닌 항목 목록,
-    내용이 {실행명} 폴더 하나로 한 겹 더 싸여 있는가(T-DL1과 다른 모양))."""
+def _scan_download(temp: Path, run_id: str) -> dict:
+    """받은 임시 폴더를 링크를 따라가지 않고(os.lstat) 훑는다(MT5 결정 기록 ④ 4단계, AS3 두 번째 PR 보강).
+
+    돌려주는 값: links(심볼릭 링크), others(일반 파일·폴더가 아닌 항목과 링크 수가 2 이상인 일반 파일(하드링크)),
+    unreadable(읽을 수 없어 훑지 못한 폴더 수. os.walk의 onerror가 모은다), layered(내용이 {실행명} 폴더 하나로 한 겹 더
+    싸여 있다), misplaced(최상위 항목이 N6 `{도메인명}-{시각}.{확장자}` 파일이나 N7 `{도메인명}-{시각}/` 폴더가 아니다.
+    시각은 이 실행명의 시각). 하나라도 있으면 옮기지 않는다."""
     import stat
 
+    stamp = run_id.rsplit("-", 1)[1]
+    file_name = re.compile(r"[a-z][a-z0-9_]*-" + stamp + r"\.[a-z0-9]+")
+    folder_name = re.compile(r"[a-z][a-z0-9_]*-" + stamp)
+    errors: list[OSError] = []
+    found = {"links": [], "others": [], "unreadable": 0, "layered": False, "misplaced": 0}
     top = list(os.scandir(temp))
-    layered = len(top) == 1 and top[0].name == run_id and top[0].is_dir(follow_symlinks=False)
-    links, others = [], []
-    for folder, dirnames, filenames in os.walk(temp, followlinks=False):
+    found["layered"] = len(top) == 1 and top[0].name == run_id and top[0].is_dir(follow_symlinks=False)
+    for entry in top:
+        mode = os.lstat(entry.path).st_mode
+        pattern = folder_name if stat.S_ISDIR(mode) else file_name
+        if pattern.fullmatch(entry.name) is None or entry.name == run_id:
+            found["misplaced"] += 1
+    for folder, dirnames, filenames in os.walk(temp, followlinks=False, onerror=errors.append):
         for name in dirnames + filenames:
             path = Path(folder) / name
-            mode = os.lstat(path).st_mode
-            if stat.S_ISLNK(mode):
-                links.append(path)
-            elif not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
-                others.append(path)
-    return links, others, layered
+            info = os.lstat(path)
+            if stat.S_ISLNK(info.st_mode):
+                found["links"].append(path)
+            elif stat.S_ISREG(info.st_mode):
+                if info.st_nlink > 1:
+                    found["others"].append(path)
+            elif not stat.S_ISDIR(info.st_mode):
+                found["others"].append(path)
+    found["unreadable"] = len(errors)
+    return found
 
 
 class SandboxCaseRunner:
@@ -1322,21 +1390,48 @@ class SandboxCaseRunner:
         if got is None or got.returncode != 0:
             self._discard(temp)
             raise DownloadFailed("openshell sandbox download가 실패했다")
-        links, others, layered = _scan_download(temp, call.run_id)
-        if links or others or layered:
-            for link in links:
+        try:
+            found = _scan_download(temp, call.run_id)
+        except OSError:
+            self._quarantine(temp, call.run_id, "훑는 중 입출력 오류")
+            raise DownloadRejected("받은 내용을 훑지 못했다") from None
+        if found["links"] or found["others"] or found["unreadable"] or found["layered"] or found["misplaced"]:
+            for link in found["links"]:
                 os.unlink(link)  # 링크 자체만 지운다(대상을 따라가지 않는다)
-            quarantine = temp.with_name(".quarantine-" + temp.name.lstrip(".").split("-", 1)[-1])
-            os.rename(temp, quarantine)
-            shape = "·겹친 층" if layered else ""
-            self.incidents.append(f"{call.run_id}: 링크 {len(links)}개·특수 항목 {len(others)}개{shape}을 거부하고 "
-                                  f"{quarantine.name}로 격리했다")
-            raise DownloadRejected("받은 내용에 링크나 특수 항목이 있거나 한 겹 더 싸여 있다")
+            self._quarantine(temp, call.run_id,
+                             f"링크 {len(found['links'])}개·특수 항목(하드링크 포함) {len(found['others'])}개·읽을 수 "
+                             f"없는 폴더 {found['unreadable']}개·겹친 층 {int(found['layered'])}·배치 밖 항목 "
+                             f"{found['misplaced']}개")
+            raise DownloadRejected("받은 내용에 링크·특수 항목·읽을 수 없는 폴더가 있거나 배치가 N6·N7이 아니다")
         for entry in sorted(os.listdir(temp)):
             if os.path.lexists(target / entry):
+                self._quarantine(temp, call.run_id, "옮길 이름이 받는 곳에 이미 있다")
                 raise DownloadMoveConflict("옮길 이름이 받는 곳에 이미 있다")
             os.rename(temp / entry, target / entry)
         os.rmdir(temp)
+        self.check_nat_files(call)
+
+    def _quarantine(self, temp: Path, run_id: str, what: str) -> None:
+        """임시 폴더를 .quarantine-*로 이름을 바꿔 격리하고 사건 한 줄을 남긴다(outputs/에 .download-*를 남기지 않는다).
+        문장에는 실행명·격리 폴더 이름·건수만 넣는다(로컬 절대경로 없음, N13)."""
+        quarantine = temp.with_name(".quarantine-" + temp.name.lstrip(".").split("-", 1)[-1])
+        try:
+            os.rename(temp, quarantine)
+        except OSError:
+            self.incidents.append(f"{run_id}: {what}. 임시 폴더를 격리하지 못했다({temp.name})")
+            return
+        self.incidents.append(f"{run_id}: {what}. 거부하고 {quarantine.name}로 격리했다")
+
+    def check_nat_files(self, call) -> None:
+        """받은 뒤 확인(MT5 결정 기록 ③): NAT 폴더 workflow_nat_wrap-{시각}/에 프로파일 파일 5개가 모두 있는가. 없으면 사건
+        한 줄을 남긴다(실행 기록은 그대로 쓴다. E4 profile_files_complete에도 드러난다)."""
+        from tradesentry.workflow import nat_wrap
+
+        nat_dir = call.run_dir / f"{NAT_DOMAIN}-{call.stamp}"
+        missing = [name for name in nat_wrap.PROFILE_FILES
+                   if not (nat_dir / name).is_file() or (nat_dir / name).is_symlink()]
+        if missing:
+            self.incidents.append(f"{call.run_id}: NAT 프로파일 파일 {len(missing)}개가 없다")
 
     @staticmethod
     def _discard(temp: Path) -> None:
@@ -1404,10 +1499,55 @@ def reproduce_command(request: args.Request) -> str:
     return command + (f" --mode {request.mode}" if request.mode else "")
 
 
+def select_real_dev_mvp(cases: list) -> list:
+    """DT7 결정 기록 20260925-0925(real_dev MVP 사례 고르기)의 규칙: 사례마다 sha256("real_dev-mvp-20260925" + ":" +
+    case_id)의 16진수 소문자를 순위 값으로 오름차순 앞 20건(20건 이하면 전부). 층화하지 않는다. 순위 순서로 돌려준다."""
+    import hashlib
+
+    def rank(case: dict) -> str:
+        return hashlib.sha256(f"{REAL_DEV_MVP_PREFIX}:{case['case_id']}".encode("utf-8")).hexdigest()
+
+    return sorted(cases, key=lambda case: (rank(case), case["case_id"]))[:REAL_DEV_MVP_TAKE]
+
+
+def real_dev_cases(request: args.Request) -> tuple[list[dict], dict]:
+    """real_dev 묶음의 사례 목록을 실행 때 만든다: detect와 같은 길(build_case_list, real_dev 계열로 좁힌 뒤 관측 값을 읽음)로
+    경보 목록을 만들고 select_real_dev_mvp로 고른다. 새 파일을 쓰지 않는다(outputs/에도 쓰지 않는다).
+    돌려주는 값: (계획 사례 [{case_id, hs6, partner, month}] 순위 순, 실행 조건 입력 파일 snapshot.real_dev_alerts에 남길
+    경보 목록 기록). 실자료 스냅샷이 아니면 RunCaseError, 분할 기록을 쓸 수 없으면 SplitError."""
+    from tradesentry.contract import policy_load
+    from tradesentry.dal import query
+
+    policy = policy_load.load_policy(request.policy_version)
+    with query.open_snapshot(request.snapshot_id) as snap:
+        if snap.source_kind != "real":
+            raise RunCaseError("오류: tradesentry evaluate의 real_dev 묶음은 실자료 스냅샷(source_kind real)만 받는다.")
+        built = build_case_list(snap, policy)
+    if not isinstance(built, dict) or set(built) != CASE_BUILD_KEYS or built.get("dataset") != DETECT_DATASET:
+        raise WiringError("단위 P2(case_build)의 출력이 real_dev 사례 목록 객체가 아니다")
+    alerts = [{k: case[k] for k in ("case_id", "hs6", "partner", "month")} for case in built["cases"]]
+    chosen = select_real_dev_mvp(alerts)
+    record = {"policy_version": request.policy_version, "count": len(alerts),
+              "case_ids": [case["case_id"] for case in alerts], "selected": len(chosen),
+              "selection": REAL_DEV_MVP_RULE}
+    return chosen, record
+
+
+def final_status_text(spec, result) -> str:
+    """실행 조건 입력 파일 prescoring_checks.final_status(평가 스킬 ② 채점 전 확인 1): 예정 실행 가운데 줄이 없는 조합 수와
+    인프라 실패 재실행(룰북 B5) 대상·재실행 수. 이 값이 있으면 재실행 규칙을 적용한 묶음이다("0건"과 "미기재"가 갈린다)."""
+    planned = {(case["case_id"], mode) for case in spec.cases for mode in spec.modes}
+    present = {(line["case_id"], line["mode"]) for line in result.lines}
+    unrun = len(planned - present)
+    return (f"{'참' if unrun == 0 else '거짓'}: 예정 실행 {len(planned)}건 가운데 줄 없는 조합 {unrun}건, 인프라 실패 "
+            f"재실행(룰북 B5) 대상 {result.rerun_targets}건·재실행 {result.reruns}건")
+
+
 def _evaluate(request: args.Request) -> int:
     """evaluate: 단위 E1 묶음 실행 → 단위 E4 NAT 사후 평가 → 실행 조건 입력 파일(위 "evaluate 배선")."""
     # 명령을 부를 때만 import한다. 모듈 속성으로 불러 시험 대역이 걸리게 한다.
     from tradesentry.contract import policy_load
+    from tradesentry.dal import query
     from tradesentry.evaluation import batch_run, nat_eval
     from tradesentry.workflow import model_client, orchestrate
 
@@ -1416,13 +1556,24 @@ def _evaluate(request: args.Request) -> int:
         _report("오류: tradesentry evaluate가 --snapshot의 자료 묶음을 모른다(dev20·controlled_fixture_v0·"
                 "kcs_202201_202412_v2만 받는다. 봉인 묶음은 샌드박스 밖 실행기가 돌린다).")
         return EXIT_FAILED
+    extra: dict = {"reproduce_evaluate": reproduce_command(request)}
     try:
-        cases = evaluate_cases(dataset, request.snapshot_id)
+        if dataset == DETECT_DATASET:  # real_dev: 실행 때 경보 목록을 만들고 DT7 규칙으로 고른다(AS3 두 번째 PR)
+            cases, alerts = real_dev_cases(request)
+            extra["snapshot"] = {"real_dev_alerts": alerts}
+        else:
+            cases = evaluate_cases(dataset, request.snapshot_id)
     except LookupError:
         _report(f"오류: tradesentry evaluate가 자료 묶음 {dataset}의 사례 목록 자리를 모르거나 파일이 없다"
-                "(dev20은 eval/dev/dev20/input/cases.json. real_dev는 로드맵 DT7 ①의 경보 목록 자리가 정해지면 잇는다).")
+                "(dev20은 eval/dev/dev20/input/cases.json, real_dev는 실행 때 detect와 같은 길로 만든다).")
         return EXIT_FAILED
-    except ValueError as exc:
+    except SplitError:
+        _report(DETECT_SPLIT_REFUSAL)
+        return EXIT_FAILED
+    except RunCaseError as exc:
+        _report(str(exc))
+        return EXIT_FAILED
+    except (ValueError, query.SnapshotError) as exc:  # PolicyError는 ValueError다. 예외 이름만 적는다(N13)
         _report(f"오류: tradesentry evaluate가 사례 목록을 읽지 못했다({type(exc).__name__}).")
         return EXIT_FAILED
     modes = (request.mode,) if request.mode else batch_run.PLANNED_MODES[dataset]  # 사용자 결정 12(가)
@@ -1434,10 +1585,9 @@ def _evaluate(request: args.Request) -> int:
         spec = batch_run.BatchSpec(dataset=dataset, cases=tuple(cases), modes=tuple(modes),
                                    order_seed=DEV_ORDER_SEED, versions=versions)
         batch_run.check_spec(spec)
-    except ValueError as exc:  # PolicyError·ConfigError·BatchError·SnapshotError는 ValueError다. 예외 이름만 적는다(N13)
+    except (ValueError, query.SnapshotError) as exc:  # PolicyError·ConfigError·BatchError는 ValueError다(N13)
         _report(f"오류: tradesentry evaluate의 묶음 입력이 규칙에 맞지 않는다({type(exc).__name__}).")
         return EXIT_FAILED
-    extra: dict = {"reproduce_evaluate": reproduce_command(request)}
     if EVALUATE_BACKEND == SANDBOX_BACKEND:
         problem = sandbox_preflight(SCORED_SANDBOX, versions["code_version"])
         if problem is not None:
@@ -1462,6 +1612,7 @@ def _evaluate(request: args.Request) -> int:
     for incident in getattr(runner, "incidents", []):
         _report(f"사건: {incident}")
     summary = nat_eval.summarize_batch(result.run_dir)
+    extra["prescoring_checks"] = {"final_status": final_status_text(spec, result)}
     doc = batch_run.build_run_conditions(dataset=dataset, cases=cases, modes=list(spec.modes), thresholds=thresholds,
                                          order_seed=DEV_ORDER_SEED, limits=limits,
                                          run_period=(result.started, result.ended), nat_profile_summary=summary,
