@@ -4,7 +4,7 @@
 도메인명: cli_args
 소유: M
 입력: 문자열 인자
-출력: 검증된 요청(모드 4개·스냅샷 ID·사례·정책 버전)
+출력: 검증된 요청(모드 4개·스냅샷 ID·사례·정책 버전·실행명)
 허용 import: 표준 라이브러리, tradesentry.contract
 
 정본: docs/plan/UNITS.md §3.8. 시연 경로에서는 하네스 모델이 명령을 조립하므로 이 검증이 방어선이다(자문 명세서
@@ -23,7 +23,16 @@ docs/plan/SCAFFOLD_BRIEF.md §4.7). 여기서는 값의 형식만 본다. 그 �
   - 사례 인자(--case): 영문자·숫자로 시작하고 끝나며 그 사이에는 영문자·숫자·밑줄·하이픈만 쓴다. 예: 850450-XA-202412.
     문자 집합과 길이만 본다. run-case 배선(AS2)은 사례 식별자 {hs6}-{partner}-{month}만 받는다(합성 사례도 같은 꼴, 자문 명세서
     Q18). case_id의 문자열 형식은 자료 계약이 정하지 않았으므로(§4.5) 여기서도 정하지 않는다.
+  - 실행명(--run-name, 다섯 명령의 선택 옵션): 자료 계약 §10.3 N5 형식 {실행 이름}-{yymmddhhmmss}이고, 실행 이름이 그 명령의
+    실행 이름(명령 이름의 하이픈을 밑줄로 바꾼 것. 예: run-case → run_case)과 같아야 하며, 시각 12자리가 실제 날짜·시각이다.
+    예: run_case-260925143015.
   - 경로 구분자, '..', 절대경로, '~'로 시작하는 값은 모두 거부한다. 위 형식이 이미 막지만 오류 문장을 따로 낸다.
+- --run-name(사용자 결정 10(나), 결정 기록 20260925-0847-user-decision-morning-shared-promises.md): 샌드박스 밖 실행기(평가
+  하네스)가 호스트 쪽 실행 폴더를 먼저 확보하고 그 이름을 샌드박스 안 CLI에 넘기는 수단이다. 옵션이 있으면 CLI는 그 이름의
+  실행 폴더를 이미 있으면 실패하는 방식으로 만들고(명령 배선 F2), 없으면 지금처럼 CLI가 실행명을 확보한다. 옵션 역할 표
+  COMMAND_OPTIONS 밖에서 다섯 명령에 똑같이 두는 선택 옵션이다(값 검사가 명령마다 다르므로 명령별 검사 함수를 쓴다).
+- evaluate의 --mode는 선택 옵션이다(사용자 결정 12(가)). 주지 않으면 그 묶음의 정해진 모드 전부를 한 묶음으로 돌고, 주면 그
+  모드 하나만(스모크용, 점수표로 합치지 않음) 돈다(명령 배선 F2).
 - 같은 옵션을 두 번 적으면 값이 같아도, --옵션=값 꼴이 섞여도 인자 오류다. argparse 기본 동작(마지막 값이 이김)은 쓰지 않는다.
 - 옵션 줄임(예: --snap)은 받지 않는다. '@파일' 인자 펼치기(fromfile_prefix_chars)도 켜지 않는다.
 - 오류 문장은 받은 값을 되풀이하지 않는다(자료 계약 §10.3 N13, 결정 기록 20260924-2356 ⑧). CLI 자신의 문장(형식 오류,
@@ -45,6 +54,7 @@ import re
 import sys
 import unicodedata
 from dataclasses import dataclass
+from datetime import datetime
 
 # 계약 상수 사본: 자료 계약 docs/rules/DATA_CONTRACT_V1.md §4.1의 모드 4개.
 # 조립 때 단위 K1(tradesentry.contract.types)에서 import하게 바꾼다(docs/plan/UNITS.md §6 조립 부산물 4).
@@ -78,13 +88,16 @@ COMMAND_OPTIONS = {
     "snapshot-verify": {"snapshot": REQUIRED, "policy": UNUSED, "mode": UNUSED},
     "detect": {"snapshot": REQUIRED, "policy": REQUIRED, "mode": UNUSED},
     "run-case": {"snapshot": REQUIRED, "policy": REQUIRED, "mode": REQUIRED, "case": REQUIRED},
-    "evaluate": {"snapshot": REQUIRED, "policy": REQUIRED, "mode": REQUIRED},
+    "evaluate": {"snapshot": REQUIRED, "policy": REQUIRED, "mode": OPTIONAL},
 }
+# evaluate --mode OPTIONAL: 사용자 결정 12(가)(2026-09-25 08:47). 모드를 주지 않으면 묶음의 정해진 모드 전부를 돈다.
 
 MAX_LENGTH = 64
 SNAPSHOT_ID_RE = re.compile(r"[a-z][a-z0-9_]*")
 POLICY_VERSION_RE = re.compile(r"[a-z][a-z0-9_]*(?:-[a-z0-9_]+|(?<=[0-9])\.[0-9]+)*")
 CASE_RE = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9_-]*[A-Za-z0-9])?")
+RUN_NAME_RE = re.compile(r"[a-z][a-z0-9_]*-[0-9]{12}")  # 자료 계약 §10.3 N5 실행명(값 전체가 맞아야 한다)
+STAMP_FORMAT = "%y%m%d%H%M%S"
 PATH_HINT_RE = re.compile(r"[\\/]|\.\.|^~")  # 경로 구분자, '..', '~'로 시작
 PATHISH_TOKEN_RE = re.compile(r"[^\s'\"(),\[\]]*[\\/][^\s'\"(),\[\]]*")  # 경로 구분자가 든 조각
 
@@ -100,6 +113,8 @@ OPTION_ALIASES_RE = re.compile(r"-{1,2}[a-z][a-z-]*(?:/-{1,2}[a-z][a-z-]*)+:?") 
 SNAPSHOT_RULE = "스냅샷 ID는 영문 소문자로 시작하고 영문 소문자·숫자·밑줄만 쓰며 64자 이하다(예: kcs_202201_202412_v2)"
 POLICY_RULE = ("정책 버전 이름은 영문 소문자로 시작하고 영문 소문자·숫자·밑줄을 쓰며, 하이픈은 조각 사이에만, 점은 숫자 "
                "사이에만 두고 64자 이하다(예: policy_v1, dev-0.1). 파일 경로나 파일 이름이 아니다")
+RUN_NAME_RULE = ("실행명은 {실행 이름}-{yymmddhhmmss}이고(자료 계약 §10.3 N5), 실행 이름은 이 명령의 실행 이름(명령 이름의 "
+                 "하이픈을 밑줄로 바꾼 것)이며, 시각 12자리는 실제 날짜·시각이다(예: run_case-260925143015)")
 CASE_RULE = ("사례 인자는 영문자·숫자로 시작하고 끝나며 그 사이에는 영문자·숫자·밑줄·하이픈만 쓰고 64자 이하다"
              "(예: 850450-XA-202412. run-case는 사례 식별자 {hs6}-{partner}-{month}를 받는다)")
 
@@ -174,6 +189,36 @@ check_snapshot_id = _checker("스냅샷 ID", SNAPSHOT_ID_RE, SNAPSHOT_RULE)
 check_policy_version = _checker("정책 버전 이름", POLICY_VERSION_RE, POLICY_RULE)
 check_case = _checker("사례 인자", CASE_RE, CASE_RULE)
 
+def run_name_of(command: str) -> str:
+    """명령의 실행 이름(자료 계약 §10.3 N5: 명령 이름의 하이픈을 밑줄로 바꾼 것)."""
+    return command.replace("-", "_")
+
+
+def check_run_name_for(command: str):
+    """--run-name 검사 함수(argparse type)를 명령마다 만든다. 오류는 값을 되풀이하지 않는 ArgumentTypeError로만 낸다."""
+
+    def check(value: str) -> str:
+        if PATH_HINT_RE.search(value):
+            raise argparse.ArgumentTypeError(
+                f"실행명에는 경로를 쓰지 않는다(경로 구분자, '..', 절대경로, '~'로 시작하는 값). {RUN_NAME_RULE}")
+        if len(value) > MAX_LENGTH or RUN_NAME_RE.fullmatch(value) is None:
+            raise argparse.ArgumentTypeError(f"실행명 형식이 아니다. {RUN_NAME_RULE}")
+        name, stamp = value.rsplit("-", 1)
+        if name != run_name_of(command):
+            raise argparse.ArgumentTypeError(f"실행명의 실행 이름이 이 명령의 실행 이름과 다르다. {RUN_NAME_RULE}")
+        try:
+            datetime.strptime(stamp, STAMP_FORMAT)
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"실행명의 시각이 실제 날짜·시각이 아니다. {RUN_NAME_RULE}") from None
+        return value
+
+    return check
+
+
+RUN_NAME_OPTION = "run-name"
+RUN_NAME_HELP = ("호스트가 먼저 확보한 실행명(예: run_case-260925143015). 주면 그 이름의 실행 폴더 outputs/{실행명}/을 이미 "
+                 "있으면 실패하는 방식으로 만들고, 주지 않으면 CLI가 실행명을 확보한다(사용자 결정 10)")
+
 # 옵션 → argparse 인자 정의. dest는 옵션 이름 그대로다(요청의 필드 이름은 Request).
 OPTIONS = {
     "snapshot": {"metavar": "SNAPSHOT_ID", "type": check_snapshot_id,
@@ -216,7 +261,8 @@ class Request:
 
     필드 이름은 자료 계약의 키 이름(snapshot_id, policy_version, mode)을 따른다. 적지 않은 옵션은 None이다. 명령이 쓰지
     않는 공통 옵션(예: detect의 --mode)도 받은 값을 그대로 둔다. 쓸지 말지는 처리 함수가 COMMAND_OPTIONS대로 정한다.
-    case는 --case 값 그대로이고 run-case만 받는다(뜻은 run-case 배선이 정한다).
+    case는 --case 값 그대로이고 run-case만 받는다(뜻은 run-case 배선이 정한다). run_name은 --run-name 값 그대로다(없으면
+    None. 다섯 명령이 받는다).
     """
 
     command: str
@@ -224,6 +270,7 @@ class Request:
     policy_version: str | None = None
     mode: str | None = None
     case: str | None = None
+    run_name: str | None = None
 
 
 def option_help(command: str, option: str) -> str:
@@ -249,6 +296,8 @@ def build_parser() -> argparse.ArgumentParser:
         for option, role in COMMAND_OPTIONS[name].items():
             spec = dict(OPTIONS[option], help=option_help(name, option))
             command.add_argument(f"--{option}", dest=option, action=_Once, required=role == REQUIRED, **spec)
+        command.add_argument(f"--{RUN_NAME_OPTION}", dest="run_name", action=_Once, metavar="RUN_NAME",
+                             type=check_run_name_for(name), help=RUN_NAME_HELP)
     return parser
 
 
@@ -260,7 +309,7 @@ def parse(argv: list[str] | None = None) -> Request:
     namespace = build_parser().parse_args(argv)
     return Request(command=namespace.command, snapshot_id=namespace.snapshot,
                    policy_version=getattr(namespace, "policy", None), mode=getattr(namespace, "mode", None),
-                   case=getattr(namespace, "case", None))
+                   case=getattr(namespace, "case", None), run_name=getattr(namespace, "run_name", None))
 
 
 def run(inp: object) -> object:

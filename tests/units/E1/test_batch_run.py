@@ -188,6 +188,40 @@ class RefusalAndInterruptTest(TempOutputs, unittest.TestCase):
         self.assertEqual([(x["case_id"], x["mode"]) for x in lines], order[:2])
 
 
+class ReservedBatchDirTest(TempOutputs, unittest.TestCase):
+    """사용자 결정 10(나): 호스트가 확보한 묶음 실행 폴더(--run-name)를 받으면 다시 확보하지 않고 그 폴더에 쓴다."""
+
+    def reserve(self, name="evaluate-260925100000"):
+        folder = self.parent / name
+        folder.mkdir(parents=True)
+        return name, name.rsplit("-", 1)[1], folder
+
+    def test_reserved_folder_is_used_as_is(self):
+        reserved = self.reserve()
+        result = batch_run.execute_batch(spec(hf.dev20_cases(2)), hf.FakeRunner(self.clock), parent=self.parent,
+                                         other_parent=self.sealed, clock=self.clock, sleep=self.clock.sleep,
+                                         reserved=reserved)
+        self.assertEqual((result.run_id, result.stamp, result.run_dir), reserved)
+        self.assertEqual(len(hf.read_jsonl(result.batch_file)), 6)
+        self.assertEqual(sorted(p.name for p in self.parent.iterdir() if p.name.startswith("evaluate-")),
+                         ["evaluate-260925100000"])  # 묶음 폴더를 하나 더 만들지 않는다
+
+    def test_bad_reserved_folders_are_refused_before_any_case(self):
+        good = self.reserve()
+        (self.parent / "other").mkdir()
+        nonempty = self.reserve("evaluate-260925100001")
+        (nonempty[2] / "x").write_text("x")
+        for reserved in ((good[0], "260925100009", good[2]), ("run_case-260925100000", "260925100000", good[2]),
+                         (good[0], good[1], self.parent / "other"), nonempty, (good[0], good[1]),
+                         (good[0] + "\n", good[1], good[2])):
+            with self.subTest(reserved=reserved), self.assertRaises(batch_run.BatchError):
+                batch_run.execute_batch(spec(hf.dev20_cases(1)), hf.FakeRunner(self.clock), parent=self.parent,
+                                        other_parent=self.sealed, clock=self.clock, sleep=self.clock.sleep,
+                                        reserved=reserved)
+        self.assertEqual(sorted(p.name for p in self.parent.iterdir()),
+                         ["evaluate-260925100000", "evaluate-260925100001", "other"])  # 사례 폴더를 만들지 않았다
+
+
 class RunConditionsTest(unittest.TestCase):
     """실행 조건 입력 파일이 채점기 DT8 임시 형식(1회차 보고 §5, eval/scorer/__main__.py read_conditions)과 맞는다."""
 

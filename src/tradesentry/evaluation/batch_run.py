@@ -222,16 +222,35 @@ def accept_record(call: CaseCall, record: object) -> tuple[dict | None, str | No
     return line, None
 
 
+def _check_reserved(reserved: object, parent: Path) -> tuple[str, str, Path]:
+    """이미 확보한 묶음 실행 폴더(실행명, 시각, 폴더)를 받는다. 실행명이 evaluate-{시각}이고, 폴더가 parent 바로 아래의 그
+    이름이며, 비어 있어야 한다(사용자 결정 10: 호스트가 확보한 실행명을 --run-name으로 받은 경우)."""
+    if not isinstance(reserved, tuple) or len(reserved) != 3:
+        raise BatchError("확보한 묶음 실행 폴더는 (실행명, 시각, 폴더) 셋이다")
+    run_id, stamp, folder = reserved
+    if not isinstance(run_id, str) or not isinstance(stamp, str) or not isinstance(folder, Path) \
+            or trace_log.RUN_ID_RE.fullmatch(run_id) is None or run_id != f"{BATCH_RUN_NAME}-{stamp}" \
+            or folder != parent / run_id:
+        raise BatchError("확보한 묶음 실행 폴더가 outputs/evaluate-{시각}/ 모양이 아니다")
+    if folder.is_symlink() or not folder.is_dir() or any(folder.iterdir()):
+        raise BatchError("확보한 묶음 실행 폴더가 빈 폴더가 아니다")
+    return run_id, stamp, folder
+
+
 def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_parent: Path,
                   clock: Callable[[], datetime] | None = None,
-                  sleep: Callable[[float], None] | None = None) -> BatchResult:
+                  sleep: Callable[[float], None] | None = None,
+                  reserved: tuple[str, str, Path] | None = None) -> BatchResult:
     """묶음 하나를 돌린다(머리 설명 2). parent는 outputs/, other_parent는 outputs/sealed/다(N8).
 
+    reserved를 주면 묶음 실행 폴더를 다시 확보하지 않고 그 폴더(이미 확보한 빈 폴더, 사용자 결정 10의 --run-name)에 쓴다.
     사례 실행명을 확보하지 못하면(RunNameError) 거기서 멈춘다. 쓴 줄은 남고, 남은 계획 조합은 미실행으로 분모에 남는다.
     """
     check_spec(spec)
     if sealed_place(parent / BATCH_RUN_NAME):
         raise BatchError("묶음 실행 E1은 outputs/sealed/ 아래에 쓰지 않는다(봉인 묶음은 E2)")
+    if reserved is not None:
+        reserved = _check_reserved(reserved, parent)
     clock = clock or trace_log.now_kst
     reserve_kw: dict = {"clock": clock}
     if sleep is not None:
@@ -239,7 +258,10 @@ def execute_batch(spec: BatchSpec, runner: CaseRunner, *, parent: Path, other_pa
     order = plan_order([c["case_id"] for c in spec.cases], list(spec.modes), spec.order_seed)
     cases = {c["case_id"]: dict(c) for c in spec.cases}
     versions = {k: spec.versions[k] for k in VERSION_KEYS}
-    batch_id, stamp, batch_dir = run_record.reserve_run_dir(parent, other_parent, BATCH_RUN_NAME, **reserve_kw)
+    if reserved is None:
+        batch_id, stamp, batch_dir = run_record.reserve_run_dir(parent, other_parent, BATCH_RUN_NAME, **reserve_kw)
+    else:
+        batch_id, stamp, batch_dir = reserved
     started = clock()
     lines: list[dict] = []
     with open(batch_dir / f"{DOMAIN}-{stamp}.jsonl", "x", encoding="utf-8", newline="\n") as out:
