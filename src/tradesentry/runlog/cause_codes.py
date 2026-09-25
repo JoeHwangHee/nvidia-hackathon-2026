@@ -20,7 +20,7 @@
 | PROVIDER_HTTP_4XX | FAILED | 429만 예 | HTTP 4xx. 429는 5xx와 같은 재전송 한도(3회)를 다 쓴 뒤이고 재실행 대상이다(detail이 "HTTP 429"로 시작). 다른 4xx는 재전송·재실행하지 않는다 |
 | PROVIDER_REQUEST_TIMEOUT | FAILED | 아니오 | 사례 deadline 전의 요청별 제한 시간(최대 60초) 초과. 재실행 여부는 결정 D12의 입력 |
 | PROVIDER_BAD_RESPONSE | FAILED | 아니오 | HTTP 200인데 본문(JSON·choices·usage)을 읽을 수 없음 |
-| BUDGET_MODEL_REQUESTS | BUDGET_EXCEEDED | 아니오 | 모델 요청 한도(10회, 재전송 포함) |
+| BUDGET_MODEL_REQUESTS | BUDGET_EXCEEDED | 아니오 | 모델 요청 한도(10회). 재전송은 세지 않고 새 요청을 보내기 전에만 본다(2026-09-25 18:05 사용자 결정 기록 20260925-1805-user-decision-retry-budget) |
 | BUDGET_TOKENS | BUDGET_EXCEEDED | 아니오 | 누적 토큰 한도(설정 limits.tokens, 128,000, 입력 + 출력) |
 | DEADLINE | TIMEOUT | 아니오 | 사례당 wall time 한도(300초). 다른 한도보다 먼저 본다 |
 | SCHEMA_INVALID | INVALID | 아니오 | 수정 1회 뒤에도 스키마 검사 실패(모델 출력 형식 문제 포함) |
