@@ -24,6 +24,8 @@ from tradesentry.dal import query
 from tradesentry.evaluation import batch_run
 
 ARGV = ["evaluate", "--snapshot", "dev20", "--policy", "dev-0.1"]
+ORIGINAL_PACING = dispatch.evaluate_pacing
+REPO = Path(__file__).resolve().parents[3]
 
 
 def call(argv):
@@ -52,6 +54,8 @@ class EvaluateTest(unittest.TestCase):
         stack.enter_context(mock.patch.object(dispatch, "host_case_runner", self.runner))
         stack.enter_context(mock.patch.object(dispatch, "evaluate_versions", lambda request, dataset: dict(hf.VERSIONS)))
         stack.enter_context(mock.patch.dict(dispatch.EVALUATE_CASE_LISTS, {"dev20": self.cases_file}))
+        self.pacing = batch_run.Pacing()  # 시험은 쉬지 않는다(속도 조절 규칙은 E1 시험과 test_pacing_values_reach_e1)
+        stack.enter_context(mock.patch.object(dispatch, "evaluate_pacing", lambda: self.pacing))
         self.addCleanup(stack.close)
 
     def conditions(self, line: str) -> dict:
@@ -129,6 +133,34 @@ class EvaluateTest(unittest.TestCase):
         self.assertIn("사례 목록을 읽지 못했다(ValueError)", err)
         self.assertFalse((self.root / "outputs").exists())
         self.assertEqual(self.runner.calls, [])
+
+    def test_pacing_values_reach_e1_and_the_conditions_file(self):
+        """모델 설정의 pacing을 E1에 넘기고, 실행 조건 입력 파일 prescoring_checks.seed_concurrency에 적는다."""
+        seen = {}
+        real = batch_run.execute_batch
+
+        def spy(*a, **k):
+            seen["pacing"] = k.get("pacing")
+            return real(*a, **{**k, "pacing": batch_run.Pacing()})
+
+        with mock.patch.object(dispatch, "evaluate_pacing", ORIGINAL_PACING), \
+                mock.patch.object(batch_run, "execute_batch", spy):
+            code, out, err = call(ARGV + ["--mode", "full"])
+        self.assertEqual(code, 0, err)
+        config = json.loads((REPO / "configs" / "model" / "model.json").read_text(encoding="utf-8"))["pacing"]
+        self.assertEqual(seen["pacing"], batch_run.Pacing(**config))
+        self.assertGreater(seen["pacing"].min_gap_ms, 0)
+        doc = self.conditions(out.splitlines()[1])
+        self.assertTrue(doc["prescoring_checks"]["seed_concurrency"].startswith(
+            f"참: 순서 seed dev-order-v1, 동시성 1, 속도 조절(모델 실행 사이 최소 {config['min_gap_ms'] // 1000}초"))
+
+    def test_bad_pacing_config_fails_before_outputs(self):
+        with mock.patch.object(dispatch, "evaluate_pacing", ORIGINAL_PACING), \
+                mock.patch.object(batch_run, "pacing_from_config", side_effect=batch_run.BatchError("x")):
+            code, out, err = call(ARGV)
+        self.assertEqual((code, out), (1, ""))
+        self.assertIn("묶음 입력이 규칙에 맞지 않는다(BatchError)", err)
+        self.assertFalse((self.root / "outputs").exists())
 
     def test_unknown_backend_is_a_wiring_error(self):
         with mock.patch.object(dispatch, "EVALUATE_BACKEND", "cloud"):
