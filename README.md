@@ -88,7 +88,7 @@ uv run --locked python scripts/secret_scan.py
   | `runlog_trace-{시각}.jsonl` | trace. 모델 요청·응답, 도구 봉투, 검증기 결과, 코드가 덧붙인 주장 |
   | `workflow_nat_wrap-{시각}/` | NAT 추적 `nat_trace.jsonl`과 프로파일 결과 |
 
-  재생은 기록된 NIM 응답을 차례로 내주며 요청 본문의 해시가 기록과 같은지 대조한다. 도구 5개는 재생 때도 합성 픽스처에서 실제로 돈다. 지침·요청 구성이 바뀌면 해시 불일치로 종료 코드 1이 나고, 그때는 실제 NIM 실행으로 재생 파일을 다시 만든다(`scripts/make_smoke_replay.py`). 사례 B(`850431-XB-202412`)의 재생 파일은 뒤에 더해진다.
+  재생은 기록된 NIM 응답을 차례로 내주며 요청 본문의 해시가 기록과 같은지 대조한다. 도구 5개는 재생 때도 합성 픽스처에서 실제로 돈다. 지침·요청 구성이 바뀌면 해시 불일치로 종료 코드 1이 나고, 그때는 실제 NIM 실행으로 재생 파일을 다시 만든다(`scripts/make_smoke_replay.py`). 세 사례(A `850450-XA-202412`, B `850431-XB-202412`, C `850432-XC-202412`)의 재생 파일이 모두 `eval/dev/smoke/`에 있다.
 - 5) `추적 파일 N개, 걸린 곳 0`, 종료 코드 0.
 
 정본: `docs/operations.md`(처음 준비·키 없는 스모크 항목), 결정 기록 `docs/tracking/decisions/20260926-0230-model-decision-smoke-replay.md`.
