@@ -5,7 +5,8 @@
   폴더 자리를 함수 인자로 임시 위치에 둔다(재대조 단계는 가짜 해시 목록으로 흉내 낸다).
 - 사례 실행: 가짜 openshell(tests/units/F2/fake_openshell.py). dev20 20건 × 3모드 = 60회. 모델 응답은 없다(기록만 흉내).
 - 채점기: python -m eval.scorer --run <run_dir>의 main을 in-process로 부른다. 채점기 파일은 고치지 않고, 채점기가 E2의 실행 이름을
-  알아야 하는 상수 BATCH_DOMAINS만 시험 안에서 monkeypatch한다(D 트랙 PR이 더할 값 "sealed_evaluate": "evaluation_sealed_runner").
+  알아야 하는 상수 BATCH_DOMAINS를 시험 안에서 같은 값으로 monkeypatch한다("sealed_evaluate": "evaluation_sealed_runner". PR #82
+  `data/DT8-sealed-wiring`로 main에 이미 들어간 값과 같다).
 - 이름 충돌: 다른 부모(outputs/sealed/)에 첫 초의 이름을 미리 두어 N8대로 다음 초로 넘어가는지, 사례 실행 폴더가 묶음 폴더의
   형제(outputs/run_case-{시각}/)인지 본다.
 """

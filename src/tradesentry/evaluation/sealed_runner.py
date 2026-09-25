@@ -223,12 +223,17 @@ def case_from_id(case_id: object) -> dict:
     return {"case_id": case_id, "hs6": hs6, "partner": partner, "month": month}
 
 
-def _check_match(doc: dict, key: str, expected: str, what: str) -> None:
-    if key in doc and doc[key] != expected:
+def _check_match(doc: dict, key: str, expected: str, what: str, err=None) -> None:
+    """봉인 파일의 키가 있으면 인자와 대조하고, 없으면 대조를 생략했다고 표준 오류에 알린다(값은 적지 않는다)."""
+    if key not in doc:
+        print(f"알림: 봉인 {what} 파일에 {key}가 없어 인자와 대조하지 않았다", file=err or sys.stderr, flush=True)
+        return
+    if doc[key] != expected:
         raise SealedRunnerError(f"봉인 {what}의 {key}가 인자와 다르다")
 
 
-def sealed_case_list(dataset: str, root: Path, entries: list, snapshot_id: str, policy_version: str) -> list[dict]:
+def sealed_case_list(dataset: str, root: Path, entries: list, snapshot_id: str, policy_version: str,
+                     err=None) -> list[dict]:
     """자료 묶음의 계획 사례(네 키)를 봉인 파일에서 읽는다(머리 설명 2). 정답표·표본 추출 seed 파일은 읽지 않는다."""
     if dataset == "real_sealed":
         names = [e["file_name"] for e in entries
@@ -238,15 +243,15 @@ def sealed_case_list(dataset: str, root: Path, entries: list, snapshot_id: str, 
         doc = read_sealed_json(root, entries, names[0])
         if not isinstance(doc, dict) or not isinstance(doc.get("cases"), list) or not doc["cases"]:
             raise SealedRunnerError("real_sealed 채점 표본의 모양이 틀렸다(cases 목록)")
-        _check_match(doc, "snapshot_id", snapshot_id, "표본")
-        _check_match(doc, "policy_version", policy_version, "표본")
+        _check_match(doc, "snapshot_id", snapshot_id, "표본", err)
+        _check_match(doc, "policy_version", policy_version, "표본", err)
         cases = [case_from_id(item) for item in doc["cases"]]
     elif dataset == "holdout40":
         doc = read_sealed_json(root, entries, HOLDOUT40_CASES)
         if not isinstance(doc, dict) or not isinstance(doc.get("cases"), list) or not doc["cases"]:
             raise SealedRunnerError("holdout40 사례 목록의 모양이 틀렸다(cases 목록)")
-        _check_match(doc, "dataset", dataset, "사례 목록")
-        _check_match(doc, "snapshot_id", snapshot_id, "사례 목록")
+        _check_match(doc, "dataset", dataset, "사례 목록", err)
+        _check_match(doc, "snapshot_id", snapshot_id, "사례 목록", err)
         cases = []
         for item in doc["cases"]:
             if not isinstance(item, dict) or not all(isinstance(item.get(k), str) and item[k] for k in batch_run.CASE_KEYS):
@@ -409,7 +414,8 @@ def _run_sealed(settings: Settings, cases: list | None, clock, sleep, out, err) 
     if cases is None:
         if not sealed:
             raise SealedRunnerError("봉인 묶음이 아닌 자료 묶음은 사례 목록을 인자로 받는다(리허설)")
-        cases = sealed_case_list(settings.dataset, sealed_root, entries, settings.snapshot_id, settings.policy_version)
+        cases = sealed_case_list(settings.dataset, sealed_root, entries, settings.snapshot_id, settings.policy_version,
+                                 err=err)
     cases = [dict(c) for c in cases]
     print(f"계획 사례 {len(cases)}건", file=out, flush=True)
     # 3. 준비

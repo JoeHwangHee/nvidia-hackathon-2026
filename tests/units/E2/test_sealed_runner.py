@@ -18,6 +18,7 @@ import io
 import json
 import os
 import re
+import shutil
 import sys
 import tempfile
 import unittest
@@ -106,9 +107,10 @@ class SealedRunnerFixture:
                                                   "cases": cases}), encoding="utf-8")
 
     def settings(self, dataset: str, snapshot_id: str, policy_version: str = "policy_v1", **extra) -> sealed_runner.Settings:
-        return sealed_runner.Settings(dataset=dataset, sandbox="ts-official", snapshot_id=snapshot_id,
-                                      policy_version=policy_version, outputs=self.outputs, repo_root=REPO,
-                                      manifest=self.manifest_file, sealed_root=self.sealed, **extra)
+        values = dict(dataset=dataset, sandbox="ts-official", snapshot_id=snapshot_id, policy_version=policy_version,
+                      outputs=self.outputs, repo_root=REPO, manifest=self.manifest_file, sealed_root=self.sealed)
+        values.update(extra)
+        return sealed_runner.Settings(**values)
 
     def run_e2(self, settings: sealed_runner.Settings, cases: dict | None = None, **kwargs):
         self.set_scenario(settings.dataset, settings.snapshot_id, settings.policy_version, cases or {})
@@ -179,13 +181,15 @@ class RealSealedRunTest(SealedRunnerFixture, unittest.TestCase):
                 "prescoring_checks": {"version_keys": "참", "mode_case_sets": "참", "concurrency_record": "참"}}
 
     def test_sample_read_modes_order_and_hygiene(self):
-        (REPO / "outputs").mkdir(exist_ok=True)  # 운영자 파일 상대 경로의 기준은 저장소 폴더(outputs/는 커밋하지 않는다)
-        extra = REPO / "outputs" / f".e2-test-extra-{os.getpid()}.json"
-        extra.write_text(json.dumps(self.OPERATOR), encoding="utf-8")
-        self.addCleanup(lambda: extra.unlink(missing_ok=True))
+        # 운영자 파일 상대 경로의 기준은 저장소 폴더 → 임시 저장소 뿌리(정책 파일만 사본, 모델 설정은 실제 파일 경로)
+        fake_repo = self.root / "repo"
+        (fake_repo / "configs" / "openshell").mkdir(parents=True)
+        shutil.copyfile(REPO / "configs" / "openshell" / "policy.yaml", fake_repo / "configs" / "openshell" / "policy.yaml")
+        (fake_repo / "extra.json").write_text(json.dumps(self.OPERATOR), encoding="utf-8")
         # N8: 다른 부모(outputs/)에 첫 초의 이름이 있으면 다음 초로 넘어간다
         (self.outputs / "sealed_evaluate-260925100000").mkdir(parents=True)
-        settings = self.settings("real_sealed", REAL_SNAPSHOT, conditions_extra=extra.relative_to(REPO).as_posix())
+        settings = self.settings("real_sealed", REAL_SNAPSHOT, conditions_extra="extra.json", repo_root=fake_repo,
+                                 model_config=REPO / "configs" / "model" / "model.json")
         code, out, err = self.run_e2(settings)
         self.assertEqual(code, 0, err)
         lines = out.splitlines()
@@ -335,6 +339,21 @@ class Holdout40RunTest(SealedRunnerFixture, unittest.TestCase):
             sealed_runner.sealed_case_list("real_sealed", self.sealed, entries, REAL_SNAPSHOT, "policy_v1")
         self.assertEqual([call.args[2] for call in spy.call_args_list],
                          ["holdout40/input/cases.json", "real_sealed/sample-260926065820.json"])
+
+    def test_missing_keys_skip_the_comparison_with_a_notice(self):
+        """표본·cases.json에 snapshot_id·policy_version이 없으면 대조를 생략하고 표준 오류에 알림 한 줄(값 없음)."""
+        sample = self.sealed / "real_sealed/sample-260926065820.json"
+        sample.write_text(json.dumps({"cases": REAL_CASE_IDS}), encoding="utf-8")
+        entries = json.loads(self.manifest_file.read_text(encoding="utf-8"))["files"]
+        for entry in entries:
+            if entry["file_name"] == "real_sealed/sample-260926065820.json":
+                entry["sha256"] = sha(sample.read_bytes())
+        err = io.StringIO()
+        cases = sealed_runner.sealed_case_list("real_sealed", self.sealed, entries, REAL_SNAPSHOT, "policy_v1", err=err)
+        self.assertEqual(len(cases), 2)
+        self.assertEqual(err.getvalue().splitlines(), ["알림: 봉인 표본 파일에 snapshot_id가 없어 인자와 대조하지 않았다",
+                                                        "알림: 봉인 표본 파일에 policy_version가 없어 인자와 대조하지 않았다"])
+        self.assert_no_case_ids(err.getvalue())
 
     def test_wrong_snapshot_argument_is_refused(self):
         code, out, err = self.run_e2(self.settings("holdout40", "dev20"))
