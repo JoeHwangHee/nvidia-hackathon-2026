@@ -1,130 +1,143 @@
-"""③ 결정 기록 · 재조사 · 도움: 진행 단계 4칸, 담당자 결정 폼, 재조사 요청 폼, 사후 확인(비활성), 옆에 이력·용어 도움·더 물어볼 곳."""
+"""③ 결정 기록(디자인 v2 Assist2): 사례 칩 + 제안 → 진행 단계 띠 4칸 → 세 열(결정 폼 | 다시 조사하기 · 사후 확인 | 이 사례의 기록 ·
+용어 · 문의할 때 사례 번호).
+
+- "결정 저장" 버튼은 위 입력칸과 같은 폭(`width="stretch"`)이고 안내 문구는 버튼 아래 작게 둔다.
+- "다시 조사" 버튼은 오른쪽 정렬이고 배경 조사(`screens.jobs`)를 띄워 로딩 창을 연다. 이유 체크 3개는 표시용이며 저장하지 않는다.
+- 사후 확인은 설명만 있고 열리지 않는다(자료 갱신이 없는 데모).
+- 담당자 화면에서 유일하게 사례 ID가 보이는 곳은 "문의할 때 사례 번호" 한 줄이다(디자인대로).
+"""
+import html
+
 import streamlit as st
 
 from tradesentry import app
 from tradesentry.ui import alerts, i18n, records
 from tradesentry.ui.i18n import t
-from tradesentry.ui.screens import common
+from tradesentry.ui.screens import common, jobs
 from tradesentry.ui.screens.case import pick_completed_case, resolve_run
 
 DECISIONS = ("MAINTAIN", "MONITOR", "HOLD")
-GLOSSARY = (("glossary.unit", "glossary.unit_desc"), ("glossary.share", "glossary.share_desc"), ("glossary.yoy", "glossary.yoy_desc"),
-            ("glossary.mix", "glossary.mix_desc"))
+GLOSSARY = (("glossary.unit", "glossary.unit_desc"), ("glossary.share", "glossary.share_desc"), ("glossary.mix", "glossary.mix_desc"))
+ASSIST_COLUMNS = [1.25, 1.1, 0.8]
 
 
-def _signal_text(alert: dict | None, lang: str) -> str:
+def _signal_text(alert: dict | None, lang: str) -> str | None:
     signal = alerts.history_signal(alert)
     if signal["kind"] == "unit_value":
-        return t("history.alert_unit", lang, value=alerts.signed_text(signal["value"]))
+        return t("signal.unit_change", lang, value=alerts.signed_text(signal["value"]))
     if signal["kind"] == "share":
-        return t("history.alert_share", lang, value=alerts.signed_text(signal["value"]))
-    return t("history.alert_other", lang)
+        return t("signal.share_change", lang, value=alerts.signed_text(signal["value"]))
+    return None
 
 
-def _steps(lang: str, case_month: str, alert: dict | None, latest: dict | None) -> None:
-    cols = st.columns(4)
+def _steps(lang: str, case_month: str, alert: dict | None, latest: dict | None, decided: bool) -> None:
     signal = _signal_text(alert, lang)
-    if latest and latest["status"] == alerts.INVESTIGATED:
-        verify = t("chip.verified", lang)
-        step2 = t("step.2_desc", lang, time=latest["time"], verify=verify, verdict=i18n.verdict_label(latest["review_status_final"], lang))
-    else:
-        step2 = t("step.2_pending", lang)
-    for column, number, head, desc in ((cols[0], 1, t("step.1", lang), t("step.1_desc", lang, month=i18n.month_label(case_month, lang), signal=signal)),
-                                       (cols[1], 2, t("step.2", lang), step2),
-                                       (cols[2], 3, t("step.3", lang), t("step.3_desc", lang)),
-                                       (cols[3], 4, t("step.4", lang), t("step.4_desc", lang))):
-        with column, st.container(border=True):
-            st.markdown(f"**{number}. {head}**")
-            st.caption(desc)
+    month = i18n.month_long(case_month, lang)
+    step1 = t("step.1_desc", lang, month=month, signal=signal) if signal else t("step.1_desc_plain", lang, month=month)
+    investigated = bool(latest and latest["status"] == alerts.INVESTIGATED)
+    step2 = (t("step.2_desc", lang, time=latest["time"], verdict=t(f"verdict_lc.{latest['review_status_final']}", lang))
+             if investigated else t("step.2_pending", lang))
+    items = ((1, t("step.1", lang), step1, "done"), (2, t("step.2", lang), step2, "done" if investigated else ""),
+             (3, t("step.3_done" if decided else "step.3", lang), t("step.3_desc", lang), "done" if decided else "now"),
+             (4, t("step.4", lang), t("step.4_desc", lang), ""))
+    with st.container(key="as_steps"):
+        for column, (number, head, desc, state) in zip(st.columns(4), items):
+            mark = "✓" if state == "done" else str(number)
+            bold = ' class="now"' if state == "now" else ""
+            column.markdown(f'<div class="ts-stepbox"><span class="n {state}">{mark}</span><div><b{bold}>{html.escape(head)}</b>'
+                            f'<small>{html.escape(desc)}</small></div></div>', unsafe_allow_html=True)
 
 
-def _decision_form(lang: str, case_id: str, run_id: str, loaded: dict, suggested: object) -> None:
-    st.subheader(t("decide.title", lang))
-    st.write(t("decide.question", lang))
-    execution = (loaded.get("record") or {}).get("execution_status")
-    labels = {}
-    for code in DECISIONS:
-        labels[code] = t("decide.follow", lang, verdict=t(f"verdict.{code}", lang)) if code == suggested else t(f"decide.opt.{code}", lang)
-    order = [c for c in DECISIONS if c == suggested] + [c for c in DECISIONS if c != suggested]
-    choice = st.radio(t("decide.question", lang), order, format_func=labels.get, key="decide_choice", label_visibility="collapsed",
-                      captions=[t(f"decide.desc.{c}", lang) for c in order])
-    memo = st.text_area(t("decide.memo", lang), key="decide_memo", height=80)
-    reviewer = st.text_input(t("decide.reviewer", lang), key="decide_reviewer")
-    st.caption(t("decide.saved_with", lang))
-    st.caption(t("decide.review_note", lang))
-    if execution != "COMPLETED":
-        st.warning(t("decide.reject_not_completed", lang, status=execution))
-    if st.button(t("decide.save", lang), type="primary", disabled=execution != "COMPLETED", key="decide_save"):
-        try:
-            record = records.build_record(loaded, choice, memo, reviewer)
-            saved = records.save_record(common.OUTPUTS_ROOT, record)
-        except ValueError as exc:
-            if "COMPLETED" in str(exc):
-                st.error(t("decide.reject_not_completed", lang, status=execution))
-            else:
+def _decision_form(lang: str, loaded: dict | None, suggested: object) -> None:
+    with st.container(key="as_form"):
+        st.markdown(f'<div class="ts-sec">{html.escape(t("decide.question", lang))}</div>', unsafe_allow_html=True)
+        if st.session_state.pop("assist_saved", None):
+            st.success(t("decide.saved", lang))
+        if loaded is None:
+            st.info(t("decide.no_run", lang))
+            return
+        execution = (loaded.get("record") or {}).get("execution_status")
+        labels = {code: (t("decide.follow", lang, verdict=t(f"verdict_lc.{code}", lang)) if code == suggested else t(f"decide.opt.{code}", lang))
+                  for code in DECISIONS}
+        order = [c for c in DECISIONS if c == suggested] + [c for c in DECISIONS if c != suggested]
+        choice = st.radio(t("decide.question", lang), order, format_func=labels.get, key=f"decide_choice_{lang}",
+                          label_visibility="collapsed", captions=[t(f"decide.desc.{c}", lang) for c in order])
+        memo = st.text_area(t("decide.memo", lang), key="decide_memo", height=84, placeholder=t("decide.memo_ph", lang))
+        reviewer = st.text_input(t("decide.reviewer", lang), key="decide_reviewer", placeholder=t("decide.reviewer_ph", lang))
+        completed = execution == "COMPLETED"
+        if not completed:
+            st.warning(t("decide.reject_not_completed", lang))
+        if st.button(t("decide.save", lang), type="primary", disabled=not completed, key="decide_save", width="stretch"):
+            try:
+                record = records.build_record(loaded, choice, memo, reviewer)
+                records.save_record(common.OUTPUTS_ROOT, record)
+            except ValueError as exc:
+                if "COMPLETED" in str(exc):
+                    st.error(t("decide.reject_not_completed", lang))
+                else:
+                    common.show_error("decide.error", exc)
+                return
+            except Exception as exc:  # noqa: BLE001 — 이름만 보인다(N13)
                 common.show_error("decide.error", exc)
-            return
-        except Exception as exc:  # noqa: BLE001 — 이름만 보인다(N13)
-            common.show_error("decide.error", exc)
-            return
-        st.session_state["assist_saved"] = saved["path"]
-        st.rerun()
+                return
+            st.session_state["assist_saved"] = True
+            st.rerun()
+        st.caption(t("decide.after_note", lang))
 
 
 def _reinvestigate(lang: str, case_id: str, snapshot: str | None) -> None:
-    st.subheader(t("reinv.title", lang))
-    st.write(t("reinv.desc", lang))
-    for key in ("reinv.reason1", "reinv.reason2", "reinv.reason3"):
-        st.checkbox(t(key, lang), key=key)
-    allowed, replay = common.can_run(case_id) if snapshot else (False, None)
-    if not app.key_present():
-        st.caption(t("reinv.replay_note", lang))
-    if not allowed:
-        st.caption(t("reinv.cannot", lang))
-    running = st.session_state.get("running", False)
-    if st.button(t("reinv.button", lang), disabled=not allowed or running or not snapshot, key="reinv_button"):
-        result = common.run_investigation(case_id, snapshot)
-        new_dirs = result.get("new_run_dirs") or []
-        if new_dirs:
-            st.session_state["assist_reinv"] = new_dirs[0]
-            common.select_case(case_id, new_dirs[0])
-        else:
-            st.session_state["assist_reinv_error"] = t("reinv.failed", lang, code=result.get("returncode"))
-        st.rerun()
-    if st.session_state.get("assist_reinv"):
-        st.success(t("reinv.done", lang, run=f"outputs/{st.session_state.pop('assist_reinv')}"))
-        st.caption(t("reinv.not_score", lang))
-    if st.session_state.get("assist_reinv_error"):
-        st.error(st.session_state.pop("assist_reinv_error"))
+    with st.container(key="as_reinv"):
+        st.markdown(f'<div class="ts-sec">{html.escape(t("reinv.title", lang))}</div>', unsafe_allow_html=True)
+        st.caption(t("reinv.desc", lang))
+        for key in ("reinv.reason1", "reinv.reason2", "reinv.reason3"):
+            st.checkbox(t(key, lang), key=key)
+        allowed = common.can_run(case_id)[0] if snapshot else False
+        busy = jobs.is_running()
+        help_text = t("home.locked_running", lang) if busy else (None if allowed else t("reinv.cannot", lang))
+        with st.container(horizontal=True, horizontal_alignment="right"):
+            if st.button(t("reinv.button", lang), disabled=busy or not allowed, key="reinv_button", help=help_text):
+                if jobs.start(case_id, snapshot):
+                    st.rerun()
+        if not allowed and not busy:
+            st.caption(t("reinv.cannot", lang))
+    with st.container(key="as_follow"):
+        st.markdown(f'<div class="ts-sec">{html.escape(t("followup.title", lang))}</div>', unsafe_allow_html=True)
+        st.caption(t("followup.desc", lang))
 
 
-def _followup(lang: str) -> None:
-    st.subheader(t("followup.title", lang))
-    st.caption("— " + t("followup.locked", lang))
-    st.radio(t("followup.question", lang), [t("followup.opt1", lang), t("followup.opt2", lang), t("followup.opt3", lang)],
-             index=None, disabled=True, key="followup_choice")
-    st.caption(t("followup.desc", lang))
-    st.caption(t("followup.demo", lang))
-
-
-def _history(lang: str, case_id: str, case_month: str, alert: dict | None, runs: list[dict]) -> None:
-    st.markdown(f"**{t('history.title', lang)}**")
-    st.markdown(f"- {t('history.alert', lang, month=i18n.month_short(case_month), signal=_signal_text(alert, lang))}")
+def _history(lang: str, case_id: str, case_month: str, alert: dict | None, runs: list[dict], run_id: str | None) -> None:
+    lines = []
+    signal = _signal_text(alert, lang)
+    month = i18n.month_long(case_month, lang)
+    lines.append(t("history.alert", lang, month=month, signal=signal) if signal else t("history.alert_plain", lang, month=month))
     for run in reversed(runs):  # 오래된 것부터
         if run["status"] == alerts.INVESTIGATED:
-            st.markdown(f"- {t('history.run', lang, time=run['time'], verify=t('chip.verified', lang), verdict=i18n.verdict_label(run['review_status_final'], lang), run=run['run_id'])}")
+            lines.append(t("history.run", lang, time=run["time"], verdict=t(f"verdict_lc.{run['review_status_final']}", lang)))
         else:
-            st.markdown(f"- {t('history.run_failed', lang, time=run['time'], status=run['execution_status'], run=run['run_id'])}")
+            lines.append(t("history.run_failed", lang, time=run["time"]))
     decisions = records.records_for_case(common.OUTPUTS_ROOT, case_id)
-    if decisions:
-        for record in reversed(decisions):
-            reviewer = t("history.by", lang, reviewer=record["reviewer_label"]) if record.get("reviewer_label") else ""
-            validity = t("validity." + str(record["validity"]), lang)
-            line = t("history.decision", lang, time=record["timestamp"], decision=i18n.verdict_label(record["decision"], lang),
-                     reviewer=reviewer, validity=validity)
-            st.markdown(f"- {line}")
-    else:
-        st.markdown(f"- {t('history.no_decision', lang)}")
+    muted = None
+    for record in reversed(decisions):
+        reviewer = t("history.by", lang, reviewer=record["reviewer_label"]) if record.get("reviewer_label") else ""
+        lines.append(t("history.decision", lang, time=common.time_text(record["timestamp"]),
+                       decision=t(f"verdict_lc.{record['decision']}", lang), reviewer=reviewer,
+                       validity=t("validity." + str(record["validity"]), lang)))
+    if not decisions:
+        muted = t("history.no_decision", lang)
+    with st.container(key="as_hist"):
+        st.markdown(f'<div class="ts-sec">{html.escape(t("history.title", lang))}</div>', unsafe_allow_html=True)
+        items = "".join(f"<li>{html.escape(line)}</li>" for line in lines)
+        if muted:
+            items += f'<li class="muted">{html.escape(muted)}</li>'
+        st.markdown(f'<ol class="ts-hist">{items}</ol>', unsafe_allow_html=True)
+    with st.container(key="as_terms"):
+        st.markdown(f'<div class="ts-sec">{html.escape(t("glossary.title", lang))}</div>', unsafe_allow_html=True)
+        pairs = "".join(f'<div class="k"><b>{html.escape(t(head, lang))}</b></div><div>{html.escape(t(desc, lang))}</div>'
+                        for head, desc in GLOSSARY)
+        st.markdown(f'<div class="ts-kv ts-kv-wide">{pairs}</div>', unsafe_allow_html=True)
+    with st.container(horizontal=True, vertical_alignment="center", gap="small", key="as_ask"):
+        st.markdown(f'<div class="ts-foot">{html.escape(t("ask.line", lang, case_id=case_id))} ·</div>', unsafe_allow_html=True)
+        common.admin_link(t("foot.admin", lang), run_id, key="assist_admin")
 
 
 def render() -> None:
@@ -133,6 +146,7 @@ def render() -> None:
     if not case_id:
         st.info(t("assist.none", lang))
         pick_completed_case(lang, snapshot, "assist")
+        common.render_footer()
         return
     run_id, runs = resolve_run(case_id)
     parsed = app.parse_case_id(case_id) or {}
@@ -140,37 +154,24 @@ def render() -> None:
     alert = common.find_alert(case_id)
     latest = next((r for r in runs if r["run_id"] == run_id), runs[0] if runs else None)  # 실행 요약(alerts.run_entry)
     suggested = latest["review_status_final"] if latest and latest["status"] == alerts.INVESTIGATED else None
-    st.caption(f"{t('assist.case', lang)} · {i18n.item_label(parsed.get('hs6'), lang)} · {i18n.partner_label(parsed.get('partner'), countries)} · "
-               f"{i18n.month_short(parsed.get('month'))} · {t('assist.suggested', lang, verdict=i18n.verdict_label(suggested, lang))}")
-    _steps(lang, parsed.get("month", ""), alert, latest)
-    main, side = st.columns([2, 1])
-    with main:
-        if st.session_state.get("assist_saved"):
-            st.success(t("decide.saved", lang, path=st.session_state.pop("assist_saved")))
-        if run_id:
-            try:
-                loaded = app.load_run(common.OUTPUTS_ROOT / run_id)
-            except Exception as exc:  # noqa: BLE001
-                common.show_error("app.error_read", exc)
-                loaded = None
-            if loaded:
-                _decision_form(lang, case_id, run_id, loaded, suggested)
-        else:
-            st.subheader(t("decide.title", lang))
-            st.info(t("decide.no_run", lang))
-        st.divider()
-        _reinvestigate(lang, case_id, snapshot)
-        st.divider()
-        _followup(lang)
-    with side:
-        _history(lang, case_id, parsed.get("month", ""), alert, runs)
-        st.markdown(f"**{t('glossary.title', lang)}**")
-        for head, desc in GLOSSARY:
-            st.markdown(f"**{t(head, lang)}**  \n{t(desc, lang)}")
-        st.markdown(f"**{t('glossary.hs6', lang)}**  \n{t('glossary.hs6_desc', lang, hs6=parsed.get('hs6'), item=i18n.item_label(parsed.get('hs6'), lang))}")
-        st.markdown(f"**{t('ask.title', lang)}**")
-        st.write(t("ask.desc", lang))
-        st.code(case_id, language="text")
-        if st.button(t("ask.admin_link", lang), key="ask-admin"):
-            common.open_admin(run_id)
-    common.render_footer()
+    decided = bool(records.latest_decisions(common.OUTPUTS_ROOT).get(case_id))
+    chip = " · ".join([i18n.item_label(parsed.get("hs6"), lang), i18n.partner_label(parsed.get("partner"), countries),
+                       i18n.month_long(parsed.get("month"), lang)])
+    verdict = t(f"verdict_lc.{suggested}", lang) if suggested else t("verdict.none", lang)
+    with st.container(horizontal=True, horizontal_alignment="right", key="as_chips"):
+        st.markdown(f'<span class="ts-chip">{html.escape(chip)}</span><span class="ts-chip ok"><b>'
+                    f'{html.escape(t("assist.suggested", lang, verdict=verdict))}</b></span>', unsafe_allow_html=True)
+    _steps(lang, parsed.get("month", ""), alert, latest, decided)
+    loaded = None
+    if run_id:
+        try:
+            loaded = app.load_run(common.OUTPUTS_ROOT / run_id)
+        except Exception as exc:  # noqa: BLE001 — 이름만 보인다(N13)
+            common.show_error("app.error_read", exc)
+    left, middle, right = st.columns(ASSIST_COLUMNS, gap="medium")
+    with left:
+        _decision_form(lang, loaded, suggested)
+    with middle:
+        _reinvestigate(lang, case_id, (latest or {}).get("snapshot_id") or snapshot)  # 그 사례를 조사한 자료로 다시 돈다
+    with right:
+        _history(lang, case_id, parsed.get("month", ""), alert, runs, run_id)
