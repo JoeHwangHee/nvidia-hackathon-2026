@@ -560,7 +560,6 @@ class LoadingTextTest(Base):
         self.assertEqual(listing.progress_cell({"state": listing.REVIEW_REQUIRED}, "en")["sub"], "No longer matches its report")
 
 
-
 # ---- UI5: PR #109 독립 검토 권고 4건 ---------------------------------------------------------------------------------
 
 
