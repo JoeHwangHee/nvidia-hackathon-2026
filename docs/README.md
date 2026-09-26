@@ -23,6 +23,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | `docs/eval/SKILL_DICTIONARY.md` | 스킬 사전. NVIDIA 공식 Agent Skills와 우리 스킬의 이름·출처·설치 명령·용도·단계·채점표 항목·상태 | 어떤 스킬을 설치하고 어디에 쓰는지 볼 때 |
 | `skills/tradesentry-scorecard/SKILL.md` | 평가 스킬 ①. 저장소를 룰북 Part A로 자기채점하고 근거가 붙은 점수표를 남기는 절차 | MVP 시험 뒤, `RB-1` 동결 뒤, 제출 전 자기채점할 때 |
 | `skills/tradesentry-eval/SKILL.md` | 평가 스킬 ②. 룰북 Part B의 성능 평가를 사전 점검 → 실행 → 채점 → 결과 보고 순으로 수행하는 절차. 봉인 자료 취급과 멈춤 규칙 포함 | dev20·`real_dev` 평가, `RB-1` 동결 뒤 봉인 묶음 채점을 할 때 |
+| `docs/tracking/journal.md` | 기획·개발 일지. 대회 이해·주제 선정부터 저장소 공개·라이선스까지 무엇을 어떤 순서로 했고 어떤 대안 가운데 무엇을 왜 골랐는지를 결정 기록·PR·대화 기록으로 시간순으로 엮은 요약. 정본은 결정 기록과 계획 문서다. 2026-09-27(일) 사용자 요청으로 더했다 | 개발 경위와 선택의 이유를 한 번에 훑을 때 |
 
 `[사실]` 위 표에서 `docs/plan/UNITS.md`를 뺀 10개 문서와 이 색인이 이번 문서 실행의 산출물 11개다. `docs/plan/UNITS.md`는 2026-09-24(목) 사용자 결정(결정 기록 `docs/tracking/decisions/20260924-1720-user-decision-domain-restructure.md`)을 계획 문서에 반영하는 자료 계약 PR에서 더했다. 런타임 스킬 `skills/tradesentry/SKILL.md`는 구현 단계 산출물이라 아직 없다. 그 인터페이스 계약은 `docs/plan/DEV_PLAN.md`와 `docs/plan/SCAFFOLD_BRIEF.md`에 있다.
 
@@ -55,6 +56,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 - **모두 설계 명세 아래다**: 이 문서 세트는 2026-09-23(수) 설계 세션에서 사용자가 승인한 설계 명세를 근거로 만들었다. 명세는 로컬 계획 폴더 `.dryforge/`(git 추적 제외)에 있고 저장소에는 없다. 문서 안의 "명세 §x" 표기는 출처 표시다. 명세의 값은 `docs/rules/DATA_CONTRACT_V1.md`에, 결정과 이유는 `docs/plan/DEV_PLAN.md` "결정 기록"과 부록 A(Codex 검토 회의 요약)에 옮겨져 있다.
 - **바꾸는 방법**: 공용 약속은 버전 올림 → 영향받는 합성 시험자료·정답표 재생성이나 재검증 → 양 트랙 검토 → 사용자 승인 순으로만 바꾼다(`docs/rules/PARALLEL_DEV_RULES.md`). `RB-1` 동결 뒤의 룰북 변경은 새 버전과 사유로만 한다(`docs/eval/RULEBOOK.md`).
 - **이후의 결정 기록**: 2026-09-23(수) 설계 세션의 결정은 `docs/plan/DEV_PLAN.md` §13에 있다. 2026-09-24(목) 문서 작업 중 검토에서 정한 이견·해석과 구현 실행부터의 결정은 `docs/tracking/decisions/`에 남긴다.
+- **기획·개발 일지는 정본이 아니다**: `docs/tracking/journal.md`는 결정 기록과 계획 문서를 시간순으로 엮은 요약이다. 일지와 다른 문서가 다르면 결정 기록과 위 우선순위의 문서를 따른다.
 - **문서끼리 서로 가리키는 곳**:
   - 로드맵의 작업별 검토자는 `docs/rules/AGENT_OPS.md`의 작업 성격 → 검토자 대응을 따른다.
   - 평가 스킬 두 개는 룰북과 자료 계약을 다시 정의하지 않고 가리킨다.
