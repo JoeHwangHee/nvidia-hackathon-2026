@@ -1,0 +1,10 @@
+{
+ "reviewer_label": "담당자 A",
+ "timestamp": "2026-09-26T18:30:00+09:00",
+ "report_hash": "415e80dd52f95f578113f6750ca51ef38161fe3dbf231eaae18a5f1c958330fa",
+ "evidence_digest": "f02471400d2127d9fc7620158bafe649d175edeed015a905937a2c41aa30910c",
+ "snapshot_id": "controlled_fixture_v0",
+ "policy_version": "policy_v1",
+ "code_version": "3712e76c4d354eb49795094e6749d01bab4ce277",
+ "status": "VALID"
+}
