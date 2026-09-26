@@ -156,3 +156,18 @@ def records_for_case(outputs_root: Path, case_id: str) -> list[dict]:
             reports[run_id] = current_report(outputs_root, run_id)
         out.append({**record, "validity": approval.check(record, reports[run_id])})
     return out
+
+
+def latest_decisions(outputs_root: Path) -> dict[str, dict]:
+    """사례 ID → 그 사례의 가장 새 결정 기록(유효 상태 `validity` 포함). 경보 목록의 진행 상태("결정 완료"·"재검토 필요")에 쓴다.
+    보고서는 실행 폴더마다 한 번만 읽는다. 기록 파일은 고치지 않는다."""
+    reports: dict[object, dict | None] = {}
+    latest: dict[str, dict] = {}
+    for record in load_records(outputs_root):  # 새 것부터
+        if record["case_id"] in latest:
+            continue
+        run_id = record.get("run_id")
+        if run_id not in reports:
+            reports[run_id] = current_report(outputs_root, run_id)
+        latest[record["case_id"]] = {**record, "validity": approval.check(record, reports[run_id])}
+    return latest

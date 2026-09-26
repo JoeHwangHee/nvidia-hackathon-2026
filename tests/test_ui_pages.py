@@ -50,7 +50,7 @@ class Base(unittest.TestCase):
 
 class ImportShapeTest(unittest.TestCase):
     def test_pure_modules_do_not_import_streamlit(self):
-        for name in ("i18n", "alerts", "plain", "records"):
+        for name in ("i18n", "alerts", "plain", "records", "progress", "listing"):
             tree = ast.parse((ROOT / "src" / "tradesentry" / "ui" / f"{name}.py").read_text(encoding="utf-8"))
             names = [a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names] + \
                     [n.module for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module]
@@ -79,7 +79,7 @@ class I18nTest(unittest.TestCase):
         self.assertEqual(i18n.t("no.such.key", "en"), "no.such.key")
 
     def test_labels(self):
-        self.assertEqual(i18n.verdict_label("MAINTAIN", "en"), "Keep under review (MAINTAIN)")
+        self.assertEqual(i18n.verdict_label("MAINTAIN", "en"), "Keep under review")  # UI3: 상태 코드 없이
         self.assertEqual(i18n.verdict_label("MAINTAIN", "ko"), "검토 유지")
         self.assertEqual(i18n.verdict_label(None, "ko"), "—")
         self.assertEqual(i18n.verdict_label("WEIRD", "ko"), "WEIRD")  # 모르는 값은 원문 그대로
@@ -94,7 +94,9 @@ class I18nTest(unittest.TestCase):
         ko, en = i18n.load_country_names(ROOT, "ko"), i18n.load_country_names(ROOT, "en")
         self.assertEqual(ko.get("CN"), "중국")
         self.assertEqual(en.get("CN"), "China")
-        self.assertEqual(i18n.partner_label("XA", ko), "XA")
+        self.assertEqual(i18n.partner_label("XA", ko), "가상국 A")  # UI3: 합성 픽스처 가상 상대국 이름
+        self.assertEqual(i18n.partner_label("XA", en), "Synthetic partner A")
+        self.assertEqual(i18n.partner_label("ZZ", ko), "ZZ")  # 모르는 코드는 그대로
 
     def test_status_meanings_avoid_forbidden_terms(self):
         for key, entry in i18n.STRINGS.items():
@@ -273,9 +275,9 @@ def write_synthetic_run(root: Path, name="run_case-260926013125", **kwargs) -> P
 class PlainTest(Base):
     def test_fixture_run_ko(self):
         model = plain.plain_model(FIXTURE_RUN, "ko", repo_root=ROOT)
-        self.assertEqual(model["title"], "XA산 인덕터 (기타)의 kg당 수입단가가 1년 전보다 절반 가까이 낮아졌습니다")
+        self.assertEqual(model["title"], "가상국 A산 인덕터 (기타)의 kg당 수입단가가 1년 전보다 절반 가까이 낮아졌습니다")
         self.assertEqual(model["what"]["unit"]["value"], "−40.0")  # claim c1 값 그대로
-        self.assertEqual(model["what"]["unit"]["note"], "기준 30% 이상 변화 → 경보 발동")
+        self.assertEqual(model["what"]["unit"]["note"], "기준(30%)을 넘어 경보")
         self.assertEqual((model["what"]["share"]["s0"], model["what"]["share"]["s1"], model["what"]["share"]["value"]), ("10.0", "6.0", "−4.0"))
         self.assertEqual(model["header"]["verdict"], "MONITOR")
         kinds = [s["kind"] for s in model["found"]]
@@ -287,16 +289,16 @@ class PlainTest(Base):
         self.assertTrue(model["conclusion"]["narrative"].startswith("단가 변화는 하위품목 구성효과로"))
         self.assertTrue(model["verified"]["ok"])
         self.assertEqual(model["verified"]["claims"], 6)
-        self.assertIn(("검증", "보고서의 사실 주장 6개를 원본 통계 행과 대조해 통과"), model["basis"])
+        self.assertIn(("확인", "보고서의 숫자 6개를 통계 원본과 대조해 모두 일치"), model["basis"])
         self.assertEqual([m["current"] for m in model["meanings"]], [False, True, False])
         self.assertIsNone(_ABS_PATH_RE.search(json.dumps(model, ensure_ascii=False, default=str)))
 
     def test_fixture_run_en_keeps_korean_original(self):
         model = plain.plain_model(FIXTURE_RUN, "en", repo_root=ROOT)
-        self.assertEqual(model["title"], "The unit value (USD/kg) of Inductors, other imported from XA has fallen by roughly half from a year earlier")
+        self.assertEqual(model["title"], "The unit value (USD/kg) of Inductors, other imported from Synthetic partner A has fallen by roughly half from a year earlier")
         self.assertEqual(model["conclusion"]["original_mark"], "(Korean original)")
         self.assertTrue(model["conclusion"]["narrative"].startswith("단가 변화는"))  # 원문은 한국어 그대로
-        self.assertEqual(model["header"]["verdict_label"], "Monitor (MONITOR)")
+        self.assertEqual(model["header"]["verdict_label"], "Monitor")
         self.assertEqual(model["what"]["share"]["note"], "−4.0 pp, below the 10 pp threshold → no alert")
 
     def test_synthetic_report_sections_and_numbers(self):
@@ -315,14 +317,14 @@ class PlainTest(Base):
         self.assertEqual(comparison["body"][0], "같은 품목의 미국산 kg당 단가는 같은 기간 −59.8% 내렸습니다.")
         self.assertEqual(comparison["body"][-1], "시장 전체 요인일 가능성을 열어 두어야 합니다.")
         self.assertEqual(share["head"], "점유율은 크게 움직이지 않았습니다.")
-        self.assertEqual(share["body"][0], "13.2%에서 11.9%로, 정책 기준(10%p)에 미치지 않습니다.")
+        self.assertEqual(share["body"][0], "13.2%에서 11.9%로, 기준(10%p)에 미치지 않습니다.")
         self.assertEqual(ko["alternatives"]["items"], ["중국 내 수요 구조 변화가 단가 변동에 영향을 미쳤을 가능성"])
         self.assertEqual(ko["conclusion"]["title"], "결론 — 검토 유지")
         self.assertEqual(en["found"][1]["body"][0], "Over the same period, the unit value of the same product from USA fell by −59.8%.")
-        self.assertEqual(en["found"][2]["body"][0], "From 13.2% to 11.9%, below the policy threshold (10 pp).")
+        self.assertEqual(en["found"][2]["body"][0], "From 13.2% to 11.9%, below the threshold (10 pp).")
         self.assertEqual(en["alternatives"]["original_mark"], "(Korean original)")
         self.assertEqual(en["alternatives"]["items"], ko["alternatives"]["items"])  # 가설 원문은 그대로
-        self.assertEqual(en["conclusion"]["title"], "Conclusion — Keep under review (MAINTAIN)")
+        self.assertEqual(en["conclusion"]["title"], "Conclusion — Keep under review")
 
     def test_not_completed_run_has_no_verdict(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -331,7 +333,8 @@ class PlainTest(Base):
         self.assertFalse(model["header"]["completed"])
         self.assertIsNone(model["header"]["verdict"])
         self.assertEqual(model["header"]["verdict_label"], "—")
-        self.assertIn("FAILED", model["conclusion"]["not_completed"])
+        self.assertEqual(model["conclusion"]["not_completed"], "조사가 끝나지 않아 제안이 없습니다.")  # UI3: 상태 코드 없이
+        self.assertNotIn("FAILED", json.dumps(model["chips"], ensure_ascii=False))
         self.assertFalse(model["verified"]["ok"])
 
     def test_band_and_title_rules(self):

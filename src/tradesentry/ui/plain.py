@@ -4,9 +4,11 @@
 문장을 만든다. **숫자는 typed claim과 trace의 검증된 지표(app.trigger_table·chart_data·claims_table)에서만 옮기고 다시
 계산하지 않는다.** 방향·크기 구간은 claim 값의 부호와 절댓값을 비교해 고를 뿐이다.
 
-절 구성(디자인 정본 CaseDetail): 제목 한 문장 → 칩 → 다음 업무 제안 → 무슨 일이 있었나 → 조사에서 확인한 것(있는 claim만) →
-다른 설명 가능성(hypotheses 원문) → 결론(판정 + narrative 원문 인용) → 판정 3종의 뜻 → 근거로 삼은 것 → 유의할 점.
-EN 모드에서는 틀 문장만 영어이고 narrative·hypotheses 원문은 한국어 그대로 두고 "(Korean original)"을 붙인다.
+절 구성(디자인 정본 v2 CaseDetail2): 제목 한 문장 → 칩 → 다음 업무 제안 → 무슨 일이 있었나 → 조사에서 확인한 것(있는 claim만)
+→ 다른 설명 가능성(hypotheses 원문) → 결론(판정 + narrative 원문, 화면에서는 접힌 상태) → 제안 3종의 뜻 → 근거로 삼은 것 →
+유의할 점. EN 모드에서는 틀 문장만 영어이고 narrative·hypotheses 원문은 한국어 그대로 두고 "(Korean original)"을 붙인다.
+담당자 화면에 보이는 문구(제목·칩·절·근거)에는 HS6·HS10 코드, 스냅샷 ID, 실행 폴더 이름, 정책 이름, 해시, 상태 코드를 넣지
+않는다(UI3). 그 값들은 모형의 `header`·`case`에만 두고(결정 기록 저장·관리자 화면 이동용) 화면 함수가 보이지 않는다.
 """
 from decimal import Decimal
 from pathlib import Path
@@ -81,6 +83,7 @@ def what_happened(model: dict, lang: str, partner_name: str) -> dict:
     s1 = alerts.number_text(bars[1]["value"]) if bars else None
     unit_value = alerts.signed_text(unit["value"]) if unit else None
     unit_thr = _threshold_text(unit["threshold"]) if unit else "?"
+    arrow = ("▲ " if unit_value.startswith("+") else ("▼ " if unit_value.startswith("−") else "")) if unit_value else ""
     if unit and unit["triggered"] is True:
         unit_note = t("case.threshold_hit", lang, thr=unit_thr)
     elif unit and unit["triggered"] is False:
@@ -97,11 +100,10 @@ def what_happened(model: dict, lang: str, partner_name: str) -> dict:
         share_note = t("case.threshold_unknown", lang)
     return {
         "unit": {"label": t("case.unit_label", lang), "value": unit_value,
-                 "value_text": (unit_value + "%") if unit_value else t("home.not_comparable", lang),
+                 "value_text": (arrow + unit_value + "%") if unit_value else t("case.not_comparable", lang),
                  "triggered": unit["triggered"] if unit else None, "threshold": unit_thr, "note": unit_note,
                  "status": unit["signal_status"] if unit else None},
-        "share": {"label": t("case.share_label", lang, partner=partner_name, baseline=i18n.month_short(case.get("baseline_month")),
-                             month=i18n.month_short(case.get("month"))),
+        "share": {"label": t("case.share_label", lang, partner=partner_name),
                   "s0": s0, "s1": s1, "value": d_s,
                   "value_text": (f"{s0}% → {s1}%" if s0 and s1 else t("case.value_missing", lang)),
                   "triggered": share["triggered"] if share else None, "threshold": share_thr, "note": share_note,
@@ -149,8 +151,7 @@ def findings(model: dict, lang: str, countries: dict[str, str]) -> list[dict]:
             elif claim.get("metric") == "d_s":
                 body.append(t("case.compare_share_item", lang, partner=name, value=shown))
             else:
-                body.append(t("case.compare_value_item", lang, partner=name, metric=str(claim.get("metric")), value=shown,
-                              unit=str(claim.get("unit") or "")))
+                body.append(t("case.compare_value_item", lang, partner=name, value=shown, unit=str(claim.get("unit") or "")))
             ids.append(claim["claim_id"])
         if any_rate:
             body.append(t("case.compare_note", lang))
@@ -178,8 +179,9 @@ def findings(model: dict, lang: str, countries: dict[str, str]) -> list[dict]:
     sub_items = [c for c in claims if isinstance(c.get("metric"), str) and c["metric"].startswith("r_U@") and c.get("partner") == partner]
     if sub_items:
         sections.append({"kind": "sub_items", "head": t("case.sub_head", lang),
-                         "body": [t("case.sub_item", lang, code=c["metric"].split("@", 1)[1],
-                                    value=alerts.signed_text(c.get("value")) or t("case.value_missing", lang)) for c in sub_items],
+                         "body": [t("case.sub_item", lang, n=number,  # HS10 코드는 HS6 코드를 품어 보이지 않는다(UI3)
+                                    value=alerts.signed_text(c.get("value")) or t("case.value_missing", lang))
+                                  for number, c in enumerate(sub_items, start=1)],
                          "claim_ids": [c["claim_id"] for c in sub_items]})
 
     statuses = [c for c in claims if c.get("claim_type") == "data_status"]
@@ -187,9 +189,9 @@ def findings(model: dict, lang: str, countries: dict[str, str]) -> list[dict]:
         body = []
         for claim in statuses:
             code = claim.get("value")
-            label = claims_unit.STATUS_LABEL.get(code, str(code)) if lang == "ko" else str(code)
+            label = t(f"dstat.{code}", lang) if code in claims_unit.STATUS_LABEL else t("dstat.other", lang)
             body.append(t("case.data_item", lang, partner=i18n.partner_label(claim.get("partner"), countries),
-                          period=i18n.month_short(claim.get("period")), status=label))
+                          period=i18n.month_long(claim.get("period"), lang), status=label))
         sections.append({"kind": "data_status", "head": t("case.data_head", lang), "body": body,
                          "claim_ids": [c["claim_id"] for c in statuses]})
     return sections
@@ -211,8 +213,18 @@ def verification(model: dict, lang: str) -> dict:
             "chip": t("chip.verified", lang) if ok else t("chip.findings", lang, n=m)}
 
 
-def plain_model(run_dir: Path, lang: str = i18n.DEFAULT_LANG, *, repo_root: Path = REPO_ROOT) -> dict:
-    """실행 폴더 하나 → 담당자용 모형. 근거 ID는 풀지 않는다(관리자 화면의 몫). 절대 경로는 넣지 않는다."""
+def run_position_chip(lang: str, position: tuple[int, int] | None) -> str:
+    """조사 칩의 괄호: (최신, N회 중) / (k번째, N회 중). position은 (새 것부터 0으로 센 순번, 전체 수)."""
+    if not position or position[1] <= 1:
+        return ""
+    index, total = position
+    return " " + (t("chip.pos_latest", lang, n=total) if index == 0 else t("chip.pos_older", lang, k=total - index, n=total))
+
+
+def plain_model(run_dir: Path, lang: str = i18n.DEFAULT_LANG, *, repo_root: Path = REPO_ROOT,
+                period: tuple[str, str] | None = None, run_position: tuple[int, int] | None = None) -> dict:
+    """실행 폴더 하나 → 담당자용 모형. 근거 ID는 풀지 않는다(관리자 화면의 몫). 절대 경로는 넣지 않는다. period는 자료 기간
+    (첫 달, 끝 달. 부르는 쪽이 스냅샷에서 읽어 준다), run_position은 그 사례의 조사 가운데 이 조사의 순번(칩 괄호용)이다."""
     model = app.screen_model(run_dir, repo_root=repo_root, resolve_rows=False)
     countries = i18n.load_country_names(repo_root, lang)
     case, header = model["case"], model["header"]
@@ -226,18 +238,20 @@ def plain_model(run_dir: Path, lang: str = i18n.DEFAULT_LANG, *, repo_root: Path
     verify = verification(model, lang)
     thresholds = model["thresholds"] or {}
     what = what_happened(model, lang, partner_name) if parsed else None
-    chips = [t("chip.alert_month", lang, month=i18n.month_short(month)),
-             t("chip.baseline", lang, month=i18n.month_short(baseline)),
-             t("chip.hs6", lang, hs6=hs6, partner=partner_name),
-             t("chip.investigated", lang, time=alerts.stamp_label(model["run_id"])) + " · "
-             + (verify["chip"] if completed else t("chip.not_completed", lang, status=header.get("execution_status")))]
+    chips = [{"text": t("chip.alert_month", lang, month=i18n.month_long(month, lang)), "ok": False},
+             {"text": t("chip.baseline", lang, month=i18n.month_long(baseline, lang)), "ok": False},
+             {"text": t("chip.investigated", lang, time=alerts.stamp_label(model["run_id"])) + run_position_chip(lang, run_position),
+              "ok": False},
+             {"text": verify["chip"] if completed else t("chip.not_completed", lang), "ok": bool(verify["ok"])}]
     narrative = model["narrative"]
     hypotheses = [h for h in model["hypotheses"] if isinstance(h, str)]
     original = t("case.korean_original", lang) if lang != "ko" else None
+    data_value = (t("basis.data_value", lang, start=i18n.month_long(period[0], lang), end=i18n.month_long(period[1], lang))
+                  if period else t("basis.data_value_na", lang))
     basis = [
-        (t("basis.data", lang), t("basis.data_value", lang, snapshot_id=header.get("snapshot_id"))),
+        (t("basis.data", lang), data_value),
         (t("basis.rule", lang), t("basis.rule_value", lang, u=_threshold_text(thresholds.get("unit_value")),
-                                 s=_threshold_text(thresholds.get("share")), policy=header.get("policy_version"))),
+                                 s=_threshold_text(thresholds.get("share")))),
         (t("basis.method", lang), t("basis.method_value", lang)),
         (t("basis.verify", lang), verify["text"]),
     ]
@@ -245,7 +259,7 @@ def plain_model(run_dir: Path, lang: str = i18n.DEFAULT_LANG, *, repo_root: Path
         "run_id": model["run_id"], "run_dir": model["run_dir"], "missing": model["missing"],
         "case": {"case_id": case.get("case_id"), "parsed": parsed, "hs6": hs6, "partner": partner, "month": month,
                  "baseline_month": baseline, "item": item, "partner_name": partner_name,
-                 "month_label": i18n.month_label(month, lang), "baseline_label": i18n.month_label(baseline, lang)},
+                 "month_label": i18n.month_long(month, lang), "baseline_label": i18n.month_long(baseline, lang)},
         "header": {"execution_status": header.get("execution_status"), "completed": completed, "verdict": verdict,
                    "verdict_label": i18n.verdict_label(verdict, lang),
                    "meaning": t(f"meaning.{verdict}", lang) if verdict in ("MAINTAIN", "MONITOR", "HOLD") else "",
@@ -254,7 +268,7 @@ def plain_model(run_dir: Path, lang: str = i18n.DEFAULT_LANG, *, repo_root: Path
                    "report_hash": header.get("report_hash"), "created_at": header.get("created_at"),
                    "investigated_time": alerts.stamp_label(model["run_id"]), "unresolved_evidence": header.get("unresolved_evidence")},
         "title": title_sentence(lang, item, partner_name, rows.get("unit_value"), rows.get("share")) if parsed
-        else str(case.get("case_id")),
+        else t("case.title_unknown", lang),
         "chips": chips,
         "verified": verify,
         "what": what,
@@ -266,8 +280,7 @@ def plain_model(run_dir: Path, lang: str = i18n.DEFAULT_LANG, *, repo_root: Path
                        "meaning": t(f"meaning.{verdict}", lang) if verdict in ("MAINTAIN", "MONITOR", "HOLD") else "",
                        "narrative": narrative if isinstance(narrative, str) and narrative else None,
                        "original_mark": original,
-                       "not_completed": None if completed else t("case.conclusion_not_completed", lang,
-                                                                  status=header.get("execution_status"))},
+                       "not_completed": None if completed else t("case.conclusion_not_completed", lang)},
         "meanings": meanings(lang, verdict),
         "basis": basis,
         "caution": t("case.caution", lang),

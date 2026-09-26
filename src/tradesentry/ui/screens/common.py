@@ -1,4 +1,4 @@
-"""화면 공통: 언어·스냅샷 상태, 페이지 이동, 캐시한 경보 목록, 조사 실행(하위 프로세스), 예외 표시(N13).
+"""화면 공통: 언어·스냅샷 상태, 페이지 이동, 캐시한 경보 목록, 조사 가능 여부, 하단 줄, 예외 표시(N13).
 
 streamlit은 여기와 형제 모듈에서만 import한다. 페이지 이동은 진입 스크립트가 PAGES에 넣어 준 st.Page 객체로 한다.
 """
@@ -14,6 +14,7 @@ REPO_ROOT = app.REPO_ROOT
 OUTPUTS_ROOT = REPO_ROOT / app.OUTPUTS_NAME
 SNAPSHOTS_ROOT = REPO_ROOT / "data" / "snapshots"
 PAGES: dict[str, object] = {}  # 진입 스크립트가 채운다: home·case·assist·admin → st.Page
+# 배경 조사 실행은 screens/jobs.py(UI3). 동기 실행(app.run_case_once)은 쓰지 않는다.
 
 
 def lang() -> str:
@@ -82,28 +83,10 @@ def find_alert(case_id: str) -> dict | None:
 
 
 def can_run(case_id: str) -> tuple[bool, str | None]:
-    """조사 실행 가능 여부와 재생 파일 상대 경로. 키가 없으면 재생 파일이 있을 때만 된다(app.py와 같은 규칙)."""
+    """조사 실행 가능 여부와 재생 파일 상대 경로. 재생 파일이 있으면 재생, 없으면 키가 프로세스 환경에 있을 때만 된다
+    (app.py와 같은 규칙. 앱은 .env를 읽지 않는다)."""
     replay = app.replay_file_for(case_id, REPO_ROOT)
     return (replay is not None or app.key_present()), replay
-
-
-def run_investigation(case_id: str, snapshot: str, mode: str = "full") -> dict:
-    """CLI와 같은 진입점(`python -m tradesentry.cli run-case …`)을 하위 프로세스로 한 번 돌린다. 키가 없으면 재생 파일을 쓴다.
-    새 실행 폴더 이름을 new_run_dirs에 돌려준다. 화면에서 시작한 실행은 점수표 근거가 아니다."""
-    _, replay = can_run(case_id)
-    use_replay = replay is not None  # 재생 파일이 있으면 키가 있어도 재생(app.py의 기본값과 같다). 실제 NIM은 관리자 화면에서 끈다
-    args = app.build_run_case_args(snapshot, policy_version(), mode, case_id, replay if use_replay else None)
-    before = app.list_run_dirs(OUTPUTS_ROOT)
-    st.session_state["running"] = True
-    try:
-        with st.spinner(t("home.running", lang(), s=app.wall_limit_seconds(REPO_ROOT))):
-            result = app.run_case_once(args, repo_root=REPO_ROOT)
-    finally:
-        st.session_state["running"] = False
-    result["new_run_dirs"] = app.output_run_dirs(result["stdout"]) or app.new_run_dirs(before, app.list_run_dirs(OUTPUTS_ROOT))
-    result["replay"] = use_replay
-    st.session_state["last_run"] = result
-    return result
 
 
 def select_case(case_id: str, run_id: str | None) -> None:
@@ -111,10 +94,23 @@ def select_case(case_id: str, run_id: str | None) -> None:
     st.session_state["selected_run"] = run_id
 
 
-def verdict_badge(code: object) -> str:
-    return i18n.verdict_label(code, lang())
+def admin_link(label: str, run_id: str | None = None, key: str = "admin_link") -> None:
+    """작은 "관리자 화면" 링크(버튼 모양 없는 tertiary 버튼). 누르면 그 실행 폴더를 기본 선택으로 관리자 화면을 연다."""
+    with st.container(key=f"ts_small_{key}"):
+        if st.button(label, key=key, type="tertiary"):
+            open_admin(run_id)
 
 
-def render_footer() -> None:
-    st.divider()
-    st.caption(t("app.disclaimer", lang()))
+def render_footer(run_id: str | None = None) -> None:
+    """하단: 용어 한 줄 + 오른쪽 작은 "관리자 화면" 링크."""
+    left, right = st.columns([8, 1.2], vertical_alignment="center")
+    left.markdown(f'<div class="ts-foot">{t("foot.terms", lang())}</div>', unsafe_allow_html=True)
+    with right:
+        admin_link(t("foot.admin", lang()), run_id, key="foot_admin")
+
+
+def time_text(timestamp: object) -> str:
+    """KST ISO 시각 → "YYYY-MM-DD HH:MM"(결정 기록 이력용). 형식이 다르면 원문."""
+    if isinstance(timestamp, str) and len(timestamp) >= 16 and timestamp[10] == "T":
+        return f"{timestamp[:10]} {timestamp[11:16]}"
+    return str(timestamp)
