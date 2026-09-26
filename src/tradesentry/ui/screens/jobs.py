@@ -11,8 +11,6 @@
 - 표준 출력·오류는 화면에 보이지 않는다(N13: 실패는 평이한 문장만). 임시 파일은 끝나면 닫는다(닫으면 지워진다).
 """
 import html
-import os
-import signal
 import subprocess
 import tempfile
 import time
@@ -74,16 +72,8 @@ def start(case_id: str, snapshot: str | None) -> bool:
 
 
 def _stop(proc: subprocess.Popen) -> None:
-    """제한 시간을 넘긴 프로세스 묶음을 끝낸다(SIGTERM, 5초 뒤에도 살아 있으면 SIGKILL)."""
-    try:
-        group = os.getpgid(proc.pid)
-        os.killpg(group, signal.SIGTERM)
-        try:
-            proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            os.killpg(group, signal.SIGKILL)
-    except (ProcessLookupError, PermissionError, OSError):
-        pass
+    """제한 시간을 넘긴 프로세스 묶음을 끝낸다(SIGTERM, 5초 뒤에도 살아 있으면 SIGKILL, 그 뒤 wait로 회수. `progress.stop_process_group`)."""
+    progress.stop_process_group(proc)
 
 
 def _stdout_dirs(handle) -> list[str]:
@@ -105,7 +95,8 @@ def poll(now: float | None = None) -> dict | None:
     returncode = proc.poll() if proc is not None else -1
     after = app.list_run_dirs(common.OUTPUTS_ROOT)
     stdout_dirs = _stdout_dirs(handles[1]) if handles and returncode is not None else None
-    run_id = progress.pick_run_dir(job["before"], after, stdout_dirs) or job.get("run_id")
+    run_id = progress.pick_run_dir(job["before"], after, stdout_dirs, case_id=job["case_id"],
+                                   case_of=lambda name: progress.run_dir_case(common.OUTPUTS_ROOT / name)) or job.get("run_id")
     entry = alerts.run_entry(common.OUTPUTS_ROOT, run_id) if run_id else None
     limit = progress.time_limit(app.wall_limit_seconds(common.REPO_ROOT))
     status = progress.next_status(job, now=now, returncode=returncode, record_status=(entry or {}).get("execution_status"),
@@ -128,10 +119,10 @@ def clear() -> None:
 
 def _steps_for(job: dict) -> dict:
     run_dir = common.OUTPUTS_ROOT / job["run_id"] if job.get("run_id") else None
-    steps = progress.step_state(progress.read_trace(run_dir))
-    if job.get("status") == progress.DONE:
-        steps = progress.step_state([{"event": "run_end"}])
-    return steps
+    events = progress.read_trace(run_dir)
+    if job.get("status") == progress.DONE and not any(e.get("event") == "run_end" for e in events):
+        events = events + [{"event": "run_end"}]  # 끝났다: 건너뛴 단계는 건너뜀, 나머지는 완료
+    return progress.step_state(events)
 
 
 def _open_result(job: dict) -> None:
@@ -146,8 +137,9 @@ def _steps_html(steps: dict, lang: str) -> str:
     rows = []
     for index, state in enumerate(steps["states"]):
         label = html.escape(progress.step_label(index, lang))
-        mark = "✓" if state == "done" else ""
-        rows.append(f'<li class="ts-step ts-step-{state}"><span class="ts-dot">{mark}</span><span>{label}</span></li>')
+        mark = {"done": "✓", "skipped": "–"}.get(state, "")
+        tag = f' <span class="ts-skip">{html.escape(t("load.skipped", lang))}</span>' if state == "skipped" else ""
+        rows.append(f'<li class="ts-step ts-step-{state}"><span class="ts-dot">{mark}</span><span>{label}{tag}</span></li>')
     return '<ul class="ts-steps">' + "".join(rows) + "</ul>"
 
 
@@ -184,7 +176,8 @@ def _overlay(job: dict, lang: str, steps: dict, now: float) -> None:
                         st.rerun(scope="app")
             else:
                 with st.container(horizontal=True, vertical_alignment="center", key="ts_load_actions"):
-                    st.markdown(f'<div class="ts-note">{html.escape(t("load.expect", lang))}</div>', unsafe_allow_html=True)
+                    expect = t("load.expect_replay", lang) if job.get("replay") else t("load.expect", lang)
+                    st.markdown(f'<div class="ts-note">{html.escape(expect)}</div>', unsafe_allow_html=True)
                     if st.button(t("load.back", lang), key="ts_back"):  # 조사는 계속되고 경보 목록으로 간다
                         st.session_state[JOB_KEY] = {**job, "overlay": False}
                         st.session_state[GOTO_KEY] = "home"

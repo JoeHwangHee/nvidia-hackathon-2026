@@ -4,6 +4,8 @@
 - "결정 저장" 버튼은 위 입력칸과 같은 폭(`width="stretch"`)이고 안내 문구는 버튼 아래 작게 둔다.
 - "다시 조사" 버튼은 오른쪽 정렬이고 배경 조사(`screens.jobs`)를 띄워 로딩 창을 연다. 이유 체크 3개는 표시용이며 저장하지 않는다.
 - 사후 확인은 설명만 있고 열리지 않는다(자료 갱신이 없는 데모).
+- 진행 단계 띠의 "내 결정"은 결정 기록이 있어도, 결정이 가리키는 실행보다 새로운 완료 실행이 같은 사례에 있으면 다시 "지금"이다
+  (`listing.newer_completed_run`, 화면 표시 규칙. 결정 기록의 유효 상태 대조는 바꾸지 않는다).
 - 담당자 화면에서 유일하게 사례 ID가 보이는 곳은 "문의할 때 사례 번호" 한 줄이다(디자인대로).
 """
 import html
@@ -11,7 +13,7 @@ import html
 import streamlit as st
 
 from tradesentry import app
-from tradesentry.ui import alerts, i18n, records
+from tradesentry.ui import alerts, i18n, listing, records
 from tradesentry.ui.i18n import t
 from tradesentry.ui.screens import common, jobs
 from tradesentry.ui.screens.case import pick_completed_case, resolve_run
@@ -110,18 +112,21 @@ def _history(lang: str, case_id: str, case_month: str, alert: dict | None, runs:
     signal = _signal_text(alert, lang)
     month = i18n.month_long(case_month, lang)
     lines.append(t("history.alert", lang, month=month, signal=signal) if signal else t("history.alert_plain", lang, month=month))
+    events: list[tuple[str, int, str]] = []  # (시각 글자, 순번, 줄): 조사와 결정을 시각순으로 섞는다(결정 뒤 다시 조사한 결과가 결정 아래에 온다)
     for run in reversed(runs):  # 오래된 것부터
         if run["status"] == alerts.INVESTIGATED:
-            lines.append(t("history.run", lang, time=run["time"], verdict=t(f"verdict_lc.{run['review_status_final']}", lang)))
+            line = t("history.run", lang, time=run["time"], verdict=t(f"verdict_lc.{run['review_status_final']}", lang))
         else:
-            lines.append(t("history.run_failed", lang, time=run["time"]))
+            line = t("history.run_failed", lang, time=run["time"])
+        events.append((str(run["time"]), len(events), line))
     decisions = records.records_for_case(common.OUTPUTS_ROOT, case_id)
     muted = None
     for record in reversed(decisions):
         reviewer = t("history.by", lang, reviewer=record["reviewer_label"]) if record.get("reviewer_label") else ""
-        lines.append(t("history.decision", lang, time=common.time_text(record["timestamp"]),
-                       decision=t(f"verdict_lc.{record['decision']}", lang), reviewer=reviewer,
-                       validity=t("validity." + str(record["validity"]), lang)))
+        when = common.time_text(record["timestamp"])
+        events.append((str(when), len(events), t("history.decision", lang, time=when, decision=t(f"verdict_lc.{record['decision']}", lang),
+                                                 reviewer=reviewer, validity=t("validity." + str(record["validity"]), lang))))
+    lines += [line for _, _, line in sorted(events)]
     if not decisions:
         muted = t("history.no_decision", lang)
     with st.container(key="as_hist"):
@@ -154,7 +159,9 @@ def render() -> None:
     alert = common.find_alert(case_id)
     latest = next((r for r in runs if r["run_id"] == run_id), runs[0] if runs else None)  # 실행 요약(alerts.run_entry)
     suggested = latest["review_status_final"] if latest and latest["status"] == alerts.INVESTIGATED else None
-    decided = bool(records.latest_decisions(common.OUTPUTS_ROOT).get(case_id))
+    record = records.latest_decisions(common.OUTPUTS_ROOT).get(case_id)
+    # 결정 뒤 같은 사례를 다시 조사해 완료된 결과가 있으면 "내 결정"은 다시 지금 할 일이다(이전 결정은 "이 사례의 기록"에 남는다. UI4)
+    decided = bool(record) and listing.newer_completed_run(runs, record.get("run_id")) is None
     chip = " · ".join([i18n.item_label(parsed.get("hs6"), lang), i18n.partner_label(parsed.get("partner"), countries),
                        i18n.month_long(parsed.get("month"), lang)])
     verdict = t(f"verdict_lc.{suggested}", lang) if suggested else t("verdict.none", lang)

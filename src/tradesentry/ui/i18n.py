@@ -106,7 +106,7 @@ STRINGS: dict[str, dict[str, str]] = {
     "flt.progress.all": {"ko": "전체", "en": "All"},
     "flt.progress.not_started": {"ko": "조사 전", "en": "Not investigated"},
     "flt.progress.running": {"ko": "조사 중", "en": "Investigating"},
-    "flt.progress.awaiting": {"ko": "조사 완료 · 결정 대기", "en": "Investigated · awaiting decision"},
+    "flt.progress.awaiting": {"ko": "조사 완료 · 결정 대기", "en": "Investigated · awaiting decision"},  # 새 조사 결과 · 결정 대기도 든다
     "flt.progress.decided": {"ko": "결정 완료", "en": "Decided"},
     "flt.sort": {"ko": "정렬", "en": "Sort"},
     "flt.sort.change": {"ko": "변화 큰 순", "en": "Largest change"},
@@ -135,7 +135,9 @@ STRINGS: dict[str, dict[str, str]] = {
     "prog.awaiting_sub": {"ko": "내 결정 대기", "en": "awaiting my decision"},
     "prog.decided": {"ko": "결정 완료 · {decision}", "en": "Decided · {decision}"},
     "prog.review_required": {"ko": "재검토 필요", "en": "Review required"},
-    "prog.review_required_sub": {"ko": "근거 보고서가 바뀌었습니다", "en": "the underlying report changed"},
+    "prog.review_required_sub": {"ko": "근거 보고서와 맞지 않습니다", "en": "No longer matches its report"},
+    "prog.new_result": {"ko": "새 조사 결과 · 결정 대기", "en": "New result · awaiting your decision"},
+    "prog.new_result_sub": {"ko": "{verdict} 제안", "en": "{verdict} suggested"},
     "prog.failed": {"ko": "조사 실패", "en": "Investigation failed"},
     "home.btn_start": {"ko": "조사 시작", "en": "Investigate"},
     "home.btn_view": {"ko": "결과 보기", "en": "View result"},
@@ -158,13 +160,18 @@ STRINGS: dict[str, dict[str, str]] = {
     "load.step.verify": {"ko": "숫자를 원본 통계와 대조", "en": "Verifying every figure against the source statistics"},
     "load.expect": {"ko": "보통 30초에서 90초가 걸립니다. 끝나면 결과 화면이 바로 열립니다.",
                     "en": "Usually takes 30–90 seconds. The result opens automatically when done."},
+    "load.expect_replay": {"ko": "저장해 둔 응답을 다시 쓰는 시연 실행이라 몇 초면 끝납니다. 끝나면 결과 화면이 바로 열립니다.",
+                           "en": "This demo run reuses stored responses, so it finishes in a few seconds. The result opens "
+                                 "automatically when done."},
+    "load.skipped": {"ko": "건너뜀", "en": "Skipped"},
     "load.back": {"ko": "목록으로", "en": "Back to list"},
     "load.retrying": {"ko": "응답이 늦어 다시 요청하는 중입니다.", "en": "Slow response; requesting again."},
     "load.footnote": {
         "ko": "조사가 실패하면(연결 지연 등) 여기서 알려 주고 \"다시 시도\" 버튼이 나옵니다. 조사자와 검수자는 정해진 조회 도구로 "
-              "통계 원본만 조회합니다.",
+              "통계 원본만 조회합니다. 모델 추론 요청은 NVIDIA 클라우드(NIM)로 갑니다.",
         "en": "If the investigation fails (e.g. a slow connection), you will see it here with a \"Try again\" button. The "
-              "investigator and critic query only the source statistics through fixed lookup tools."},
+              "investigator and critic query only the source statistics through fixed lookup tools. Model inference requests "
+              "go to the NVIDIA cloud (NIM)."},
     "load.footnote_replay": {
         "ko": "이 조사는 저장해 둔 모델 응답을 다시 쓰는 시연 실행(재생)이라 외부 모델을 부르지 않습니다. 조사가 실패하면 여기서 "
               "알려 주고 \"다시 시도\" 버튼이 나옵니다.",

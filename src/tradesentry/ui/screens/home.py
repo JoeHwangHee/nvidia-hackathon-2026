@@ -79,7 +79,7 @@ def _running_cell(lang: str) -> None:
 
 def _row(row: dict, state: dict, lang: str, countries: dict, snapshot: str) -> None:
     code = state["state"]
-    key = "ts_rowaw_" if code == listing.AWAITING else "ts_row_"
+    key = "ts_rowaw_" if code in listing.WAITING_STATES else "ts_row_"
     with st.container(key=key + row["case_id"]):
         cells = st.columns(COLUMNS, vertical_alignment="center")
         cells[0].markdown(f'<div class="ts-cell"><b>{html.escape(i18n.item_label(row["hs6"], lang))}</b></div>', unsafe_allow_html=True)
