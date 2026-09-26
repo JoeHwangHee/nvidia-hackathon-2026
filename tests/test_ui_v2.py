@@ -560,5 +560,117 @@ class LoadingTextTest(Base):
         self.assertEqual(listing.progress_cell({"state": listing.REVIEW_REQUIRED}, "en")["sub"], "No longer matches its report")
 
 
+
+# ---- UI5: PR #109 독립 검토 권고 4건 ---------------------------------------------------------------------------------
+
+
+class FailedRunStepsTest(Base):
+    """권고 1: 실패한 실행의 run_end는 도달한 단계까지만 완료로 센다."""
+    HEAD = [ev("run_start"), ev("tool_call", "basic", tool="check_comparability"), ev("tool_call", "basic", tool="get_history")]
+
+    def test_failed_run_end_leaves_later_steps_pending(self):
+        steps = progress.step_state(self.HEAD + [ev("run_end", None, execution_status="FAILED", cause_code="E_MODEL")])
+        self.assertEqual(steps["states"], ["done", "done", "pending", "pending", "pending"])
+        self.assertEqual((steps["done"], steps["current"], steps["finished"], steps["stopped"]), (2, None, True, True))
+        self.assertAlmostEqual(progress.progress_ratio(steps), 0.4)
+        self.assertEqual(progress.stopped_note(steps, "ko"), "5단계 가운데 2단계까지 진행하고 멈췄습니다.")
+        self.assertEqual(progress.stopped_note(steps, "en"), "Stopped after step 2 of 5.")
+
+    def test_failed_after_skipped_step_and_before_any_marker(self):
+        seq = self.HEAD + [ev("stage_start", "critic", stage="critic"), ev("run_end", None, execution_status="INVALID")]
+        steps = progress.step_state(seq)
+        self.assertEqual(steps["states"], ["done", "done", "skipped", "done", "pending"])
+        self.assertAlmostEqual(progress.progress_ratio(steps), 0.8)
+        steps = progress.step_state([ev("run_start"), ev("run_end", None, execution_status="FAILED")])
+        self.assertEqual(steps["states"], ["pending"] * 5)
+        self.assertEqual(progress.progress_ratio(steps), 0.0)
+        self.assertEqual(progress.stopped_note(steps, "ko"), "첫 단계에 이르기 전에 멈췄습니다.")
+        self.assertEqual(progress.stopped_note(steps, "en"), "Stopped before reaching the first step.")
+
+    def test_completed_run_end_is_unchanged(self):
+        for end in (ev("run_end", None, execution_status="COMPLETED"), ev("run_end")):  # 값이 없는 run_end도 끝까지 간 것
+            steps = progress.step_state(self.HEAD + [end])
+            self.assertEqual(steps["states"], ["done"] * 5)
+            self.assertEqual((steps["done"], steps["stopped"]), (5, False))
+            self.assertEqual(progress.progress_ratio(steps), 1.0)
+            self.assertIsNone(progress.stopped_note(steps, "ko"))
+        running = progress.step_state(self.HEAD)
+        self.assertFalse(running["stopped"])
+        self.assertIsNone(progress.stopped_note(running, "en"))
+
+    def test_run_end_key_matches_orchestrator(self):  # 키 이름은 trace를 쓰는 조사 흐름에서 확인한다(읽기만)
+        source = (ROOT / "src" / "tradesentry" / "workflow" / "orchestrate.py").read_text(encoding="utf-8")
+        self.assertIn('sink.emit("run_end", None, {"execution_status": status', source)
+
+
+class AssistViewTest(Base):
+    """권고 2: 결정 기록 화면이 옛 실행을 볼 때."""
+    OLD, NEW, FAIL = "run_case-260926194101", "run_case-260926194504", "run_case-260926194600"
+    RUNS = [{"run_id": FAIL, "status": alerts.FAILED, "review_status_final": None, "time": "2026-09-26 19:46"},
+            {"run_id": NEW, "status": alerts.INVESTIGATED, "review_status_final": "MONITOR", "time": "2026-09-26 19:45"},
+            {"run_id": OLD, "status": alerts.INVESTIGATED, "review_status_final": "HOLD", "time": "2026-09-26 19:41"}]
+    RECORD = {"run_id": OLD, "decision": "HOLD", "validity": "VALID"}
+
+    def test_default_is_newest_completed_run_after_decision(self):
+        view = listing.assist_view(self.RUNS, None, self.RECORD)
+        self.assertEqual((view["run_id"], view["older"], view["decided"], view["now"]), (self.NEW, False, False, True))
+        self.assertEqual(listing.assist_view(self.RUNS, "run_case-000000000000", self.RECORD)["run_id"], self.NEW)  # 다른 사례의 선택
+
+    def test_selected_old_run_shows_notice_without_now(self):
+        view = listing.assist_view(self.RUNS, self.OLD, self.RECORD)
+        self.assertEqual((view["run_id"], view["older"], view["now"], view["decided"]), (self.OLD, True, False, False))
+        self.assertEqual(view["newer"]["run_id"], self.NEW)
+        self.assertEqual(i18n.t("assist.newer", "ko", time=view["newer"]["time"]), "더 새 조사 결과가 있습니다 (2026-09-26 19:45)")
+        self.assertEqual(i18n.t("assist.newer", "en", time=view["newer"]["time"]), "A newer investigation result is available (2026-09-26 19:45)")
+        for lang in i18n.LANGS:
+            self.assertNoInternal(i18n.t("assist.newer", lang, time=view["newer"]["time"]) + i18n.t("assist.newer_open", lang), lang)
+
+    def test_selected_newest_or_newer_failed_run(self):
+        view = listing.assist_view(self.RUNS, self.NEW, self.RECORD)
+        self.assertEqual((view["older"], view["now"]), (False, True))
+        view = listing.assist_view(self.RUNS, self.FAIL, self.RECORD)  # 새 완료 실행보다 뒤의 실패 실행은 "옛 실행"이 아니다
+        self.assertEqual((view["run_id"], view["older"], view["now"]), (self.FAIL, False, False))
+
+    def test_without_newer_result(self):
+        runs = self.RUNS[2:]
+        view = listing.assist_view(runs, None, self.RECORD)
+        self.assertEqual((view["run_id"], view["newer"], view["older"], view["decided"], view["now"]), (self.OLD, None, False, True, False))
+        view = listing.assist_view(self.RUNS, None, None)  # 결정 전: 가장 새 실행, "지금"
+        self.assertEqual((view["run_id"], view["older"], view["decided"], view["now"]), (self.FAIL, False, False, True))
+        self.assertEqual(listing.assist_view([], None, None)["run_id"], None)
+
+
+class HistoryOrderTest(Base):
+    """권고 3: "이 사례의 기록" 정렬 키."""
+
+    def test_non_iso_times_go_last_in_original_order(self):
+        entries = [("2026-09-26 19:45", "run b"), ("zzz", "odd 1"), ("2026-09-26 19:41", "run a"),
+                   ("2026-09-26T19:44:10+09:00", "decision"), ("0000", "odd 2"), (None, "odd 3")]
+        self.assertEqual(listing.order_history(entries), ["run a", "decision", "run b", "odd 1", "odd 2", "odd 3"])
+
+    def test_same_minute_keeps_insertion_order(self):
+        entries = [("2026-09-26 19:45", "run"), ("2026-09-26 19:45", "decision")]
+        self.assertEqual(listing.order_history(entries), ["run", "decision"])
+        self.assertEqual(listing.history_sort_key("2026-09-26 19:45", 3), (0, "2026-09-26 19:45", 3))
+        self.assertEqual(listing.history_sort_key("run_case-bad", 1), (1, "", 1))
+        self.assertEqual(listing.order_history([]), [])
+
+
+class ReinvestigateTextTest(Base):
+    """권고 4: "다시 조사하기" 카드의 재생/실제 문구."""
+
+    def test_replay_and_real_text(self):
+        self.assertEqual(listing.reinvestigate_desc_key(True), "reinv.desc_replay")
+        self.assertEqual(listing.reinvestigate_desc_key(False), "reinv.desc")
+        replay_ko, real_ko = i18n.t("reinv.desc_replay", "ko"), i18n.t("reinv.desc", "ko")
+        self.assertIn("저장해 둔 응답을 다시 쓰는 시연 실행이라 몇 초면 끝납니다", replay_ko)
+        self.assertNotIn("1~2분", replay_ko)
+        self.assertIn("(1~2분)", real_ko)
+        self.assertIn("finishes in a few seconds", i18n.t("reinv.desc_replay", "en"))
+        self.assertNotIn("minutes", i18n.t("reinv.desc_replay", "en"))
+        self.assertIn("(1–2 minutes)", i18n.t("reinv.desc", "en"))
+        self.assertEqual(i18n.t("reinv.cannot", "ko"), "조사 모델 연결이 설정되지 않아 지금은 이 사례를 다시 조사할 수 없습니다.")
+
+
 if __name__ == "__main__":
     unittest.main()

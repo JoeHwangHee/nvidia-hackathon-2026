@@ -8,6 +8,8 @@
   (`tradesentry.ui.progress`). 제한 시간(모델 설정 wall time + 여유)을 넘기면 프로세스 묶음을 끝내고 실패로 표시한다.
 - 로딩 창과 조사 중 표시는 진입 스크립트가 모든 페이지(관리자 페이지 포함)에서 `render_layer()`로 그린다. 도는 동안은
   `st.fragment(run_every=1초)`로 그 부분만 다시 그린다. 위치는 key를 준 컨테이너의 `.st-key-<key>` CSS로 고정한다.
+- 실패로 끝난 실행은 trace `run_end`의 실행 상태로 도달한 단계까지만 완료로 그리고, 실패 창에 몇 단계까지 가고 멈췄는지 한 줄을
+  보인다(UI5, `progress.step_state`·`progress.stopped_note`).
 - 표준 출력·오류는 화면에 보이지 않는다(N13: 실패는 평이한 문장만). 임시 파일은 끝나면 닫는다(닫으면 지워진다).
 """
 import html
@@ -121,7 +123,7 @@ def _steps_for(job: dict) -> dict:
     run_dir = common.OUTPUTS_ROOT / job["run_id"] if job.get("run_id") else None
     events = progress.read_trace(run_dir)
     if job.get("status") == progress.DONE and not any(e.get("event") == "run_end" for e in events):
-        events = events + [{"event": "run_end"}]  # 끝났다: 건너뛴 단계는 건너뜀, 나머지는 완료
+        events = events + [{"event": "run_end", "data": {"execution_status": "COMPLETED"}}]  # 끝났다: 건너뛴 단계는 건너뜀, 나머지는 완료
     return progress.step_state(events)
 
 
@@ -164,6 +166,9 @@ def _overlay(job: dict, lang: str, steps: dict, now: float) -> None:
                 st.markdown(f'<div class="ts-note">{html.escape(t("load.retrying", lang))}</div>', unsafe_allow_html=True)
             if failed:
                 key = "load.timeout" if job["status"] == progress.TIMEOUT else "load.failed"
+                where = progress.stopped_note(steps, lang)  # 실패한 실행의 run_end: 어디서 멈췄는지(UI5)
+                if where:
+                    st.markdown(f'<div class="ts-note">{html.escape(where)}</div>', unsafe_allow_html=True)
                 st.markdown(f'<div class="ts-failbox">{html.escape(t(key, lang))}</div>', unsafe_allow_html=True)
                 with st.container(horizontal=True, horizontal_alignment="right", key="ts_fail_actions"):
                     if st.button(t("load.close", lang), key="ts_close"):

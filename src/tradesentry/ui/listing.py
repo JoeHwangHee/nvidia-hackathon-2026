@@ -11,6 +11,7 @@
   "조사 완료 · 결정 대기"에 든다.
 - 화면 문구에는 품목·국가 이름과 월만 쓴다(HS6 코드·사례 ID·실행 폴더 이름·영문 상태 코드를 넣지 않는다).
 """
+import re
 from decimal import Decimal
 
 from tradesentry import app
@@ -57,6 +58,55 @@ def newer_completed_run(runs: list[dict], decided_run_id: object) -> dict | None
     newer = [run for run in runs if run.get("status") == alerts.INVESTIGATED and isinstance(run.get("run_id"), str)
              and app.RUN_DIR_RE.fullmatch(run["run_id"]) and app.run_stamp(run["run_id"]) > decided]
     return max(newer, key=lambda run: app.run_stamp(run["run_id"])) if newer else None
+
+
+def assist_view(runs: list[dict], selected_run: object, record: dict | None) -> dict:
+    """결정 기록 화면이 볼 실행과 표시 조건(UI5). runs는 같은 사례의 실행 요약(새 것부터), selected_run은 목록 "결과 보기"·사례
+    검토에서 넘어온 선택(없으면 None), record는 그 사례의 최신 결정 기록(없으면 None).
+    - run_id: 넘어온 선택이 이 사례의 실행이면 그것, 아니면 결정이 가리키는 실행보다 새 완료 실행(`newer_completed_run`)이 있으면
+      그 가장 새 것, 아니면 가장 새 실행.
+    - newer: 결정이 가리키는 실행보다 새 완료 실행 가운데 가장 새 것(없으면 None).
+    - older: newer가 있고 보고 있는 실행이 그보다 오래됐다("더 새 조사 결과가 있습니다" 한 줄과 바꾸는 버튼을 보인다).
+    - decided: 결정 기록이 있고 newer가 없다(단계 띠 "내 결정" 완료).
+    - now: 결정 전이고 보고 있는 실행이 가장 새 완료 실행이거나 newer가 없다(단계 띠 "내 결정 (지금)")."""
+    ids = [run["run_id"] for run in runs]
+    newer = newer_completed_run(runs, record.get("run_id")) if record else None
+    if isinstance(selected_run, str) and selected_run in ids:
+        run_id = selected_run
+    elif newer is not None:
+        run_id = newer["run_id"]
+    else:
+        run_id = ids[0] if ids else None
+    older = False
+    if newer is not None and run_id != newer["run_id"]:
+        stamped = isinstance(run_id, str) and bool(app.RUN_DIR_RE.fullmatch(run_id))
+        older = not stamped or app.run_stamp(run_id) < app.run_stamp(newer["run_id"])
+    decided = record is not None and newer is None
+    now = not decided and (newer is None or run_id == newer["run_id"])
+    return {"run_id": run_id, "newer": newer, "older": older, "decided": decided, "now": now}
+
+
+HISTORY_TIME_RE = re.compile(r"\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}")
+
+
+def history_sort_key(when: object, seq: int) -> tuple:
+    """"이 사례의 기록" 정렬 키(UI5): 시각 글자가 "YYYY-MM-DD HH:MM"(또는 ISO의 "T") 형식이면 (0, 분까지의 시각, 순번), 아니면
+    (1, "", 순번)으로 뒤에 원래 순서대로 둔다(형식이 다른 글자를 사전순으로 섞지 않는다)."""
+    text = when if isinstance(when, str) else ""
+    if HISTORY_TIME_RE.match(text):
+        return (0, text[:16].replace("T", " "), seq)
+    return (1, "", seq)
+
+
+def order_history(entries: list[tuple[object, str]]) -> list[str]:
+    """(시각 글자, 줄) 목록 → 시각순 줄 목록. 같은 시각이면 넣은 순서, 시각을 읽을 수 없는 줄은 끝에 넣은 순서대로."""
+    keyed = sorted(((history_sort_key(when, seq), line) for seq, (when, line) in enumerate(entries)), key=lambda item: item[0])
+    return [line for _, line in keyed]
+
+
+def reinvestigate_desc_key(replay: bool) -> str:
+    """"다시 조사하기" 설명 문구 키(UI5): 재생 실행은 몇 초, 실제 실행은 1~2분."""
+    return "reinv.desc_replay" if replay else "reinv.desc"
 
 
 def row_progress(case_id: str, index: dict, decisions: dict, running_case: str | None = None) -> dict:
