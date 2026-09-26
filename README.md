@@ -120,15 +120,31 @@ uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py 
 - **대표 지표**: 봉인한 실자료 묶음 `real_sealed`에서 `freeform` 대 `full`의 **보고서 단위 사실 주장 오류율**. typed claim의 모든 필드(숫자·단위·증감 방향·기간·국가·품목·지표·근거 ID)와 설명 문장 속 숫자·증감 표현을 공식 통계 원본(스냅샷 원본 행)과 결정적으로 대조한다. 사람 판정자도 AI 채점자도 두지 않는다. 숫자·증감이 없는 정성 서술의 의미 정확성은 범위 밖이다.
 - **보조 지표**: 봉인한 합성 묶음 `holdout40`에서 `checklist`·`agent`·`full`의 근거 충족 처리정확도, 불필요 보류율, 잘못된 모니터링률, 혼동행렬, 실행 실패 수, 비용. 코드가 필수 근거 주장을 덧붙이는 규칙이 있으므로, 근거 충족 처리정확도는 "모델이 필수 근거를 스스로 챙기는가"가 아니라 **"시스템이 보고서에 필수 근거를 보이는가"**를 잰다(룰북 B4).
 - **숫자 등급**(룰북 A5): A = 실제 라벨(대표 지표, `real_sealed`), B = 한 번만 평가한 held-out, C = 독립적으로 만든 결정적 픽스처(`holdout40`), D = 우리가 만들고 우리가 채점한 개발 자료(`dev20`, `real_dev`). 비율마다 Wilson 95% 구간을 붙이고, 구간이 겹치면 차이를 주장하지 않는다.
-- **동결과 봉인**: 룰북 `RB-1` 동결 뒤에는 채점 규칙·판정 정책·검증기·채점기를 결과를 보고 유리하게 고치지 않는다. 봉인 묶음은 한 번만 채점하고 실패·시간 초과·무효 실행도 분모에 남긴다. 봉인 자료는 저장소 밖에 두고 해시만 커밋하며(계획 위치 `eval/sealed_manifest.json`. 봉인 해시 등록 전에는 없다), 채점이 끝난 뒤 원본을 커밋한다.
+- **동결과 봉인**: 룰북 `RB-1` 동결 뒤에는 채점 규칙·판정 정책·검증기·채점기를 결과를 보고 유리하게 고치지 않는다. 봉인 묶음은 한 번만 채점하고 실패·시간 초과·무효 실행도 분모에 남긴다. 봉인 자료는 채점이 끝날 때까지 저장소 밖에 두고 해시만 커밋했으며(`eval/sealed_manifest.json`), 최종 채점과 표본 추출 seed 공개 뒤 원본을 `eval/sealed/`에 커밋했다.
 - **독립 채점기** `eval/scorer/`: 런타임 패키지를 import하지 않고, 모델·네트워크·하위 프로세스를 쓰지 않는다. 명령은 `python -m eval.scorer --run <run_dir>`.
 - **`real_dev`에서 본 실패 유형으로 조사 지침과 흐름을 조정했다.** 그래서 `real_dev` 값은 개발 값이다.
+
+**핵심 숫자**(2026-09-26(토) 봉인 채점. 결과표 `docs/eval/RESULTS.md`에서 글자 그대로 옮겼다. 룰북 `RB-1` 동결 커밋 c557540, `code_version` d35fe75, 정책 `policy_v1`, 비교국 `g0`)
+
+| 묶음 | 모드 | 지표 | x/N (Wilson 95%) | 등급 |
+|---|---|---|---|---|
+| `real_sealed`(실자료 40사례) | `freeform` | 보고서 단위 사실 주장 오류율 | 11/40 = 27.5% (16.1%~42.8%) | A등급 주장 보류(참고치) |
+| `real_sealed`(실자료 40사례) | `full` | 보고서 단위 사실 주장 오류율 | 0/40 = 0.0% (0.0%~8.8%) | A등급 주장 보류(참고치) |
+| `holdout40`(합성 40사례) | `checklist` | 근거 충족 처리정확도 | 38/40 = 95.0% (83.5%~98.6%) | 등급 C |
+| `holdout40`(합성 40사례) | `agent` | 근거 충족 처리정확도 | 38/40 = 95.0% (83.5%~98.6%) | 등급 C |
+| `holdout40`(합성 40사례) | `full` | 근거 충족 처리정확도 | 35/40 = 87.5% (73.9%~94.5%) | 등급 C |
+
+- `real_sealed`의 두 모드는 구간이 겹치지 않아 `full`의 보고서 단위 오류율이 "낮다"(룰북 B4 1차 규칙). 보조 분석: Newcombe 짝 차이 95% 구간(`freeform` − `full`) +13.1pp~+42.8pp, McNemar 정확 검정 p 0.001. 실행 실패는 `freeform` 4(FAILED 2·INVALID 2), `full` 0이며 분모에 남겼다. 사례 40건은 서로 다른 시계열 27개에서 나와 Wilson 구간의 독립 가정이 약하다.
+- **이 README와 제출 문구는 등급 A를 주장하지 않는다.** 채점기의 A등급 주장 조건(룰북 B3-3) 자동 판정이 조건 3(채점기 사전 검증)을 실행 조건 입력 파일의 형식 오류로 미충족으로 적었고, 봉인 묶음은 한 번만 채점하므로 재채점하지 않았다. 조건별 판정과 실질 근거는 결과표 §1.1에 있다. 대표 지표 값은 참고치다.
+- `holdout40` 세 비교군의 구간은 서로 겹쳐 차이를 주장하지 않는다(모두 보류 기준선 16/40 = 40.0% (26.3%~55.4%)). 합성 자료라 등급 C다.
 
 **결과 위치**
 
 | 무엇 | 어디 |
 |---|---|
-| 대표 숫자(`real_sealed`)와 보조 숫자(`holdout40`) | 봉인 채점(로드맵 F2) 뒤 결과표(로드맵 R1)에 적는다. 이 README는 그 전에는 숫자를 적지 않는다 |
+| 결과표(대표 숫자 `real_sealed`, 보조 숫자 `holdout40`, A등급 주장 조건 판정, 룰북 B7 공개 값, 한계) | `docs/eval/RESULTS.md`(로드맵 R1). 숫자는 아래 두 채점 요약에서만 옮겼다 |
+| 봉인 묶음 채점 요약(커밋 사본) | `real_sealed`: `artifacts/eval/score-260926135136/scorer_summary-260926135136.md`, `holdout40`: `artifacts/eval/score-260926115824/scorer_summary-260926115824.md`. 같은 폴더에 `scorer_results-*.jsonl`, `scorer_claims-*.jsonl`, 재채점용 보고서 원문 `run_case-*/` |
+| 봉인 원본(입력·정답표·사례 목록·표본·표본 추출 seed) | `eval/sealed/`(최종 채점과 seed 공개 뒤 커밋, 해시 목록 `eval/sealed_manifest.json`과 전체 재대조) |
 | 개발 묶음(`dev20`·`real_dev`) 채점 요약 | `artifacts/eval/score-*/scorer_summary-*.md`. 개발 묶음 값이며 **대표 숫자가 아니다**(등급 D). 같은 폴더에 `scorer_results-*.jsonl`, `scorer_claims-*.jsonl`, 재채점용 보고서 원문 `run_case-*/` |
 | OpenShell 정책 적용·위반 시험 증거 | `artifacts/openshell/openshell_violation_tests-*/` |
 | 자기채점(룰북 Part A, 팀 채점 규범 `SCORING_GOLDEN_RULE.md` 기준) | `artifacts/scorecard/scorecard-*/scorecard-*.md` |
@@ -152,7 +168,7 @@ CLAUDE.md / AGENTS.md          ← 에이전트용 프로젝트 안내(내용이
 docs/
   plan/      DEV_PLAN.md(개발 플랜) · ROADMAP.md(작업·날짜·완료 기준) · UNITS.md(최소 단위 표) · SUBMISSION_SCENARIOS.md
   rules/     DATA_CONTRACT_V1.md(값의 정본) · PARALLEL_DEV_RULES.md · AGENT_OPS.md
-  eval/      RULEBOOK.md(평가 룰북) · SKILL_DICTIONARY.md(스킬 사전)
+  eval/      RULEBOOK.md(평가 룰북) · RESULTS.md(결과표) · SKILL_DICTIONARY.md(스킬 사전)
   architecture.md · business-rules.md · security.md · operations.md · contracts.md · standards.md · engineering-notes.md
   tracking/  status.md · decisions/(결정 기록) · findings.md
 src/tradesentry/               ← 앱 패키지(contract·snapshot·dal·metrics·policy·grouping·tools·workflow·reports·validator·runlog·evaluation·approval·cli)와 수집기 ingest.py

@@ -19,6 +19,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | `docs/rules/PARALLEL_DEV_RULES.md` | 병렬 개발 규칙. 모델 트랙(M)·데이터 트랙(D) 파일 소유, 합성 시험자료 먼저 넘기기, D → M 인수 조건, 공용 약속 변경 승인, 봉인 자료 규칙, 실자료 분할 절차, 브랜치와 PR 이름, 스냅샷과 키 보호 | 두 트랙이 서로의 파일·약속을 건드릴 때, 봉인 자료를 다룰 때 |
 | `docs/rules/AGENT_OPS.md` | 에이전트 운용 규칙. 실행자 선택(Claude 보조 에이전트, Codex headless), 도메인 검토자 4종과 작업 성격 대응, 검토 판정과 반복, 작업 단위 PR과 병합, 외부 자문 체크포인트, 증거 규칙 | 작업을 누구에게 맡기고 어떻게 검토·병합할지 정할 때 |
 | `docs/eval/RULEBOOK.md` | 평가 룰북. Part A는 팀 채점 규범(`SCORING_GOLDEN_RULE.md`)에 따른 자기채점 규칙, Part B는 TradeSentry 성능 평가 규칙(자료 묶음, 비교 모드, 대표 지표와 채점 규칙, A등급 주장 조건, 보조 지표, 실행 규칙, 동결과 봉인, 결과 보고 양식). 부록에 `RB-1` 동결 때 사용자가 확인할 해석을 모았다 | 점수·지표를 계산하거나 판정 규칙을 확인할 때 |
+| `docs/eval/RESULTS.md` | 결과표(로드맵 R1). 두 봉인 묶음(`real_sealed`·`holdout40`)의 대표·보조 지표와 Wilson 95% 구간·등급, A등급 주장 조건(룰북 B3-3) 판정, 룰북 B7 공개 값, 정직한 한계, 재현 명령. 숫자는 커밋된 채점 요약 `artifacts/eval/score-*/scorer_summary-*.md`에서만 옮긴다 | 제출서·README에 결과 숫자를 적을 때 |
 | `docs/eval/SKILL_DICTIONARY.md` | 스킬 사전. NVIDIA 공식 Agent Skills와 우리 스킬의 이름·출처·설치 명령·용도·단계·채점표 항목·상태 | 어떤 스킬을 설치하고 어디에 쓰는지 볼 때 |
 | `skills/tradesentry-scorecard/SKILL.md` | 평가 스킬 ①. 저장소를 룰북 Part A로 자기채점하고 근거가 붙은 점수표를 남기는 절차 | MVP 시험 뒤, `RB-1` 동결 뒤, 제출 전 자기채점할 때 |
 | `skills/tradesentry-eval/SKILL.md` | 평가 스킬 ②. 룰북 Part B의 성능 평가를 사전 점검 → 실행 → 채점 → 결과 보고 순으로 수행하는 절차. 봉인 자료 취급과 멈춤 규칙 포함 | dev20·`real_dev` 평가, `RB-1` 동결 뒤 봉인 묶음 채점을 할 때 |
