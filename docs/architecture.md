@@ -25,3 +25,4 @@
 | 계획된 경로·명령 표 | `docs/rules/DATA_CONTRACT_V1.md` §10 |
 | 앱 폴더 구조처럼 앱 뼈대(S0)에서 정할 설계 | `docs/plan/SCAFFOLD_BRIEF.md` §2.6·§5.2·§5.3 |
 | 평가 흐름(사전 점검 → 실행 → 채점 → 결과 보고)과 봉인 묶음(개발 중 보지 않도록 봉인한 평가 자료 묶음)의 샌드박스 밖 실행기(샌드박스 밖에서 봉인 해시를 대조하고 사례 식별자를 샌드박스 안 CLI에 넘기는 프로그램) | `skills/tradesentry-eval/SKILL.md`, `docs/eval/RULEBOOK.md` Part B, `docs/plan/ROADMAP.md` §2.4(MT7) |
+| 선행 사례(LLM 사실성·관세 위험관리)와의 차이, 담당자 업무 흐름에서의 도입 시나리오, NVIDIA 생태계 편입 경로(Agent Skills 배포·OpenShell 정책 레시피·NIM/NAT 연계) | `docs/plan/DEV_PLAN.md` §14 |

@@ -1144,6 +1144,133 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 18. **대표 지표의 채점 범위**(Codex 검토 회의 합의): typed claim 전 필드와 산문 속 숫자·증감 표현(결정적 패턴)만 채점한다. 정성 서술의 의미 정확성은 범위 밖이라고 밝힌다.
     - 이유: 사용자가 고른 "AI 채점자 없는 기계적 대조"를 지키면서 과장 없이 말할 수 있는 범위이기 때문이다.
 
+## 14. 위치 설정 — 선행 사례, 도입 시나리오, 한국 맥락
+
+이 절은 자기채점 축 4 지표(`4b` 접근의 독창성, `4c` 상업화 경로, `4d` 한국 맥락. 룰북 A2)의 근거 문서다. 2026-09-26(토) 작성했고, 점수는 적지 않는다(점수는 자기채점 회차가 룰북 Part A로 매긴다). 절 전체의 기본 태그는 `[사실]`이며, 근거가 출처가 아니라 판단인 문장에는 `[추론]`을, 팀 설계 규칙에는 `[DESIGN]`을 붙였다. 출처는 2026-09-26(토)에 실제로 열어 읽은 것만 적고, 각 소절 끝의 표에 제목·게시자·URL·확인 날짜를 둔다. 열었지만 본문을 읽지 못한 문서(PDF 본문 추출 실패)는 읽은 범위(제목 슬라이드·서지 정보)만 인용하고 그렇게 표시한다. 이 조사는 하루 동안 웹으로 한 표본 조사이며 체계적 문헌 조사가 아니다. 그래서 선행 사례에 관한 부정 진술("~한 사례를 찾지 못했다")은 모두 "우리가 찾은 범위에서"로 한정한다.
+
+### 14.1 선행 사례 조사(4b)
+
+**(가) LLM 보고서의 사실 오류를 막는 접근들**
+
+| 접근 | 대표 출처(읽은 것) | 무엇을 하는가 | TradeSentry와의 관계 |
+|---|---|---|---|
+| 검색 증강 생성(RAG. 생성 전에 외부 문서를 검색해 문맥으로 넣는 방식) | Lewis 외 2020 "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks" | 사전학습 생성 모델에 Wikipedia 밀집 벡터 색인을 붙여 검색한 구절을 문맥으로 주고 생성한다. 초록은 매개변수만 쓰는 기준선보다 "more specific, diverse and factual" 언어를 낸다고 적는다 | 닮은 점: 조사자가 조회 도구 5개(§6.5)로 스냅샷에서 근거를 가져온다. 다른 점: RAG는 검색된 문맥을 **모델이 다시 문장으로 옮겨 쓰고** 그 문장의 숫자가 맞는지는 별도 장치가 없다. TradeSentry `full` 모드는 도구가 돌려준 검증된 값만 **코드가** typed claim(정해진 필드로 쓰는 사실 주장)의 틀에 채운다(§7.3) |
+| 사실 확인(fact-checking) 파이프라인 | Min 외 2023 "FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation"; NVIDIA NeMo Guardrails "Hallucinations & Fact-Checking" 문서 | FActScore는 생성문을 원자적 사실(atomic fact)로 쪼개 신뢰할 수 있는 지식원이 뒷받침하는 비율을 계산한다(사람 평가와 검색+LLM 자동화 판. 초록은 ChatGPT의 점수를 58%로 적는다). NeMo Guardrails의 self-check facts rail(출력 검문)은 LLM 프롬프트로 답이 근거 조각(`$relevant_chunks`)에 함의되는지 0.0~1.0 점수로 판정해 0.5 미만을 막고, hallucination rail은 SelfCheckGPT에서 착안해 응답을 기본 2개 더 뽑아 자기 일관성을 본다 | 닮은 점: 보고서를 주장 단위로 나눠 원본과 대조한다는 발상. 다른 점: 두 출처의 판정자는 **LLM**(또는 사람)이다. TradeSentry의 대표 지표는 typed claim 전 필드와 산문 속 숫자·증감 표현을 **결정적 패턴**으로 공식 통계 원본(스냅샷 원본 행)과 대조하고, 사람 판정자도 AI 채점자도 두지 않는다(룰북 B3, §13 결정 5) |
+| 구조화 출력·함수 호출로 숫자를 도구 값으로 채우는 접근 | OpenAI "Structured model outputs" 문서; NVIDIA "Function Calling — NVIDIA NIM for Large Language Models" 문서(1.7.0판); Schick 외 2023 "Toolformer: Language Models Can Teach Themselves to Use Tools" | Structured Outputs 문서는 모델 응답이 제공한 JSON 스키마를 "always" 따른다고 적는다(필수 키 누락·잘못된 열거값 걱정을 없앤다는 뜻). 값의 사실 정확성에 대한 보장은 그 문서에 적혀 있지 않다. NIM 함수 호출 문서는 모델이 OpenAI `tools` 형식의 `tool_calls`(함수 이름·인자)를 구조화해 내고, 응용이 실행한 결과를 모델에 돌려주는 흐름을 설명한다(`tool_choice`는 `tools`가 있을 때만 설정). Toolformer는 모델이 계산기·검색 등 API를 언제·어떤 인자로 부를지 스스로 배운다 | 닮은 점: TradeSentry도 NIM native tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능)로 도구를 부른다(README §3, `scripts/g4_nim_toolcall_probe.py`). 다른 점: 스키마 준수는 **모양**의 보장이고, 도구 호출은 값을 **모델에 돌려주는** 데서 끝난다. TradeSentry는 모델이 받은 값을 다시 쓰는 대신, 코드가 검증된 도구 값으로 숫자 칸을 채우고 모델이 쓴 숫자를 검증기가 원본과 대조한다(§7.3·§7.4) |
+| 검증기(verifier)로 출력을 거부하는 접근 | Cobbe 외 2021 "Training Verifiers to Solve Math Word Problems" | 후보 풀이를 여러 개 생성하고 **학습된** 검증 모델이 순위를 매겨 고른다. 초록은 이 방식이 미세조정 기준선보다 자료 증가에 더 잘 비례한다고 적는다 | 닮은 점: 생성과 검증을 분리하고 검증이 최종 출력을 좌우한다. 다른 점: TradeSentry 검증기는 학습 모델이 아니라 **결정적 코드**(숫자·단위·근거 ID·스냅샷 원본 대조, 뒷받침 없는 산문 숫자 검출)이며, 통과하지 못한 보고서를 `INVALID`(검증을 통과하지 못해 무효로 끝난 실행)로 막는다(§7.4·§7.5). 검증기가 무엇을 잡는지는 시험(`tests/units/R3/`)으로 고정돼 있다 |
+| 표·SQL 기반 QA(질의응답)의 실행 검증 | Yu 외 2018 "Spider: A Large-Scale Human-Labeled Dataset for Complex and Cross-Domain Semantic Parsing and Text-to-SQL Task"; Zhong·Yu·Klein 2020 "Semantic Evaluation for Text-to-SQL with Distilled Test Suites"; Gao 외 2022 "PAL: Program-aided Language Models" | Spider는 자연어 → SQL 변환을 정답 SQL과의 exact matching 정확도로 잰다. Zhong 외는 여러 데이터베이스로 증류한 시험 묶음에서 **실행 결과**가 같은지로 재는 test suite accuracy를 제안하고, 기존 Spider 지표의 위음성률(평균 2.5%, 최악 8.1%)을 보였다. PAL은 모델이 문제를 실행 가능한 단계(프로그램)로 옮기고 계산은 파이썬 인터프리터에 맡겨 산술 오류를 줄인다(GSM8K에서 PaLM-540B보다 약 15pp 높음) | 닮은 점: "말은 모델, 계산은 실행기"라는 분업(PAL)과, 정답 판정을 사람이 아니라 **실행 결과의 결정적 비교**로 하는 평가(test suite accuracy). 다른 점: TradeSentry는 모델이 SQL이나 프로그램을 **생성하지 않고** 고정된 조회 도구 5개만 부를 수 있으며(§6.5, 도구 8회 예산 §6.6), 채점 대상은 SQL이 아니라 한국어 조사 보고서의 사실 주장이다 |
+
+**(나) 무역통계·관세 분야의 이상 탐지·리스크 관리**
+
+| 사례 | 읽은 출처 | 무엇을 하는가 | TradeSentry와의 관계 |
+|---|---|---|---|
+| 세계관세기구(WCO. 관세 행정의 국제기구) 위험관리 컴펜디엄 | WCO 뉴스룸 2024-05-06 "Updated version of WCO Risk Management Compendium now available as a dynamic web application" | 2011년에 처음 낸 관세 위험관리 지침 모음(800쪽 이상, PDF 30개)을 웹 응용으로 갱신했다. 일반 부문과 Volume 1(조직 틀과 위험관리 절차)은 공개, Volume 2(위험 평가·프로파일링·타기팅 도구)는 회원 전용이다. 갱신판은 운송 수단별 위험 지표와 관세 행정의 인공지능 응용을 포함한다 | 관세 행정의 위험관리는 **건별 신고(consignment)의 검사 선별**이 중심이다. TradeSentry는 신고 건이 아니라 공개 **월별 집계 통계**의 급변을 다루고, 검사 선별이 아니라 통계 담당자의 다음 업무(검토 유지·모니터링·자료 보류)를 제안한다(§1.1) |
+| 관세 사기 탐지의 기계학습 연구 | Kim 외 2020 "DATE: Dual Attentive Tree-aware Embedding for Customs Fraud Detection"(KDD 2020. Semantic Scholar API의 초록으로 읽음); Singh 외 2023 "GraphFC: Customs Fraud Detection with Label Scarcity"; Mai 외 2021 "Customs Fraud Detection in the Presence of Concept Drift" | DATE 초록은 "Intentional manipulation of invoices that lead to undervaluation of trade goods is the most common type of customs fraud"라고 적고, 5년치 수입 **신고 자료**(위법 비율 2.24%)에서 위법 여부와 추징세액을 함께 학습해 상위 1% 검사로 위법 정밀도 92.7%·세수 재현율 49.3%를 보였으며 나이지리아 관세청 배치를 WCO와 논의했다. GraphFC는 라벨이 드문 조건의 준지도 그래프 신경망(세 나라 관세 자료), Mai 외는 네 나라 자료에서 개념 변화(concept drift. 시간이 지나며 자료 분포가 바뀌는 현상)에 맞춰 탐색 비율을 조절하는 방법이다 | 이 계열은 **신고 건 단위의 라벨(위법 여부·세액)**을 가진 지도·준지도 **분류·순위** 문제이고, 출력은 검사 대상 목록이며, 평가는 위법 라벨에 대한 정밀도·재현율이다. TradeSentry는 라벨 없는 공개 집계 통계에서 경보를 잡고, 출력은 **근거를 단 한국어 조사 보고서**이며, 평가 대상은 보고서의 **사실 주장 오류율**이다. 위법 판정을 하지 않는다(§1.1·§12.2) |
+| 무역 송장 조작(trade misinvoicing)과 거울 통계 | Choi 2019 "Identifying Trade Mis-Invoicing Through Customs Data Analysis"(World Customs Journal 13(2), 59–76. 학술지 페이지의 서지 정보·태그(mis-invoicing, over-valued imports, under-valued imports)만 읽었고 본문은 읽지 못했다); Global Financial Integrity(GFI. 불법 자금 흐름을 추정하는 미국 연구 기관) "Trade Misinvoicing" 페이지 | GFI는 무역 송장 조작을 "the deliberate falsification of the value, volume, and/or type of commodity in an international commercial transaction"으로 정의하고 자기들이 측정하는 불법 자금 유출의 최대 구성 요소라 적는다. 동기로 자금 세탁, 세금·관세 회피, 허위 세제 혜택, 자본 통제 회피 넷을 든다 | 이 계열은 국가 간 통계 차이나 가격 필터로 **조작 규모를 추정**한다. TradeSentry는 조작을 추정하거나 단정하지 않고, 단가·점유율 급변에 대해 **산술적 반대 설명**(구성효과·자료 불완전)을 먼저 시도한다(§6.3·§6.7). 단가 변화를 부정·위법·원산지 조작의 증거로 쓰지 않는다(§12.2) |
+| 국제 무역통계 원천 | UN Comtrade 문서 "Welcome to UN Comtrade"(UN 통계국) | 약 200개국·1962년 이후의 상품·서비스 무역을 상대국·품목별로 제공하며 HS·SITC·BEC 분류, CIF·FOB 값과 수량을 담는다. 읽은 페이지는 단가나 거울 통계 비교 기능을 따로 적지 않는다 | TradeSentry는 국제 원천 대신 **관세청 공개 API 원본**을 쓰고 상대국 비교도 같은 원본 안에서 한다(BACI는 비교국 선택과 문맥에만, README §7) |
+| 한국 관세청의 빅데이터·AI 위험관리 | WCO News 96(2021-10-24) "Blockchain, artificial intelligence and big data: how Korea Customs Service leverages technology to supervise e-commerce"(관세청 R&D·장비 담당 국장 기고); 관세청 2025-07-30 APEC SCCP(관세절차 소위원회) 발표 자료 "AI-based Risk Management of Korea Customs Service"(PDF. 제목 슬라이드의 제목·기관·발표일·발표자만 읽었고 본문은 추출하지 못했다) | WCO News 기고는 관세청이 2017년부터 빅데이터 분석을 쓰고 2020년 전사 빅데이터 시스템을 세웠으며, 전자상거래의 저가 신고와 면세 한도 악용(분할 반입)에 판매자·운송사·관세사 자료를 모아 대응한다고 적는다("data is a means, not an end") | 관세청의 위험관리는 **신고 건 단위 내부 자료**로 통관 검사를 선별하는 행정 시스템이다. TradeSentry는 그 시스템이 아니고 그것을 대신하지도 않는다. 같은 기관이 **공개**하는 집계 통계를 담당자가 읽는 자리에서 사실 오류 없는 조사 보고서를 만드는 일이 범위다(§14.2) |
+
+**(다) TradeSentry의 차이**
+
+같은 조건 기준선(`freeform`. 같은 자료·도구·예산으로 모델이 사실 주장의 값을 직접 쓰는 보고서) 대비, 검증된 값만 틀에 채우고 검증기로 막는 처리(`full`)의 효과를, 봉인한 실자료(`real_sealed`)에서 한 번만 채점해 공식 통계 원본과 **결정적으로 대조한 보고서 단위 사실 주장 오류율**로 잰다(§1.2·§9.3, 룰북 B3·B6, 결과 `docs/eval/RESULTS.md` §1). 위 (가)의 접근들은 하나씩 보면 모두 선행 사례가 있다. 검색으로 근거를 가져오는 것(RAG), 주장 단위 대조(FActScore), 도구 값으로 숫자를 채우는 것(함수 호출·PAL), 검증기로 거부하는 것(verifier), 실행 결과로 정답을 재는 것(test suite accuracy)이다. 우리가 찾은 범위에서 다음 네 가지를 **한 평가 설계 안에 함께** 둔 사례는 읽은 출처 가운데 없었다 `[추론: 위 표의 출처 범위 안에서의 판단. 체계적 문헌 조사가 아니므로 "없다"가 아니라 "찾지 못했다"다]`: ① 공식 무역통계 원본을 정답으로 삼아 ② LLM 조사 보고서의 사실 주장을 보고서 단위로 결정적 대조(LLM·사람 채점자 없음)하고 ③ 처리만 다른 동일 조건 기준선과 비교하며 ④ 실자료를 봉인해 한 번만 채점한다. 이유는 두 연구 흐름의 관심이 서로 다른 데 있다고 본다 `[추론]`: (가)의 LLM 사실성 연구는 개방 영역 텍스트(Wikipedia류 지식)를 대상으로 LLM 또는 사람 판정자를 쓰고, (나)의 관세·무역 연구는 신고 건 단위 라벨의 분류·추정을 대상으로 한다. "무역통계 담당자가 읽을 LLM 보고서의 숫자가 원본과 맞는가"는 두 흐름 사이에 놓인 문제 설정이다. 측정된 효과는 NVIDIA 구성요소의 효과가 아니라 TradeSentry 처리(틀 채우기와 검증기)의 효과이며(룰북 A4 정직한 요약), 대표 숫자는 채점기 자동 판정에 따라 "A등급 주장 보류(참고치)"로 표기한다(`docs/eval/RESULTS.md` §1.1). 없는 사실을 만들지 않는다.
+
+**출처(14.1)** — 확인 날짜는 모두 2026-09-26(토)
+
+| 제목 | 게시자 | URL | 확인 날짜 |
+|---|---|---|---|
+| Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks(Lewis 외, 2020) | arXiv | https://arxiv.org/abs/2005.11401 | 2026-09-26(토) |
+| FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation(Min 외, 2023) | arXiv | https://arxiv.org/abs/2305.14251 | 2026-09-26(토) |
+| Hallucinations & Fact-Checking(NeMo Guardrails Library Developer Guide) | NVIDIA | https://docs.nvidia.com/nemo/guardrails/configure-guardrails/guardrail-catalog/fact-checking | 2026-09-26(토) |
+| Structured model outputs(API 문서) | OpenAI | https://developers.openai.com/api/docs/guides/structured-outputs | 2026-09-26(토) |
+| Function Calling — NVIDIA NIM for Large Language Models (LLMs), 1.7.0판 | NVIDIA | https://docs.nvidia.com/nim/large-language-models/1.7.0/function-calling.html | 2026-09-26(토) |
+| Toolformer: Language Models Can Teach Themselves to Use Tools(Schick 외, 2023) | arXiv | https://arxiv.org/abs/2302.04761 | 2026-09-26(토) |
+| Training Verifiers to Solve Math Word Problems(Cobbe 외, 2021) | arXiv | https://arxiv.org/abs/2110.14168 | 2026-09-26(토) |
+| Spider: A Large-Scale Human-Labeled Dataset for Complex and Cross-Domain Semantic Parsing and Text-to-SQL Task(Yu 외, 2018) | arXiv | https://arxiv.org/abs/1809.08887 | 2026-09-26(토) |
+| Semantic Evaluation for Text-to-SQL with Distilled Test Suites(Zhong·Yu·Klein, 2020) | arXiv | https://arxiv.org/abs/2010.02840 | 2026-09-26(토) |
+| PAL: Program-aided Language Models(Gao 외, 2022) | arXiv | https://arxiv.org/abs/2211.10435 | 2026-09-26(토) |
+| Updated version of WCO Risk Management Compendium now available as a dynamic web application(2024-05-06) | World Customs Organization | https://www.wcoomd.org/en/media/newsroom/2024/may/updated-version-of-wco-rmc-now-available-as-a-dynamic-web-application.aspx | 2026-09-26(토) |
+| DATE: Dual Attentive Tree-aware Embedding for Customs Fraud Detection(Kim 외, KDD 2020. 초록은 Semantic Scholar API로 읽음) | ACM / Semantic Scholar | https://api.semanticscholar.org/graph/v1/paper/DOI:10.1145/3394486.3403339?fields=title,abstract,authors,year,venue | 2026-09-26(토) |
+| GraphFC: Customs Fraud Detection with Label Scarcity(Singh 외, 2023) | arXiv | https://arxiv.org/abs/2305.11377 | 2026-09-26(토) |
+| Customs Fraud Detection in the Presence of Concept Drift(Mai 외, 2021) | arXiv | https://arxiv.org/abs/2109.14155 | 2026-09-26(토) |
+| Identifying Trade Mis-Invoicing Through Customs Data Analysis(Choi, 2019. 서지 정보·태그만 읽음) | World Customs Journal | https://worldcustomsjournal.org/article/116214-identifying-trade-mis-invoicing-through-customs-data-analysis | 2026-09-26(토) |
+| Trade Misinvoicing | Global Financial Integrity | https://gfintegrity.org/issue/trade-misinvoicing/ | 2026-09-26(토) |
+| Welcome to UN Comtrade | UN Statistics Division | https://uncomtrade.org/docs/welcome-to-un-comtrade/ | 2026-09-26(토) |
+| Blockchain, artificial intelligence and big data: how Korea Customs Service leverages technology to supervise e-commerce(WCO News 96, 2021-10-24) | World Customs Organization | https://mag.wcoomd.org/magazine/wco-news-96/blockchain-artificial-intelligence-and-big-data-korea/ | 2026-09-26(토) |
+| AI-based Risk Management of Korea Customs Service(2025 APEC SCCP 발표, 2025-07-30. 제목 슬라이드만 읽음) | 관세청 / APEC 문서 보관소 | https://mddb.apec.org/Documents/2025/SCCP/SCCP2/25_sccp2_021.pdf | 2026-09-26(토) |
+
+### 14.2 도입 시나리오와 NVIDIA 생태계 편입 경로(4c)
+
+이 소절의 시나리오는 **가상의** 무역통계·관세 분석 담당자(공공)를 위한 설계이며 `[DESIGN]`, 실제 기관 도입·승인·통관 조치가 아니다(룰북 A2 `4c` 주석). 시장은 공공 무역통계·관세 분석 업무다(§1.1).
+
+**(가) 구체 도입 시나리오 — 담당자 업무 흐름에서의 자리**
+
+관세청 수출입통계 공개 API는 "매월 15일경 수출입 신고의 정정, 취하 등 변경내역을 반영하여 전월까지의 자료를 현행화"한다 `[사실: 공공데이터포털 15100475·15101609 페이지]`. 그래서 담당자의 월 주기는 통계 현행화 뒤에 시작한다.
+
+| 단계 | 담당자 업무 | TradeSentry가 놓이는 자리 | 입력 → 출력 |
+|---|---|---|---|
+| ① 월별 통계 확정 | 현행화된 전월 통계 확인 | 새 `snapshot_id`로 수집·검사한다(수집기 `src/tradesentry/ingest.py`의 `plan`·`collect`, 검증 `tradesentry snapshot-verify`). 동결한 스냅샷은 고치지 않고 새 스냅샷을 만든다(§2.4, 절대 규칙 2) | 관세청 API 응답(원자료) → 스냅샷(manifest·검사 결과·`normalized_sha256`(정규화한 스냅샷 내용의 해시)·SQLite) |
+| ② 경보 목록 | 전년 같은 달 대비 급변 품목·국가 찾기 | `tradesentry detect --snapshot <id> --policy policy_v1`. 단가 변화율·점유율 변화의 임계값은 동결 판정 정책 `configs/policy_v1.json`(§6.2) | 스냅샷 → 경보 목록(사례 ID `{HS6}-{상대국}-{월}`, 발동 신호) |
+| ③ 사례별 조사 | 경보마다 반대 설명 확인, 근거 수집 | `tradesentry run-case <case_id> --mode full`을 OpenShell 샌드박스 안에서 돈다. 조사자 → Critic → 수정 1회, 도구 5개(§6.7) | 사례 ID → 한국어 보고서(typed claim·판정 상태·근거 ID), 실행 추적 `runlog_trace-{시각}.jsonl`, NAT 프로파일 |
+| ④ 판정 기록 | 다음 업무 결정 | 보고서의 `MAINTAIN`(검토 유지)·`MONITOR`(모니터링)·`HOLD`(자료 보류)를 담당자가 **참고**한다. 승인 기능은 모의이며 코드 검증만 한다(§7.6) | 보고서 → 담당자 기록(TradeSentry 밖) |
+| ⑤ 후속 업무 | 판정 상태별 다음 달 준비 | `HOLD`는 결측·불일치·분모 부족이므로 자료 재확인(다음 현행화 뒤 재수집), `MONITOR`는 다음 달 같은 사례 재확인, `MAINTAIN`은 담당자의 검토 계속 | 판정 상태 → 다음 주기의 입력 조건 |
+
+- **입력**: 관세청 API의 월 갱신 스냅샷, 품목표(`data/reference/`의 HS 부호표·조회 코드), 국가 코드(`data/reference/kcs_country_codes.json`), 비교국 표(`data/reference/peer_group_g0.csv`. `g1`은 BACI 유사도 규칙으로 계획했으나 이번 제출에서는 `g0`를 썼다, §8·§13 결정 10).
+- **출력**: 보고서(typed claim과 한국어 산문, 자료 계약 §6), 판정 상태(자료 계약 §3), 실행 추적과 NAT 프로파일(`outputs/{실행명}/`, 자료 계약 §10.3). 채점기 요약과 결과표는 평가 때만 나온다(룰북 B7).
+- **필요한 자료 연동** `[DESIGN]`: (1) 스냅샷 갱신 절차 — 설정 `configs/collection_plan.json`의 `snapshot_id`를 새 값으로 바꾸고 수집·검사·동결을 반복한다. 원자료와 SQLite는 저장소에 두지 않는다(README §7). (2) 기관 내부 시계열 — 같은 객체 형식(자료 계약 §2의 관측치·지표)으로 적재하면 도구 5개가 그대로 읽을 수 있다. 이번 범위에는 없다. (3) 사후 확인 결과의 피드백 — 담당자가 기록한 사후 확인 결과를 사례 ID에 붙여 모으면 판정 정책 수치와 조사 지침을 다시 조정할 근거가 된다. 이번 제출에서는 개발 묶음 `real_dev`에서 본 실패 유형으로만 조정했고(룰북 B7 문구), 봉인 뒤에는 결과를 보고 고치지 않았다(절대 규칙 5). 이 피드백 고리는 다음 단계의 일이다.
+- **운영 형태**: 지금은 담당자 1인이 로컬에서 실행하고 추론만 NIM을 쓰는 데모다(§1.1). 다음 단계는 팀 공유 샌드박스다 `[추론]`: OpenShell 게이트웨이(샌드박스의 정책과 provider(등록한 자격 증명 묶음) 설정을 보관하고 샌드박스에 내려보내는 제어면)가 키를 보관하므로, 여러 담당자가 같은 정책의 샌드박스를 써도 키를 나눠 갖지 않는다(§4.6). 여러 사용자·계정·권한·실시간 수집은 이번 범위에 없다(§1.1).
+- **하지 않는 것**: 부정·위법·원산지 판정, 개별 거래가격 추정, 실제 기관 승인, 통관 조치(§1.1·§12.2). 단가·점유율 급변은 조사의 시작점이지 결론이 아니다.
+
+**(나) NVIDIA 생태계 편입 경로**
+
+| 경로 | 지금 있는 것 `[사실]` | 편입 형태 `[DESIGN]` | 남은 확인 |
+|---|---|---|---|
+| Agent Skills 배포 | 우리 스킬 3개가 Agent Skills 규격(SKILL.md의 `name`·`description` 규칙, 스킬 사전 §3.1)을 따른다: 런타임 스킬 `skills/tradesentry/SKILL.md`, 평가 스킬 `skills/tradesentry-scorecard/SKILL.md`·`skills/tradesentry-eval/SKILL.md`. 거버넌스 카드(스킬의 능력 범위를 밝히는 카드) 3개가 공식 스킬 `skill-card-generator`의 카드 형식으로 있다(스킬 사전 §3.5) | 저장소 공개(로드맵 P2) 뒤 `npx skills add <저장소> --skill <이름>`으로 설치하는 형태. 공식 스킬 설치 명령 형식은 §5.5와 같다 | 우리 저장소에서의 설치 동작은 `[미확인]`(스킬 사전 §5.3). 카드의 `VERIFY` 표시 두 곳(소유자 표기·라이선스)은 사용자 결정 뒤 지운다(스킬 사전 §3.5) |
+| OpenShell 정책 레시피 | `configs/openshell/policy.yaml`: 파일시스템은 허용 목록 방식으로 앱 코드·설정·스냅샷을 `/opt/tradesentry`에 읽기 전용으로 두고 정답표·봉인 폴더·`outputs/`·`artifacts/eval/`·`eval/scorer/`·`.env`는 이미지에 넣지 않는다(§4.1 (a)). 네트워크는 `integrate.api.nvidia.com:443`에 `POST /v1/chat/completions` 한 경로만 허용하고 실행 파일은 CLI의 파이썬 하나로 좁힌다(§4.1 (b)). 키는 provider의 자리표시 값을 감독 프로세스가 요청 시점에 바꾸는 방식으로 샌드박스 안에 두지 않는다(§4.1 (c)). 위반 시험표는 `scripts/openshell_violation_tests.py`가 만들고 증거는 `artifacts/openshell/`에 있다(§4.1 (e)) | 이 파일의 세 조각 — "읽기 전용 자료 허용 목록 + 정답 경로 부재", "추론 엔드포인트 하나·경로 하나·바이너리 하나", "키 비보유(자리표시 치환)" — 는 다른 통계 분석 에이전트에도 그대로 옮길 수 있는 정책 레시피다 `[추론]`. 정책은 라이브 정책에서 빼는 방향으로만 고친다는 작성 원칙(§4.1)이 함께 간다 | 공식 스킬 `generate-sandbox-policy`(정책 초안 생성)를 정책 작성 보조로 쓴 기록은 스킬 사전 §1 상태 열에 따른다. 다른 판(OpenShell 0.0.116 이후)에서의 동작은 `[미확인]` |
+| NIM·NAT 연계 | 모델은 NIM의 `nvidia/nemotron-3-super-120b-a12b`(엔드포인트 `https://integrate.api.nvidia.com/v1/chat/completions`, §5.5)이고 모델 설정은 `configs/model/`에 있다. 조사 흐름은 NAT(NeMo Agent Toolkit. 에이전트 실행·추적·프로파일링·사후 평가 도구)로 감싸고 워크플로는 `configs/nat/workflow.yml`이다(§3.3). 봉인 실행의 NAT 프로파일 요약은 `docs/eval/RESULTS.md` §5.1에 있다 | 모델 교체는 설정 파일 값 변경으로 한다(정책 수치·모델 이름을 코드에 박지 않는 규약, `docs/plan/SCAFFOLD_BRIEF.md` §4.10). 도구 단위 비용·시간 프로파일은 NAT 출력에서 나온다 | 다른 Nemotron 판이나 다른 NIM 모델에서 native tool call 왕복이 같은지는 `scripts/g4_nim_toolcall_probe.py`로 확인해야 한다 `[미확인]` |
+
+정직한 한계: NemoClaw 경로(운영자 요청 → OpenClaw 에이전트 → `tradesentry` 스킬 → 샌드박스 안 CLI)는 시연 경로이며 정확도 지표에는 영향을 주지 않는다(§3.2, 룰북 B7). 위 편입 경로는 산출물이 NVIDIA 제품 형식에 맞는다는 뜻이며, NVIDIA의 배포·등록·승인을 받았다는 뜻이 아니다.
+
+**출처(14.2)** — 저장소 밖 출처만 적는다. 저장소 안 근거는 본문의 파일·절 참조다.
+
+| 제목 | 게시자 | URL | 확인 날짜 |
+|---|---|---|---|
+| 관세청_품목별 국가별 수출입실적(GW) | 공공데이터포털(data.go.kr) / 관세청 | https://www.data.go.kr/data/15100475/openapi.do | 2026-09-26(토) |
+| 관세청_품목별 수출입실적(GW) | 공공데이터포털(data.go.kr) / 관세청 | https://www.data.go.kr/data/15101609/openapi.do | 2026-09-26(토) |
+| Function Calling — NVIDIA NIM for Large Language Models (LLMs), 1.7.0판 | NVIDIA | https://docs.nvidia.com/nim/large-language-models/1.7.0/function-calling.html | 2026-09-26(토) |
+
+### 14.3 한국 맥락 논증(4d)
+
+**(가) 한국 데이터 사용 사실** `[사실]`
+
+- 자료 원천은 관세청 수출입통계 공개 API 두 개다: 공공데이터포털 `15100475` "관세청_품목별 국가별 수출입실적(GW)"(국가별)과 `15101609` "관세청_품목별 수출입실적(GW)"(품목별). 제공 기관은 관세청이고, 두 페이지 모두 갱신 주기를 "매월 15일경 수출입 신고의 정정, 취하 등 변경내역을 반영하여 전월까지의 자료를 현행화"로 적으며, 이용 조건은 무료·"이용허락범위 제한 없음"이다. 품목별 API 페이지는 HS 2·4·6·10자리 분류를 제공하고 수입은 CIF(운임·보험료 포함 도착 가격), 수출은 FOB(본선 인도 가격)로 기록한다고 적는다 `[사실: 공공데이터포털 두 페이지]`. 실측한 API 동작(HS4 조회 → HS6 행, HS6 조회 → HS10 행, 정수 단위)은 실측 메모 §1과 `configs/collection_plan.json`의 `_status` 주석에 있다.
+- 스냅샷 `kcs_202201_202412_v2`의 범위는 HS 8504(변압기·정지형 변환기·유도자) 아래 HS6 4개(`850450`, `850431`, `850432`, `850490`) × 상대국 16개(CN, JP, DE, VN, US, PH, TW, FR, FI, SE, KH, NL, ID, IN, MX, MY) × 2022-01~2024-12 36개월이다 `[사실: configs/collection_plan.json, README §7]`. 판정 가능한 달은 전년동월이 있는 2023-01~2024-12다.
+- 원자료와 SQLite는 커밋하지 않고 해시·manifest·검사 결과만 커밋한다. 자료 이용 조건은 두 공개 안내 페이지의 조건을 따르고 저장소에서 원자료를 재배포하지 않는다(README §7).
+
+**(나) 한국 특수 문제임을 출처와 함께 논증**
+
+"한국 특수"는 한국에만 있는 문제라는 뜻이 아니라, 아래 다섯 조건이 **한국에서 동시에 성립**해 이 문제 설정(공개 월별 관세 통계 → 한국어 조사 보고서 → 담당자의 다음 업무)을 만든다는 뜻이다 `[추론]`. 관세청 자료의 형식 특성(총계 행·무거래 응답·정수 단위) 처리만으로는 한국 특수로 보지 않는다는 룰북 원칙(A2 `4d` 주석)을 따르고, 그 특성은 논거로 세지 않는다.
+
+1. **무역 의존이 큰 경제다.** e-나라지표 "수출입비율(GDP 대비)"(국가데이터처)은 수출액·수입액·국외수취요소소득·국외지급요소소득 합계의 GDP 대비 비율을 1990년 51.3%, 2025년 92.8%로 적고, OECD 자료 기준 GNI 대비 수출입비율이 2023년 한국 87.2%, 미국 34.9%, 일본 55.1%라고 비교한다 `[사실: e-나라지표 4207]`. 수입통계의 단가·점유율 급변이 물가·산업 공급망에 미치는 파급이 상대적으로 크다는 뜻이며 `[추론]`, 그래서 통계 담당자의 월별 감시가 업무로 성립한다.
+2. **관세 행정이 수입 가격을 제도로 다룬다.** 관세청 "수입물품 가격신고 제도" 페이지는 "관세의 납세의무자는 수입 신고를 할 때 세관장에게 해당 물품의 가격에 대한 신고를 하여야" 하고, 과세가격 결정 관련 자료를 제출하지 않으면 "관세조사 또는 세액심사" 조치가 따르며, 불성실 신고인은 "사전세액심사 대상물품"으로 관리한다고 적는다 `[사실: 관세청 페이지]`. 관세청은 2017년부터 빅데이터 분석을 쓰고 2020년 전사 빅데이터 시스템을 세웠으며 전자상거래 저가 신고에 대응한다고 WCO News에 기고했고 `[사실: WCO News 96]`, 2025-07-30 APEC SCCP에서 "AI-based Risk Management of Korea Customs Service"를 발표했다 `[사실: 발표 자료 제목 슬라이드]`. 곧 kg당 단가는 한국 관세 행정에서 감시 대상인 변수이고, TradeSentry가 잡는 단가 급변은 그 행정 맥락 안의 **공개 통계 쪽** 신호다 `[추론]`. TradeSentry는 관세청 내부의 신고 건 단위 위험관리 시스템이 아니고 그것을 대신하지 않는다.
+3. **공개 통계 체계가 HS10까지 월별로 열려 있다.** 관세청은 수출입무역통계(tradedata.go.kr)에서 품목별·국가별 수출입 통계를 공개하고 `[사실: 수출입무역통계 첫 화면]`, 공공데이터포털 API는 HS10(한국 세분 HSK)까지 준다 `[사실: 15101609 페이지]`. 국제 원천인 BACI는 HS6까지다(용어 설명 "HS 코드"). TradeSentry의 구성효과 분해(`decompose_hs`. 하위 HS10 중량 비중 변화가 평균 단가를 바꾼 몫을 떼는 계산, §6.1)는 HS10 월별 공개라는 한국 통계 구조가 있어야 성립한다. 같은 반대 설명을 HS6까지만 있는 자료로는 할 수 없다 `[추론]`.
+4. **HS 8504는 한국 수입에서 중국 집중이 큰 품목군이다.** 저장소의 BACI 발췌(`data/reference/baci_hs22_v202601_kr_imports_ch85.csv`. CEPII의 조화값, FOB 기준, 천 USD)에서 계산하면 한국의 HS 8504 수입은 2022년 약 32.4억 USD, 2023년 약 35.9억 USD, 2024년 약 36.5억 USD로 85류(전기기기) 수입의 2.8~3.3%이고, 2023년 상대국 상위는 중국 약 15.7억 USD(43.8%), 일본 3.8억, 독일 3.7억, 베트남 2.3억, 미국·필리핀 각 2.0억 USD다. 스냅샷의 HS6 4개 합은 2023년 약 11.5억 USD다 `[사실: 저장소 파일에서 이 절 작성 때 계산. 관세청 CIF 값과는 기준이 달라 규모 감만 준다]`. 한 상대국의 비중이 40%를 넘는 품목군에서는 점유율 변화 신호(§6.1의 d_s)가 공급선 변화를 빨리 드러낸다 `[추론]`. 품목 선정 기준 자체는 규모가 아니라 자료 완전성·정의 안정성·중량 유효성·HS10 접근성이었다(`configs/collection_plan.json` `_selection_rule`).
+5. **담당자의 언어는 한국어다.** 국어기본법 제14조 제1항은 "공공기관등은 공문서등을 일반 국민이 알기 쉬운 용어와 문장으로 써야 하며, 어문규범에 맞추어 한글로 작성하여야 한다"고 정한다 `[사실: CaseNote 법령 페이지]`. 가상의 수혜자가 공공 담당자이므로 보고서는 한국어로 나오고(§7.8), 한국어 품질은 자동 검사와 검토 에이전트 표본 점검으로 따로 봤다(`docs/eval/RESULTS.md` §5.2·§5.3). 영어 중심의 LLM 사실성 연구(§14.1 (가))와 달리 한국어 산문 속 숫자·증감 표현을 결정적 패턴으로 대조하는 채점기(룰북 B3-2)가 필요했다.
+
+단정하지 않는 것: 위 논증은 단가·점유율 급변이 부정·위법·원산지 조작을 뜻한다고 말하지 않는다. 관세청의 가격신고·세액심사 제도를 인용한 것은 단가가 행정에서 다뤄지는 변수임을 보이기 위한 것이며, 특정 거래나 상대국에 대한 판단이 아니다(§12.2).
+
+**출처(14.3)** — 확인 날짜는 모두 2026-09-26(토)
+
+| 제목 | 게시자 | URL | 확인 날짜 |
+|---|---|---|---|
+| 관세청_품목별 국가별 수출입실적(GW) | 공공데이터포털(data.go.kr) / 관세청 | https://www.data.go.kr/data/15100475/openapi.do | 2026-09-26(토) |
+| 관세청_품목별 수출입실적(GW) | 공공데이터포털(data.go.kr) / 관세청 | https://www.data.go.kr/data/15101609/openapi.do | 2026-09-26(토) |
+| 수출입비율(GDP 대비)(e-나라지표, 지표 4207. 2026-06-10 갱신) | 국가데이터처 | https://www.index.go.kr/unify/idx-info.do?idxCd=4207 | 2026-09-26(토) |
+| 수입물품 가격신고 제도 | 관세청 | https://www.customs.go.kr/kcs/cm/cntnts/cntntsView.do?mi=2823&cntntsId=821 | 2026-09-26(토) |
+| 관세청 수출입무역통계(첫 화면) | 관세청 | https://tradedata.go.kr/ | 2026-09-26(토) |
+| Blockchain, artificial intelligence and big data: how Korea Customs Service leverages technology to supervise e-commerce(WCO News 96, 2021-10-24) | World Customs Organization | https://mag.wcoomd.org/magazine/wco-news-96/blockchain-artificial-intelligence-and-big-data-korea/ | 2026-09-26(토) |
+| AI-based Risk Management of Korea Customs Service(2025 APEC SCCP 발표, 2025-07-30. 제목 슬라이드만 읽음) | 관세청 / APEC 문서 보관소 | https://mddb.apec.org/Documents/2025/SCCP/SCCP2/25_sccp2_021.pdf | 2026-09-26(토) |
+| 국어기본법 제14조(공문서등의 작성·평가) | CaseNote(법령 전문 서비스. 국가법령정보센터 원문 페이지는 본문을 받지 못해 이 페이지로 확인) | https://casenote.kr/법령/국어기본법/제14조 | 2026-09-26(토) |
+
 ## 부록 A. Codex 검토 회의 요약
 
 - **일시·방식**: 2026-09-23(수) 23:3x~23:40 KST.

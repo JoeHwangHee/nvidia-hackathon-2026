@@ -18,3 +18,4 @@ TradeSentry의 도메인 규칙은 아래 정본에만 있다. 같은 규칙이 
 | 탐지 임계값과 승격 규칙(빈 응답 달을 무거래 확정 `CONFIRMED_NO_TRADE`로 바꾸는 규칙) 같은 정책 수치(사용자 승인 뒤 동결 판정 정책 `configs/policy_v1.json`) | `docs/plan/DEV_PLAN.md` §6.2, `docs/plan/ROADMAP.md` §6.3 |
 | 평가 자료 묶음, 비교 모드, 대표 지표, 숫자 등급 | `docs/plan/DEV_PLAN.md` §9, `docs/eval/RULEBOOK.md` Part B |
 | 쓰면 안 되는 표현(위법·원인 단정 등)과 정직한 주장 규칙 | `docs/plan/DEV_PLAN.md` §7.2·§12.2 |
+| 문제 설정의 위치: 선행 사례와의 차이, 담당자 업무 흐름에서의 자리, 한국 맥락(무역 의존도·관세청 가격신고 제도·HS10 공개 통계·한국어 공문서) 논증과 출처 | `docs/plan/DEV_PLAN.md` §14 |

@@ -16,6 +16,8 @@ TradeSentry는 관세청 수출입통계 공개 API를 한 시점에 수집해 �
 
 **증명하려는 한 문장**: "Nemotron이 숫자를 직접 쓴 조사 보고서보다, 검증된 값만 틀에 채우고 검증기로 막는 TradeSentry 보고서가 실제 관세청 자료 경보에서 사실 주장 오류율이 낮다." (`docs/eval/RULEBOOK.md` Part B)
 
+선행 사례 조사·도입 시나리오·NVIDIA 생태계 편입 경로·한국 맥락 논증은 `docs/plan/DEV_PLAN.md` §14에 있다.
+
 ## 2. 실행 사슬
 
 ```
