@@ -72,7 +72,7 @@ nvidia-hackathon-2026/
 4. **공용 약속**: 두 트랙이 함께 기대는 약속(자료 형식, 상태값, 기준값, 도구 한도, 품목·국가, 평가 구성, 제출서 주장 문구)은 사용자 승인 없이 바꾸지 않는다. 이름·상태값·키·경로·명령은 `docs/rules/DATA_CONTRACT_V1.md`와 글자까지 같게 쓴다. (`docs/rules/PARALLEL_DEV_RULES.md` §4)
 5. **평가 동결**: 룰북 `RB-1`(평가 룰북의 첫 동결 버전) 동결 뒤에는 채점 규칙을 새 룰북 버전과 사유로만 바꾸고, 결과를 본 뒤 규칙·판정 정책·검증기·채점기를 유리하게 고치지 않는다. 봉인 묶음은 한 번만 채점하고, 실패·시간 초과·무효 실행도 분모에 남긴다. (`docs/eval/RULEBOOK.md` B5·B6)
 
-`main`에는 작업 브랜치 → PR → 검사·검토 → squash 병합(PR의 여러 커밋을 하나로 합쳐 넣는 방식, 조정값)으로만 넣고 직접 push하지 않는다. 원격은 `origin`만 쓴다(2026-09-26(토) 22:53 사용자 지시로 공개 전환, 결정 기록 `20260926-2253-user-decision-public-switch.md`). 병합한 내용은 곧바로 공개되며, 저장소 설정 변경은 사용자가 정한다. (`docs/rules/PARALLEL_DEV_RULES.md` §9, `docs/rules/AGENT_OPS.md` §5)
+`main`에는 작업 브랜치 → PR → 검사·검토 → squash 병합(PR의 여러 커밋을 하나로 합쳐 넣는 방식, 조정값)으로만 넣고 직접 push하지 않는다. 원격은 `origin`만 쓴다(2026-09-26(토) 22:53 사용자 지시로 공개 전환, 결정 기록 `20260926-2253-user-decision-public-switch.md`). 병합한 내용은 곧바로 공개되며, 저장소 설정 변경(공개 범위 포함)은 사용자가 정한다. (`docs/rules/PARALLEL_DEV_RULES.md` §9, `docs/rules/AGENT_OPS.md` §5)
 
 ## 작업 전에 읽을 것
 
