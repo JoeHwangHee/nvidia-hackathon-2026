@@ -1,0 +1,6 @@
+{
+ "snapshot_id": "holdout40",
+ "raw_files": 185,
+ "raw_combined_sha256": "76d3806cbcaf7400993d63c8e26d4a6fc24b90385ac7f8aa02725967b517ddd3",
+ "method": "스냅샷 원천 폴더에서 `shasum -a 256 raw/*.xml | shasum -a 256`"
+}

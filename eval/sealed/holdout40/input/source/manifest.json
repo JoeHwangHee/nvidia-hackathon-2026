@@ -1,0 +1,4741 @@
+{
+ "snapshot_id": "holdout40",
+ "generated_at": "2026-09-25T09:30:00+09:00",
+ "config": {
+  "snapshot_id": "holdout40",
+  "period": {
+   "start": "202201",
+   "end": "202412"
+  },
+  "chunk_months": 12,
+  "hs4_scan": [
+   "8504"
+  ],
+  "hs6": [
+   "850410",
+   "850421",
+   "850423",
+   "850433",
+   "850434",
+   "850440"
+  ],
+  "partners": [
+   "XR",
+   "XS",
+   "XT",
+   "XU",
+   "XV",
+   "XW",
+   "XY",
+   "XZ"
+  ],
+  "collect_total_denominator": true,
+  "hs10": []
+ },
+ "requests": [
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "8504",
+    "cntyCd": "XR"
+   },
+   "request_id": "e9c53a2723a9bc9b",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "8504",
+    "cntyCd": "XR"
+   },
+   "request_id": "5bfbb189f42d2dbd",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "8504",
+    "cntyCd": "XR"
+   },
+   "request_id": "638e6dcf389fb545",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "8504",
+    "cntyCd": "XS"
+   },
+   "request_id": "cbb1c3b7e4eb5e1a",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "8504",
+    "cntyCd": "XS"
+   },
+   "request_id": "bf1ec127cbf9d0df",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "8504",
+    "cntyCd": "XS"
+   },
+   "request_id": "5d73312bd8f01b13",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "8504",
+    "cntyCd": "XT"
+   },
+   "request_id": "14a6e30efb7e61f2",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "8504",
+    "cntyCd": "XT"
+   },
+   "request_id": "7f550c74e00251f1",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "8504",
+    "cntyCd": "XT"
+   },
+   "request_id": "0c0c0e4375ad5d48",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "8504",
+    "cntyCd": "XU"
+   },
+   "request_id": "a0d2c90b5fff27dd",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "8504",
+    "cntyCd": "XU"
+   },
+   "request_id": "b516d7ec9e6fa829",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "8504",
+    "cntyCd": "XU"
+   },
+   "request_id": "cf5a258729bb631e",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "8504",
+    "cntyCd": "XV"
+   },
+   "request_id": "966d7274c8c6b62e",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "8504",
+    "cntyCd": "XV"
+   },
+   "request_id": "9a19c8aa36785f37",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "8504",
+    "cntyCd": "XV"
+   },
+   "request_id": "64887d91036a0217",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "8504",
+    "cntyCd": "XW"
+   },
+   "request_id": "345aedd6e551c2a9",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "8504",
+    "cntyCd": "XW"
+   },
+   "request_id": "24acb7a057be2576",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "8504",
+    "cntyCd": "XW"
+   },
+   "request_id": "f0ef51ea083ed052",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "8504",
+    "cntyCd": "XY"
+   },
+   "request_id": "45ed8396b7797ce9",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "8504",
+    "cntyCd": "XY"
+   },
+   "request_id": "eba8b02b8f2aab2e",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "8504",
+    "cntyCd": "XY"
+   },
+   "request_id": "f258c52adedb922b",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "8504",
+    "cntyCd": "XZ"
+   },
+   "request_id": "4a30c9b6906c33f5",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "8504",
+    "cntyCd": "XZ"
+   },
+   "request_id": "71ac347f3fc4889e",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs4_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "8504",
+    "cntyCd": "XZ"
+   },
+   "request_id": "a2dc60e1865f62b0",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs4_world_total_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "8504"
+   },
+   "request_id": "fbd0f02077b033b3",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs4_world_total_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "8504"
+   },
+   "request_id": "8bfab75ec56cd511",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs4_world_total_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "8504"
+   },
+   "request_id": "df5a804e45201b49",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850410",
+    "cntyCd": "XR"
+   },
+   "request_id": "257386d132abc6a4",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850410",
+    "cntyCd": "XR"
+   },
+   "request_id": "9d2d3c59478c2d56",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850410",
+    "cntyCd": "XR"
+   },
+   "request_id": "91244efedbb805d3",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850410",
+    "cntyCd": "XS"
+   },
+   "request_id": "813dd88b9b760ea6",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850410",
+    "cntyCd": "XS"
+   },
+   "request_id": "0852f0cb00e28814",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850410",
+    "cntyCd": "XS"
+   },
+   "request_id": "af910d634d166eec",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850410",
+    "cntyCd": "XT"
+   },
+   "request_id": "e1357c5b23157c0a",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850410",
+    "cntyCd": "XT"
+   },
+   "request_id": "1c3797bfb2ef56d1",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850410",
+    "cntyCd": "XT"
+   },
+   "request_id": "3d95403f0cf79412",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850410",
+    "cntyCd": "XU"
+   },
+   "request_id": "217af95d7b9b1354",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850410",
+    "cntyCd": "XU"
+   },
+   "request_id": "ea46bfc6a44d07c9",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850410",
+    "cntyCd": "XU"
+   },
+   "request_id": "95b03fced6b1a03a",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850410",
+    "cntyCd": "XV"
+   },
+   "request_id": "ea4605b08527c93c",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850410",
+    "cntyCd": "XV"
+   },
+   "request_id": "e2acafc5ce4135a0",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850410",
+    "cntyCd": "XV"
+   },
+   "request_id": "c5f3ebd7991ad508",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850410",
+    "cntyCd": "XW"
+   },
+   "request_id": "876e48376f3ef546",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850410",
+    "cntyCd": "XW"
+   },
+   "request_id": "9d295f14aa47703e",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850410",
+    "cntyCd": "XW"
+   },
+   "request_id": "8aae3d9576bf6db9",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850410",
+    "cntyCd": "XY"
+   },
+   "request_id": "ae4c108b47f2fa1c",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850410",
+    "cntyCd": "XY"
+   },
+   "request_id": "35bdbbeb316443e4",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850410",
+    "cntyCd": "XY"
+   },
+   "request_id": "5a2c73797d04d571",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850410",
+    "cntyCd": "XZ"
+   },
+   "request_id": "ac5ff2581670843b",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850410",
+    "cntyCd": "XZ"
+   },
+   "request_id": "12a156427284e6a7",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850410",
+    "cntyCd": "XZ"
+   },
+   "request_id": "da505db182db7626",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850410"
+   },
+   "request_id": "51f96b32c876520e",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850410"
+   },
+   "request_id": "1e62a2f2ef99378d",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850410"
+   },
+   "request_id": "425b6cba37918e75",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850421",
+    "cntyCd": "XR"
+   },
+   "request_id": "d42ac42889fb0ca5",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850421",
+    "cntyCd": "XR"
+   },
+   "request_id": "c2adf73f92394be1",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850421",
+    "cntyCd": "XR"
+   },
+   "request_id": "c0e7148840c603d3",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850421",
+    "cntyCd": "XS"
+   },
+   "request_id": "c7562f6b0272bdb4",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850421",
+    "cntyCd": "XS"
+   },
+   "request_id": "4088acb50b12c1f3",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850421",
+    "cntyCd": "XS"
+   },
+   "request_id": "5baccc0c56ad4b66",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850421",
+    "cntyCd": "XT"
+   },
+   "request_id": "b8276d1f8e19fa1f",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850421",
+    "cntyCd": "XT"
+   },
+   "request_id": "1e773d35b782ec11",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850421",
+    "cntyCd": "XT"
+   },
+   "request_id": "40674209130eff80",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850421",
+    "cntyCd": "XU"
+   },
+   "request_id": "053df7ce9bfca86b",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850421",
+    "cntyCd": "XU"
+   },
+   "request_id": "0b267275be7fc4c6",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850421",
+    "cntyCd": "XU"
+   },
+   "request_id": "2ff1e0ab56de4e74",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850421",
+    "cntyCd": "XV"
+   },
+   "request_id": "252c2461f80becc0",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850421",
+    "cntyCd": "XV"
+   },
+   "request_id": "96e133dbbcc344f1",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850421",
+    "cntyCd": "XV"
+   },
+   "request_id": "bd0929e7cb855f02",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850421",
+    "cntyCd": "XW"
+   },
+   "request_id": "66e2d95c200130ac",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850421",
+    "cntyCd": "XW"
+   },
+   "request_id": "6a24b7fdc22ba0ca",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850421",
+    "cntyCd": "XW"
+   },
+   "request_id": "77cf02fc0e2e60d0",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850421",
+    "cntyCd": "XY"
+   },
+   "request_id": "52db2be172556ff0",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850421",
+    "cntyCd": "XY"
+   },
+   "request_id": "d50e341bfaa5626e",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850421",
+    "cntyCd": "XY"
+   },
+   "request_id": "1f05b90125078170",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850421",
+    "cntyCd": "XZ"
+   },
+   "request_id": "2c4d5c345488ad32",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850421",
+    "cntyCd": "XZ"
+   },
+   "request_id": "7d2763049fc837d4",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850421",
+    "cntyCd": "XZ"
+   },
+   "request_id": "87ca2440dba0022f",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850421"
+   },
+   "request_id": "bcf2dc9ea7e87a5e",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850421"
+   },
+   "request_id": "24fae79c5f70bbe4",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850421"
+   },
+   "request_id": "239078dbc218a45a",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850423",
+    "cntyCd": "XR"
+   },
+   "request_id": "fa082fa809fbb560",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850423",
+    "cntyCd": "XR"
+   },
+   "request_id": "8da2cf16ca29c473",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850423",
+    "cntyCd": "XR"
+   },
+   "request_id": "e3b84392ad286d0c",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850423",
+    "cntyCd": "XS"
+   },
+   "request_id": "652271a73ff810f9",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850423",
+    "cntyCd": "XS"
+   },
+   "request_id": "9f2ca58067eb9f1b",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850423",
+    "cntyCd": "XS"
+   },
+   "request_id": "f155a55ed39096ec",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850423",
+    "cntyCd": "XT"
+   },
+   "request_id": "6e13d9fa452c6473",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850423",
+    "cntyCd": "XT"
+   },
+   "request_id": "9ce1e9ea0f62f78f",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850423",
+    "cntyCd": "XT"
+   },
+   "request_id": "35fb12548a6812c3",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850423",
+    "cntyCd": "XU"
+   },
+   "request_id": "b1d98eef7749ee8f",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850423",
+    "cntyCd": "XU"
+   },
+   "request_id": "dffa9803e7629457",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850423",
+    "cntyCd": "XU"
+   },
+   "request_id": "8615bc9b2ca090b9",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850423",
+    "cntyCd": "XV"
+   },
+   "request_id": "4daae2692e1b0565",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850423",
+    "cntyCd": "XV"
+   },
+   "request_id": "3e15adc882a34bbb",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850423",
+    "cntyCd": "XV"
+   },
+   "request_id": "5524b2578d2ecc28",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850423",
+    "cntyCd": "XW"
+   },
+   "request_id": "1e3516645fa37c6f",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850423",
+    "cntyCd": "XW"
+   },
+   "request_id": "d69d3409f0ed74a4",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850423",
+    "cntyCd": "XW"
+   },
+   "request_id": "4a55f0f789d0bce1",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850423",
+    "cntyCd": "XY"
+   },
+   "request_id": "6246eabd85bc0a62",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850423",
+    "cntyCd": "XY"
+   },
+   "request_id": "3f8fbe3243705e2a",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850423",
+    "cntyCd": "XY"
+   },
+   "request_id": "61c954c13c9257ca",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850423",
+    "cntyCd": "XZ"
+   },
+   "request_id": "a4586cce8dc197ef",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850423",
+    "cntyCd": "XZ"
+   },
+   "request_id": "2c3f6764fc2addb3",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850423",
+    "cntyCd": "XZ"
+   },
+   "request_id": "e406dfe19e3cd706",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850423"
+   },
+   "request_id": "82ee49575f9e6b59",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850423"
+   },
+   "request_id": "edfd46b821da56c7",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850423"
+   },
+   "request_id": "536f1f8195362ba1",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850433",
+    "cntyCd": "XR"
+   },
+   "request_id": "31cad3edeaeee810",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850433",
+    "cntyCd": "XR"
+   },
+   "request_id": "5521d22cba9cbad2",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850433",
+    "cntyCd": "XR"
+   },
+   "request_id": "4c1d2f6b6963f1c1",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850433",
+    "cntyCd": "XS"
+   },
+   "request_id": "c36a5abf1b10536e",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850433",
+    "cntyCd": "XS"
+   },
+   "request_id": "28d0885587f269ff",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850433",
+    "cntyCd": "XS"
+   },
+   "request_id": "62cbfb8171406c33",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850433",
+    "cntyCd": "XT"
+   },
+   "request_id": "05d7d88e931901a2",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850433",
+    "cntyCd": "XT"
+   },
+   "request_id": "00e0ba5313dd9a09",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850433",
+    "cntyCd": "XT"
+   },
+   "request_id": "3970e92e361dab5f",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850433",
+    "cntyCd": "XU"
+   },
+   "request_id": "2e77c1ca0221c071",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850433",
+    "cntyCd": "XU"
+   },
+   "request_id": "40bae49faaacb9e4",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850433",
+    "cntyCd": "XU"
+   },
+   "request_id": "1d9cabb2c49500a7",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850433",
+    "cntyCd": "XV"
+   },
+   "request_id": "79ee2a0b599a9699",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850433",
+    "cntyCd": "XV"
+   },
+   "request_id": "9dbf53f87b178212",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850433",
+    "cntyCd": "XV"
+   },
+   "request_id": "583edbd3adbd50e3",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850433",
+    "cntyCd": "XW"
+   },
+   "request_id": "69b9178ac8a9a285",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850433",
+    "cntyCd": "XW"
+   },
+   "request_id": "812e5b4425593803",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850433",
+    "cntyCd": "XW"
+   },
+   "request_id": "db3d445471db4e79",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850433",
+    "cntyCd": "XY"
+   },
+   "request_id": "3884d7b7596ba340",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850433",
+    "cntyCd": "XY"
+   },
+   "request_id": "41411725063503ca",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850433",
+    "cntyCd": "XY"
+   },
+   "request_id": "90679c90286a3dfa",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850433",
+    "cntyCd": "XZ"
+   },
+   "request_id": "e4e185455e635b57",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850433",
+    "cntyCd": "XZ"
+   },
+   "request_id": "9da5234d6fe3746c",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850433",
+    "cntyCd": "XZ"
+   },
+   "request_id": "0152991648a568d0",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850433"
+   },
+   "request_id": "7b872ef7fdb194b2",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850433"
+   },
+   "request_id": "287d3e1793a290a9",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850433"
+   },
+   "request_id": "736c5d3b743539fa",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850434",
+    "cntyCd": "XR"
+   },
+   "request_id": "06d63254931311c6",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850434",
+    "cntyCd": "XR"
+   },
+   "request_id": "8c08ab02534cdb36",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850434",
+    "cntyCd": "XR"
+   },
+   "request_id": "0a4b61da75eaa944",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850434",
+    "cntyCd": "XS"
+   },
+   "request_id": "1cf83e0d35e391cf",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850434",
+    "cntyCd": "XS"
+   },
+   "request_id": "c3b2703669455a2b",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850434",
+    "cntyCd": "XS"
+   },
+   "request_id": "b3dc23c8496358b0",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850434",
+    "cntyCd": "XT"
+   },
+   "request_id": "f8ae72698de91c92",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850434",
+    "cntyCd": "XT"
+   },
+   "request_id": "5281fb208b0fe984",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850434",
+    "cntyCd": "XT"
+   },
+   "request_id": "c938785f821c78db",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850434",
+    "cntyCd": "XU"
+   },
+   "request_id": "294e33210818db4d",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850434",
+    "cntyCd": "XU"
+   },
+   "request_id": "496c599f731e4fc1",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850434",
+    "cntyCd": "XU"
+   },
+   "request_id": "3c9fd337a9351c96",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850434",
+    "cntyCd": "XV"
+   },
+   "request_id": "8366f5b37a114abf",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850434",
+    "cntyCd": "XV"
+   },
+   "request_id": "d96a64e29f5d57b2",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850434",
+    "cntyCd": "XV"
+   },
+   "request_id": "ba549bc3143e085a",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850434",
+    "cntyCd": "XW"
+   },
+   "request_id": "eff4650c67cae6ef",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850434",
+    "cntyCd": "XW"
+   },
+   "request_id": "65e7a82582ddf7f2",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850434",
+    "cntyCd": "XW"
+   },
+   "request_id": "2adf9e5589338e79",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850434",
+    "cntyCd": "XY"
+   },
+   "request_id": "a2f90643daf5dd40",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850434",
+    "cntyCd": "XY"
+   },
+   "request_id": "6c884894fba15efa",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850434",
+    "cntyCd": "XY"
+   },
+   "request_id": "d2221531e6950073",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850434",
+    "cntyCd": "XZ"
+   },
+   "request_id": "a45b024aeb39897f",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850434",
+    "cntyCd": "XZ"
+   },
+   "request_id": "5187a97a14c73d49",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850434",
+    "cntyCd": "XZ"
+   },
+   "request_id": "c16c1785f2c081bb",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850434"
+   },
+   "request_id": "ffed74ae58505af1",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850434"
+   },
+   "request_id": "a08076b7753f8777",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850434"
+   },
+   "request_id": "eecce03ab7ec265a",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850440",
+    "cntyCd": "XR"
+   },
+   "request_id": "7923f2f2ee9bc165",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850440",
+    "cntyCd": "XR"
+   },
+   "request_id": "c7a86d862a5980d0",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850440",
+    "cntyCd": "XR"
+   },
+   "request_id": "6732d295b2cbf0ad",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850440",
+    "cntyCd": "XS"
+   },
+   "request_id": "a2d33ba14718d400",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850440",
+    "cntyCd": "XS"
+   },
+   "request_id": "a64d22e2d22d30d5",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850440",
+    "cntyCd": "XS"
+   },
+   "request_id": "4f55b750b4c6ff3d",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850440",
+    "cntyCd": "XT"
+   },
+   "request_id": "d96fc46720d7bcbd",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850440",
+    "cntyCd": "XT"
+   },
+   "request_id": "8ae48cd8b5e51a21",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850440",
+    "cntyCd": "XT"
+   },
+   "request_id": "3c1f2142aa758963",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850440",
+    "cntyCd": "XU"
+   },
+   "request_id": "c3b55c60cae3b100",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850440",
+    "cntyCd": "XU"
+   },
+   "request_id": "8a09fd1d3ea6d143",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850440",
+    "cntyCd": "XU"
+   },
+   "request_id": "c799a968dd03b51a",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850440",
+    "cntyCd": "XV"
+   },
+   "request_id": "939a3f28789c809b",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850440",
+    "cntyCd": "XV"
+   },
+   "request_id": "2c78d5f63f8ab9eb",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850440",
+    "cntyCd": "XV"
+   },
+   "request_id": "83e9452a4d538fb6",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850440",
+    "cntyCd": "XW"
+   },
+   "request_id": "9c8290dae3880ba3",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850440",
+    "cntyCd": "XW"
+   },
+   "request_id": "86b5d5065952f827",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850440",
+    "cntyCd": "XW"
+   },
+   "request_id": "7acb9bc94cc25331",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850440",
+    "cntyCd": "XY"
+   },
+   "request_id": "bc8b391b853f92a8",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850440",
+    "cntyCd": "XY"
+   },
+   "request_id": "ef1ae36d241fcabd",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850440",
+    "cntyCd": "XY"
+   },
+   "request_id": "faedec459902c2c3",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850440",
+    "cntyCd": "XZ"
+   },
+   "request_id": "c04e07fcb2a9e779",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850440",
+    "cntyCd": "XZ"
+   },
+   "request_id": "b9a5c5b0ba53cab8",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "nitemtrade",
+   "purpose": "hs6_partner_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850440",
+    "cntyCd": "XZ"
+   },
+   "request_id": "e5df2377eb186ff0",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202201",
+    "endYymm": "202212",
+    "hsSgn": "850440"
+   },
+   "request_id": "9eba0e4d44afc6f5",
+   "months": [
+    "202201",
+    "202202",
+    "202203",
+    "202204",
+    "202205",
+    "202206",
+    "202207",
+    "202208",
+    "202209",
+    "202210",
+    "202211",
+    "202212"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202301",
+    "endYymm": "202312",
+    "hsSgn": "850440"
+   },
+   "request_id": "c6d7e953998a23e6",
+   "months": [
+    "202301",
+    "202302",
+    "202303",
+    "202304",
+    "202305",
+    "202306",
+    "202307",
+    "202308",
+    "202309",
+    "202310",
+    "202311",
+    "202312"
+   ]
+  },
+  {
+   "endpoint": "itemtrade",
+   "purpose": "hs6_world_total_monthly",
+   "params": {
+    "strtYymm": "202401",
+    "endYymm": "202412",
+    "hsSgn": "850440"
+   },
+   "request_id": "795c957a0f7a26bb",
+   "months": [
+    "202401",
+    "202402",
+    "202403",
+    "202404",
+    "202405",
+    "202406",
+    "202407",
+    "202408",
+    "202409",
+    "202410",
+    "202411",
+    "202412"
+   ]
+  }
+ ]
+}

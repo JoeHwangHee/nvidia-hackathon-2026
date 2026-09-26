@@ -1,0 +1,1121 @@
+{
+ "schema_version": 2,
+ "dataset": "holdout40",
+ "snapshot_id": "holdout40",
+ "policy_version": "policy_v1",
+ "thresholds": {
+  "unit_value": 30,
+  "share": 10
+ },
+ "cases": [
+  {
+   "case_id": "850410-XR-202402",
+   "scenario_class": 1,
+   "parent_series_id": "ps_b2aba112e7338f41",
+   "rule": {
+    "unit_value": "composition_explained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MONITOR",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "per_child_unit_value_stable",
+     "comparability_ok"
+    ]
+   },
+   "note": "하위 단가(15·3) 그대로, 싼 품목 중량 비중이 65%에서 89%로 늘어 부모 단가 약 -40%"
+  },
+  {
+   "case_id": "850410-XS-202403",
+   "scenario_class": 8,
+   "parent_series_id": "ps_68f8bac72f8a15c2",
+   "rule": {
+    "unit_value": null,
+    "share": "unexplained"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "MAINTAIN"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "country_and_world_change_shown",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국 금액·단가는 그대로, 다른 상대국과 나머지 세계 물량이 65% 줄어 분모가 작아짐(점유율 상승)"
+  },
+  {
+   "case_id": "850410-XT-202404",
+   "scenario_class": 2,
+   "parent_series_id": "ps_ea5fe6e5a88a46e8",
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "비싼 하위품목 단가 -45%, 싼 품목 +5%. 구성효과를 빼도 약 -35% 남음"
+  },
+  {
+   "case_id": "850410-XU-202405",
+   "scenario_class": 3,
+   "parent_series_id": "ps_4abd953e964c0090",
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국 하위 단가 +50%·+30%. 같은 달 비교국과 나머지 세계 단가도 약 +22%(기준 아래)로 함께 오름"
+  },
+  {
+   "case_id": "850410-XV-202406",
+   "scenario_class": 8,
+   "parent_series_id": "ps_a23b7d80f9b64f47",
+   "rule": {
+    "unit_value": null,
+    "share": "unexplained"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "MAINTAIN"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "country_and_world_change_shown",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국 물량이 2.6배로 늘어(하위 단가 거의 그대로) 점유율 상승. 분모 완전"
+  },
+  {
+   "case_id": "850410-XW-202407",
+   "scenario_class": 6,
+   "parent_series_id": "ps_057d9eaf3b79c5c5",
+   "rule": {
+    "unit_value": "hold_inconsistent",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "기준월 하위품목 하나가 금액 240 USD·중량 0 kg이라 그 품목 단가 계산 불가 -> 분해 불가. 부모 단가 약 +40%"
+  },
+  {
+   "case_id": "850410-XY-202408",
+   "scenario_class": 2,
+   "parent_series_id": "ps_d918dd6074947209",
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "하위 단가 +50%·+40%에 비중이 조금 옮음. 단가 약 +41% 대부분이 within"
+  },
+  {
+   "case_id": "850421-XR-202402",
+   "scenario_class": 8,
+   "parent_series_id": "ps_e0a06d26de28de6a",
+   "rule": {
+    "unit_value": null,
+    "share": "unexplained"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "MAINTAIN"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "country_and_world_change_shown",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국 금액은 그대로인데 수집하지 않은 나라들(나머지 세계) 수입이 4.5배로 늘어 분모가 커짐(점유율 하락)"
+  },
+  {
+   "case_id": "850421-XS-202409",
+   "scenario_class": 8,
+   "parent_series_id": "ps_2797f18bdfe106e6",
+   "rule": {
+    "unit_value": null,
+    "share": "unexplained"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "MAINTAIN"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "country_and_world_change_shown",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국 물량이 88% 줄어(하위 단가 그대로) 점유율 하락. 분모 완전"
+  },
+  {
+   "case_id": "850421-XT-202410",
+   "scenario_class": 10,
+   "parent_series_id": "ps_15fb1c4bfeeae9eb",
+   "rule": {
+    "unit_value": "composition_explained",
+    "share": "unexplained"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "MAINTAIN"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": {
+     "unit_value": [
+      "parent_child_match_V_and_Q",
+      "weight_share_decomposition",
+      "per_child_unit_value_stable",
+      "comparability_ok"
+     ],
+     "share": [
+      "country_and_world_change_shown",
+      "partner_comparison_done",
+      "comparability_ok"
+     ]
+    }
+   },
+   "note": "단가: 하위 단가(20·3) 그대로, 비싼 품목 물량이 3배로 늘어 부모 단가 약 +58%(구성효과). 점유율: 금액 2.4배로 상승"
+  },
+  {
+   "case_id": "850421-XU-202411",
+   "scenario_class": 10,
+   "parent_series_id": "ps_b1cf31b0e29dcf29",
+   "rule": {
+    "unit_value": "hold_inconsistent",
+    "share": "unexplained"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "MAINTAIN"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": true,
+    "required_evidence": {
+     "unit_value": [
+      "parent_child_match_V_and_Q",
+      "comparability_ok",
+      "no_zero_fill"
+     ],
+     "share": [
+      "country_and_world_change_shown",
+      "partner_comparison_done",
+      "comparability_ok"
+     ]
+    }
+   },
+   "note": "단가: 비교월에 3010이 없고 3090이 그 달에만 나옴 -> HS10 집합이 달라 분해 불가(부모 단가 약 +59%). 점유율: 금액이 크게 늘어 상승, 분모 완전"
+  },
+  {
+   "case_id": "850421-XV-202405",
+   "scenario_class": 4,
+   "parent_series_id": "ps_ec50ab59ac794362",
+   "rule": {
+    "unit_value": "hold_missing",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "missingness_listed",
+     "failure_vs_not_collected_distinguished",
+     "no_zero_fill"
+    ]
+   },
+   "note": "부모 HS6 단가 약 -40.5%. 기준월 연도의 대상국 HS10 조회 실패(REQUEST_FAILED) -> 분해 불가"
+  },
+  {
+   "case_id": "850421-XW-202406",
+   "scenario_class": 1,
+   "parent_series_id": "ps_67ce96d67aa25596",
+   "rule": {
+    "unit_value": "composition_explained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MONITOR",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "per_child_unit_value_stable",
+     "comparability_ok"
+    ]
+   },
+   "note": "하위품목 셋의 단가(22·11·4) 그대로, 싼 품목 중량 비중이 50%에서 81%로 늘어 부모 단가 약 -39%"
+  },
+  {
+   "case_id": "850421-XY-202407",
+   "scenario_class": 2,
+   "parent_series_id": "ps_e4d1bf1512dfb5ef",
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "하위 단가 +60%·+20%, 비중 그대로. 단가 약 +47%가 모두 within"
+  },
+  {
+   "case_id": "850423-XR-202403",
+   "scenario_class": 7,
+   "parent_series_id": "ps_d087e49fcb0343d4",
+   "rule": {
+    "unit_value": null,
+    "share": "hold_inconsistent"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "HOLD"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "country_and_world_change_shown",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "비교월 전체국가 분모 31,000 USD가 대상국 금액 36,000 USD보다 작음(점유율 100% 초과). 대상국 금액·단가 그대로"
+  },
+  {
+   "case_id": "850423-XS-202404",
+   "scenario_class": 1,
+   "parent_series_id": "ps_aee6c43bb9feac58",
+   "rule": {
+    "unit_value": "composition_explained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MONITOR",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "per_child_unit_value_stable",
+     "comparability_ok"
+    ]
+   },
+   "note": "하위품목 넷의 단가(15·9·5·2) 그대로, 비싼 품목 쪽으로 비중이 옮아 부모 단가 약 +46%"
+  },
+  {
+   "case_id": "850423-XT-202406",
+   "scenario_class": 3,
+   "parent_series_id": "ps_1642353aa8bfc270",
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국 하위 단가 -50%·-30%(부모 약 -41%). 같은 달 큰 공급국 포함 비교국 단가도 약 -20%로 함께 내림"
+  },
+  {
+   "case_id": "850423-XU-202407",
+   "scenario_class": 5,
+   "parent_series_id": "ps_153e69d12c7bfbdb",
+   "rule": {
+    "unit_value": "hold_inconsistent",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "비교월 부모 HS6 금액 2,130 USD와 HS10 하위 합 2,030 USD가 다름(금액 정확 일치 위반). 부모 단가 약 +52%"
+  },
+  {
+   "case_id": "850423-XV-202408",
+   "scenario_class": 6,
+   "parent_series_id": "ps_6d6d82c55ebcb3c7",
+   "rule": {
+    "unit_value": "rounding_unstable",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "precision_sensitivity_shown"
+    ]
+   },
+   "note": "기준월 156 USD·12 kg, 비교월 211 USD·12 kg(단가 약 +35.3%). 두 달 부모 중량을 ±0.5 kg 움직이면 구간 하한 약 +24.4%가 기준 30% 아래(반올림 불안정). 최소 기준은 넘음"
+  },
+  {
+   "case_id": "850423-XW-202409",
+   "scenario_class": 2,
+   "parent_series_id": "ps_0e4f8a8ea05ce4e3",
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "비싼 하위품목 단가 +40%, 싼 품목 +20%, 비중도 비싼 쪽으로 옮음. within만 약 +34%"
+  },
+  {
+   "case_id": "850423-XY-202410",
+   "scenario_class": 4,
+   "parent_series_id": "ps_1e394410f963ead6",
+   "rule": {
+    "unit_value": "hold_missing",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "missingness_listed",
+     "failure_vs_not_collected_distinguished",
+     "no_zero_fill"
+    ]
+   },
+   "note": "부모 HS6 단가 약 +41.5%. 비교월 연도의 대상국 HS10 조회가 수집되지 않음(NOT_COLLECTED) -> 분해 불가"
+  },
+  {
+   "case_id": "850433-XR-202405",
+   "scenario_class": 9,
+   "parent_series_id": "ps_b8f448a0667105d6",
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국의 이 HS6는 그 나라 8504 수입의 작은 부분이라 HS4 합계로 보면 단가 변화가 작아 보임(범위 함정). 사례 범위(HS6)에서는 하위 단가 +50%·+25%로 약 +44%"
+  },
+  {
+   "case_id": "850433-XS-202304",
+   "scenario_class": 7,
+   "parent_series_id": "ps_e68069ff17e8368b",
+   "rule": {
+    "unit_value": null,
+    "share": "hold_inconsistent"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "HOLD"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "country_and_world_change_shown",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "기준월 전체국가 분모 22,000 USD가 대상국 금액 27,600 USD보다 작음(기준월 점유율 100% 초과). 비교월은 정상"
+  },
+  {
+   "case_id": "850433-XT-202406",
+   "scenario_class": 1,
+   "parent_series_id": "ps_983feb1aef16e02a",
+   "rule": {
+    "unit_value": "composition_explained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MONITOR",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "per_child_unit_value_stable",
+     "comparability_ok"
+    ]
+   },
+   "note": "하위품목 셋의 단가(20·10·5) 그대로, 금액 합은 같고 싼 품목 쪽으로 비중이 옮아 부모 단가 약 -36%"
+  },
+  {
+   "case_id": "850433-XU-202407",
+   "scenario_class": 6,
+   "parent_series_id": "ps_e2591441835f8f24",
+   "rule": {
+    "unit_value": "hold_inconsistent",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "비교월 하위품목 하나가 금액 160 USD·중량 0 kg -> 분해 불가. 부모 단가 약 +61%"
+  },
+  {
+   "case_id": "850433-XV-202408",
+   "scenario_class": 5,
+   "parent_series_id": "ps_f7b2c56074b0ce04",
+   "rule": {
+    "unit_value": "hold_inconsistent",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "HSK 개정 흔적: 2024년 1월부터 하위 코드 3010이 사라지고 3050이 새로 나옴 -> 기준월과 비교월의 HS10 집합이 달라 분해 불가. 부모 단가 약 +41.5%"
+  },
+  {
+   "case_id": "850433-XW-202409",
+   "scenario_class": 4,
+   "parent_series_id": "ps_8c45c9b4f89e1d30",
+   "rule": {
+    "unit_value": "hold_missing",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "missingness_listed",
+     "failure_vs_not_collected_distinguished",
+     "no_zero_fill"
+    ]
+   },
+   "note": "부모 HS6 단가 약 -40.5%. 비교월 연도의 대상국 HS10 조회 실패(REQUEST_FAILED) -> 분해 불가"
+  },
+  {
+   "case_id": "850433-XZ-202410",
+   "scenario_class": 2,
+   "parent_series_id": "ps_01f1d04caeb996f9",
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "비싼 하위품목 단가 -45%, 싼 품목 -8%, 비중 그대로. 단가 약 -34.7%가 모두 within"
+  },
+  {
+   "case_id": "850434-XS-202403",
+   "scenario_class": 9,
+   "parent_series_id": "ps_e7dbc32b69b0c55b",
+   "rule": {
+    "unit_value": "composition_explained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MONITOR",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "per_child_unit_value_stable",
+     "comparability_ok"
+    ]
+   },
+   "note": "범위 함정: 이 나라 8504 합계로 보면 단가 변화가 작음. 사례 범위(HS6)에서는 하위 단가(18·3) 그대로, 싼 품목 비중이 늘어 부모 단가 약 -40%"
+  },
+  {
+   "case_id": "850434-XT-202402",
+   "scenario_class": 7,
+   "parent_series_id": "ps_8ee812e36d91cca9",
+   "rule": {
+    "unit_value": null,
+    "share": "hold_inconsistent"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "HOLD"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "country_and_world_change_shown",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "비교월 전체국가 분모에 하위 코드 하나(3010)가 빠져 25,000 USD로 대상국 금액 30,000 USD보다 작음"
+  },
+  {
+   "case_id": "850434-XU-202405",
+   "scenario_class": 3,
+   "parent_series_id": "ps_a3c7b0619f9d43a5",
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국 하위 단가 -44%·-35%(부모 약 -41%). 같은 달 비교국과 나머지 세계 단가도 약 -23%로 함께 내림"
+  },
+  {
+   "case_id": "850434-XV-202406",
+   "scenario_class": 5,
+   "parent_series_id": "ps_21aa6cf5d5d92423",
+   "rule": {
+    "unit_value": "hold_inconsistent",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "비교월에 2010이 없고 5090이 그 달에만 나옴 -> HS10 집합이 달라 분해 불가. 부모 단가 약 +45%"
+  },
+  {
+   "case_id": "850434-XW-202407",
+   "scenario_class": 6,
+   "parent_series_id": "ps_ceb3fc2a6a040fa4",
+   "rule": {
+    "unit_value": "rounding_unstable",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "precision_sensitivity_shown"
+    ]
+   },
+   "note": "기준월 240 USD·12 kg, 비교월 156 USD·12 kg(단가 -35%). 두 달 부모 중량을 ±0.5 kg 움직이면 구간 상한 약 -29.4%가 -30%보다 큼(반올림 불안정). 최소 기준은 넘음"
+  },
+  {
+   "case_id": "850434-XY-202408",
+   "scenario_class": 1,
+   "parent_series_id": "ps_b9f086e6daa53e91",
+   "rule": {
+    "unit_value": "composition_explained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MONITOR",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "per_child_unit_value_stable",
+     "comparability_ok"
+    ]
+   },
+   "note": "하위품목 셋의 단가(25·9·3) 그대로, 가장 싼 품목 비중이 56%에서 77%로 늘어 부모 단가 -40%"
+  },
+  {
+   "case_id": "850440-XR-202404",
+   "scenario_class": 1,
+   "parent_series_id": "ps_5b0dd64418a3cec1",
+   "rule": {
+    "unit_value": "composition_explained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MONITOR",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MONITOR",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "per_child_unit_value_stable",
+     "comparability_ok"
+    ]
+   },
+   "note": "하위 단가(20·6) 그대로, 비싼 품목 비중이 31%에서 64%로 늘어 부모 단가 +45%"
+  },
+  {
+   "case_id": "850440-XS-202405",
+   "scenario_class": 2,
+   "parent_series_id": "ps_94c3f8faff31f51e",
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "비싼 하위품목 단가 +50%, 싼 품목 +12%. 구성효과를 빼도 약 +40% 남음"
+  },
+  {
+   "case_id": "850440-XT-202406",
+   "scenario_class": 3,
+   "parent_series_id": "ps_f64b2e89fa64deb3",
+   "rule": {
+    "unit_value": "unexplained",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "MAINTAIN",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "MAINTAIN",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "weight_share_decomposition",
+     "partner_comparison_done",
+     "comparability_ok"
+    ]
+   },
+   "note": "대상국 하위 단가 +45%·+35%(부모 +41%). 같은 달 큰 공급국 포함 비교국 단가도 약 +22%로 함께 오름"
+  },
+  {
+   "case_id": "850440-XU-202403",
+   "scenario_class": 7,
+   "parent_series_id": "ps_db85e3418093c6df",
+   "rule": {
+    "unit_value": null,
+    "share": "hold_inconsistent"
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "NOT_TRIGGERED",
+     "share": "HOLD"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "country_and_world_change_shown",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "대상국 물량이 1.25배(단가 그대로)로 늘었는데 비교월 전체국가 분모 29,000 USD가 대상국 금액 30,000 USD보다 작음"
+  },
+  {
+   "case_id": "850440-XV-202407",
+   "scenario_class": 4,
+   "parent_series_id": "ps_a2cbb7e96c4b5d0e",
+   "rule": {
+    "unit_value": "hold_missing",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "missingness_listed",
+     "failure_vs_not_collected_distinguished",
+     "no_zero_fill"
+    ]
+   },
+   "note": "부모 HS6 단가 약 +38%. 기준월 연도의 대상국 HS10 조회가 수집되지 않음(NOT_COLLECTED) -> 분해 불가"
+  },
+  {
+   "case_id": "850440-XW-202408",
+   "scenario_class": 5,
+   "parent_series_id": "ps_b652bea361352cf9",
+   "rule": {
+    "unit_value": "hold_inconsistent",
+    "share": null
+   },
+   "expected": {
+    "signals": {
+     "unit_value": "TRIGGERED",
+     "share": "NOT_TRIGGERED"
+    },
+    "signal_status": {
+     "unit_value": "HOLD",
+     "share": "NOT_TRIGGERED"
+    },
+    "review_status": "HOLD",
+    "unresolved_evidence": false,
+    "required_evidence": [
+     "parent_child_match_V_and_Q",
+     "comparability_ok",
+     "no_zero_fill"
+    ]
+   },
+   "note": "기준월 부모 HS6 중량 150 kg와 HS10 하위 합 165 kg의 차이가 허용오차(0.5 kg x 3)를 넘음. 부모 단가 약 +40%"
+  }
+ ]
+}
