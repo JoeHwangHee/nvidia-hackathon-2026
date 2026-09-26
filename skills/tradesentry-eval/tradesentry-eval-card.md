@@ -54,10 +54,10 @@ Mitigation: Review and scan skill before deployment. <br>
 (위 목록은 skills/tradesentry-eval/SKILL.md 본문이 가리키는 문서다 `[사실: skills/tradesentry-eval/SKILL.md]`. 각 문서의 절 표시는 SKILL.md가 가리키는 곳이다.) <br>
 
 ## Skill Output(스킬 출력): <br>
-**Output Type(s):** [Shell commands, Files, Analysis] `[추론: 생성기 스타일 가이드의 분류 어휘로 분류 `[사실: NVIDIA/skills skill-card-generator references/skill-card.md.j2·references/style-guide.md (커밋 2a23a90)]`]` <br>
+**Output Type(s):** [Shell commands, Files, Analysis] `[추론: 생성기 스타일 가이드의 분류 어휘로 분류]` `[사실: NVIDIA/skills skill-card-generator references/skill-card.md.j2·references/style-guide.md (커밋 2a23a90)]` <br>
 **Output Format:** [JSONL(채점기 결과 `scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`)와 Markdown(결과 요약 `scorer_summary-{시각}.md`, 결정 기록)] `[사실: skills/tradesentry-eval/SKILL.md "채점"의 산출물 표]` <br>
-**Output Parameters:** [1D] `[추론: 생성기 스타일 가이드의 분류 어휘로 분류 `[사실: NVIDIA/skills skill-card-generator references/skill-card.md.j2·references/style-guide.md (커밋 2a23a90)]`]` <br>
-**Other Properties Related to Output:** [채점 대상 실행의 도메인 출력은 실행 폴더 `outputs/{실행명}/`(봉인 묶음은 `outputs/sealed/{실행명}/`)에 남고 커밋하지 않는다. 채점기는 자기 출력을 `outputs/score-{시각}/`에 쓰고, 그 `scorer_*` 파일과 재채점용 보고서 원문(`{run_id}/` 아래 허용 목록 파일)만 `artifacts/eval/score-{시각}/`로 증거 복사해 커밋한다. 실패·미실행·timeout·invalid도 분모에 남긴다. 봉인 묶음 출력과 그 채점기 출력은 금지 해제 조건(자료 계약 §10.3 N10) 전에는 열지 않고 커밋하지 않는다. 봉인 사건(해시 대조·반입·실행 시작·채점 시작·채점 완료 등)은 결정 기록에 날짜·주체·파일 수·해시 대조 결과로 남기고 봉인 자료 내용은 적지 않는다] `[사실: skills/tradesentry-eval/SKILL.md "이름과 출력 위치"·"채점"의 산출물 표·"보고와 커밋"]` <br>
+**Output Parameters:** [1D] `[추론: 생성기 스타일 가이드의 분류 어휘로 분류]` `[사실: NVIDIA/skills skill-card-generator references/skill-card.md.j2·references/style-guide.md (커밋 2a23a90)]` <br>
+**Other Properties Related to Output:** [채점 대상 실행의 도메인 출력은 실행 폴더 `outputs/{실행명}/`(봉인 묶음은 자료 계약 §10.3 N10이 정한 봉인 출력 자리)에 남고 커밋하지 않는다. 채점기는 자기 출력을 `outputs/score-{시각}/`에 쓰고, 그 `scorer_*` 파일과 재채점용 보고서 원문(`{run_id}/` 아래 허용 목록 파일)만 `artifacts/eval/score-{시각}/`로 증거 복사해 커밋한다. 실패·미실행·timeout·invalid도 분모에 남긴다. 봉인 묶음 출력과 그 채점기 출력은 금지 해제 조건(자료 계약 §10.3 N10) 전에는 열지 않고 커밋하지 않는다. 봉인 사건(해시 대조·반입·실행 시작·채점 시작·채점 완료 등)은 결정 기록에 날짜·주체·파일 수·해시 대조 결과로 남기고 봉인 자료 내용은 적지 않는다] `[사실: skills/tradesentry-eval/SKILL.md "이름과 출력 위치"·"채점"의 산출물 표·"보고와 커밋"]` <br>
 
 ## Skill Version(s)(스킬 버전): <br>
 0.1.0 (source: pyproject.toml, 저장소 판) · c557540 (source: git SHA, `SKILL.md` 마지막 변경 커밋, committed 2026-09-26) `[사실: pyproject.toml의 version, git log -1 -- skills/tradesentry-eval/SKILL.md]` <br>

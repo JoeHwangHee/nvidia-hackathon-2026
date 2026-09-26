@@ -53,9 +53,9 @@ Mitigation: Review and scan skill before deployment. <br>
 (위 목록은 skills/tradesentry-scorecard/SKILL.md 본문이 가리키는 문서다 `[사실: skills/tradesentry-scorecard/SKILL.md]`. 각 문서의 절 표시는 SKILL.md가 가리키는 곳이다.) <br>
 
 ## Skill Output(스킬 출력): <br>
-**Output Type(s):** [Files, Analysis] `[추론: 생성기 스타일 가이드의 분류 어휘로 분류 `[사실: NVIDIA/skills skill-card-generator references/skill-card.md.j2·references/style-guide.md (커밋 2a23a90)]`]` <br>
+**Output Type(s):** [Files, Analysis] `[추론: 생성기 스타일 가이드의 분류 어휘로 분류]` `[사실: NVIDIA/skills skill-card-generator references/skill-card.md.j2·references/style-guide.md (커밋 2a23a90)]` <br>
 **Output Format:** [Markdown] `[사실: skills/tradesentry-scorecard/SKILL.md "출력"]` <br>
-**Output Parameters:** [1D] `[추론: 생성기 스타일 가이드의 분류 어휘로 분류 `[사실: NVIDIA/skills skill-card-generator references/skill-card.md.j2·references/style-guide.md (커밋 2a23a90)]`]` <br>
+**Output Parameters:** [1D] `[추론: 생성기 스타일 가이드의 분류 어휘로 분류]` `[사실: NVIDIA/skills skill-card-generator references/skill-card.md.j2·references/style-guide.md (커밋 2a23a90)]` <br>
 **Other Properties Related to Output:** [회차마다 새 실행 폴더 `outputs/scorecard-{시각}/`를 배타 생성(이미 있으면 실패하는 방식)해 `scorecard-{시각}.md` 한 파일을 쓰고(덮어쓰기 금지), 비밀값·로컬 경로 검사를 통과한 그 파일만 같은 이름의 폴더 `artifacts/scorecard/scorecard-{시각}/`로 증거 복사해 커밋한다. 양식은 룰북 A3 "자기채점 결과 파일 양식"이고 점수는 0/1/3/5만 쓴다. 게이트 FAIL이 있으면 머리 정보·게이트·해소 조건만 남긴다] `[사실: skills/tradesentry-scorecard/SKILL.md "출력"·"9단계. 저장과 커밋"]` <br>
 
 ## Skill Version(s)(스킬 버전): <br>

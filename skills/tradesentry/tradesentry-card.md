@@ -52,9 +52,9 @@ Mitigation: Review and scan skill before deployment. <br>
 (위 목록은 skills/tradesentry/SKILL.md 본문이 가리키는 문서다 `[사실: skills/tradesentry/SKILL.md]`. 각 문서의 절 표시는 SKILL.md가 가리키는 곳이다.) <br>
 
 ## Skill Output(스킬 출력): <br>
-**Output Type(s):** [Shell commands, Files] `[추론: 생성기 스타일 가이드의 분류 어휘로 분류 `[사실: NVIDIA/skills skill-card-generator references/skill-card.md.j2·references/style-guide.md (커밋 2a23a90)]`]` <br>
+**Output Type(s):** [Shell commands, Files] `[추론: 생성기 스타일 가이드의 분류 어휘로 분류]` `[사실: NVIDIA/skills skill-card-generator references/skill-card.md.j2·references/style-guide.md (커밋 2a23a90)]` <br>
 **Output Format:** [CLI 표준 출력·표준 오류·종료 코드를 그대로 전달. 읽는 결과 파일은 JSON(실행 결과 기록 `runlog_run_record-{시각}.json`, 보고서 `reports_render_ko-{시각}.json`)] `[사실: skills/tradesentry/SKILL.md "할 일" 3·4]` <br>
-**Output Parameters:** [1D] `[추론: 생성기 스타일 가이드의 분류 어휘로 분류 `[사실: NVIDIA/skills skill-card-generator references/skill-card.md.j2·references/style-guide.md (커밋 2a23a90)]`]` <br>
+**Output Parameters:** [1D] `[추론: 생성기 스타일 가이드의 분류 어휘로 분류]` `[사실: NVIDIA/skills skill-card-generator references/skill-card.md.j2·references/style-guide.md (커밋 2a23a90)]` <br>
 **Other Properties Related to Output:** [CLI가 샌드박스 안 `/sandbox/outputs/{실행명}/`에 `{도메인명}-{시각}.{확장자}`로 쓴 파일 가운데 실행 결과 기록과 보고서(실행이 `COMPLETED`일 때만)만 읽고, trace(`runlog_trace-{시각}.jsonl`)와 NAT 폴더(`workflow_nat_wrap-{시각}`)는 열지 않는다. 값·숫자·상태값을 고치거나 다시 계산하거나 요약하면서 바꾸지 않고, 설명은 보고서 밖에 "스킬 설명"이라고 밝혀 한두 문장만 덧붙인다. 요청마다 CLI를 실제로 불렀는지(명령 이름)와 `run-case`의 `execution_status`를 답 끝에 한 줄로 남긴다(스킬 호출 성공률의 근거). 샌드박스 밖 `outputs/{실행명}/`으로의 내려받기는 이 스킬이 하지 않는다] `[사실: skills/tradesentry/SKILL.md "할 일" 2~7]` <br>
 
 ## Skill Version(s)(스킬 버전): <br>
