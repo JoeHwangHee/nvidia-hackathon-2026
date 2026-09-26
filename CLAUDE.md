@@ -38,7 +38,8 @@ nvidia-hackathon-2026/
 │   └── tracking/
 │       ├── status.md                  ← 지금 된 것, 남은 일, 사용자 결정 대기
 │       ├── decisions/                 ← 결정 기록과 색인 index.md(2026-09-23(수) 설계 세션의 결정은 개발 플랜 §13)
-│       └── findings.md                ← 지금 풀 수 없는 문제
+│       ├── findings.md                ← 지금 풀 수 없는 문제
+│       └── journal.md                 ← 기획·개발 일지: 주제 선정부터 공개까지 시간순 결정·대안·이유(결정 기록·PR·대화 기록 종합. 정본은 결정 기록과 계획 문서)
 ├── skills/
 │   ├── tradesentry-scorecard/SKILL.md ← 평가 스킬 ①: 룰북 Part A로 자기채점
 │   ├── tradesentry-eval/SKILL.md      ← 평가 스킬 ②: 룰북 Part B 성능 평가 실행
