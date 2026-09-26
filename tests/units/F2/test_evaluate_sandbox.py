@@ -121,6 +121,8 @@ class SandboxRunnerTest(FakeOpenShell, unittest.TestCase):
             self.assertEqual(options["--run-name"], run_id)  # 호스트가 확보한 실행명을 넘긴다(사용자 결정 10)
             self.assertEqual((options["--snapshot"], options["--policy"], options["--mode"]), ("dev20", "dev-0.1",
                                                                                                 "checklist"))
+            self.assertNotIn("--sealed", argv)  # 개발 묶음(evaluate)은 run-case의 봉인 실행 경로를 고르지 않는다(FIX1)
+            self.assertEqual(argv[-2:], ["--run-name", run_id])
         checks = [c["argv"] for c in calls if "sh" in c["argv"]]
         self.assertEqual(checks[0][-1], f"test -d /sandbox/outputs/{run_ids[0]} && ! test -L "
                                         f"/sandbox/outputs/{run_ids[0]} && ! test -L /sandbox/outputs")

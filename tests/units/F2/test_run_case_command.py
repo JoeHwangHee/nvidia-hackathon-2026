@@ -412,6 +412,55 @@ class TwoDirectionTest(RunCaseBase):
         self.assertEqual(report["validator_findings"], [])
 
 
+class SealedFlagTest(RunCaseBase):
+    """--sealed(봉인 묶음의 공식 채점 대상 실행 경로, 단위 E2만 준다): 두 신호 스냅샷을 봉인 묶음 표(SEALED_RUN_CASE_DATASETS)에서
+    holdout40에 대응시켜 돌린다. 옵션 없이 같은 스냅샷은 RUN_CASE_DATASETS에 없어 기존 거부 그대로다(개발 보호). 이 시험은 고치기
+    전 코드(--sealed 없음)에서 실패해야 하는 회귀 시험이다(FIX1)."""
+
+    def setUp(self):
+        super().setUp()
+        patcher = mock.patch.dict(dispatch.SEALED_RUN_CASE_DATASETS, {rf.TWO_WAY_ID: "holdout40"})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_sealed_flag_maps_the_snapshot_to_holdout40(self):
+        code, out, err = call(argv(rf.UNIT_ONLY_PROBLEM, "checklist", snapshot_id=rf.TWO_WAY_ID) + ["--sealed"])
+        self.assertEqual((code, err), (0, ""), err)
+        files = self.files(out)
+        record = self.read_json(files["runlog_run_record"])
+        self.assertEqual((record["dataset"], record["execution_status"], record["grouping_version"], record["case_id"]),
+                         ("holdout40", cause_codes.COMPLETED, "g0", rf.UNIT_ONLY_PROBLEM))
+        self.assertEqual(sorted(record), sorted(RUN_RECORD_KEYS))  # 실행 쪽 키 21개 형식은 그대로다
+
+    def test_without_the_flag_the_same_snapshot_is_still_refused(self):
+        code, out, err = call(argv(rf.UNIT_ONLY_PROBLEM, "checklist", snapshot_id=rf.TWO_WAY_ID))
+        self.assertEqual((code, out), (1, ""))
+        self.assertIn("자료 묶음(dataset)을 정하지 못했다(RUN_CASE_DATASETS에 없다)", err)
+
+    def test_sealed_flag_takes_only_sealed_synthetic_snapshots(self):
+        """controlled_fixture_v0는 개발 표(RUN_CASE_DATASETS)에만 있으므로 --sealed로는 거부한다(빈 실행 폴더만 남는다)."""
+        code, out, err = call(argv(CASES["A"], "checklist") + ["--sealed"])
+        self.assertEqual((code, out), (1, ""))
+        self.assertIn("--sealed는 봉인 묶음의 합성 스냅샷(holdout40)만 받는다", err)
+        [run_dir] = list(self.outputs.iterdir())
+        self.assertEqual(list(run_dir.iterdir()), [])
+
+
+
+class SealedDatasetTableTest(unittest.TestCase):
+    """정합(상수 대조, 대역 없음): types.SEALED_DATASETS의 모든 묶음에 run-case 봉인 경로가 있다(holdout40은 합성 표
+    SEALED_RUN_CASE_DATASETS, real_sealed는 실자료 경로 SEALED_REAL_DATASET)."""
+
+    def test_sealed_datasets_all_have_a_run_case_path(self):
+        from tradesentry.contract import types
+        covered = set(dispatch.SEALED_RUN_CASE_DATASETS.values()) | {dispatch.SEALED_REAL_DATASET}
+        self.assertEqual(covered, set(types.SEALED_DATASETS))
+        self.assertEqual(dispatch.SEALED_RUN_CASE_DATASETS, {"holdout40": "holdout40"})
+        self.assertEqual(dispatch.SEALED_REAL_DATASET, "real_sealed")
+        self.assertFalse(set(dispatch.SEALED_RUN_CASE_DATASETS) & set(dispatch.RUN_CASE_DATASETS))  # 두 표는 겹치지 않는다
+        self.assertFalse(set(dispatch.SEALED_RUN_CASE_DATASETS.values()) & set(dispatch.RUN_CASE_DATASETS.values()))
+
+
 class RefusalTest(RunCaseBase):
     def test_not_a_case_out_of_scope_and_bad_format_end_with_1_and_no_record(self):
         for case_id, phrase in (("850450-XA-202312", "신호가 발동한 사례가 아니다"),

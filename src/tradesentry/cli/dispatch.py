@@ -124,6 +124,13 @@ model-decision-as2-run-case)
   기록하고 1이다(단위 I8 규칙). 재생이 기록을 다 쓰지 않고 끝나면 출력은 남기고 1이다(같은 실행이 아니다). 실행 결과 기록·
   trace의 모양은 바꾸지 않고 표준 오류에 알림 한 줄(REPLAY_NOTICE)을 쓴다. 재생 실행은 점수표 근거가 아니다(evaluate는 이
   옵션을 받지 않는다).
+- 봉인 묶음의 공식 채점 대상 실행 경로(--sealed, run-case만의 값 없는 선택 옵션. 샌드박스 밖 실행기 E2가 붙이고 개발 실행에는
+  주지 않는다. 결정 기록 model-decision-run-case-sealed-flag, 사용자 승인 2026-09-26(토) 09:55): 합성 스냅샷은 봉인 묶음 표
+  SEALED_RUN_CASE_DATASETS(holdout40 → holdout40)에서 자료 묶음을 정하고(표에 없으면 SEALED_SYNTHETIC_REFUSAL로 1), 비교 대상
+  집합은 개발 경로와 같이 비교국 표 행의 grouping_version이다. 실자료는 sealed_real_case_scope가 분할 기록으로 사례 계열이
+  real_sealed인지 관측 값을 읽기 전에 보고(아니면 SEALED_REAL_REFUSAL로 1) dataset을 real_sealed, 비교 대상 집합을 g0으로
+  적는다. 옵션이 없으면 위 개발 경로 그대로다(holdout40은 RUN_CASE_DATASETS에 없어 거부, real_sealed 계열은
+  RUN_CASE_SEALED_REFUSAL). --replay와 함께 주면 단위 F1이 인자 오류(2)로 거부한다. 실행 결과 기록의 키 21개 형식은 같다.
 
 평가 하네스는 모듈 단위로만 허용한다. 호스트 전용 샌드박스 밖 실행기(단위 E2, tradesentry.evaluation.sealed_runner)는
 CLI가 부르지 않는다.
@@ -848,6 +855,10 @@ RUN_CASE_SOURCE_KINDS = ("controlled", "real")  # 조사하는 출처 종류(허
 # 합성 스냅샷 → 실행 결과 기록의 dataset(자료 계약 §4.2·§8.1). 표에 없는 합성 스냅샷은 묶음을 정할 수 없어 거부한다
 # (dev20 스냅샷 ID가 정해지면 이 표에 한 줄을 더한다).
 RUN_CASE_DATASETS = {"controlled_fixture_v0": "controlled_fixture_v0", "dev20": "dev20"}  # dev20: DT5 스냅샷 ID(AS3)
+# 봉인 묶음의 합성 스냅샷 → 자료 묶음. --sealed일 때만 본다(단위 E2가 붙인다. 개발 실행 표 RUN_CASE_DATASETS와 겹치지 않는다).
+# holdout40 스냅샷 ID는 반입 도구 scripts/import_sealed_holdout40.py의 --snapshot-id 규칙(holdout40)이다.
+SEALED_RUN_CASE_DATASETS = {"holdout40": "holdout40"}
+SEALED_REAL_DATASET = "real_sealed"  # --sealed 실자료 경로의 자료 묶음이자 분할 기록의 계열 이름(자료 계약 §4.2·§12.2)
 REAL_GROUPING_VERSION = "g0"  # 실자료의 비교 대상 집합(MVP까지 g0, DT7 최종 빌드와 같다)
 RUN_RECORD_DOMAIN = "runlog_run_record"  # 실행 결과 기록을 만드는 단위 L2의 도메인명(UNITS.md §3.13, N4·N6)
 RUN_RECORD_MAX_BYTES = 1 << 20  # 샌드박스에서 받은 실행 결과 기록을 읽는 크기 상한
@@ -871,6 +882,11 @@ RUN_CASE_SPLIT_REFUSAL = ("오류: tradesentry run-case가 이 실자료 스냅�
                           "않는다(SplitError). 관측 값을 읽지 않고 끝냈다.")
 RUN_CASE_SEALED_REFUSAL = ("오류: tradesentry run-case는 실자료에서 분할 기록의 real_dev 계열 사례만 조사한다. 이 사례의 계열은 "
                            "real_dev가 아니어서(real_sealed 포함) 관측 값을 읽지 않고 끝냈다(병렬 개발 규칙 §7.2의 5).")
+# --sealed(봉인 묶음의 공식 채점 대상 실행 경로)에서만 쓰는 거부 문장
+SEALED_SYNTHETIC_REFUSAL = ("오류: tradesentry run-case의 --sealed는 봉인 묶음의 합성 스냅샷(holdout40)만 받는다. 이 합성 스냅샷은 "
+                            "봉인 묶음 표(SEALED_RUN_CASE_DATASETS)에 없어 관측 값을 읽지 않고 끝냈다.")
+SEALED_REAL_REFUSAL = ("오류: tradesentry run-case의 --sealed는 실자료에서 분할 기록의 real_sealed 계열 사례만 조사한다. 이 사례의 "
+                       "계열은 real_sealed가 아니어서 관측 값을 읽지 않고 끝냈다.")
 
 
 class RunCaseError(Exception):
@@ -960,6 +976,25 @@ def real_case_scope(snap, case_arg: str) -> dict:
     if split.get((wanted["hs6"], wanted["partner"])) != DETECT_DATASET:
         raise RunCaseError(RUN_CASE_SEALED_REFUSAL)
     return {"dataset": DETECT_DATASET, "series_assignment": series_assignment(split)}
+
+
+def sealed_real_case_scope(snap, case_arg: str) -> dict:
+    """--sealed 실자료 사례의 묶음 확인(관측 값을 읽기 전). real_case_scope와 같은 절차·같은 반환 모양이지만 분할 기록의
+    real_sealed 계열만 통과시킨다(dataset=real_sealed). real_case_scope의 동작은 바꾸지 않는다(개발 보호). 읽는 것은 분할 기록
+    파일과 스냅샷 메타뿐이다."""
+    from tradesentry.policy import case_build
+
+    try:
+        split = load_real_split(snap)
+    except SplitError:
+        raise RunCaseError(RUN_CASE_SPLIT_REFUSAL) from None
+    try:
+        wanted = case_build.parse_case_id(case_arg)
+    except ValueError:
+        raise RunCaseError("오류: tradesentry run-case의 --case가 사례 식별자 형식({hs6}-{partner}-{month})이 아니다.") from None
+    if split.get((wanted["hs6"], wanted["partner"])) != SEALED_REAL_DATASET:
+        raise RunCaseError(SEALED_REAL_REFUSAL)
+    return {"dataset": SEALED_REAL_DATASET, "series_assignment": series_assignment(split)}
 
 
 def rebuild_case(snap, policy: dict, case_arg: str, case_input: dict | None = None) -> dict:
@@ -1326,7 +1361,19 @@ def run_case_in(request: args.Request, run_id: str, stamp: str, run_dir: Path, *
     with query.open_snapshot(request.snapshot_id) as snap:
         if snap.source_kind not in RUN_CASE_SOURCE_KINDS:  # 관측 값을 읽기 전에 거부한다(머리 설명)
             raise RunCaseError(RUN_CASE_REFUSAL)
-        if snap.source_kind == "real":
+        if request.sealed and snap.source_kind == "real":
+            # --sealed 실자료(봉인 묶음 real_sealed의 공식 실행 경로, 단위 E2만 준다): 사례 계열이 분할 기록의 real_sealed인지
+            # 관측 값을 읽기 전에 본다(아니면 거부). dataset은 real_sealed, 비교 대상 집합은 g0(g0 대체 선언).
+            case_input = sealed_real_case_scope(snap, request.case)
+            dataset, grouping_version = SEALED_REAL_DATASET, REAL_GROUPING_VERSION
+        elif request.sealed:
+            # --sealed 합성(봉인 묶음 holdout40): 봉인 묶음 표에서 자료 묶음을 정한다. 개발 표 RUN_CASE_DATASETS는 보지 않는다.
+            case_input = None
+            dataset = SEALED_RUN_CASE_DATASETS.get(snap.snapshot_id)
+            if dataset is None:
+                raise RunCaseError(SEALED_SYNTHETIC_REFUSAL)
+            grouping_version = snapshot_grouping_version(snap)
+        elif snap.source_kind == "real":
             # 실자료: 사례 계열이 분할 기록의 real_dev인지 관측 값을 읽기 전에 본다(아니면 거부). 도구의 조회 범위(비교국·
             # 전체국가 분모)는 좁히지 않는다(병렬 개발 규칙 §7.2의 5). dataset은 real_dev, 비교 대상 집합은 g0(AS2 ⑩).
             case_input = real_case_scope(snap, request.case)

@@ -224,6 +224,8 @@ class RealSealedRunTest(SealedRunnerFixture, unittest.TestCase):
             self.assertEqual((options["--snapshot"], options["--policy"]), (REAL_SNAPSHOT, "policy_v1"))
             self.assertIn(options["--case"], REAL_CASE_IDS)
             self.assertRegex(options["--run-name"], r"^run_case-\d{12}$")
+            # 봉인 묶음이면 run-case의 봉인 실행 경로 --sealed를 --run-name 뒤에 붙인다(FIX1)
+            self.assertEqual(argv[-3:], ["--run-name", options["--run-name"], "--sealed"])
         self.assertTrue(all(c["env"] == [] for c in self.calls()))  # 키 변수·봉인 폴더 변수를 넘기지 않는다
         doc = json.loads(conditions.read_text(encoding="utf-8"), parse_float=Decimal)
         self.assertEqual(doc["dataset"], "real_sealed")
@@ -331,6 +333,11 @@ class Holdout40RunTest(SealedRunnerFixture, unittest.TestCase):
         self.assertEqual(doc["reproduce_evaluate"], "python -m tradesentry.evaluation.sealed_runner --dataset holdout40 "
                                                     "--sandbox ts-official --snapshot holdout40 --policy policy_v1")
         self.assert_no_case_ids(out, err)
+        execs = [c["argv"] for c in self.calls() if "run-case" in c["argv"]]
+        self.assertEqual(len(execs), 9)
+        for argv in execs:  # holdout40도 봉인 묶음이라 --sealed를 --run-name 뒤에 붙인다(FIX1)
+            self.assertEqual((argv[9], argv[-3], argv[-1]), ("--snapshot", "--run-name", "--sealed"))
+            self.assertRegex(argv[-2], r"^run_case-\d{12}$")
         # 정답표·gen·seed 파일은 열지 않았다(읽은 봉인 파일은 해시 대조의 전체 읽기와 cases.json뿐이라 파일로는 가릴 수 없어,
         # 사례 읽기 함수가 어느 이름을 읽는지 본다)
         with mock.patch.object(sealed_runner, "read_sealed_json", wraps=sealed_runner.read_sealed_json) as spy:
