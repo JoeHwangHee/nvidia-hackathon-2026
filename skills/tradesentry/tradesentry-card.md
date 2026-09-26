@@ -7,6 +7,7 @@ This skill is for demonstration purposes and not for production usage. <br>
 This skill is not owned or developed by NVIDIA. This skill has been developed and built to a third-party's requirements for this application and use case; see link to Non-NVIDIA [TradeSentry (JoeHwangHee/nvidia-hackathon-2026) Agent Card](../../README.md). <br>
 
 ### License/Terms of Use: <br>
+Apache-2.0 <br>
 ## Use Case: <br>
 NemoClaw 시연 샌드박스의 OpenClaw 에이전트가, 운영자(담당자)의 경보 목록 요청이나 경보 사례 1건 조사 요청을 받아 값 네 가지(`--snapshot`, `--policy`, `--mode`, `--case`)만 정하고 `/sandbox`에서 `tradesentry detect` 또는 `tradesentry run-case`를 한 번 실행한 뒤, 실행 결과 기록과 보고서의 값을 글자 그대로 운영자에게 옮길 때 쓴다. 정확도 지표를 내는 채점 대상 실행에는 쓰지 않는다. <br>
 
@@ -47,12 +48,13 @@ Mitigation: Review and scan skill before deployment. <br>
 
 위의 영어 절은 NVIDIA 공식 스킬 `skill-card-generator`(기존 스킬 디렉터리에서 거버넌스 카드(스킬의 능력 범위를 밝히는 카드)를 만드는 스킬)의 스크립트가 렌더한 출력 그대로다. 아래 부록은 스킬 사전(`docs/eval/SKILL_DICTIONARY.md`) §3.5가 카드에서 드러나야 한다고 정한 세 항목(읽는 입력·쓰는 출력, 외부 전송 여부, 금지 사항)과 생성 경위·검토표를 한국어로 적은 것이다. 생성기 절차(`scripts/validate_submission.py`)는 검토 표시가 남았는지만 검사하므로 이 부록은 검증 대상 문구에 걸리지 않는다 `[사실: 생성기 references/skill-card.md.j2·references/style-guide.md·scripts/validate_submission.py (메인 폴더 설치본, 2026-09-26(토))]`.
 
-### 생성 경위 `[사실: 2026-09-26(토) 작업 기록 — 스킬 사전 §3.5 실행 기록 표]`
+### 생성 경위 `[사실: 2026-09-26(토)·2026-09-27(일) 작업 기록 — 스킬 사전 §3.5 실행 기록 표]`
 
 - 2026-09-26(토) 15:06 사용자가 메인 폴더에서 `npx skills add NVIDIA/skills --skill skill-card-generator`로 생성기를 설치했다(설치 위치 `.agents/skills/skill-card-generator/`, 커밋하지 않음).
 - 같은 날 생성기 스크립트를 순서대로 실행했다: `scripts/discover_assets.py skills/tradesentry`(15:09:54, 종료 코드 0) → 신호 요약과 `skills/tradesentry/SKILL.md` 본문으로 context JSON 작성(`outputs/skill_cards-{시각}/`, 커밋하지 않음) → `scripts/render_card.py --context … --template references/skill-card.md.j2 --out skills/tradesentry/tradesentry-card.md`(15:12:10, 종료 코드 0) → `scripts/validate_submission.py skills/tradesentry/tradesentry-card.md`(15:12:10~11, 종료 코드 1: 소유자 항목의 붉은 VERIFY 표시 1건이 남아 있음. 아래 "남은 확인").
-- 값은 `skills/tradesentry/SKILL.md`의 frontmatter와 본문, discover 신호(pyproject 버전, git 원격·SHA, 저장소 루트의 LICENSE 부재)에서만 가져왔다. 없는 능력을 적지 않았고 결과 숫자를 적지 않았다.
+- 값은 `skills/tradesentry/SKILL.md`의 frontmatter와 본문, discover 신호(pyproject 버전, git 원격·SHA, 저장소 루트 LICENSE — 2026-09-26(토) 15:09 생성 때는 없었고 2026-09-27(일) 재렌더 때는 `license_identifier: Apache License  (from LICENSE)`)에서만 가져왔다. 없는 능력을 적지 않았고 결과 숫자를 적지 않았다.
 - 이전 카드(같은 경로, 2026-09-26(토) 오전. 생성기를 설치하지 못해 형식만 따라 수동 작성)는 이 파일로 덮어썼다.
+- 2026-09-27(일) 라이선스 결정(Apache License 2.0, 결정 기록 `docs/tracking/decisions/20260927-0215-user-decision-license-apache2.md`)에 따라 다시 렌더했다(생성기는 작업 worktree의 설치본 사본 `.agents/skills/skill-card-generator/`, 커밋하지 않음): `scripts/discover_assets.py skills/tradesentry`(02:26:58~59, 종료 코드 0) → 이 카드 생성기 부분의 값을 그대로 옮기고 `license_identifier: "Apache-2.0"`, `license_verify: false` 두 값만 바꾼 context JSON(`outputs/skill_cards-{시각}/`, 커밋하지 않음) → 임시 경로 렌더(02:27:35~36, 종료 코드 0)와 옛 생성기 부분의 diff는 License/Terms of Use 아래 `Apache-2.0 <br>` 한 줄 추가뿐 → `scripts/render_card.py --context … --template references/skill-card.md.j2 --out skills/tradesentry/tradesentry-card.md`(02:28:58, 종료 코드 0) → 이 부록을 다시 붙이고 라이선스 부분만 고침 → `scripts/validate_submission.py skills/tradesentry/tradesentry-card.md`(종료 코드 0. 시각은 스킬 사전 §3.5 실행 기록 표).
 
 ### 무엇을 하는가
 
@@ -79,7 +81,7 @@ Mitigation: Review and scan skill before deployment. <br>
 ### 확인 결과와 남은 확인
 
 - Third-Party Community Consideration 절의 소유자 표기 "TradeSentry (JoeHwangHee/nvidia-hackathon-2026)"와 링크(별도 에이전트 카드가 없어 저장소 README)는 소유자(사용자)가 2026-09-26(토) 15:34(채팅 "확인") 확인했다. 생성기 절차대로 확인 뒤 붉은 VERIFY 표시(span과 주석)를 지웠고, `scripts/validate_submission.py`는 종료 코드 0이다 `[사실: 사용자 확인 채팅 "확인", 검증 스크립트 실행]`.
-- License/Terms of Use 절이 비어 있다: 저장소에 LICENSE·NOTICE 파일과 SKILL.md frontmatter `license` 키가 없어 `license_identifier: null`로 두었고, 템플릿은 식별자가 없으면 이 절을 비워 렌더한다(표시도 붙지 않는다). 라이선스는 저장소 공개 방식 결정(로드맵 P2) 때 정하고 context JSON을 고쳐 다시 렌더한다 `[사실: discover 신호 Repo-root signals, 2026-09-26(토)]` `[사실: 생성기 references/skill-card.md.j2·references/style-guide.md·scripts/validate_submission.py (메인 폴더 설치본, 2026-09-26(토))]`.
+- License/Terms of Use 절은 `Apache-2.0`이다: 2026-09-27(일) 사용자 결정(채팅 "라이선스는 권장대로할게", 결정 기록 `docs/tracking/decisions/20260927-0215-user-decision-license-apache2.md`)으로 저장소 루트에 Apache License 2.0 전문 `LICENSE`를 더했고, discover가 그 파일에서 식별자를 읽었으므로(`license_identifier: Apache License  (from LICENSE)`) 스타일 가이드대로 `license_verify: false`(붉은 VERIFY 표시 없음)로 다시 렌더했다. 값은 파일 첫 줄 발췌 대신 스타일 가이드가 요구하는 선택 목록식 짧은 이름(SPDX(소프트웨어 라이선스 표준 식별자) `Apache-2.0`, 파일 둘째 줄 "Version 2.0")으로 적었다. 이전(2026-09-26(토))에는 LICENSE·NOTICE 파일과 SKILL.md frontmatter `license` 키가 없어 `license_identifier: null`로 두어 이 절이 비어 있었다. 저장소에 든 제3자 자료는 Apache-2.0이 아니라 각 출처의 이용 조건을 따른다(README 7절) `[사실: discover 신호 Repo-root signals, 2026-09-27(일)]` `[사실: 생성기 references/skill-card.md.j2·references/style-guide.md "license_identifier"·"license_verify"]`.
 
 ### 검토표(review table, 생성기 스타일 가이드 "What goes in the review table")
 
@@ -92,7 +94,7 @@ Mitigation: Review and scan skill before deployment. <br>
 | Description | `description_sentence` | HIGH | No | frontmatter `description`의 둘째 문장(첫 문장 "TradeSentry 런타임 스킬."은 제목 구실)을 한 문장 그대로 | `skills/tradesentry/SKILL.md` |
 | Description | `usage_posture` | INFERRED | Yes | `demonstration`. "이 스킬은 시연 경로 전용이다", 채점 대상 실행에 쓰지 않음 | `skills/tradesentry/SKILL.md` 머리말 |
 | Third-Party Community Consideration | `owner` | INFERRED | Yes | `third_party`, `verify: true`. git 원격 `github.com/JoeHwangHee/…`(NVIDIA 조직 아님). 별도 에이전트 카드가 없어 `card_link`는 저장소 README 상대 경로 | discover 신호 `git.remote_url` |
-| License/Terms of Use | `license_identifier` | HUMAN-REQUIRED | Yes | `null`, `license_verify: true`. 저장소 루트 LICENSE·NOTICE 없음, frontmatter `license` 없음. 식별자가 없어 템플릿은 이 절을 비워 렌더함 | discover 신호 Repo-root signals |
+| License/Terms of Use | `license_identifier` | HIGH | No | `Apache-2.0`, `license_verify: false`. 저장소 루트 LICENSE 파일(Apache License 2.0 전문, 2026-09-27(일) 사용자 결정)에서 가져옴. discover는 첫 줄 `Apache License`를 식별자로 읽었고, 스타일 가이드의 선택 목록식 짧은 이름 규칙에 따라 SPDX 식별자로 적음(파일 둘째 줄 "Version 2.0"). 식별자를 LICENSE 파일에서 그대로 가져왔으므로 사람 확인 표시 없음 | `LICENSE`, discover 신호 Repo-root signals |
 | Use Case | `use_case` | INFERRED | Yes | "언제 쓰나"·"할 일" 1~5를 두 문장으로 요약 | `skills/tradesentry/SKILL.md` |
 | Deployment Geography | `deployment_geography` | INFERRED | Yes | 문서에 지역 제한 없음 → 기본값 `Global` | 생성기 `references/style-guide.md` |
 | Requirements / Dependencies | `credential_requirements.requires_api_key_or_credential` | INFERRED | Yes | `yes`. CLI의 NVIDIA 추론 요청에 API 키가 필요("암묵적 인프라 자격 증명" 규칙). 스킬은 키 값을 다루지 않음. discover는 이 SKILL.md에서 키 변수 이름을 찾지 못함 | `skills/tradesentry/SKILL.md` "하지 않는 것" |
