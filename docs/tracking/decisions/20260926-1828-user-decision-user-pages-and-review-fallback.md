@@ -17,7 +17,7 @@
 | 검토한 대안 | 화면 1만 두고 제출(시나리오 C 그대로) — 채택하지 않음. 보조 화면을 "질의응답 채팅"으로 만드는 안 — 새 모델 호출·프롬프트가 필요해 동결·비용 위험이 있어 제안하지 않았고, 결정 기록·재조사·도움으로 한정 |
 | 결정 주체 | 사용자(2026-09-26(토) 17:36·18:28). 디자인 초안과 보조 화면 해석은 오케스트레이터가 올렸다 |
 | 공용 약속 여부 | 화면은 채점 경로 밖이라 룰북 동결과 무관하다. 다만 제출서 주장 문구("Streamlit 화면 1개")와 자료 계약 §10 표(새 파일·출력 경로)가 바뀌므로 그 부분은 공용 약속 변경이며 이 결정이 승인이다 |
-| 영향 | 구현 UI2(`src/tradesentry/ui_app.py`, `src/tradesentry/ui/`, 시험), 자료 계약 §10 행, 단위 표, README §5·§8, `docs/operations.md` 화면 항목, 제출 폼 `docs/submission/SUBMISSION_FORM.md`의 화면 문구, status. 디자인 캔버스는 저장소 밖(비공개 링크)이며 정본은 구현 PR의 결정 기록이다 |
+| 영향 | 구현 UI2(`src/tradesentry/ui/ui_app.py`, `src/tradesentry/ui/`, 시험), 자료 계약 §10 행, 단위 표, README §5·§8, `docs/operations.md` 화면 항목, 제출 폼 `docs/submission/SUBMISSION_FORM.md`의 화면 문구, status. 디자인 캔버스는 저장소 밖(비공개 링크)이며 정본은 구현 PR의 결정 기록이다 |
 | 관련 PR | PR #105(대체 경로로 병합), 구현 PR UI2 |
 
 ## 남은 것

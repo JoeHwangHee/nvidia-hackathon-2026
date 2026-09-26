@@ -2,7 +2,7 @@
 
 화면(담당자 홈·사례 검토·결정 기록·도움)의 문구 전부를 키 → {"ko", "en"}로 둔다. 한국어는 디자인 정본(scratchpad HTML 목업)
 의 문구를 그대로 옮겼고, 영어는 UI2 지시서의 용어표를 따른다. 상태값·코드(MAINTAIN 등)는 번역하지 않고 자료 계약의 글자
-그대로 쓴다. 두 언어의 키 집합이 같고 빈 값이 없으며 자리표시({name})가 같음을 시험이 강제한다(tests/units/UI/).
+그대로 쓴다. 두 언어의 키 집합이 같고 빈 값이 없으며 자리표시({name})가 같음을 시험이 강제한다(tests/test_ui_pages.py).
 streamlit을 import하지 않는다.
 """
 import csv
@@ -50,9 +50,9 @@ STRINGS: dict[str, dict[str, str]] = {
     "status.NOT_INVESTIGATED": {"ko": "조사 전", "en": "Not investigated"},
     "status.INVESTIGATED": {"ko": "조사 완료", "en": "Investigated"},
     "status.FAILED": {"ko": "조사 실패", "en": "Investigation failed"},
-    "verdict.MAINTAIN": {"ko": "검토 유지", "en": "Keep under review"},
-    "verdict.MONITOR": {"ko": "모니터링", "en": "Monitor"},
-    "verdict.HOLD": {"ko": "자료 보류", "en": "Data hold"},
+    "verdict.MAINTAIN": {"ko": "검토 유지", "en": "Keep under review (MAINTAIN)"},
+    "verdict.MONITOR": {"ko": "모니터링", "en": "Monitor (MONITOR)"},
+    "verdict.HOLD": {"ko": "자료 보류", "en": "Data hold (HOLD)"},
     "verdict.NOT_TRIGGERED": {"ko": "미발동", "en": "Not triggered"},
     "verdict.PRE_INVESTIGATION": {"ko": "조사 전 경보", "en": "Alert, not yet investigated"},
     "verdict.none": {"ko": "—", "en": "—"},
@@ -240,7 +240,7 @@ STRINGS: dict[str, dict[str, str]] = {
     "case.none_selected": {"ko": "검토할 사례가 선택되지 않았습니다. 담당자 홈에서 \"결과 보기\"를 누릅니다.",
                            "en": "No case is selected. Choose \"View result\" on the analyst home."},
     "case.not_investigated": {"ko": "이 사례({case_id})는 아직 조사 결과가 없습니다. 담당자 홈에서 \"조사 시작\"을 누릅니다.",
-                              "en": "This case ({case_id}) has no investigation result yet. Use \"Start investigation\" on the analyst home."},
+                              "en": "This case ({case_id}) has no investigation result yet. Use \"Investigate\" on the analyst home."},
     "case.run_label": {"ko": "실행 폴더", "en": "Run folder"},
     "case.pick_label": {"ko": "조사 완료된 사례 고르기", "en": "Choose an investigated case"},
     "case.pick_open": {"ko": "열기", "en": "Open"},

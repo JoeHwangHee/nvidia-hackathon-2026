@@ -79,7 +79,7 @@ class I18nTest(unittest.TestCase):
         self.assertEqual(i18n.t("no.such.key", "en"), "no.such.key")
 
     def test_labels(self):
-        self.assertEqual(i18n.verdict_label("MAINTAIN", "en"), "Keep under review")
+        self.assertEqual(i18n.verdict_label("MAINTAIN", "en"), "Keep under review (MAINTAIN)")
         self.assertEqual(i18n.verdict_label("MAINTAIN", "ko"), "검토 유지")
         self.assertEqual(i18n.verdict_label(None, "ko"), "—")
         self.assertEqual(i18n.verdict_label("WEIRD", "ko"), "WEIRD")  # 모르는 값은 원문 그대로
@@ -296,7 +296,7 @@ class PlainTest(Base):
         self.assertEqual(model["title"], "The unit value (USD/kg) of Inductors, other imported from XA has fallen by roughly half from a year earlier")
         self.assertEqual(model["conclusion"]["original_mark"], "(Korean original)")
         self.assertTrue(model["conclusion"]["narrative"].startswith("단가 변화는"))  # 원문은 한국어 그대로
-        self.assertEqual(model["header"]["verdict_label"], "Monitor")
+        self.assertEqual(model["header"]["verdict_label"], "Monitor (MONITOR)")
         self.assertEqual(model["what"]["share"]["note"], "−4.0 pp, below the 10 pp threshold → no alert")
 
     def test_synthetic_report_sections_and_numbers(self):
@@ -322,7 +322,7 @@ class PlainTest(Base):
         self.assertEqual(en["found"][2]["body"][0], "From 13.2% to 11.9%, below the policy threshold (10 pp).")
         self.assertEqual(en["alternatives"]["original_mark"], "(Korean original)")
         self.assertEqual(en["alternatives"]["items"], ko["alternatives"]["items"])  # 가설 원문은 그대로
-        self.assertEqual(en["conclusion"]["title"], "Conclusion — Keep under review")
+        self.assertEqual(en["conclusion"]["title"], "Conclusion — Keep under review (MAINTAIN)")
 
     def test_not_completed_run_has_no_verdict(self):
         with tempfile.TemporaryDirectory() as tmp:
