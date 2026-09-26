@@ -185,8 +185,9 @@ def _overlay(job: dict, lang: str, steps: dict, now: float) -> None:
             else:
                 with st.container(horizontal=True, vertical_alignment="center", key="ts_load_actions"):
                     st.markdown(f'<div class="ts-note">{html.escape(t("load.expect", lang))}</div>', unsafe_allow_html=True)
-                    if st.button(t("load.back", lang), key="ts_back"):
+                    if st.button(t("load.back", lang), key="ts_back"):  # 조사는 계속되고 경보 목록으로 간다
                         st.session_state[JOB_KEY] = {**job, "overlay": False}
+                        st.session_state[GOTO_KEY] = "home"
                         st.rerun(scope="app")
                 note = t("load.footnote_replay", lang) if job.get("replay") else t("load.footnote", lang)
                 st.markdown(f'<div class="ts-footnote">{html.escape(note)}</div>', unsafe_allow_html=True)
