@@ -10,7 +10,17 @@ TEMPLATE="$ROOT/docs/submission/service_file.html"
 STAMP="$(date +%y%m%d%H%M%S)"
 OUT="$ROOT/outputs/submission_service_file-$STAMP"
 NAME="[NVIDIA 해커톤_TradeSentry_TradeSentry]"
-CHROME="${CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
+# Chrome 실행 파일: 환경변수 CHROME_BIN → PATH의 google-chrome/chromium → macOS Spotlight로 찾은 Chrome 앱 번들. 경로를 하드코딩하지 않는다.
+CHROME="${CHROME_BIN:-}"
+if [ -z "$CHROME" ]; then
+  for c in google-chrome google-chrome-stable chromium chromium-browser; do
+    if command -v "$c" >/dev/null 2>&1; then CHROME="$(command -v "$c")"; break; fi
+  done
+fi
+if [ -z "$CHROME" ] && command -v mdfind >/dev/null 2>&1; then
+  APP="$(mdfind "kMDItemCFBundleIdentifier == 'com.google.Chrome'" 2>/dev/null | head -1)"
+  [ -n "$APP" ] && CHROME="$APP/Contents/MacOS/Google Chrome"
+fi
 mkdir -p "$OUT"
 HTML="$OUT/service_file-$STAMP.html"
 python3 - "$TEMPLATE" "$HTML" "$URL" <<'PY'

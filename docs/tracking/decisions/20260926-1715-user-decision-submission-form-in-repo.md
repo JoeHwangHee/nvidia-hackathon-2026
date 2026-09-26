@@ -22,4 +22,4 @@
 ## 남은 것
 
 - P2(공개 저장소 방식) 결정 뒤 `docs/submission/SUBMISSION_FORM.md`의 `<공개 저장소 URL — P2 결정 뒤>` 3곳을 URL로 바꾸고, `scripts/make_service_file.sh "<URL>"`로 서비스 파일을 다시 만들어 올린다.
-- 화면 1(Streamlit "사례 보기")의 실행·사용법은 `docs/operations.md` "화면 1 실행" 항목과 `README.md` §5 "화면(선택)"이 정본이다(이 결정으로 바뀌지 않는다).
+- 화면 1(Streamlit "사례 보기")의 실행·사용법은 `docs/operations.md`의 "화면 1 실행" 항목과 `README.md`의 5절 "화면(선택)"이 정본이다(이 결정으로 바뀌지 않는다).
