@@ -27,6 +27,7 @@ nvidia-hackathon-2026/
 │   │   ├── RULEBOOK.md                ← 평가 룰북: Part A 자기채점, Part B 성능 평가와 채점 규칙
 │   │   ├── RESULTS.md                 ← 결과표(R1): 두 봉인 묶음의 대표·보조 지표와 Wilson 95% 구간·등급, A등급 주장 조건 판정, B7 공개 값, 한계. 숫자는 커밋된 채점 요약에서만 옮긴다
 │   │   └── SKILL_DICTIONARY.md        ← 쓰는 스킬(Agent Skills 형식의 에이전트용 작업 절차)과 설치·이름 확인 방법
+│   ├── submission/                    ← 제출 폼 입력용 최종본 SUBMISSION_FORM.md(신청 폼 장문 칸 3개·서비스 파일 한 쪽 내용. 공개 저장소 URL은 P2 뒤 채운다)와 서비스 파일 템플릿 service_file.html
 │   ├── architecture.md                ← 실행 사슬과 구성요소별 정본 위치
 │   ├── business-rules.md              ← 도메인 규칙별 정본 위치
 │   ├── security.md                    ← 키·샌드박스·봉인 통제별 정본 위치
@@ -56,6 +57,7 @@ nvidia-hackathon-2026/
 ├── data/reference/                    ← 품목표와 BACI(CEPII가 정리한 국가 간 연간 무역 자료) 참고 자료
 ├── outputs/                           ← 실행별 출력 폴더(커밋하지 않는다. 이름 규칙은 자료 계약 §10.3). 봉인 묶음 실행 사슬의 출력은 `outputs/sealed/`에 두고, 봉인 묶음마다 금지 해제 조건(그 묶음의 정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 전에는 그 묶음 출력을 열지 않는다
 ├── scripts/g4_nim_toolcall_probe.py   ← NIM tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능) 왕복 확인
+├── scripts/make_service_file.sh       ← 서비스 파일 한 쪽(pdf·docx) 생성. 인자는 공개 저장소 URL, 출력은 outputs/submission_service_file-{시각}/
 ├── .env.example                       ← `.env` 양식. API 키 칸은 비어 있고 모델 이름 같은 기본값만 있다
 └── *.md(루트의 나머지)                ← 이전 설계·조사 기록. 사실 출처로 인용만 하고 고치지 않는다(목록은 docs/README.md §4)
 ```

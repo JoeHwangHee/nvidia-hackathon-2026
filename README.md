@@ -171,6 +171,7 @@ docs/
   plan/      DEV_PLAN.md(개발 플랜) · ROADMAP.md(작업·날짜·완료 기준) · UNITS.md(최소 단위 표) · SUBMISSION_SCENARIOS.md
   rules/     DATA_CONTRACT_V1.md(값의 정본) · PARALLEL_DEV_RULES.md · AGENT_OPS.md
   eval/      RULEBOOK.md(평가 룰북) · RESULTS.md(결과표) · SKILL_DICTIONARY.md(스킬 사전)
+  submission/ SUBMISSION_FORM.md(제출 폼 입력용 최종본) · service_file.html(서비스 파일 한 쪽 템플릿)
   architecture.md · business-rules.md · security.md · operations.md · contracts.md · standards.md · engineering-notes.md
   tracking/  status.md · decisions/(결정 기록) · findings.md
 src/tradesentry/               ← 앱 패키지(contract·snapshot·dal·metrics·policy·grouping·tools·workflow·reports·validator·runlog·evaluation·approval·cli)와 수집기 ingest.py
@@ -180,7 +181,7 @@ skills/                        ← tradesentry(런타임) · tradesentry-eval(�
 eval/                          ← scorer/(독립 채점기) · datagen/(평가 자료 도구) · scenarios/ · dev/(oracle_ABC.json, dev20/, smoke/)
 data/snapshots/ · data/reference/  ← 스냅샷 manifest·해시·빌드 기록(SQLite·원자료 제외), 참고 자료
 artifacts/                     ← 커밋 증거물: eval/score-*/ · openshell/ · scorecard/
-scripts/                       ← secret_scan.py · make_smoke_replay.py · openshell_violation_tests.py · stage_sandbox_image.py · g4_nim_toolcall_probe.py
+scripts/                       ← secret_scan.py · make_smoke_replay.py · openshell_violation_tests.py · stage_sandbox_image.py · g4_nim_toolcall_probe.py · make_service_file.sh(서비스 파일 pdf·docx 생성)
 spikes/x1/                     ← 첫날 통합 시험 X1 임시 코드(앱에 섞지 않는다)
 outputs/                       ← 실행별 출력(커밋하지 않는다)
 *.md(루트의 나머지)             ← 이전 설계·조사 기록. 인용만 하고 고치지 않는다(목록은 docs/README.md §4)

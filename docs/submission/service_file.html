@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>TradeSentry — 2026 NVIDIA Korea Agentic AI Hackathon 제출 서비스 파일</title>
+<style>
+  @page { size: A4; margin: 16mm 18mm; }
+  body { font-family: "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif; font-size: 10.5pt; line-height: 1.45; color: #111; margin: 0; }
+  h1 { font-size: 17pt; margin: 0 0 4pt 0; }
+  h2 { font-size: 12pt; margin: 12pt 0 4pt 0; border-bottom: 1px solid #999; padding-bottom: 2pt; }
+  p { margin: 3pt 0; }
+  ul { margin: 3pt 0 3pt 16pt; padding: 0; }
+  li { margin: 2pt 0; }
+  table { border-collapse: collapse; width: 100%; margin: 4pt 0; font-size: 10pt; }
+  td, th { border: 1px solid #bbb; padding: 3pt 5pt; vertical-align: top; text-align: left; }
+  th { background: #f0f0f0; }
+  code { font-family: Menlo, "SF Mono", monospace; font-size: 9.5pt; }
+  .meta { color: #333; }
+  .small { font-size: 9pt; color: #444; }
+</style>
+</head>
+<body>
+<h1>TradeSentry</h1>
+<p class="meta"><b>팀명</b>: TradeSentry &nbsp;|&nbsp; <b>프로젝트명</b>: TradeSentry &nbsp;|&nbsp; 2026 NVIDIA Korea Agentic AI Hackathon 예선 제출</p>
+<p><b>GitHub 링크</b>: <a href="{{REPO_URL}}">{{REPO_URL}}</a></p>
+
+<h2>한 줄 소개</h2>
+<p>관세청 수입통계 경보를 Nemotron 조사자와 검수자(Critic)가 정해진 조회 도구로 반증해 보고, 담당자의 다음 업무(검토 유지·모니터링·자료 보류)를 제안하는 에이전트 시스템. 부정·위법·원산지 판정이나 실제 통관 조치가 아니다.</p>
+
+<h2>저장소에서 먼저 볼 것</h2>
+<ul>
+  <li><code>README.md</code> §4 "5분 재현 — 키 없이": <code>uv sync --locked</code> → 시험 → 합성 픽스처 설치 → 키 없는 스모크 재현(<code>tradesentry run-case ... --replay</code>) → 비밀값·로컬 경로 검사</li>
+  <li><code>README.md</code> §6 "평가 방법과 결과 위치": 대표 지표·보조 지표·등급·결과 파일 위치</li>
+  <li><code>docs/eval/RESULTS.md</code>: 결과표(실행 조건, real_sealed 대표 지표와 A등급 주장 조건 판정, holdout40 보조 지표, 개발 묶음 값, 룰북 B7 공개 값, NAT 프로파일 요약, 한국어 품질, 한계, 재현 명령)</li>
+  <li><code>docs/eval/RULEBOOK.md</code>: 평가 룰북 RB-1(자기채점 Part A, 성능 평가 Part B)</li>
+  <li><code>artifacts/eval/score-260926135136/</code>(real_sealed), <code>artifacts/eval/score-260926115824/</code>(holdout40): 채점기 요약·결과·보고서 원문 커밋 사본</li>
+  <li><code>artifacts/openshell/</code>: OpenShell 정책 위반 시험표와 감사 로그 발췌</li>
+  <li><code>skills/tradesentry/</code>, <code>skills/tradesentry-eval/</code>, <code>skills/tradesentry-scorecard/</code>: 자체 Agent Skills 3개와 거버넌스 카드</li>
+</ul>
+
+<h2>핵심 숫자(등급 병기, 결과표에서 옮김. 봉인 묶음 2개, 2026-09-26(토) 한 번만 채점)</h2>
+<table>
+  <tr><th>묶음 · 지표</th><th>모드</th><th>값(Wilson 95% 구간)</th><th>등급</th></tr>
+  <tr><td rowspan="2">real_sealed(실자료 40사례) 보고서 단위 사실 주장 오류율</td><td>freeform(기준선)</td><td>11/40 = 27.5% (16.1%~42.8%)</td><td rowspan="2">A등급 주장 보류(참고치). 구간 비겹침으로 full이 "낮다"</td></tr>
+  <tr><td>full(전체 TradeSentry)</td><td>0/40 = 0.0% (0.0%~8.8%)</td></tr>
+  <tr><td rowspan="3">holdout40(합성 40사례) 근거 충족 처리정확도</td><td>checklist</td><td>38/40 = 95.0% (83.5%~98.6%)</td><td rowspan="3">C. 구간이 겹쳐 차이를 주장하지 않는다</td></tr>
+  <tr><td>agent</td><td>38/40 = 95.0% (83.5%~98.6%)</td></tr>
+  <tr><td>full</td><td>35/40 = 87.5% (73.9%~94.5%)</td></tr>
+  <tr><td>dev20 · real_dev(개발 묶음)</td><td>—</td><td>개발 묶음 값, 대표 숫자 아님</td><td>D</td></tr>
+</table>
+<p class="small">NVIDIA 스택: NIM/Nemotron(<code>nvidia/nemotron-3-super-120b-a12b</code>, native tool call), OpenShell(전용 샌드박스·정책·감사 로그), NemoClaw(시연 경로), NAT(실행 추적·프로파일), Agent Skills(자체 3개 + 공식 스킬 openshell-cli·debug-inference·skill-card-generator 사용). 단가 변화를 부정·위법·원산지 조작의 증거로 쓰지 않으며, 판정 상태는 담당자의 다음 업무를 뜻할 뿐 기관 승인이나 통관 조치가 아니다.</p>
+</body>
+</html>
