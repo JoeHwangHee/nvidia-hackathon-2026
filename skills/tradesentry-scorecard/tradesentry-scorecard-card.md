@@ -94,7 +94,7 @@ Mitigation: Review and scan skill before deployment. <br>
 | Description | `skill_kind` | HIGH | No | 생성기 기본값 `Agent` | 생성기 `references/style-guide.md` |
 | Description | `description_sentence` | HIGH | No | frontmatter `description` 첫 문장 그대로 | `skills/tradesentry-scorecard/SKILL.md` |
 | Description | `usage_posture` | INFERRED | Yes | `research_dev`. 자기채점 절차이며 점수가 대회 점수가 아니라고 명시. 운영 배포 없음 | `skills/tradesentry-scorecard/SKILL.md`, `CLAUDE.md` 프로젝트 개요 |
-| Third-Party Community Consideration | `owner` | INFERRED | Yes | `third_party`, `verify: true`. git 원격이 NVIDIA 조직 아님. 별도 에이전트 카드가 없어 `card_link`는 저장소 README 상대 경로 | discover 신호 `git.remote_url` |
+| Third-Party Community Consideration | `owner` | INFERRED | Yes(2026-09-26(토) 15:34 확인 끝) | `third_party`. 처음 렌더 때 `verify: true`였고, 2026-09-26(토) 15:34 사용자 확인 뒤 붉은 `VERIFY` 표시를 지웠다. 2026-09-27(일) 재렌더 context는 `verify: false`다. git 원격이 NVIDIA 조직 아님. 별도 에이전트 카드가 없어 `card_link`는 저장소 README 상대 경로 | discover 신호 `git.remote_url` |
 | License/Terms of Use | `license_identifier` | HIGH | No | `Apache-2.0`, `license_verify: false`. 저장소 루트 LICENSE 파일(Apache License 2.0 전문, 2026-09-27(일) 사용자 결정)에서 가져옴. discover는 첫 줄 `Apache License`를 식별자로 읽었고, 스타일 가이드의 선택 목록식 짧은 이름 규칙에 따라 SPDX 식별자로 적음(파일 둘째 줄 "Version 2.0"). 식별자를 LICENSE 파일에서 그대로 가져왔으므로 사람 확인 표시 없음 | `LICENSE`, discover 신호 Repo-root signals |
 | Use Case | `use_case` | INFERRED | Yes | "언제 쓰나"·"입력"·"증거를 찾는 곳"을 두 문장으로 요약 | `skills/tradesentry-scorecard/SKILL.md` |
 | Deployment Geography | `deployment_geography` | INFERRED | Yes | 문서에 지역 제한 없음 → 기본값 `Global` | 생성기 `references/style-guide.md` |
