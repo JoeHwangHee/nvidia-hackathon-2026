@@ -95,7 +95,7 @@ class ProgressStepsTest(Base):
         self.assertEqual(progress.progress_ratio(steps), 1.0)
 
     def test_retrying_flag_follows_last_model_event(self):
-        seq = [ev("tool_call", "basic", tool="get_history"), ev("model_request"), ev("model_error")]
+        seq = [ev("tool_call", "basic", tool="get_history"), ev("model_request"), ev("model_error", retrying=True)]
         self.assertTrue(progress.step_state(seq)["retrying"])
         seq.append(ev("model_request"))
         seq.append(ev("model_response"))
@@ -354,6 +354,210 @@ class PlainV2Test(Base):
                 self.assertNoInternal(entry[lang], key)
                 self.assertNotIn("NVIDIA_API_KEY", entry[lang], key)
                 self.assertNotIn("snapshot_id", entry[lang], key)
+
+
+# ---- UI4: 독립 검토 권고 7건 -----------------------------------------------------------------------------------------
+
+
+def write_run(outputs: Path, run_id: str, case_id: str, execution: str | None, verdict: str | None = "HOLD",
+              trace_case: str | None = None) -> Path:
+    """합성 실행 폴더: execution이 None이면 실행 결과 기록 없이(진행 중) trace run_start 한 줄만 쓴다."""
+    run_dir = outputs / run_id
+    run_dir.mkdir(parents=True)
+    stamp = app.run_stamp(run_id)
+    if execution is not None:
+        (run_dir / f"{app.RECORD_DOMAIN}-{stamp}.json").write_text(json.dumps(
+            {"case_id": case_id, "execution_status": execution, "review_status_final": verdict}), encoding="utf-8")
+    start = {"seq": 1, "event": "run_start", "stage": None, "data": {"case_id": trace_case or case_id}}
+    (run_dir / f"{app.TRACE_DOMAIN}-{stamp}.jsonl").write_text(json.dumps(start) + "\n", encoding="utf-8")
+    return run_dir
+
+
+class NewResultAfterDecisionTest(Base):
+    """권고 1: 결정 뒤 같은 사례를 다시 조사해 완료된 결과가 있으면 "새 조사 결과 · 결정 대기"."""
+    CASE = "850490-PH-202412"
+
+    def _index(self, tmp: str, *extra: tuple) -> dict:
+        outputs = Path(tmp) / "outputs"
+        write_run(outputs, "run_case-260926194101", self.CASE, "COMPLETED", "HOLD")
+        for run_id, execution, verdict in extra:
+            write_run(outputs, run_id, self.CASE, execution, verdict)
+        return alerts.investigation_index(outputs)
+
+    def test_newer_completed_run_becomes_new_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            index = self._index(tmp, ("run_case-260926194504", "COMPLETED", "MONITOR"))
+            for validity in (approval.VALID, approval.REVIEW_REQUIRED):  # 이전 결정의 유효 상태와 무관하다
+                decisions = {self.CASE: {"validity": validity, "decision": "HOLD", "run_id": "run_case-260926194101"}}
+                state = listing.row_progress(self.CASE, index, decisions)
+                self.assertEqual(state["state"], listing.NEW_RESULT)
+                self.assertEqual((state["run_id"], state["verdict"], state["investigated"]), ("run_case-260926194504", "MONITOR", True))
+            rows = [row(f"{self.CASE}"), row("850431-MX-202412")]
+            states = {self.CASE: state, "850431-MX-202412": {"state": listing.AWAITING, "investigated": True, "verdict": "HOLD"}}
+            self.assertEqual(listing.month_summary(rows, None, "202412", states)["awaiting"], 2)  # 내 결정을 기다리는 사례에 든다
+            self.assertEqual([r["case_id"] for r in listing.filter_rows(rows, states, progress="awaiting")], [self.CASE, "850431-MX-202412"])
+            self.assertEqual(listing.filter_rows(rows, states, progress="decided"), [])
+            self.assertIn(listing.NEW_RESULT, listing.PROGRESS_FILTERS["all"])
+            self.assertEqual(listing.PROGRESS_ORDER[listing.NEW_RESULT], listing.PROGRESS_ORDER[listing.AWAITING])
+            self.assertEqual(listing.progress_cell(state, "ko"),
+                             {"text": "새 조사 결과 · 결정 대기", "sub": "모니터링 제안", "kind": "done", "action": "view"})
+            en = listing.progress_cell(state, "en")
+            self.assertEqual((en["text"], en["sub"]), ("New result · awaiting your decision", "monitoring suggested"))
+            for lang in i18n.LANGS:
+                cell = listing.progress_cell(state, lang)
+                self.assertNoInternal(cell["text"] + cell["sub"], lang)
+
+    def test_failed_or_running_newer_run_is_not_counted(self):
+        decisions = {self.CASE: {"validity": approval.VALID, "decision": "HOLD", "run_id": "run_case-260926194101"}}
+        with tempfile.TemporaryDirectory() as tmp:
+            index = self._index(tmp, ("run_case-260926194504", "FAILED", None), ("run_case-260926194600", None, None))
+            state = listing.row_progress(self.CASE, index, decisions)
+            self.assertEqual((state["state"], state["decision"]), (listing.DECIDED, "HOLD"))
+            self.assertIsNone(listing.newer_completed_run(index[self.CASE]["runs"], "run_case-260926194101"))
+        with tempfile.TemporaryDirectory() as tmp:  # 결정한 실행보다 오래된 완료 실행은 새 결과가 아니다
+            index = self._index(tmp, ("run_case-260926190000", "COMPLETED", "MONITOR"))
+            self.assertEqual(listing.row_progress(self.CASE, index, decisions)["state"], listing.DECIDED)
+            self.assertIsNone(listing.newer_completed_run(index[self.CASE]["runs"], None))
+            self.assertIsNone(listing.newer_completed_run(index[self.CASE]["runs"], "approval_record-260926194428"))
+
+    def test_newest_of_several_completed_runs(self):
+        runs = [{"run_id": "run_case-260926194504", "status": alerts.INVESTIGATED, "review_status_final": "MONITOR"},
+                {"run_id": "run_case-260926195000", "status": alerts.INVESTIGATED, "review_status_final": "MAINTAIN"},
+                {"run_id": "run_case-260926196000", "status": alerts.FAILED, "review_status_final": None}]
+        self.assertEqual(listing.newer_completed_run(runs, "run_case-260926194101")["run_id"], "run_case-260926195000")
+
+
+class PickRunDirByCaseTest(Base):
+    """권고 2: 전후 폴더 차이로 고를 때 같은 사례의 폴더만."""
+
+    def test_record_and_trace_run_start(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outputs = Path(tmp) / "outputs"
+            write_run(outputs, "run_case-260926000005", CASE_ID, "COMPLETED")  # 실행 결과 기록으로
+            write_run(outputs, "run_case-260926000010", "850431-XB-202412", "COMPLETED")  # 다른 사례(더 새것)
+            write_run(outputs, "run_case-260926000020", "850432-XC-202412", None)  # 다른 사례, 진행 중(trace만)
+            (outputs / "run_case-260926000030").mkdir()  # 아직 아무것도 없음
+            case_of = lambda name: progress.run_dir_case(outputs / name)  # noqa: E731
+            self.assertEqual(case_of("run_case-260926000005"), CASE_ID)
+            self.assertEqual(case_of("run_case-260926000020"), "850432-XC-202412")
+            self.assertIsNone(case_of("run_case-260926000030"))
+            before = ["run_case-260926000000"]
+            after = before + ["run_case-260926000005", "run_case-260926000010", "run_case-260926000020", "run_case-260926000030"]
+            self.assertEqual(progress.pick_run_dir(before, after), "run_case-260926000030")  # 사례를 주지 않으면 가장 새 것(이전 동작)
+            self.assertEqual(progress.pick_run_dir(before, after, None, case_id=CASE_ID, case_of=case_of), "run_case-260926000005")
+            self.assertEqual(progress.pick_run_dir(before, after, None, case_id="850432-XC-202412", case_of=case_of),
+                             "run_case-260926000020")  # 진행 중: trace run_start의 case_id로
+            self.assertIsNone(progress.pick_run_dir(before, after, None, case_id="850450-JP-202412", case_of=case_of))
+            self.assertEqual(progress.pick_run_dir(before, after, ["run_case-260926000010"], case_id=CASE_ID, case_of=case_of),
+                             "run_case-260926000010")  # 표준 출력(그 조사 프로세스가 알린 폴더)이 먼저다
+            # 기록과 trace가 다르면 기록이 먼저
+            write_run(outputs, "run_case-260926000040", CASE_ID, "FAILED", None, trace_case="850431-XB-202412")
+            self.assertEqual(case_of("run_case-260926000040"), CASE_ID)
+
+
+class FakeProc:
+    def __init__(self, waits):
+        self.pid = 4321
+        self.waits = list(waits)
+        self.calls = []
+
+    def wait(self, timeout=None):
+        self.calls.append(timeout)
+        outcome = self.waits.pop(0) if self.waits else 0
+        if isinstance(outcome, BaseException):
+            raise outcome
+        return outcome
+
+
+class StopProcessGroupTest(Base):
+    """권고 3: SIGKILL 뒤에도 wait로 회수한다."""
+
+    def _run(self, proc, getpgid=None):
+        sent = []
+        progress.stop_process_group(proc, getpgid=getpgid or (lambda pid: 99), killpg=lambda group, sig: sent.append((group, sig)),
+                                    wait_s=0.01)
+        return sent
+
+    def test_kill_then_reap(self):
+        import signal
+        import subprocess
+        proc = FakeProc([subprocess.TimeoutExpired("x", 0.01), -9])
+        self.assertEqual(self._run(proc), [(99, signal.SIGTERM), (99, signal.SIGKILL)])
+        self.assertEqual(len(proc.calls), 2)  # TERM 뒤 wait, KILL 뒤 wait(회수)
+
+    def test_term_is_enough(self):
+        import signal
+        proc = FakeProc([0])
+        self.assertEqual(self._run(proc), [(99, signal.SIGTERM)])
+        self.assertEqual(len(proc.calls), 1)
+
+    def test_second_wait_timeout_and_gone_process_are_quiet(self):
+        import subprocess
+        proc = FakeProc([subprocess.TimeoutExpired("x", 0.01), subprocess.TimeoutExpired("x", 0.01)])
+        self.assertEqual(len(self._run(proc)), 2)
+
+        def gone(pid):
+            raise ProcessLookupError
+
+        proc = FakeProc([0])
+        self.assertEqual(self._run(proc, gone), [])
+        self.assertEqual(len(proc.calls), 1)  # 이미 끝난 프로세스도 회수한다
+
+
+class RetryAndSkipTest(Base):
+    """권고 4·5."""
+
+    def test_retrying_only_when_flag_is_true(self):
+        base = [ev("tool_call", "basic", tool="get_history"), ev("model_request")]
+        self.assertTrue(progress.step_state(base + [ev("model_error", retrying=True)])["retrying"])
+        self.assertFalse(progress.step_state(base + [ev("model_error", retrying=False)])["retrying"])
+        self.assertFalse(progress.step_state(base + [ev("model_error")])["retrying"])
+        self.assertFalse(progress.step_state(base + [ev("model_error", retrying="yes")])["retrying"])
+        self.assertFalse(progress.step_state(base + [ev("model_error", retrying=True), ev("model_request")])["retrying"])
+
+    def test_step_without_marker_is_skipped(self):
+        seq = [ev("tool_call", "basic", tool="check_comparability"), ev("tool_call", "basic", tool="get_history"),
+               ev("stage_start", "critic", stage="critic")]  # 점유율만 발동: decompose_hs 없음
+        steps = progress.step_state(seq)
+        self.assertEqual(steps["states"], ["done", "done", "skipped", "current", "pending"])
+        self.assertEqual((steps["done"], steps["current"]), (3, 3))
+        self.assertAlmostEqual(progress.progress_ratio(steps), 0.6)  # 건너뛴 단계도 끝난 것으로 센다
+        seq += [ev("stage_end", "critic", stage="critic")]
+        self.assertEqual(progress.step_state(seq)["states"], ["done", "done", "skipped", "done", "current"])  # 뒤 단계는 건너뜀 아님
+        seq += [ev("tool_call", None, tool="verify_evidence"), ev("run_end")]
+        steps = progress.step_state(seq)
+        self.assertEqual(steps["states"], ["done", "done", "skipped", "done", "done"])
+        self.assertEqual(progress.progress_ratio(steps), 1.0)
+        self.assertEqual(progress.step_state([ev("run_end")])["states"], ["done"] * 5)  # 표지가 없으면 건너뜀으로 보지 않는다
+        self.assertEqual(progress.step_state([])["states"], ["current"] + ["pending"] * 4)
+
+    def test_skipped_label_both_languages(self):
+        self.assertEqual(i18n.t("load.skipped", "ko"), "건너뜀")
+        self.assertEqual(i18n.t("load.skipped", "en"), "Skipped")
+
+
+class LoadingTextTest(Base):
+    """권고 6·7: 재생/실제 실행 안내와 재검토 필요 보조 문구."""
+
+    def test_expect_by_run_kind(self):
+        self.assertEqual(i18n.t("load.expect_replay", "ko"), "저장해 둔 응답을 다시 쓰는 시연 실행이라 몇 초면 끝납니다. 끝나면 결과 화면이 바로 열립니다.")
+        self.assertIn("finishes in a few seconds", i18n.t("load.expect_replay", "en"))
+        self.assertTrue(i18n.t("load.expect", "ko").startswith("보통 30초에서 90초가 걸립니다."))
+        self.assertNotIn("30", i18n.t("load.expect_replay", "ko"))
+
+    def test_footnote_real_mentions_nim_and_replay_unchanged(self):
+        self.assertTrue(i18n.t("load.footnote", "ko").endswith(
+            "조사자와 검수자는 정해진 조회 도구로 통계 원본만 조회합니다. 모델 추론 요청은 NVIDIA 클라우드(NIM)로 갑니다."))
+        self.assertTrue(i18n.t("load.footnote", "en").endswith(
+            "through fixed lookup tools. Model inference requests go to the NVIDIA cloud (NIM)."))
+        self.assertEqual(i18n.t("load.footnote_replay", "ko"),
+                         "이 조사는 저장해 둔 모델 응답을 다시 쓰는 시연 실행(재생)이라 외부 모델을 부르지 않습니다. 조사가 실패하면 여기서 "
+                         "알려 주고 \"다시 시도\" 버튼이 나옵니다.")
+        self.assertNotIn("NIM", i18n.t("load.footnote_replay", "en"))
+
+    def test_review_required_sub_is_neutral(self):
+        self.assertEqual(listing.progress_cell({"state": listing.REVIEW_REQUIRED}, "ko")["sub"], "근거 보고서와 맞지 않습니다")
+        self.assertEqual(listing.progress_cell({"state": listing.REVIEW_REQUIRED}, "en")["sub"], "No longer matches its report")
 
 
 if __name__ == "__main__":

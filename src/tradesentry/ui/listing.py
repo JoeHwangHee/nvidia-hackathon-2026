@@ -2,9 +2,13 @@
 
 - 값은 경보 줄(`alerts.alert_row`)의 지표(단위 I2 이력 도구 봉투에서 옮긴 Decimal)와 실행 결과 기록·결정 기록에서만 가져온다.
   새로 계산하는 것은 개수 세기, 부호 비교, 정렬 순서뿐이다.
-- 진행 상태(행마다 하나): 이 세션에서 도는 조사면 `RUNNING`. 아니면 그 사례의 최신 결정 기록이 있고 `approval.check`가 `VALID`면
-  `DECIDED`, `REVIEW_REQUIRED`면 `REVIEW_REQUIRED`. 아니면 최신 실행이 `COMPLETED`면 `AWAITING`(조사 완료 · 내 결정 대기),
-  실패·무효면 `FAILED`, 실행이 없으면 `NOT_STARTED`.
+- 진행 상태(행마다 하나): 이 세션에서 도는 조사면 `RUNNING`. 아니면 그 사례의 최신 결정 기록이 있을 때, 결정이 가리키는 실행보다
+  새로운 완료(`COMPLETED`) 실행이 같은 사례에 있으면 `NEW_RESULT`(새 조사 결과 · 결정 대기. 결정 뒤 다시 조사한 결과가 가려지지
+  않게, UI4), 없으면 `approval.check`가 `VALID`면 `DECIDED`, `REVIEW_REQUIRED`면 `REVIEW_REQUIRED`. 결정이 없으면 최신 실행이
+  `COMPLETED`면 `AWAITING`(조사 완료 · 내 결정 대기), 실패·무효면 `FAILED`, 실행이 없으면 `NOT_STARTED`. `NEW_RESULT`는 화면
+  표시 규칙이다: 이전 결정 기록과 그 유효 상태(A1 `approval.check`는 결정이 가리키는 실행의 보고서와 대조)는 그대로다. 실패했거나
+  진행 중인(실행 결과 기록이 없는) 새 실행은 이 규칙에 넣지 않는다. `NEW_RESULT`는 "내 결정을 기다리는 사례" 수와 조회 조건
+  "조사 완료 · 결정 대기"에 든다.
 - 화면 문구에는 품목·국가 이름과 월만 쓴다(HS6 코드·사례 ID·실행 폴더 이름·영문 상태 코드를 넣지 않는다).
 """
 from decimal import Decimal
@@ -13,18 +17,19 @@ from tradesentry import app
 from tradesentry.ui import alerts, i18n
 from tradesentry.ui.i18n import t
 
-NOT_STARTED, RUNNING, AWAITING, DECIDED, REVIEW_REQUIRED, FAILED = (
-    "NOT_STARTED", "RUNNING", "AWAITING", "DECIDED", "REVIEW_REQUIRED", "FAILED")
-PROGRESS_STATES = (NOT_STARTED, RUNNING, AWAITING, DECIDED, REVIEW_REQUIRED, FAILED)
+NOT_STARTED, RUNNING, AWAITING, NEW_RESULT, DECIDED, REVIEW_REQUIRED, FAILED = (
+    "NOT_STARTED", "RUNNING", "AWAITING", "NEW_RESULT", "DECIDED", "REVIEW_REQUIRED", "FAILED")
+PROGRESS_STATES = (NOT_STARTED, RUNNING, AWAITING, NEW_RESULT, DECIDED, REVIEW_REQUIRED, FAILED)
+WAITING_STATES = (AWAITING, NEW_RESULT)  # 내 결정을 기다리는 사례
 PROGRESS_FILTERS = {  # 조회 조건 "진행 상태" → 포함하는 상태
     "all": PROGRESS_STATES,
     "not_started": (NOT_STARTED, FAILED),
     "running": (RUNNING,),
-    "awaiting": (AWAITING,),
+    "awaiting": WAITING_STATES,
     "decided": (DECIDED, REVIEW_REQUIRED),
 }
 SORTS = ("change", "item", "partner", "progress")
-PROGRESS_ORDER = {RUNNING: 0, AWAITING: 1, REVIEW_REQUIRED: 2, FAILED: 3, NOT_STARTED: 4, DECIDED: 5}
+PROGRESS_ORDER = {RUNNING: 0, AWAITING: 1, NEW_RESULT: 1, REVIEW_REQUIRED: 2, FAILED: 3, NOT_STARTED: 4, DECIDED: 5}
 SIGNALS = ("all", "unit_value", "share")
 
 
@@ -42,6 +47,18 @@ def _dec(value: object) -> Decimal | None:
 # ---- 진행 상태 ---------------------------------------------------------------------------------------------------
 
 
+def newer_completed_run(runs: list[dict], decided_run_id: object) -> dict | None:
+    """결정 기록이 가리키는 실행보다 새로운(실행명 시각이 더 뒤인) 완료 실행 가운데 가장 새 것(실행 요약, alerts.run_entry). runs는
+    같은 사례의 실행 요약 목록이다. 실패·무효 실행과 실행 결과 기록이 없는(진행 중) 실행은 넣지 않는다. 결정의 run_id가 실행명
+    형식이 아니면 None."""
+    if not isinstance(decided_run_id, str) or not app.RUN_DIR_RE.fullmatch(decided_run_id):
+        return None
+    decided = app.run_stamp(decided_run_id)
+    newer = [run for run in runs if run.get("status") == alerts.INVESTIGATED and isinstance(run.get("run_id"), str)
+             and app.RUN_DIR_RE.fullmatch(run["run_id"]) and app.run_stamp(run["run_id"]) > decided]
+    return max(newer, key=lambda run: app.run_stamp(run["run_id"])) if newer else None
+
+
 def row_progress(case_id: str, index: dict, decisions: dict, running_case: str | None = None) -> dict:
     """사례 하나의 진행 상태. index는 alerts.investigation_index, decisions는 records.latest_decisions의 결과."""
     status = alerts.investigation_status(case_id, index=index)
@@ -51,6 +68,10 @@ def row_progress(case_id: str, index: dict, decisions: dict, running_case: str |
         return {**base, "state": RUNNING}
     record = decisions.get(case_id)
     if record is not None:
+        newer = newer_completed_run(status["runs"], record.get("run_id"))
+        if newer is not None:  # 결정 뒤 다시 조사한 완료 결과: 그 실행을 보이고 결정을 기다린다
+            return {**base, "state": NEW_RESULT, "run_id": newer["run_id"], "verdict": newer.get("review_status_final"),
+                    "investigated": True, "decision": record.get("decision")}
         state = DECIDED if record.get("validity") == "VALID" else REVIEW_REQUIRED
         return {**base, "state": state, "decision": record.get("decision")}
     if status["status"] == alerts.INVESTIGATED:
@@ -103,7 +124,7 @@ def month_summary(rows: list[dict], all_cases: dict | None, month: str, progress
         "share": len(share), "share_stopped": sum(1 for r in share if stopped_importing(r)), "share_up": s_up, "share_down": s_down,
         "investigated": investigated, "verdicts": {code: verdicts[code] for code in ("MAINTAIN", "MONITOR", "HOLD") if code in verdicts},
         "running": sum(1 for r in rows if (progress_by_case.get(r["case_id"]) or {}).get("state") == RUNNING),
-        "awaiting": sum(1 for r in rows if (progress_by_case.get(r["case_id"]) or {}).get("state") == AWAITING),
+        "awaiting": sum(1 for r in rows if (progress_by_case.get(r["case_id"]) or {}).get("state") in WAITING_STATES),
     }
 
 
@@ -219,6 +240,9 @@ def progress_cell(state: dict, lang: str, clock: str | None = None) -> dict:
                 "action": "view"}
     if code == REVIEW_REQUIRED:
         return {"text": t("prog.review_required", lang), "sub": t("prog.review_required_sub", lang), "kind": "fail", "action": "view"}
+    if code == NEW_RESULT:
+        return {"text": t("prog.new_result", lang), "sub": t("prog.new_result_sub", lang, verdict=t(f"verdict_lc.{state.get('verdict')}", lang)),
+                "kind": "done", "action": "view"}
     if code == AWAITING:
         return {"text": t("prog.awaiting", lang, verdict=t(f"verdict_lc.{state.get('verdict')}", lang)), "sub": t("prog.awaiting_sub", lang),
                 "kind": "done", "action": "view"}
