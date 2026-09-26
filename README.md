@@ -186,7 +186,7 @@ docs/
   eval/      RULEBOOK.md(평가 룰북) · RESULTS.md(결과표) · SKILL_DICTIONARY.md(스킬 사전)
   submission/ SUBMISSION_FORM.md(제출 폼 입력용 최종본) · service_file.html(서비스 파일 한 쪽 템플릿)
   architecture.md · business-rules.md · security.md · operations.md · contracts.md · standards.md · engineering-notes.md
-  tracking/  status.md · decisions/(결정 기록) · findings.md
+  tracking/  status.md · decisions/(결정 기록) · findings.md · journal.md(기획·개발 일지)
 src/tradesentry/               ← 앱 패키지(contract·snapshot·dal·metrics·policy·grouping·tools·workflow·reports·validator·runlog·evaluation·approval·cli)와 수집기 ingest.py · ui/(담당자용 화면. 진입 스크립트 ui/ui_app.py, 한국어/영어)
 tests/                         ← unittest(네트워크·키 없이 돈다). 단위 골든 시험 tests/units/{단위 ID}/
 configs/                       ← model/(모델·지침) · openshell/(정책·이미지) · nat/(NAT 워크플로) · policy_v1.json(판정 정책) · collection_plan.json
