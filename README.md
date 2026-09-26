@@ -179,6 +179,7 @@ uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py 
 ```
 README.md                      ← 이 문서(심사위원용 안내)
 CLAUDE.md / AGENTS.md          ← 에이전트용 프로젝트 안내(내용이 같다)
+LICENSE                        ← Apache License 2.0 전문(이 프로젝트의 코드·문서. 제3자 자료는 11절)
 docs/
   plan/      DEV_PLAN.md(개발 플랜) · ROADMAP.md(작업·날짜·완료 기준) · UNITS.md(최소 단위 표) · SUBMISSION_SCENARIOS.md
   rules/     DATA_CONTRACT_V1.md(값의 정본) · PARALLEL_DEV_RULES.md · AGENT_OPS.md
@@ -211,6 +212,14 @@ outputs/                       ← 실행별 출력(커밋하지 않는다)
 - 팀 정보는 대회 신청 폼(Section 01·02)에 적는다. 이 README에는 두지 않는다.
 - 구현은 Claude 보조 에이전트가 모델 트랙(판정 정책·조사 흐름·NVIDIA 연동)과 데이터 트랙(수집·지표·평가 자료·채점기)으로 나눠 동시에 했고, 작업 성격별 도메인 검토 에이전트와 Codex(OpenAI의 코딩 에이전트 CLI)가 검토했다. 결정은 `docs/tracking/decisions/`에 남아 있다.
 
+## 11. 라이선스
+
+- 이 프로젝트가 만든 코드와 문서는 Apache License 2.0(SPDX(소프트웨어 라이선스 표준 식별자) `Apache-2.0`, 특허 조항이 있는 허용형 오픈소스 라이선스)을 따른다. 전문은 저장소 루트의 `LICENSE`다(2026-09-27(일) 사용자 결정, 결정 기록 `docs/tracking/decisions/20260927-0215-user-decision-license-apache2.md`).
+- 저장소에 든 제3자 자료는 Apache-2.0이 아니라 각 출처의 이용 조건을 따른다. 자세한 출처와 조건은 7절 "출처와 이용 조건"이 정본이다.
+  - 관세청 수출입실적 API 두 개(공공데이터포털 `15100475`·`15101609`): 두 API 페이지의 조건은 이용허락범위 제한 없음이다. 조회 코드표 `data/reference/관세청조회코드_v1.3.xlsx`는 두 번째 API 페이지의 참고문서이고, 국가코드 `data/reference/kcs_country_codes.json`은 그 코드표의 "국가코드" 시트를 옮긴 것이다. 원자료(API 응답)는 저장소에 재배포하지 않는다.
+  - 관세청_HS부호_20260101과 여기서 뽑은 품목표: 공공누리 제1유형(출처표시. 출처: 관세청, 공공데이터포털).
+  - BACI HS22 V202601 발췌(CEPII): Etalab 2.0 공개 라이선스(출처를 밝히면 복제·수정·재배포 가능). 인용은 7절.
+
 ## English summary
 
 TradeSentry flags year-over-year jumps in unit value (USD/kg) and partner share in a frozen snapshot of Korea Customs Service import statistics (HS 8504, four HS6 items × 16 partners × 36 months, 2022–2024). For each alert, a Nemotron investigator gathers evidence through five fixed query tools, a separately-contexted Critic challenges the draft, one revision follows, and a code validator blocks any report whose numbers, units or evidence IDs do not match the snapshot. The output is a Korean report proposing the analyst's next action: `MAINTAIN`, `MONITOR` or `HOLD`. It is not a fraud, legality or origin determination and does not trigger customs action.
@@ -226,3 +235,5 @@ Results (both sealed sets were scored once on 2026-09-26; rulebook `RB-1` freeze
 - Development-set numbers (`dev20`, `real_dev`, grade D) in `artifacts/eval/score-*/` are not headline numbers.
 
 UI: a Streamlit app (entry script `src/tradesentry/ui/ui_app.py`, section 5) with analyst pages in Korean and English and an admin view of each investigation's trace. Anything beyond this single-user local demo (a shared sandbox, monthly snapshot refresh, an always-on daemon that sends push alerts after each batch, GraphRAG, a fine-tuned local model) is a plan only; see the extension section of `docs/submission/SUBMISSION_FORM.md`.
+
+License: the code and documentation written for this project are under the Apache License 2.0 (`LICENSE`); third-party data in the repository keeps its own source terms (section 7).
