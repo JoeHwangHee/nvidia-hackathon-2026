@@ -27,7 +27,7 @@
 
 현재 저장소를 공개하면 아래가 함께 공개된다. 공개 전환 전 main에 더 병합되는 커밋(담당자 화면 v2, 이 PR, 사용자의 추가 변경)도 포함된다.
 
-- 원격 참조로 닿는 커밋 810개: `main`, 병합 뒤 지우지 않은 원격 작업 브랜치 85개, PR 참조 106개(PR마다 중간 커밋 포함)
+- 원격 참조로 닿는 커밋 810개: `main`과 병합 뒤 지우지 않은 원격 작업 브랜치 84개(원격 브랜치 모두 85개), PR 참조 106개(PR마다 중간 커밋 포함)
 - PR 106개의 페이지: 제목·본문, 대화 댓글 13개(리뷰 댓글 0개). 이슈는 0개다
 - 루트의 이전 설계·조사 기록(`docs/README.md` §4 목록. 고치지 않는 문서)
 - 커밋 작성자 이름과 이메일(커밋 메타데이터)
@@ -43,7 +43,7 @@
 | 접두어 없는 키 모양 | 같은 범위 | 14건, 모두 비밀값 아님: 웹 주소 5건(SAP 도움말 주소 2건, 대회 신청 폼 주소 3건. 루트 조사 문서), 셸 변수 참조 8건(`configs/openshell/image/tradesentry.sh`에서 키 환경변수에 다른 환경변수 이름을 대입하는 줄, 키 값 없음), 시험용 자리표시 값 1건(`tests/units/I7/test_model_client.py`) |
 | 로컬 경로(사용자 폴더·임시 폴더 절대경로) | 같은 범위 | 0건 |
 | 홈 폴더 표기(물결표와 빗금으로 시작하는 경로, 봉인 폴더 기본값 제외) | 같은 범위 | 5건, 사용자 이름이 없는 일반 표기(결정 기록 `20260924-1720-user-decision-x1-option-ga.md`의 NemoClaw 수락 기록 파일·셸 설정 파일 이름, findings의 검사 규칙 설명). 지금 main에는 없다 |
-| `.env`, 실행 출력 `outputs/`, SQLite | 모든 참조의 모든 파일 경로 | 0건. `raw` 경로 389개는 합성 픽스처(`eval/dev/dev20/` 204개, `eval/sealed/holdout40/` 185개)이며 관세청 원자료가 아니다 |
+| `.env`, 실행 출력 `outputs/`, SQLite | 모든 참조의 모든 파일 경로 | 0건. `raw` 경로 374개는 합성 픽스처(`eval/dev/dev20/` 189개, `eval/sealed/holdout40/` 185개)이며 관세청 원자료가 아니다 |
 | 큰 파일(2MB 초과) | 같은 범위 | 1개: `data/reference/관세청조회코드_v1.3.xlsx`(2.0MB, 공공데이터포털 공개 참고문서) |
 | PR 본문 106개·댓글 13개 | GitHub API | 비밀값 0건. 서비스키 파라미터 12건은 검사 명령에 적은 패턴 글자(값 없음), 절대경로 4건은 샌드박스 컨테이너 안 경로, 홈 표기 2건은 검사 규칙 설명. 키 모양 0건 |
 | 추적 파일 전체(main f7ce5a3) | `python3 scripts/secret_scan.py` | 1479개, 걸린 곳 0 |
@@ -57,13 +57,13 @@
 | 자료 | 저장소 위치 | 이용 조건 | 출처 페이지 |
 |---|---|---|---|
 | 관세청 품목별 국가별 수출입실적(GW) API | 원자료는 커밋하지 않음. 해시·빌드 기록과 보고서 속 파생 수치만 | 이용허락범위 제한 없음(무료) | https://www.data.go.kr/data/15100475/openapi.do |
-| 관세청 품목별 수출입실적(GW) API와 참고문서 `관세청조회코드_v1.3.xlsx` | `data/reference/관세청조회코드_v1.3.xlsx` | 이용허락범위 제한 없음(무료) | https://www.data.go.kr/data/15101609/openapi.do |
+| 관세청 품목별 수출입실적(GW) API와 참고문서 `관세청조회코드_v1.3.xlsx` | `data/reference/관세청조회코드_v1.3.xlsx`와 그 "국가코드" 시트를 옮긴 `data/reference/kcs_country_codes.json` | 이용허락범위 제한 없음(무료) | https://www.data.go.kr/data/15101609/openapi.do |
 | 관세청_HS부호_20260101 | `data/reference/관세청_HS부호_20260101.xlsx`와 여기서 뽑은 품목표 | 공공저작물 출처표시(공공누리 제1유형) | https://www.data.go.kr/data/15049722/fileData.do |
 | BACI(CEPII) HS22 V202601 | `data/reference/baci_hs22_v202601_kr_imports_ch85.csv`(한국 수입 85류 발췌) | Etalab 2.0 공개 라이선스(출처 표시). 권장 인용: Gaulier, G. and Zignago, S. (2010) BACI: International Trade Database at the Product-Level. The 1994-2007 Version. CEPII Working Paper, N°2010-23 | https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37 |
 
 ## 남은 것
 
 - 사용자 결정 대기 ① 공개 전환을 누가 하는가: 사용자가 GitHub 설정 화면에서 직접 하거나, 사용자가 지시하면 오케스트레이터가 `gh repo edit JoeHwangHee/nvidia-hackathon-2026 --visibility public --accept-visibility-change-consequences`로 한다. 지시 전에는 공개 범위와 저장소 설정을 바꾸지 않는다
-- 사용자 결정 대기 ② 라이선스: 저장소에 LICENSE 파일이 없으면 공개 뒤에도 열람만 허용되고 재사용 권리는 주지 않는다. 오케스트레이터 권장은 Apache-2.0이다(특허 조항이 있는 허용형 라이선스). 정해지면 LICENSE 파일을 더하고, 거버넌스 카드 3개의 라이선스 칸을 채워 생성기로 다시 렌더한다(스킬 사전 §3.5 ②, `docs/eval/SKILL_DICTIONARY.md`). 제출을 막는 항목은 아니다
+- 사용자 결정 대기 ② 라이선스: 저장소에 LICENSE 파일이 없으면 공개 뒤에도 재사용·수정·재배포 권리를 주지 않는다(GitHub 이용 약관에 따라 GitHub 안에서 열람·포크만 할 수 있다). 오케스트레이터 권장은 Apache-2.0이다(특허 조항이 있는 허용형 라이선스). 정해지면 LICENSE 파일을 더하고, 거버넌스 카드 3개의 라이선스 칸을 채워 생성기로 다시 렌더한다(스킬 사전 §3.5 ②, `docs/eval/SKILL_DICTIONARY.md`). 제출을 막는 항목은 아니다
 - 공개 전환 직전 검사 재실행(위 "공개 전 검사"와 같은 방법, main 최신 기준)
 - 서비스 파일은 URL을 넣어 다시 만든다(`scripts/make_service_file.sh "https://github.com/JoeHwangHee/nvidia-hackathon-2026"`). 서비스 파일 내용이 바뀌지 않으면 한 번 만든 파일을 제출 때 그대로 쓴다

@@ -167,9 +167,9 @@ uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py 
 - **합성 자료**: `controlled_fixture_v0`(정답을 알고 만든 개발·시험용 픽스처. 사례 A 구성변화·B 잔존변화·C 자료누락), `dev20`(공개 개발 자료 20건, `eval/dev/dev20/`), `holdout40`(봉인 평가 자료 40건. 채점이 끝날 때까지 저장소 밖에 두었고, 최종 채점 뒤 `eval/sealed/`에 커밋했다). 합성 사례의 상대국 코드(`XA`·`XB`·`XC`·`XO` 등)는 가상이다.
 - **참고 자료**: `data/reference/` — 품목표, 관세청 국가코드, 비교국 표(`peer_group_g0.csv`), 실자료 분할 기록(`real_split_kcs_202201_202412_v2.json`), BACI(CEPII가 정리한 국가 간 연간 무역 자료) 발췌. BACI는 비교국 선택과 문맥 표시에만 쓰고 관세청 지표와 한 지표 안에서 섞지 않는다.
 - **출처와 이용 조건**(2026-09-26(토) 각 원 페이지에서 확인):
-  - 관세청 품목별 국가별 수출입실적(GW) API(https://www.data.go.kr/data/15100475/openapi.do)와 관세청 품목별 수출입실적(GW) API(https://www.data.go.kr/data/15101609/openapi.do): 이용허락범위 제한 없음. 조회 코드표 `data/reference/관세청조회코드_v1.3.xlsx`는 두 번째 API 페이지의 참고문서다.
+  - 관세청 품목별 국가별 수출입실적(GW) API(https://www.data.go.kr/data/15100475/openapi.do)와 관세청 품목별 수출입실적(GW) API(https://www.data.go.kr/data/15101609/openapi.do): 이용허락범위 제한 없음. 조회 코드표 `data/reference/관세청조회코드_v1.3.xlsx`는 두 번째 API 페이지의 참고문서이고, 관세청 국가코드 `data/reference/kcs_country_codes.json`은 이 코드표의 "국가코드" 시트를 옮긴 것이다.
   - 관세청_HS부호_20260101(https://www.data.go.kr/data/15049722/fileData.do): 공공저작물 출처표시(공공누리 제1유형). 출처: 관세청, 공공데이터포털. `data/reference/관세청_HS부호_20260101.xlsx`와 여기서 뽑은 품목표에 해당한다.
-  - BACI HS22 V202601(CEPII, https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37): Etalab 2.0 공개 라이선스. 인용: Gaulier, G. and Zignago, S. (2010) BACI: International Trade Database at the Product-Level. The 1994-2007 Version. CEPII Working Paper, N°2010-23. `data/reference/baci_hs22_v202601_kr_imports_ch85.csv`는 한국 수입 85류 발췌다.
+  - BACI HS22 V202601(CEPII, https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37): Etalab 2.0 공개 라이선스(프랑스 정부의 공개 라이선스. 출처를 밝히면 복제·수정·재배포할 수 있다). 인용: Gaulier, G. and Zignago, S. (2010) BACI: International Trade Database at the Product-Level. The 1994-2007 Version. CEPII Working Paper, N°2010-23. `data/reference/baci_hs22_v202601_kr_imports_ch85.csv`는 한국 수입 85류 발췌다.
 - 자료 형식·상태값·단위·자릿수의 정본: `docs/rules/DATA_CONTRACT_V1.md`.
 
 ## 8. 저장소 구조
