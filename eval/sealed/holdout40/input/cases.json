@@ -1,0 +1,249 @@
+{
+ "schema_version": 2,
+ "dataset": "holdout40",
+ "snapshot_id": "holdout40",
+ "policy_version": "policy_v1",
+ "snapshot_normalized_sha256": "1df5f80112e38cef2878a990a51cea6595e7caff85ee7ab2daf2fdcaa951f93a",
+ "cases": [
+  {
+   "case_id": "850410-XR-202402",
+   "hs6": "850410",
+   "partner": "XR",
+   "month": "202402"
+  },
+  {
+   "case_id": "850410-XS-202403",
+   "hs6": "850410",
+   "partner": "XS",
+   "month": "202403"
+  },
+  {
+   "case_id": "850410-XT-202404",
+   "hs6": "850410",
+   "partner": "XT",
+   "month": "202404"
+  },
+  {
+   "case_id": "850410-XU-202405",
+   "hs6": "850410",
+   "partner": "XU",
+   "month": "202405"
+  },
+  {
+   "case_id": "850410-XV-202406",
+   "hs6": "850410",
+   "partner": "XV",
+   "month": "202406"
+  },
+  {
+   "case_id": "850410-XW-202407",
+   "hs6": "850410",
+   "partner": "XW",
+   "month": "202407"
+  },
+  {
+   "case_id": "850410-XY-202408",
+   "hs6": "850410",
+   "partner": "XY",
+   "month": "202408"
+  },
+  {
+   "case_id": "850421-XR-202402",
+   "hs6": "850421",
+   "partner": "XR",
+   "month": "202402"
+  },
+  {
+   "case_id": "850421-XS-202409",
+   "hs6": "850421",
+   "partner": "XS",
+   "month": "202409"
+  },
+  {
+   "case_id": "850421-XT-202410",
+   "hs6": "850421",
+   "partner": "XT",
+   "month": "202410"
+  },
+  {
+   "case_id": "850421-XU-202411",
+   "hs6": "850421",
+   "partner": "XU",
+   "month": "202411"
+  },
+  {
+   "case_id": "850421-XV-202405",
+   "hs6": "850421",
+   "partner": "XV",
+   "month": "202405"
+  },
+  {
+   "case_id": "850421-XW-202406",
+   "hs6": "850421",
+   "partner": "XW",
+   "month": "202406"
+  },
+  {
+   "case_id": "850421-XY-202407",
+   "hs6": "850421",
+   "partner": "XY",
+   "month": "202407"
+  },
+  {
+   "case_id": "850423-XR-202403",
+   "hs6": "850423",
+   "partner": "XR",
+   "month": "202403"
+  },
+  {
+   "case_id": "850423-XS-202404",
+   "hs6": "850423",
+   "partner": "XS",
+   "month": "202404"
+  },
+  {
+   "case_id": "850423-XT-202406",
+   "hs6": "850423",
+   "partner": "XT",
+   "month": "202406"
+  },
+  {
+   "case_id": "850423-XU-202407",
+   "hs6": "850423",
+   "partner": "XU",
+   "month": "202407"
+  },
+  {
+   "case_id": "850423-XV-202408",
+   "hs6": "850423",
+   "partner": "XV",
+   "month": "202408"
+  },
+  {
+   "case_id": "850423-XW-202409",
+   "hs6": "850423",
+   "partner": "XW",
+   "month": "202409"
+  },
+  {
+   "case_id": "850423-XY-202410",
+   "hs6": "850423",
+   "partner": "XY",
+   "month": "202410"
+  },
+  {
+   "case_id": "850433-XR-202405",
+   "hs6": "850433",
+   "partner": "XR",
+   "month": "202405"
+  },
+  {
+   "case_id": "850433-XS-202304",
+   "hs6": "850433",
+   "partner": "XS",
+   "month": "202304"
+  },
+  {
+   "case_id": "850433-XT-202406",
+   "hs6": "850433",
+   "partner": "XT",
+   "month": "202406"
+  },
+  {
+   "case_id": "850433-XU-202407",
+   "hs6": "850433",
+   "partner": "XU",
+   "month": "202407"
+  },
+  {
+   "case_id": "850433-XV-202408",
+   "hs6": "850433",
+   "partner": "XV",
+   "month": "202408"
+  },
+  {
+   "case_id": "850433-XW-202409",
+   "hs6": "850433",
+   "partner": "XW",
+   "month": "202409"
+  },
+  {
+   "case_id": "850433-XZ-202410",
+   "hs6": "850433",
+   "partner": "XZ",
+   "month": "202410"
+  },
+  {
+   "case_id": "850434-XS-202403",
+   "hs6": "850434",
+   "partner": "XS",
+   "month": "202403"
+  },
+  {
+   "case_id": "850434-XT-202402",
+   "hs6": "850434",
+   "partner": "XT",
+   "month": "202402"
+  },
+  {
+   "case_id": "850434-XU-202405",
+   "hs6": "850434",
+   "partner": "XU",
+   "month": "202405"
+  },
+  {
+   "case_id": "850434-XV-202406",
+   "hs6": "850434",
+   "partner": "XV",
+   "month": "202406"
+  },
+  {
+   "case_id": "850434-XW-202407",
+   "hs6": "850434",
+   "partner": "XW",
+   "month": "202407"
+  },
+  {
+   "case_id": "850434-XY-202408",
+   "hs6": "850434",
+   "partner": "XY",
+   "month": "202408"
+  },
+  {
+   "case_id": "850440-XR-202404",
+   "hs6": "850440",
+   "partner": "XR",
+   "month": "202404"
+  },
+  {
+   "case_id": "850440-XS-202405",
+   "hs6": "850440",
+   "partner": "XS",
+   "month": "202405"
+  },
+  {
+   "case_id": "850440-XT-202406",
+   "hs6": "850440",
+   "partner": "XT",
+   "month": "202406"
+  },
+  {
+   "case_id": "850440-XU-202403",
+   "hs6": "850440",
+   "partner": "XU",
+   "month": "202403"
+  },
+  {
+   "case_id": "850440-XV-202407",
+   "hs6": "850440",
+   "partner": "XV",
+   "month": "202407"
+  },
+  {
+   "case_id": "850440-XW-202408",
+   "hs6": "850440",
+   "partner": "XW",
+   "month": "202408"
+  }
+ ]
+}

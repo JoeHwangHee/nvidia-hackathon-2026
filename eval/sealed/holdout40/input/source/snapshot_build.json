@@ -1,0 +1,25 @@
+{
+ "schema_version": 2,
+ "snapshot_id": "holdout40",
+ "normalized_sha256": "1df5f80112e38cef2878a990a51cea6595e7caff85ee7ab2daf2fdcaa951f93a",
+ "raw_sha256": "76d3806cbcaf7400993d63c8e26d4a6fc24b90385ac7f8aa02725967b517ddd3",
+ "policy_version": "policy_v1",
+ "confirmed_no_trade_rule": "ingest_verify_candidates",
+ "confirmed_no_trade_rows": 0,
+ "peer_group_files": [
+  {
+   "file_name": "peer_group_holdout40.csv",
+   "sha256": "1c65829345434e99116d3f901e63cddd4a92a4e5228f75372582e184426d2f69"
+  }
+ ],
+ "row_counts": {
+  "collection_receipt": 187,
+  "observation": 16262,
+  "peer_group": 192,
+  "snapshot_meta": 14
+ },
+ "build_file": "snapshot_build.sqlite",
+ "built_at": "2026-09-25T12:31:05+09:00",
+ "installed_from": "snapshot_build-260925123105.sqlite",
+ "installed_at": "2026-09-25T12:31:06+09:00"
+}

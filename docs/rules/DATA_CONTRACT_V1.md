@@ -883,6 +883,8 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 | 독립 채점기 | `eval/scorer/`(런타임 모듈을 import하지 않음), 실행 `python -m eval.scorer --run <run_dir>`, 출력 `outputs/score-{시각}/` | D |
 | 도메인 출력(커밋 안 함) | `outputs/{실행명}/{도메인명}-{시각}.{확장자}`(trace JSONL, NAT 프로파일 결과, 보고서, 실행 결과 기록 등 도메인 출력 전부). 봉인 묶음 실행은 `outputs/sealed/{실행명}/` | 공동 |
 | 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력 복사: `scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`), 재채점용 보고서 원문 `artifacts/eval/score-{시각}/{run_id}/`(허용 목록의 보고서 파일만 복사) | 공동 |
+| 봉인 원본(커밋) | `eval/sealed/`(봉인 폴더의 파일 전부를 상대경로 그대로. 최종 정답 대조 채점과 `real_sealed` 표본 seed 공개 기록 뒤에만 커밋하고, 커밋 때 `eval/sealed_manifest.json`과 전체 재대조). `[공용 약속 변경 2026-09-26(토) 12:25 사용자 승인, 결정 기록 `20260926-1225-user-decision-r1-paths.md`]` | 공동
+| 결과표(R1) | `docs/eval/RESULTS.md`(대표·보조 지표와 Wilson 95% 구간·등급, A등급 주장 조건 판정, B7 공개 값. 채점기 출력을 고쳐 쓰지 않고 커밋된 채점 요약의 숫자만 옮긴다). 같은 결정 | 공동 |
 | 자기채점 결과(커밋) | `artifacts/scorecard/scorecard-{시각}/`(자기채점 실행 폴더의 결과 파일만 복사: `scorecard-{시각}.md`) | 공동 |
 | OpenShell 증거(커밋) | `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일만 복사: 예측·실측 대조표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`) | M(보안 검토) |
 | X1 임시 시험 코드 | `spikes/x1/` | M |
@@ -1065,7 +1067,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 - 봉인은 평가 전까지 개발 에이전트가 보지 않도록 자료를 저장소 밖에 격리하고, 해시로 변조를 드러내는 보관 방식이다.
 - 봉인 대상은 `holdout40`의 입력과 정답표, `real_sealed`의 사례 목록과 채점 표본이다.
 - 위치는 저장소 밖 `~/.tradesentry/sealed/`이고, 환경변수 `TRADESENTRY_SEALED_DIR`로 바꿀 수 있다. 에이전트 작업 폴더에도 두지 않는다.
-- 커밋하는 것은 해시 목록 `eval/sealed_manifest.json`뿐이다. 원본 파일은 최종 채점이 끝난 뒤 커밋한다.
+- 커밋하는 것은 해시 목록 `eval/sealed_manifest.json`뿐이다. 원본 파일은 최종 채점이 끝난 뒤 `eval/sealed/`에 커밋한다(§10, 사용자 결정 2026-09-26(토) 12:25).
 
 ### 12.2 기록 형식 [DESIGN]
 

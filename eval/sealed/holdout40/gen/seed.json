@@ -1,0 +1,7 @@
+{
+ "schema_version": 1,
+ "dataset": "holdout40",
+ "nonce": "8bc5b3bb1ac2e0274cfda36d6addfb009cc6c715ed576d15765f4ae273a098cd",
+ "noise_seed": 36244211417996,
+ "derivation": "noise_seed = int(sha256('holdout40-noise:' + nonce).hexdigest()[:12], 16); nonce = secrets.token_hex(32)"
+}

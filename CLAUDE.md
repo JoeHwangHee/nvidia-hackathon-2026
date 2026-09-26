@@ -47,6 +47,7 @@ nvidia-hackathon-2026/
 ├── configs/collection_plan.json       ← 수집 설정. snapshot_id가 v2 스냅샷을 가리킨다
 ├── configs/openshell·nat·model/       ← OpenShell 정책, NAT 워크플로, 프롬프트·모델 설정 자리(로드맵 MT4·MT5가 채운다)
 ├── eval/dev/oracle_ABC.json           ← 개발용 기대 판정 사례 A·B·C
+├── eval/sealed/                       ← 봉인 원본 커밋 사본(holdout40·real_sealed. 최종 채점과 seed 공개 뒤 커밋, 해시 목록과 전체 재대조)
 ├── eval/scorer/, eval/datagen/        ← 독립 채점기와 평가 자료 도구. 채점기는 tradesentry를 import하지 않는다
 ├── artifacts/                         ← 커밋 증거물(증거 복사한 커밋 사본과 X1 증거 artifacts/openshell/)
 ├── spikes/x1/                         ← X1 임시 시험 코드. 앱에 섞지 않는다
