@@ -25,6 +25,7 @@ nvidia-hackathon-2026/
 │   │   └── AGENT_OPS.md               ← 실행자 선택, Codex 사용, 검토자와 판정, PR 병합, 증거 규칙
 │   ├── eval/
 │   │   ├── RULEBOOK.md                ← 평가 룰북: Part A 자기채점, Part B 성능 평가와 채점 규칙
+│   │   ├── RESULTS.md                 ← 결과표(R1): 두 봉인 묶음의 대표·보조 지표와 Wilson 95% 구간·등급, A등급 주장 조건 판정, B7 공개 값, 한계. 숫자는 커밋된 채점 요약에서만 옮긴다
 │   │   └── SKILL_DICTIONARY.md        ← 쓰는 스킬(Agent Skills 형식의 에이전트용 작업 절차)과 설치·이름 확인 방법
 │   ├── architecture.md                ← 실행 사슬과 구성요소별 정본 위치
 │   ├── business-rules.md              ← 도메인 규칙별 정본 위치

@@ -745,6 +745,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
   - 봉인 묶음이면 봉인 실행 출력을 열지 않고 얻는 값만 넣는다. 봉인 출력이 있어야 하는 값(NAT 프로파일 요약, 한국어 품질 표본 점검)은 금지 해제 조건(§10.3 N10) 뒤에 결과표(로드맵 R1)에 적고, 채점기 요약에는 넣지 않는다.
   - 만드는 주체와 방법: 내려받기를 끝낸 호스트 쪽 프로그램이 자기가 확보한 실행 폴더 안에 배타 생성(이미 있으면 실패하는 방식의 파일 만들기)한다. 샌드박스에서 받은 출력에 같은 이름이 있으면 내려받기를 거부한다. 만드는 때는 담을 값이 모두 정해진 뒤, 채점기를 부르기 전이다. 봉인 묶음이면 채점 직전의 봉인 해시 재대조 뒤다.
   - 이름·형식, `<run_dir>` 안의 위치, 누락·잘못된 입력의 처리는 로드맵 MT7·DT8에서 F1(`RB-1` 동결) 전에 정한다 [미확인]. 이 넷(이름·형식·위치·누락 처리)은 MVP 시험 전에 임시로 정해 쓰고 F1 전에 확정한다 [DESIGN: 2026-09-24(목) 사용자 결정, 결정 기록 20260924-2315 D6].
+  - 운영자 값의 형식: `sealed_hash_recheck`(채점 직전 봉인 해시 재대조 결과)는 문자열 `"일치"`만 받고, 그 밖의 값(예: 대조 결과를 풀어 쓴 문장)은 채점기가 채점을 거부한다. `a_grade`의 조건 값(`scorer_prevalidation` 등 채점기가 옮기는 A등급 조건)은 참/거짓(JSON `true`/`false`)만 받고, 다른 값은 미충족으로 판정한다 [사실: 채점기 `eval/scorer/`, 2026-09-26(토) F2 채점기 호출 기록 `docs/tracking/decisions/20260926-1351-orchestrator-record-f2-operations.md`. 값 형식이 문서에 없어 생긴 입력 오류는 `docs/tracking/findings.md`].
 
 ## 9. 보고서 객체와 주장 채점 기록
 
@@ -883,7 +884,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 | 독립 채점기 | `eval/scorer/`(런타임 모듈을 import하지 않음), 실행 `python -m eval.scorer --run <run_dir>`, 출력 `outputs/score-{시각}/` | D |
 | 도메인 출력(커밋 안 함) | `outputs/{실행명}/{도메인명}-{시각}.{확장자}`(trace JSONL, NAT 프로파일 결과, 보고서, 실행 결과 기록 등 도메인 출력 전부). 봉인 묶음 실행은 `outputs/sealed/{실행명}/` | 공동 |
 | 평가 결과(커밋) | `artifacts/eval/score-{시각}/`(채점 실행 폴더의 채점기 출력 복사: `scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`, `scorer_summary-{시각}.md`), 재채점용 보고서 원문 `artifacts/eval/score-{시각}/{run_id}/`(허용 목록의 보고서 파일만 복사) | 공동 |
-| 봉인 원본(커밋) | `eval/sealed/`(봉인 폴더의 파일 전부를 상대경로 그대로. 최종 정답 대조 채점과 `real_sealed` 표본 seed 공개 기록 뒤에만 커밋하고, 커밋 때 `eval/sealed_manifest.json`과 전체 재대조). `[공용 약속 변경 2026-09-26(토) 12:25 사용자 승인, 결정 기록 `20260926-1225-user-decision-r1-paths.md`]` | 공동
+| 봉인 원본(커밋) | `eval/sealed/`(봉인 폴더의 파일 전부를 상대경로 그대로. 최종 정답 대조 채점과 `real_sealed` 표본 seed 공개 기록 뒤에만 커밋하고, 커밋 때 `eval/sealed_manifest.json`과 전체 재대조). `[공용 약속 변경 2026-09-26(토) 12:25 사용자 승인, 결정 기록 `20260926-1225-user-decision-r1-paths.md`]` | 공동 |
 | 결과표(R1) | `docs/eval/RESULTS.md`(대표·보조 지표와 Wilson 95% 구간·등급, A등급 주장 조건 판정, B7 공개 값. 채점기 출력을 고쳐 쓰지 않고 커밋된 채점 요약의 숫자만 옮긴다). 같은 결정 | 공동 |
 | 자기채점 결과(커밋) | `artifacts/scorecard/scorecard-{시각}/`(자기채점 실행 폴더의 결과 파일만 복사: `scorecard-{시각}.md`) | 공동 |
 | OpenShell 증거(커밋) | `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일만 복사: 예측·실측 대조표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`) | M(보안 검토) |
