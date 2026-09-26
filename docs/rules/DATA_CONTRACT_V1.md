@@ -887,6 +887,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 | 봉인 원본(커밋) | `eval/sealed/`(봉인 폴더의 파일 전부를 상대경로 그대로. 최종 정답 대조 채점과 `real_sealed` 표본 seed 공개 기록 뒤에만 커밋하고, 커밋 때 `eval/sealed_manifest.json`과 전체 재대조). `[공용 약속 변경 2026-09-26(토) 12:25 사용자 승인, 결정 기록 `20260926-1225-user-decision-r1-paths.md`]` | 공동 |
 | 결과표(R1) | `docs/eval/RESULTS.md`(대표·보조 지표와 Wilson 95% 구간·등급, A등급 주장 조건 판정, B7 공개 값. 채점기 출력을 고쳐 쓰지 않고 커밋된 채점 요약의 숫자만 옮긴다). 같은 결정 | 공동 |
 | 자기채점 결과(커밋) | `artifacts/scorecard/scorecard-{시각}/`(자기채점 실행 폴더의 결과 파일만 복사: `scorecard-{시각}.md`) | 공동 |
+| 제출 폼 최종본·서비스 파일 | `docs/submission/SUBMISSION_FORM.md`(대회 신청 폼 장문 칸 3개에 붙여 넣는 평문과 서비스 파일 한 쪽 내용. 숫자는 결과표와 자기채점 결과 파일에서만 옮긴다. 공개 저장소 URL 자리표시는 P2 뒤 채운다), `docs/submission/service_file.html`(서비스 파일 한 쪽 템플릿), 생성 `scripts/make_service_file.sh "<공개 저장소 URL>"` → `outputs/submission_service_file-{시각}/`(pdf·docx. 커밋하지 않음). `[공용 약속 변경 2026-09-26(토) 17:15 사용자 요청, 결정 기록 `20260926-1715-user-decision-submission-form-in-repo.md`]` | 공동 |
 | OpenShell 증거(커밋) | `artifacts/openshell/openshell_violation_tests-{시각}/`(위반 시험 실행 폴더의 결과 파일만 복사: 예측·실측 대조표 `.md`, 감사 로그 발췌 `.txt`, 라이브 정책 조회 본문 `.yaml`) | M(보안 검토) |
 | X1 임시 시험 코드 | `spikes/x1/` | M |
 | 시험 | `tests/`(기존 `test_ingest.py` 유지), 단위 골든 시험 `tests/units/{단위 ID}/` | 공동 |
