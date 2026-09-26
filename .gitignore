@@ -20,3 +20,4 @@ files.zip
 # 개발 환경에 프로젝트 단위로 설치한 공식 스킬(skills CLI가 만드는 파일, 커밋하지 않음)
 /skills-lock.json
 /.claude/skills/
+/.agents/
