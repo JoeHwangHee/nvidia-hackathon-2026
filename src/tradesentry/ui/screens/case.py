@@ -16,15 +16,32 @@ def resolve_run(case_id: str | None) -> tuple[str | None, list[dict]]:
     return (runs[0]["run_id"] if runs else None), runs
 
 
+def pick_completed_case(lang: str, snapshot: str | None, key: str) -> None:
+    """빈 상태: 현재 스냅샷의 조사 완료 실행(새 것부터)을 골라 바로 연다. 실행이 없으면 안내만 남긴다."""
+    runs = alerts.completed_runs(alerts.investigation_index(common.OUTPUTS_ROOT), snapshot)
+    if not runs:
+        st.caption(t("case.pick_none", lang))
+        return
+    labels = {r["run_id"]: f"{r['case_id']} · {i18n.verdict_label(r['review_status_final'], lang)} · {r['time']}" for r in runs}
+    col_pick, col_open = st.columns([4, 1])
+    chosen = col_pick.selectbox(t("case.pick_label", lang), [r["run_id"] for r in runs], format_func=labels.get, key=f"pick_run_{key}_{lang}")
+    if col_open.button(t("case.pick_open", lang), key=f"pick_open_{key}"):
+        run = next(r for r in runs if r["run_id"] == chosen)
+        common.select_case(run["case_id"], run["run_id"])
+        st.rerun()
+
+
 def render() -> None:
     lang = common.lang()
     case_id = st.session_state.get("selected_case")
     run_id, runs = resolve_run(case_id)
     if run_id is None and case_id is None:
         st.info(t("case.none_selected", lang))
+        pick_completed_case(lang, common.snapshot_id(), "case")
         return
     if run_id is None:
         st.info(t("case.not_investigated", lang, case_id=case_id))
+        pick_completed_case(lang, common.snapshot_id(), "case")
         return
     try:
         model = plain.plain_model(common.OUTPUTS_ROOT / run_id, lang, repo_root=common.REPO_ROOT)

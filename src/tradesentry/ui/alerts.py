@@ -233,6 +233,26 @@ def signed_text(value: object) -> str | None:
     return ("+" + text) if positive else text
 
 
+def history_signal(alert: dict | None) -> dict:
+    """이력·진행 단계의 "경보 발생" 줄에 적을 신호와 값. 현재 스냅샷의 경보 줄(alert_row)이 있으면 발동 신호의 값을, 없으면
+    (다른 스냅샷의 사례) 값 없이 kind None을 돌려준다. 값은 옮길 뿐이다."""
+    if not isinstance(alert, dict):
+        return {"kind": None, "value": None}
+    metrics = alert.get("metrics") or {}
+    if alert.get("unit_value_triggered") and metrics.get("r_U") is not None:
+        return {"kind": "unit_value", "value": metrics["r_U"]}
+    if alert.get("share_triggered") and metrics.get("d_s") is not None:
+        return {"kind": "share", "value": metrics["d_s"]}
+    return {"kind": None, "value": None}
+
+
+def completed_runs(index: dict, snapshot_id: str | None = None) -> list[dict]:
+    """조사 완료(COMPLETED) 실행 요약 목록(새 것부터). snapshot_id를 주면 그 스냅샷의 실행만."""
+    runs = [run for bucket in index.values() for run in bucket["runs"]
+            if run["status"] == INVESTIGATED and (snapshot_id is None or run.get("snapshot_id") == snapshot_id)]
+    return sorted(runs, key=lambda r: r["run_id"], reverse=True)
+
+
 def stamp_label(run_id: object) -> str:
     """실행명의 시각(yymmddhhmmss) → "20yy-mm-dd hh:mm". 형식이 다르면 원문."""
     if not isinstance(run_id, str):

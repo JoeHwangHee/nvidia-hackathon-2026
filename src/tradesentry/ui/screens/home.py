@@ -5,7 +5,7 @@ from tradesentry.ui import alerts, i18n
 from tradesentry.ui.i18n import t
 from tradesentry.ui.screens import common
 
-COLUMNS = [2.6, 1.3, 2.4, 2.0, 1.1, 1.6, 1.4]
+COLUMNS = [2.3, 1.2, 2.1, 1.8, 1.5, 1.6, 1.5]  # 상태·동작 열을 넓혀 EN 문구가 1440px에서 한 줄에 든다
 
 
 def _kpi(column, label: str, value: str) -> None:
@@ -83,7 +83,7 @@ def render() -> None:
         st.session_state["home_month"] = months[index - 1]
         st.rerun()
     month = nav_mid.selectbox(t("home.month_label", lang), months, index=index, format_func=lambda m: i18n.month_label(m, lang),
-                              key="home_month_pick", label_visibility="collapsed")
+                              key=f"home_month_pick_{lang}", label_visibility="collapsed")  # 언어별 키: 표기가 바로 바뀐다
     if month != st.session_state["home_month"]:
         st.session_state["home_month"] = month
         st.rerun()

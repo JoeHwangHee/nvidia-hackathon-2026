@@ -191,6 +191,26 @@ class AlertsTest(Base):
             self.assertEqual([r["case_id"] for r in alerts.filter_alerts(rows, index, search="xb")], ["850431-XB-202412"])
             self.assertEqual([r["case_id"] for r in alerts.filter_alerts(rows, index, search="인덕터", labels={"850450": "인덕터 (기타)"})], [CASE_ID])
 
+    def test_history_signal_value_only_for_current_snapshot_alert(self):
+        row = alerts.alert_row(fake_case(), fake_envelope())
+        self.assertEqual(alerts.history_signal(row), {"kind": "unit_value", "value": Decimal("-40.0")})  # 같은 스냅샷: 값
+        share = alerts.alert_row(fake_case(signals={"unit_value": "NOT_TRIGGERED", "share": "TRIGGERED"}), fake_envelope(d_s="-19.3"))
+        self.assertEqual(alerts.history_signal(share), {"kind": "share", "value": Decimal("-19.3")})
+        self.assertEqual(alerts.history_signal(None), {"kind": None, "value": None})  # 다른 스냅샷의 사례: 값 없음
+        none_value = alerts.alert_row(fake_case(), fake_envelope(r_u=None))
+        self.assertEqual(alerts.history_signal(none_value), {"kind": None, "value": None})
+
+    def test_completed_runs_filtered_by_snapshot(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outputs = Path(tmp) / "outputs"
+            shutil.copytree(FIXTURE_RUN, outputs / "run_case-260926071424")
+            write_synthetic_run(outputs, "run_case-260926080000")  # 실자료 스냅샷 COMPLETED
+            write_synthetic_run(outputs, "run_case-260926090000", execution="FAILED")
+            index = alerts.investigation_index(outputs)
+            self.assertEqual([r["run_id"] for r in alerts.completed_runs(index)], ["run_case-260926080000", "run_case-260926071424"])
+            self.assertEqual([r["case_id"] for r in alerts.completed_runs(index, "controlled_fixture_v0")], [CASE_ID])
+            self.assertEqual(alerts.completed_runs(index, "no_such_snapshot"), [])
+
     def test_text_helpers(self):
         self.assertEqual(alerts.number_text(Decimal("1410.61")), "1,410.61")
         self.assertEqual(alerts.signed_text(Decimal("663.4")), "+663.4")

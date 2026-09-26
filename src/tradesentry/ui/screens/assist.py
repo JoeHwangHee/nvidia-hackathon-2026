@@ -5,7 +5,7 @@ from tradesentry import app
 from tradesentry.ui import alerts, i18n, records
 from tradesentry.ui.i18n import t
 from tradesentry.ui.screens import common
-from tradesentry.ui.screens.case import resolve_run
+from tradesentry.ui.screens.case import pick_completed_case, resolve_run
 
 DECISIONS = ("MAINTAIN", "MONITOR", "HOLD")
 GLOSSARY = (("glossary.unit", "glossary.unit_desc"), ("glossary.share", "glossary.share_desc"), ("glossary.yoy", "glossary.yoy_desc"),
@@ -13,13 +13,11 @@ GLOSSARY = (("glossary.unit", "glossary.unit_desc"), ("glossary.share", "glossar
 
 
 def _signal_text(alert: dict | None, lang: str) -> str:
-    if not alert:
-        return t("history.alert_other", lang)
-    m = alert["metrics"]
-    if alert["unit_value_triggered"] and m.get("r_U") is not None:
-        return t("history.alert_unit", lang, value=alerts.signed_text(m["r_U"]))
-    if alert["share_triggered"] and m.get("d_s") is not None:
-        return t("history.alert_share", lang, value=alerts.signed_text(m["d_s"]))
+    signal = alerts.history_signal(alert)
+    if signal["kind"] == "unit_value":
+        return t("history.alert_unit", lang, value=alerts.signed_text(signal["value"]))
+    if signal["kind"] == "share":
+        return t("history.alert_share", lang, value=alerts.signed_text(signal["value"]))
     return t("history.alert_other", lang)
 
 
@@ -134,6 +132,7 @@ def render() -> None:
     case_id = st.session_state.get("selected_case")
     if not case_id:
         st.info(t("assist.none", lang))
+        pick_completed_case(lang, snapshot, "assist")
         return
     run_id, runs = resolve_run(case_id)
     parsed = app.parse_case_id(case_id) or {}

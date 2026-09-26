@@ -105,7 +105,7 @@ STRINGS: dict[str, dict[str, str]] = {
     "home.col_action": {"ko": "동작", "en": "Action"},
     "home.no_import": {"ko": "{month} 수입 없음", "en": "no imports in {month}"},
     "home.not_comparable": {"ko": "비교 불가", "en": "not comparable"},
-    "home.btn_start": {"ko": "조사 시작", "en": "Start investigation"},
+    "home.btn_start": {"ko": "조사 시작", "en": "Investigate"},
     "home.btn_view": {"ko": "결과 보기", "en": "View result"},
     "home.footer1": {
         "ko": "단가는 수입금액(USD) ÷ 순중량(kg). 점유율은 해당 품목의 전체 수입금액 가운데 그 나라의 비중. 값은 관세청 공개 "
@@ -242,6 +242,9 @@ STRINGS: dict[str, dict[str, str]] = {
     "case.not_investigated": {"ko": "이 사례({case_id})는 아직 조사 결과가 없습니다. 담당자 홈에서 \"조사 시작\"을 누릅니다.",
                               "en": "This case ({case_id}) has no investigation result yet. Use \"Start investigation\" on the analyst home."},
     "case.run_label": {"ko": "실행 폴더", "en": "Run folder"},
+    "case.pick_label": {"ko": "조사 완료된 사례 고르기", "en": "Choose an investigated case"},
+    "case.pick_open": {"ko": "열기", "en": "Open"},
+    "case.pick_none": {"ko": "이 스냅샷에는 조사 완료된 실행이 없습니다.", "en": "This snapshot has no completed investigation runs."},
     "case.run_pick": {"ko": "이 사례의 조사 결과({n}개, 새 것부터)", "en": "Investigation results for this case ({n}, newest first)"},
     # ---- 결정 기록 · 재조사 · 도움 -------------------------------------------------------------------------------
     "assist.case": {"ko": "사례", "en": "Case"},
