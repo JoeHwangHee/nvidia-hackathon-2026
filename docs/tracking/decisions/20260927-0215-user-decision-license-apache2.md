@@ -32,10 +32,20 @@
 
 ## 검사
 
-- 전체 시험, 비밀값·로컬 경로 검사(`scripts/secret_scan.py`), 커밋 범위 검사, 안내 문서 점검, 추가 행의 키·로컬 경로 모양 검사는 PR LIC1 본문과 작업 보고에 종료 코드와 함께 남긴다.
+모두 작업 worktree에서 2026-09-27(일) 02:3x에 돌렸다 `[사실: 실행 출력]`.
+
+| 검사 | 결과 |
+|---|---|
+| 전체 시험(키·봉인 환경변수를 지운 환경, `uv run --locked python -m unittest discover -s tests`) | 1681개 OK(skipped=3), 종료 코드 0 |
+| 생성기 검증 `scripts/validate_submission.py`(카드 3개) | 0, 0, 0 |
+| 비밀값·로컬 경로 검사 `scripts/secret_scan.py`(스테이징 뒤 추적 파일 전체) | 1491개, 걸린 곳 0, 종료 코드 0 |
+| 커밋 범위 검사(`origin/main..HEAD`의 추가 행) | 걸린 곳 0, 종료 코드 0 |
+| 추가 행의 NVIDIA 키 접두어·서비스키 요청 파라미터·로컬 절대경로 모양 | 0건 |
+| 안내 문서 점검(`CLAUDE.md`와 `AGENTS.md` 동일, 문서·절 참조 쌍) | 종료 코드 0 |
+| `git status`에 생성기 설치본 사본(`.agents/`)과 실행 출력(`outputs/`)이 보이지 않음(`.gitignore` 대상) | 확인 |
 
 ## 남은 것
 
-- `CLAUDE.md`·`AGENTS.md`의 문서 구조 트리에 `LICENSE` 줄을 더하는 일은 이 PR에 넣지 않았다. 에이전트 안내 파일은 에이전트 지시만으로 고치지 않으므로, 사용자 확인 뒤 따로 더한다.
+- `CLAUDE.md`·`AGENTS.md`의 문서 구조 트리에 `LICENSE` 줄을 더하는 일은 이 PR에 넣지 않았다. 사용자 확인을 받은 뒤 따로 더한다.
 - `LICENSE` 부록의 자리표시는 Apache License 2.0 전문의 일부로 그대로 두었다. 파일 머리에 저작권 표기를 달지는 사용자가 원할 때 정한다.
 - 이 문서 PR이 병합되면 공개 저장소에 바로 드러난다.
