@@ -177,6 +177,8 @@ STRINGS: dict[str, dict[str, str]] = {
               "알려 주고 \"다시 시도\" 버튼이 나옵니다.",
         "en": "This is a demo run that reuses stored model responses (replay), so no external model is called. If the "
               "investigation fails, you will see it here with a \"Try again\" button."},
+    "load.stopped_at": {"ko": "{total}단계 가운데 {n}단계까지 진행하고 멈췄습니다.", "en": "Stopped after step {n} of {total}."},
+    "load.stopped_before": {"ko": "첫 단계에 이르기 전에 멈췄습니다.", "en": "Stopped before reaching the first step."},
     "load.failed_title": {"ko": "조사가 끝나지 못했습니다", "en": "The investigation did not finish"},
     "load.failed": {"ko": "연결 지연 같은 문제로 조사가 끝나지 못했습니다. 다시 시도하거나 닫을 수 있습니다. 이전 결과는 그대로 남아 있습니다.",
                     "en": "The investigation stopped because of a problem such as a slow connection. You can try again or "
@@ -344,6 +346,12 @@ STRINGS: dict[str, dict[str, str]] = {
     "reinv.title": {"ko": "다시 조사하기", "en": "Investigate again"},
     "reinv.desc": {"ko": "같은 절차가 다시 돌고 새 결과가 이 사례에 붙습니다(1~2분). 이전 결과는 그대로 남습니다.",
                    "en": "The same procedure runs again and the new result is attached to this case (1–2 minutes). Earlier results are kept."},
+    "reinv.desc_replay": {"ko": "같은 절차가 다시 돌고 새 결과가 이 사례에 붙습니다. 저장해 둔 응답을 다시 쓰는 시연 실행이라 몇 초면 "
+                                "끝납니다. 이전 결과는 그대로 남습니다.",
+                          "en": "The same procedure runs again and the new result is attached to this case. This demo run reuses "
+                                "stored responses, so it finishes in a few seconds. Earlier results are kept."},
+    "assist.newer": {"ko": "더 새 조사 결과가 있습니다 ({time})", "en": "A newer investigation result is available ({time})"},
+    "assist.newer_open": {"ko": "새 결과로 바꾸기", "en": "Switch to the newer result"},
     "reinv.reason1": {"ko": "통계가 갱신되어 값이 달라졌을 수 있음", "en": "The statistics were updated; values may differ"},
     "reinv.reason2": {"ko": "다른 나라와 더 비교해 보고 싶음", "en": "I want more comparison with other countries"},
     "reinv.reason3": {"ko": "하위품목별로 다시 나누어 보고 싶음", "en": "I want the breakdown by sub-heading again"},

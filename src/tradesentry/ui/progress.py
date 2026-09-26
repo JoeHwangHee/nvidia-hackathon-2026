@@ -10,6 +10,9 @@
   끝 = `run_end`. 도달한 가장 뒤 단계가 "진행 중"이고 그 앞은 "완료"다(④는 `stage_end` `critic`이 오면 완료). 표지가 아직 없으면
   예상 순서대로 첫 단계가 진행 중이다. 앞 단계인데 표지가 한 번도 없고 그보다 뒤 단계의 표지가 있으면 "건너뜀"(`skipped`)이다
   (예: 점유율만 발동이라 `decompose_hs`를 부르지 않은 조사). 진행 막대는 건너뛴 단계도 끝난 것으로 센다(UI4).
+  `run_end`의 `data.execution_status`가 있고 `COMPLETED`가 아니면(실패한 실행도 `run_end`를 남긴다) 마지막으로 도달한 표지
+  단계까지만 완료(또는 건너뜀)이고 그 뒤 단계는 대기(미도달)다. 진행 막대도 도달한 단계까지만 센다(UI5). 값이 없는 `run_end`는
+  끝까지 간 것으로 본다(배경 실행이 완료로 끝났는데 trace에 `run_end`가 없을 때 덧붙이는 표지와 같은 뜻).
   마지막 모델 이벤트가 `model_error`이고 그 `data.retrying`이 참일 때만(조사 흐름의 모델 호출부가 재전송할 때 남기는 값)
   "응답 지연, 다시 요청 중" 표시를 켠다.
 - 실행 관리: 한 세션에 조사 하나. 상태는 `running` → `done`(실행 결과 기록이 `COMPLETED`) | `failed`(그 밖의 종료, 기록 없음)
@@ -88,10 +91,12 @@ def _stage(event: dict) -> object:
 
 def step_state(events: list[dict]) -> dict:
     """이벤트 → {"states": [done|skipped|current|pending × 5], "done": 끝났거나 건너뛴 단계 수, "current": 진행 중 단계 번호(0부터)
-    또는 None, "finished": run_end 여부, "retrying": 마지막 모델 이벤트가 retrying이 참인 model_error인지}."""
+    또는 None, "finished": run_end 여부, "stopped": run_end의 실행 상태가 COMPLETED가 아닌지, "retrying": 마지막 모델 이벤트가
+    retrying이 참인 model_error인지}."""
     reached = 0
     critic_closed = False
     finished = False
+    stopped = False
     last_model: tuple[object, dict] | None = None
     seen: set[int] = set()  # 표지가 한 번이라도 나온 단계
     for event in events:
@@ -106,6 +111,8 @@ def step_state(events: list[dict]) -> dict:
             seen.add(4)
         elif kind == "run_end":
             finished = True
+            status = data.get("execution_status")
+            stopped = status is not None and status != "COMPLETED"
         if kind in MODEL_EVENTS:
             last_model = (kind, data)
     last_seen = max(seen) if seen else -1
@@ -114,19 +121,32 @@ def step_state(events: list[dict]) -> dict:
     def closed(index: int) -> str:  # 진행 중 단계보다 앞 단계: 표지가 없고 뒤 단계 표지가 있으면 건너뜀
         return "skipped" if index not in seen and index < last_seen else "done"
 
+    if finished and stopped:  # 실패로 끝난 실행: 도달한 표지 단계까지만 끝났고 그 뒤는 도달하지 못했다
+        upto = last_seen + 1
+        states = [closed(i) for i in range(upto)] + ["pending"] * (STEP_COUNT - upto)
+        return {"states": states, "done": upto, "current": None, "finished": True, "stopped": True, "retrying": False}
     if finished:
         states = [closed(i) for i in range(STEP_COUNT)]
-        return {"states": states, "done": STEP_COUNT, "current": None, "finished": True, "retrying": False}
+        return {"states": states, "done": STEP_COUNT, "current": None, "finished": True, "stopped": False, "retrying": False}
     if reached == 3 and critic_closed:
         reached = 4
     states = [closed(i) for i in range(reached)] + ["current"] + ["pending"] * (STEP_COUNT - reached - 1)
     retrying = bool(last_model and last_model[0] == "model_error" and last_model[1].get("retrying") is True)
-    return {"states": states, "done": reached, "current": reached, "finished": False, "retrying": retrying}
+    return {"states": states, "done": reached, "current": reached, "finished": False, "stopped": False, "retrying": retrying}
 
 
 def progress_ratio(steps: dict) -> float:
     """진행 막대: 끝난 단계 비율(0~1)."""
     return min(1.0, max(0.0, steps["done"] / STEP_COUNT))
+
+
+def stopped_note(steps: dict, lang: str) -> str | None:
+    """실패로 끝난 실행(run_end의 실행 상태가 COMPLETED가 아님)의 로딩 창 한 줄: 몇 단계까지 가고 멈췄는지. 아니면 None."""
+    if not steps.get("stopped"):
+        return None
+    if steps["done"] <= 0:
+        return t("load.stopped_before", lang)
+    return t("load.stopped_at", lang, n=steps["done"], total=STEP_COUNT)
 
 
 def step_label(index: int, lang: str) -> str:
