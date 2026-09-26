@@ -4,7 +4,7 @@
 This skill is for demonstration purposes and not for production usage. <br>
 
 ## Third-Party Community Consideration
-<span style="color:#d73a49">This skill is not owned or developed by NVIDIA. This skill has been developed and built to a third-party's requirements for this application and use case; see link to Non-NVIDIA [TradeSentry (JoeHwangHee/nvidia-hackathon-2026) Agent Card](../../README.md).</span> <!-- VERIFY: third-party ownership inferred from the git remote (github.com/JoeHwangHee) and the SKILL.md author; the repo has no separate agent card, so the link points to the repo README. Confirm the owner label and link, then strip this marker. --> <br>
+This skill is not owned or developed by NVIDIA. This skill has been developed and built to a third-party's requirements for this application and use case; see link to Non-NVIDIA [TradeSentry (JoeHwangHee/nvidia-hackathon-2026) Agent Card](../../README.md). <br>
 
 ### License/Terms of Use: <br>
 ## Use Case: <br>
@@ -76,9 +76,9 @@ Mitigation: Review and scan skill before deployment. <br>
 - 정답표, 봉인 자료(개발 중 보지 않도록 저장소 밖에 둔 평가 자료), 채점기 출력을 찾거나 읽지 않고, 봉인 자료로 실행하거나 정답 대조 채점을 하지 않는다 `[사실: skills/tradesentry/SKILL.md "하지 않는 것"]`.
 - `snapshot-build`·`snapshot-verify`·`evaluate`를 부르지 않고, 보고서와 CLI 출력의 숫자·상태값을 바꾸지 않는다. 종료 코드가 0이 아니면 그대로 전하고 멈추며 옵션을 바꿔 여러 번 부르지 않는다 `[사실: skills/tradesentry/SKILL.md "하지 않는 것"·"할 일" 6]`.
 
-### 남은 확인 `[미확인]`
+### 확인 결과와 남은 확인
 
-- 위 Third-Party Community Consideration 절의 붉은 VERIFY 표시(생성기가 추론·기본값 항목에 붙이는 사람 확인 표시) 1건: 소유자 표기 "TradeSentry (JoeHwangHee/nvidia-hackathon-2026)"와 링크(별도 에이전트 카드가 없어 저장소 README)를 소유자(사용자)가 확인하거나 고친 뒤, 붉은 span과 그 옆 주석을 지운다. 생성기 절차상 이 표시를 지우는 것은 사람 검토자의 일이며, 표시가 남은 동안 `scripts/validate_submission.py`는 종료 코드 1을 낸다 `[사실: 생성기 references/skill-card.md.j2·references/style-guide.md·scripts/validate_submission.py (메인 폴더 설치본, 2026-09-26(토))]`.
+- Third-Party Community Consideration 절의 소유자 표기 "TradeSentry (JoeHwangHee/nvidia-hackathon-2026)"와 링크(별도 에이전트 카드가 없어 저장소 README)는 소유자(사용자)가 2026-09-26(토) 15:34(채팅 "확인") 확인했다. 생성기 절차대로 확인 뒤 붉은 VERIFY 표시(span과 주석)를 지웠고, `scripts/validate_submission.py`는 종료 코드 0이다 `[사실: 사용자 확인 채팅 "확인", 검증 스크립트 실행]`.
 - License/Terms of Use 절이 비어 있다: 저장소에 LICENSE·NOTICE 파일과 SKILL.md frontmatter `license` 키가 없어 `license_identifier: null`로 두었고, 템플릿은 식별자가 없으면 이 절을 비워 렌더한다(표시도 붙지 않는다). 라이선스는 저장소 공개 방식 결정(로드맵 P2) 때 정하고 context JSON을 고쳐 다시 렌더한다 `[사실: discover 신호 Repo-root signals, 2026-09-26(토)]` `[사실: 생성기 references/skill-card.md.j2·references/style-guide.md·scripts/validate_submission.py (메인 폴더 설치본, 2026-09-26(토))]`.
 
 ### 검토표(review table, 생성기 스타일 가이드 "What goes in the review table")

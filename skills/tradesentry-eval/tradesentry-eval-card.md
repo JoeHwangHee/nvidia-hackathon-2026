@@ -4,7 +4,7 @@ TradeSentry 평가 룰북 Part B(성능 평가)를 사전 점검 → 채점 대�
 This skill is for research and development only. <br>
 
 ## Third-Party Community Consideration
-<span style="color:#d73a49">This skill is not owned or developed by NVIDIA. This skill has been developed and built to a third-party's requirements for this application and use case; see link to Non-NVIDIA [TradeSentry (JoeHwangHee/nvidia-hackathon-2026) Agent Card](../../README.md).</span> <!-- VERIFY: third-party ownership inferred from the git remote (github.com/JoeHwangHee) and the SKILL.md author; the repo has no separate agent card, so the link points to the repo README. Confirm the owner label and link, then strip this marker. --> <br>
+This skill is not owned or developed by NVIDIA. This skill has been developed and built to a third-party's requirements for this application and use case; see link to Non-NVIDIA [TradeSentry (JoeHwangHee/nvidia-hackathon-2026) Agent Card](../../README.md). <br>
 
 ### License/Terms of Use: <br>
 ## Use Case: <br>
@@ -79,9 +79,9 @@ Mitigation: Review and scan skill before deployment. <br>
 - 봉인 폴더(`TRADESENTRY_SEALED_DIR`, 기본값 밖의 위치를 받지 않음)에 쓰지 않고 파일 탐색기로 열지 않는다. 금지 해제 조건(자료 계약 §10.3 N10) 전에는 봉인 묶음 출력(자료 계약 §10.3 N10의 자리)·그 채점기 출력·trace를 열지 않고 커밋하지 않는다. `holdout40`과 `real_sealed`를 두 번 채점하지 않는다 `[사실: skills/tradesentry-eval/SKILL.md "금지"]`.
 - 결과를 본 뒤 규칙·정책·프롬프트·검증기·채점기·산문 패턴 목록을 유리하게 고치지 않고, 실패·미실행 기록을 지우거나 덮어쓰지 않는다. 채점 대상 실행을 샌드박스 밖이나 NemoClaw 에이전트·런타임 `tradesentry` 스킬 경로로 돌리지 않는다 `[사실: skills/tradesentry-eval/SKILL.md "금지"]`.
 
-### 남은 확인 `[미확인]`
+### 확인 결과와 남은 확인
 
-- 위 Third-Party Community Consideration 절의 붉은 VERIFY 표시(생성기가 추론·기본값 항목에 붙이는 사람 확인 표시) 1건: 소유자 표기 "TradeSentry (JoeHwangHee/nvidia-hackathon-2026)"와 링크(별도 에이전트 카드가 없어 저장소 README)를 소유자(사용자)가 확인하거나 고친 뒤, 붉은 span과 그 옆 주석을 지운다. 생성기 절차상 이 표시를 지우는 것은 사람 검토자의 일이며, 표시가 남은 동안 `scripts/validate_submission.py`는 종료 코드 1을 낸다 `[사실: 생성기 references/skill-card.md.j2·references/style-guide.md·scripts/validate_submission.py (메인 폴더 설치본, 2026-09-26(토))]`.
+- Third-Party Community Consideration 절의 소유자 표기 "TradeSentry (JoeHwangHee/nvidia-hackathon-2026)"와 링크(별도 에이전트 카드가 없어 저장소 README)는 소유자(사용자)가 2026-09-26(토) 15:34(채팅 "확인") 확인했다. 생성기 절차대로 확인 뒤 붉은 VERIFY 표시(span과 주석)를 지웠고, `scripts/validate_submission.py`는 종료 코드 0이다 `[사실: 사용자 확인 채팅 "확인", 검증 스크립트 실행]`.
 - License/Terms of Use 절이 비어 있다: 저장소에 LICENSE·NOTICE 파일과 SKILL.md frontmatter `license` 키가 없어 `license_identifier: null`로 두었고, 템플릿은 식별자가 없으면 이 절을 비워 렌더한다(표시도 붙지 않는다). 라이선스는 저장소 공개 방식 결정(로드맵 P2) 때 정하고 context JSON을 고쳐 다시 렌더한다 `[사실: discover 신호 Repo-root signals, 2026-09-26(토)]` `[사실: 생성기 references/skill-card.md.j2·references/style-guide.md·scripts/validate_submission.py (메인 폴더 설치본, 2026-09-26(토))]`.
 
 ### 검토표(review table, 생성기 스타일 가이드 "What goes in the review table")
