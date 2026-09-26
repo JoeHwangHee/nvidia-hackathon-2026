@@ -125,7 +125,7 @@ model-decision-as2-run-case)
   trace의 모양은 바꾸지 않고 표준 오류에 알림 한 줄(REPLAY_NOTICE)을 쓴다. 재생 실행은 점수표 근거가 아니다(evaluate는 이
   옵션을 받지 않는다).
 - 봉인 묶음의 공식 채점 대상 실행 경로(--sealed, run-case만의 값 없는 선택 옵션. 샌드박스 밖 실행기 E2가 붙이고 개발 실행에는
-  주지 않는다. 결정 기록 model-decision-run-case-sealed-flag, 사용자 승인 대기): 합성 스냅샷은 봉인 묶음 표
+  주지 않는다. 결정 기록 model-decision-run-case-sealed-flag, 사용자 승인 2026-09-26(토) 09:55): 합성 스냅샷은 봉인 묶음 표
   SEALED_RUN_CASE_DATASETS(holdout40 → holdout40)에서 자료 묶음을 정하고(표에 없으면 SEALED_SYNTHETIC_REFUSAL로 1), 비교 대상
   집합은 개발 경로와 같이 비교국 표 행의 grouping_version이다. 실자료는 sealed_real_case_scope가 분할 기록으로 사례 계열이
   real_sealed인지 관측 값을 읽기 전에 보고(아니면 SEALED_REAL_REFUSAL로 1) dataset을 real_sealed, 비교 대상 집합을 g0으로

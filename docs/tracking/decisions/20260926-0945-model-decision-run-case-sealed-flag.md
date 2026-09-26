@@ -1,4 +1,4 @@
-# FIX1: `tradesentry run-case`에 봉인 묶음 실행 경로 `--sealed`를 더한다(공용 약속 변경 제안, 사용자 승인 대기)
+# FIX1: `tradesentry run-case`에 봉인 묶음 실행 경로 `--sealed`를 더한다(공용 약속 변경, 사용자 승인 2026-09-26(토) 09:55)
 
 룰북 `RB-1`(평가 룰북의 첫 동결 버전) 동결 뒤 봉인 묶음(개발 중 보지 않도록 저장소 밖 봉인 폴더에 두는 평가 자료 `holdout40`·`real_sealed`)의 첫 공식 실행이 `run-case`(사례 1건을 조사하는 CLI 명령)의 봉인 실행 경로 부재로 무효가 된 뒤, 그 경로를 명시적 선택 옵션 `--sealed`로 더하기로 한 것을 적는다. CLI 명령 형식(공용 약속, 자료 계약 §10 CLI 행)에 옵션을 더하는 변경이라 사용자 승인 대상이다. 이 기록은 브랜치 준비 단계의 기록이며, 봉인 사건 자체(중단 묶음의 처리)는 오케스트레이터가 다른 기록에 적는다.
 
@@ -17,7 +17,7 @@
 | 이유와 근거 | 아래 "배경" |
 | 검토한 대안 | 아래 "검토한 대안" |
 | 결정 주체 | 설계는 오케스트레이터 `[DESIGN: 오케스트레이터 결정]`, 구현 세부는 소유 트랙(M). 공용 약속 변경은 사용자 승인 대상 |
-| 공용 약속 여부 | **예**(병렬 개발 규칙 §4.1의 CLI 명령 형식, 자료 계약 §10 CLI 행). 상태: **사용자 승인 대기**. 승인 전에는 브랜치에만 있고 병합하지 않는다 |
+| 공용 약속 여부 | **예**(병렬 개발 규칙 §4.1의 CLI 명령 형식, 자료 계약 §10 CLI 행). 상태: **사용자 승인 2026-09-26(토) 09:55**(채팅 "둘다 권장대로" — 이 옵션과 중단 묶음 무효 처리·새 묶음 시작을 함께 승인. 결정 기록 `20260926-0955-user-decision-f2-restart-after-run-case-defect.md`) |
 | 영향 | 파일: `src/tradesentry/cli/args.py`(F1), `src/tradesentry/cli/dispatch.py`(F2), `src/tradesentry/evaluation/sandbox_exec.py`·`src/tradesentry/evaluation/sealed_runner.py`(E2), 시험 `tests/units/F1/`·`tests/units/F2/`·`tests/units/E2/`, 문서 `docs/rules/DATA_CONTRACT_V1.md` §10·`docs/plan/UNITS.md` F1·F2·E2 행·`skills/tradesentry-eval/SKILL.md` 명령 절·`docs/tracking/findings.md`. 작업 ID: 로드맵 F2(봉인 묶음 공식 실행). 일정: 승인·병합·전용 샌드박스 이미지 재스테이징 뒤 봉인 묶음을 다시 시작해야 한다 |
 | 관련 PR | 브랜치 `model/F2-run-case-sealed`(PR은 승인 뒤 오케스트레이터가 연다) |
 

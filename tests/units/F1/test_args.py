@@ -482,7 +482,7 @@ class ReplayTest(unittest.TestCase):
 
 
 class SealedTest(unittest.TestCase):
-    """--sealed(봉인 묶음의 공식 채점 대상 실행 경로, 단위 E2만 준다. FIX1, 사용자 승인 대기): run-case만의 값 없는 선택 옵션.
+    """--sealed(봉인 묶음의 공식 채점 대상 실행 경로, 단위 E2만 준다. FIX1, 사용자 승인 2026-09-26(토) 09:55): run-case만의 값 없는 선택 옵션.
     있으면 sealed=True, 없으면 False. 다른 명령은 --replay와 같은 방식으로 거부하고, --replay와 함께 적으면 인자 오류(2)다."""
 
     def test_only_run_case_takes_it_and_it_defaults_to_false(self):
