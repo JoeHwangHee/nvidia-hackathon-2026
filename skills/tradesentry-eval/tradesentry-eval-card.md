@@ -37,7 +37,7 @@ Mitigation: Review and scan skill before deployment. <br>
 **Output Type(s):** [Shell commands, Files, Analysis] <br>
 **Output Format:** [JSONL(채점기 결과 `scorer_results-{시각}.jsonl`, `scorer_claims-{시각}.jsonl`)와 Markdown(결과 요약 `scorer_summary-{시각}.md`, 결정 기록)] <br>
 **Output Parameters:** [1D] <br>
-**Other Properties Related to Output:** [채점 대상 실행의 도메인 출력은 실행 폴더 `outputs/{실행명}/`(봉인 묶음은 `outputs/sealed/{실행명}/`)에 남고 커밋하지 않는다. 채점기는 자기 출력을 `outputs/score-{시각}/`에 쓰고, 그 `scorer_*` 파일과 재채점용 보고서 원문(`{run_id}/` 아래 허용 목록 파일)만 `artifacts/eval/score-{시각}/`로 증거 복사해 커밋한다. 실패·미실행·timeout·invalid도 분모에 남긴다. 봉인 묶음 출력과 그 채점기 출력은 금지 해제 조건(자료 계약 §10.3 N10) 전에는 열지 않고 커밋하지 않는다. 봉인 사건은 결정 기록에 날짜·주체·파일 수·해시 대조 결과로 남기고 봉인 자료 내용은 적지 않는다] <br>
+**Other Properties Related to Output:** [채점 대상 실행의 도메인 출력은 실행 폴더 `outputs/{실행명}/`(봉인 묶음은 자료 계약 §10.3 N10이 정한 봉인 출력 자리)에 남고 커밋하지 않는다. 채점기는 자기 출력을 `outputs/score-{시각}/`에 쓰고, 그 `scorer_*` 파일과 재채점용 보고서 원문(`{run_id}/` 아래 허용 목록 파일)만 `artifacts/eval/score-{시각}/`로 증거 복사해 커밋한다. 실패·미실행·timeout·invalid도 분모에 남긴다. 봉인 묶음 출력과 그 채점기 출력은 금지 해제 조건(자료 계약 §10.3 N10) 전에는 열지 않고 커밋하지 않는다. 봉인 사건은 결정 기록에 날짜·주체·파일 수·해시 대조 결과로 남기고 봉인 자료 내용은 적지 않는다] <br>
 
 ## Skill Version(s): <br>
 0.1.0 (source: pyproject.toml); skill file last changed at 963ef0d (source: git SHA, committed 2026-09-26) <br>
@@ -64,8 +64,8 @@ Mitigation: Review and scan skill before deployment. <br>
 
 ### 읽는 입력·쓰는 출력
 
-- 읽는 입력(샌드박스에 들이는 것): 읽기 전용 앱 코드·설정·스냅샷, `dev20`이면 `eval/dev/dev20/`의 입력 하위 경로, `holdout40`이면 봉인 입력. `real_sealed`는 봉인 파일을 하나도 넣지 않고 사례 식별자를 샌드박스 밖 실행기(`src/tradesentry/evaluation/sealed_runner.py`)가 인자로 한 건씩 넘긴다. 정답표(`eval/dev/oracle_ABC.json` 등)·채점기·봉인 폴더·`outputs/`·`artifacts/eval/`·`.env`는 어떤 샌드박스에도 들이지 않는다 `[사실: skills/tradesentry-eval/SKILL.md "실행" 샌드박스 표]`.
-- 쓰는 출력: 채점 대상 실행의 도메인 출력은 `outputs/{실행명}/`(봉인 묶음은 `outputs/sealed/{실행명}/`, 커밋 안 함). 채점기 출력은 `outputs/score-{시각}/`의 `scorer_results-{시각}.jsonl`·`scorer_claims-{시각}.jsonl`·`scorer_summary-{시각}.md`이고, 그 `scorer_*` 파일과 재채점용 보고서 원문(허용 목록 파일만)을 `artifacts/eval/score-{시각}/`로 증거 복사해 커밋한다. 봉인 사건은 결정 기록(`docs/tracking/decisions/`)에 남긴다 `[사실: skills/tradesentry-eval/SKILL.md "이름과 출력 위치"·"채점" 산출물·"보고와 커밋"]`.
+- 읽는 입력(샌드박스에 들이는 것): 읽기 전용 앱 코드·설정·스냅샷, `dev20`이면 `eval/dev/dev20/`의 입력 하위 경로, `holdout40`이면 봉인 입력. `real_sealed`는 봉인 파일을 하나도 넣지 않고 사례 식별자를 샌드박스 밖 실행기(단위 E2)가 인자로 한 건씩 넘긴다. 정답표(`eval/dev/oracle_ABC.json` 등)·채점기·봉인 폴더·`outputs/`·`artifacts/eval/`·`.env`는 어떤 샌드박스에도 들이지 않는다 `[사실: skills/tradesentry-eval/SKILL.md "실행" 샌드박스 표]`.
+- 쓰는 출력: 채점 대상 실행의 도메인 출력은 `outputs/{실행명}/`(봉인 묶음은 자료 계약 §10.3 N10이 정한 봉인 출력 자리, 커밋 안 함). 채점기 출력은 `outputs/score-{시각}/`의 `scorer_results-{시각}.jsonl`·`scorer_claims-{시각}.jsonl`·`scorer_summary-{시각}.md`이고, 그 `scorer_*` 파일과 재채점용 보고서 원문(허용 목록 파일만)을 `artifacts/eval/score-{시각}/`로 증거 복사해 커밋한다. 봉인 사건은 결정 기록(`docs/tracking/decisions/`)에 남긴다 `[사실: skills/tradesentry-eval/SKILL.md "이름과 출력 위치"·"채점" 산출물·"보고와 커밋"]`.
 
 ### 외부 전송 여부
 
@@ -76,7 +76,7 @@ Mitigation: Review and scan skill before deployment. <br>
 
 - `.env`를 읽거나 출력하지 않고, 키 값을 어디에도 출력하지 않는다. 문서·기록·PR에는 변수 이름만 쓴다 `[사실: skills/tradesentry-eval/SKILL.md "금지"]`.
 - 정답표와 채점기를 어떤 샌드박스에도 넣지 않고, 오케스트레이터는 정답표를 열지 않는다. 봉인 입력을 개발·시연용 샌드박스에 넣지 않으며 `real_sealed`의 사례 목록과 채점 표본은 어떤 샌드박스에도 넣지 않는다 `[사실: skills/tradesentry-eval/SKILL.md "금지"]`.
-- 봉인 폴더(`TRADESENTRY_SEALED_DIR`, 기본값 밖의 위치를 받지 않음)에 쓰지 않고 파일 탐색기로 열지 않는다. 금지 해제 조건(자료 계약 §10.3 N10) 전에는 `outputs/sealed/` 아래 봉인 묶음 출력·그 채점기 출력·trace를 열지 않고 커밋하지 않는다. `holdout40`과 `real_sealed`를 두 번 채점하지 않는다 `[사실: skills/tradesentry-eval/SKILL.md "금지"]`.
+- 봉인 폴더(`TRADESENTRY_SEALED_DIR`, 기본값 밖의 위치를 받지 않음)에 쓰지 않고 파일 탐색기로 열지 않는다. 금지 해제 조건(자료 계약 §10.3 N10) 전에는 봉인 묶음 출력(자료 계약 §10.3 N10의 자리)·그 채점기 출력·trace를 열지 않고 커밋하지 않는다. `holdout40`과 `real_sealed`를 두 번 채점하지 않는다 `[사실: skills/tradesentry-eval/SKILL.md "금지"]`.
 - 결과를 본 뒤 규칙·정책·프롬프트·검증기·채점기·산문 패턴 목록을 유리하게 고치지 않고, 실패·미실행 기록을 지우거나 덮어쓰지 않는다. 채점 대상 실행을 샌드박스 밖이나 NemoClaw 에이전트·런타임 `tradesentry` 스킬 경로로 돌리지 않는다 `[사실: skills/tradesentry-eval/SKILL.md "금지"]`.
 
 ### 남은 확인 `[미확인]`
