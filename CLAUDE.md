@@ -44,7 +44,7 @@ nvidia-hackathon-2026/
 │   ├── tradesentry-eval/SKILL.md      ← 평가 스킬 ②: 룰북 Part B 성능 평가 실행
 │   └── */<이름>-card.md               ← 우리 스킬 3개(tradesentry·tradesentry-scorecard·tradesentry-eval)의 거버넌스 카드(공식 스킬 skill-card-generator의 카드 형식. 정본은 스킬 사전 docs/eval/SKILL_DICTIONARY.md §3.5)
 ├── pyproject.toml, uv.lock, .python-version ← Python 3.12.13 가상환경(uv)과 lock. 시험은 `uv run --locked python -m unittest discover -s tests -v`
-├── src/tradesentry/                   ← 앱 패키지 15개와 단위 파일(단위 표 docs/plan/UNITS.md). ingest.py는 관세청 API 수집기와 스냅샷 검사(표준 라이브러리만 쓴다)
+├── src/tradesentry/                   ← 앱 패키지 15개와 단위 파일(단위 표 docs/plan/UNITS.md). ingest.py는 관세청 API 수집기와 스냅샷 검사(표준 라이브러리만 쓴다) `ui/`는 담당자용 화면(진입 스크립트 `ui/ui_app.py`, 한국어/영어)
 ├── tests/                             ← unittest 시험(네트워크·키 없이 돈다). 단위 골든 시험은 tests/units/{단위 ID}/
 ├── configs/collection_plan.json       ← 수집 설정. snapshot_id가 v2 스냅샷을 가리킨다
 ├── configs/openshell·nat·model/       ← OpenShell 정책, NAT 워크플로, 프롬프트·모델 설정 자리(로드맵 MT4·MT5가 채운다)
