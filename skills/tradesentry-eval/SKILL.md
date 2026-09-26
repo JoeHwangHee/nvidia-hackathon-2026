@@ -635,7 +635,7 @@ env -u NVIDIA_API_KEY -u DATA_GO_KR_SERVICE_KEY python -m eval.scorer --run <run
 - **NAT(NVIDIA NeMo Agent Toolkit)**: 조사 흐름을 감싸 실행·추적·프로파일·사후 평가를 하는 도구.
 - **provider**: 모델 API를 호출하는 클라이언트 라이브러리. 자동 재시도를 끈다.
 - **`env -u`**: 지정한 환경변수를 뺀 환경에서 명령을 실행하는 방법. 채점기를 키 변수 없이 돌릴 때 쓴다.
-- **샌드박스 밖 실행기**: 이 스킬이 샌드박스 밖에서 키 변수를 뺀 환경으로 돌리는 프로그램. `real_sealed` 목록을 읽기 전에 해시를 대조하고, `RB-1`과 함께 동결한 순서 seed로 예정 실행 목록을 만든 뒤 사례 식별자를 인자로 한 건씩 `run-case`에 넘긴다. 두 봉인 묶음의 인프라 실패 재실행 대상도 같은 방식으로 다시 돌린다. 목록 파일은 샌드박스에 넣지 않고, 오케스트레이터에게는 건수·종료 코드·해시 대조 결과만 돌려준다. 봉인 폴더에 쓰지 않는다. 파일은 단위 E2 `src/tradesentry/evaluation/sealed_runner.py`이고, 부르는 형식은 S0 뒤에 정한다.
+- **샌드박스 밖 실행기**: 이 스킬이 샌드박스 밖에서 키 변수를 뺀 환경으로 돌리는 프로그램. `real_sealed` 목록을 읽기 전에 해시를 대조하고, `RB-1`과 함께 동결한 순서 seed로 예정 실행 목록을 만든 뒤 사례 식별자를 인자로 한 건씩 `run-case`에 넘긴다. 두 봉인 묶음의 인프라 실패 재실행 대상도 같은 방식으로 다시 돌린다. 목록 파일은 샌드박스에 넣지 않고, 오케스트레이터에게는 건수·종료 코드·해시 대조 결과만 돌려준다. 봉인 폴더에 쓰지 않는다. 파일은 단위 E2 `src/tradesentry/evaluation/sealed_runner.py`이고, 부르는 형식은 `python -m tradesentry.evaluation.sealed_runner --dataset {holdout40|real_sealed} --sandbox <전용 샌드박스> --snapshot <스냅샷 ID> --policy policy_v1 [--conditions-extra <JSON 상대 경로>]`다(결정 기록 `docs/tracking/decisions/20260926-0805-model-decision-mt7-sealed-runner.md`. 실행 이름 `sealed_evaluate`, 묶음 기록 `evaluation_sealed_runner-{시각}.jsonl`).
 - **TradeSentry CLI**: `tradesentry <명령>` 형식의 명령줄 진입점.
 - **독립 채점기**: 런타임 코드를 import하지 않고 따로 만든 결정적 채점 프로그램(`eval/scorer/`). 런타임 패키지(`src/tradesentry/` 아래)와 `eval/datagen`을 직접이든, 그것을 부르는 모듈을 거쳐서든 import하지 않는다(자료 계약 §10.3).
 - **결정적(deterministic)**: 같은 입력이면 늘 같은 결과가 나오는 성질.
