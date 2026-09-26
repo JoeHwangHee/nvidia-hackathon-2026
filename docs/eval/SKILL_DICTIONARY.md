@@ -50,12 +50,12 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | `openshell-cli` | `NVIDIA/OpenShell` | `npx skills add NVIDIA/OpenShell --skill openshell-cli` | OpenShell CLI 사용 안내. 샌드박스 생성·정책 적용·`openshell logs` 감사 로그 수집·의도적 위반 시험(§2.3) | 개발·평가 | 규범 1b, 1d, 3e | 2026-09-23(수) 저장소 대조 확인. 2026-09-24(목) X1 작업 폴더에 설치(프로젝트 단위, 커밋하지 않음. `--skill` 지정 동작은 `[미확인]`). X1 위반 시험의 provider·`sandbox exec`·`logs` 명령 확인에 참고: `artifacts/openshell/violation_tests.md` |
 | `debug-inference` | `NVIDIA/OpenShell` | `npx skills add NVIDIA/OpenShell --skill debug-inference` | 샌드박스의 추론 경로 점검. X1에서 NIM 호출이 안 될 때(§2.4) | 개발 | 규범 1d | 2026-09-23(수) 저장소 대조 확인. 2026-09-24(목) X1 작업 폴더에 설치(프로젝트 단위, 커밋하지 않음. `--skill` 지정 동작은 `[미확인]`). X1 키 주입 방식 점검(provider 첨부·헤더 자격 증명 치환·관리형 추론 경로 제거 안내)에 참고: `docs/tracking/decisions/20260924-1556-x1-key-injection.md` |
 | `nemoclaw-user-guide` | `NVIDIA/skills` | `npx skills add NVIDIA/skills --skill nemoclaw-user-guide` | NemoClaw 설치·기동과 OpenClaw 에이전트 운용 안내(§2.5) | 개발 | 규범 1c, 1d | 2026-09-23(수) 저장소 대조 확인. 2026-09-24(목) X1 작업 폴더에 설치(프로젝트 단위, 커밋하지 않음) |
-| `skill-card-generator` | `NVIDIA/skills` | `npx skills add NVIDIA/skills --skill skill-card-generator` | 우리 스킬 3개의 거버넌스 카드 생성(§3.5) | 개발(제출 준비) | 규범 1d, 4a | 2026-09-23(수) 저장소 대조 확인 |
+| `skill-card-generator` | `NVIDIA/skills` | `npx skills add NVIDIA/skills --skill skill-card-generator` | 우리 스킬 3개의 거버넌스 카드 생성(§3.5) | 개발(제출 준비) | 규범 1d, 4a | 2026-09-23(수) 저장소 대조 확인. 2026-09-26(토) 사용: 설치 명령이 작업 에이전트의 실행 권한 정책(신뢰하지 않는 코드 설치 차단)으로 거부돼 설치는 못 했고(설치 확인 없음) `[사실: 작업 기록 2026-09-26(토)]`, 생성기의 SKILL.md·템플릿(`references/skill-card.md.j2`)·스타일 가이드를 GitHub `NVIDIA/skills`(해당 폴더 마지막 커밋 2a23a90)에서 읽어 같은 형식으로 카드 3개를 수동 작성했다 `[사실: 2026-09-26(토) GitHub 조회, 카드 머리말]`. "쓴" 것은 생성기의 형식이며 생성기 실행 기록은 없다 `[DESIGN: §5.5 "쓰면" 규칙의 부분 적용]`. 산출물: `skills/tradesentry-scorecard/tradesentry-scorecard-card.md`, `skills/tradesentry-eval/tradesentry-eval-card.md`, `skills/tradesentry/tradesentry-card.md`(§3.5) `[사실: 카드 머리말의 작성 경위]` |
 | `nvidia-skill-finder` | `NVIDIA/skills` | `npx skills add NVIDIA/skills --skill nvidia-skill-finder` | 필요한 공식 스킬 추가 탐색. 후보 찾기만 하고 채택은 §2.1 기준(§2.7) | 개발 | 규범 1d | 2026-09-23(수) 저장소 대조 확인 |
 | `nemo-relay-plugin-observability`(선택) | `NVIDIA/skills` `[사실: 2026-09-24(목) GitHub 트리 대조]` | `npx skills add NVIDIA/skills --skill nemo-relay-plugin-observability` | 도구·모델 호출 추적 보강 후보. 기본은 넣지 않는다(§2.8) | 개발·평가(선택) | 규범 3d | 2026-09-23(수) 저장소 대조 확인. 선택 |
-| `tradesentry-scorecard` | 이 저장소(비공개 원격 `JoeHwangHee/nvidia-hackathon-2026`), `skills/tradesentry-scorecard/SKILL.md` | 공개 전에는 설치하지 않고 저장소 파일을 직접 읽는다. `npx skills add JoeHwangHee/nvidia-hackathon-2026 --skill tradesentry-scorecard`는 `[미확인]`(§5.3) | 평가 스킬 ①. 저장소를 룰북 Part A로 자기채점(§3.2) | 평가 | 규범 1d, 4a | 2026-09-24(목) 문서 실행에서 작성 |
-| `tradesentry-eval` | 이 저장소, `skills/tradesentry-eval/SKILL.md` | 공개 전에는 설치하지 않고 저장소 파일을 직접 읽는다. `npx skills add JoeHwangHee/nvidia-hackathon-2026 --skill tradesentry-eval`는 `[미확인]`(§5.3) | 평가 스킬 ②. 룰북 Part B 성능 평가를 사전 점검→실행→채점 순으로 수행(§3.3) | 평가 | 규범 1d, 3a, 3b, 4a | 2026-09-24(목) 문서 실행에서 작성 |
-| `tradesentry` | 이 저장소, `skills/tradesentry/SKILL.md` | NemoClaw 에이전트에 넣는 방식은 X1에서 정한다. `npx skills add JoeHwangHee/nvidia-hackathon-2026 --skill tradesentry`는 `[미확인]`(§5.3) | 런타임 스킬. NemoClaw의 OpenClaw 에이전트가 부르고 OpenShell 안 TradeSentry CLI로 잇는다(§3.4) | 런타임 | 규범 1c, 1d, 4a | 구현 단계 작성 예정(2026-09-25(금)) |
+| `tradesentry-scorecard` | 이 저장소(비공개 원격 `JoeHwangHee/nvidia-hackathon-2026`), `skills/tradesentry-scorecard/SKILL.md` | 공개 전에는 설치하지 않고 저장소 파일을 직접 읽는다. `npx skills add JoeHwangHee/nvidia-hackathon-2026 --skill tradesentry-scorecard`는 `[미확인]`(§5.3) | 평가 스킬 ①. 저장소를 룰북 Part A로 자기채점(§3.2) | 평가 | 규범 1d, 4a | 2026-09-24(목) 문서 실행에서 작성. 거버넌스 카드 `skills/tradesentry-scorecard/tradesentry-scorecard-card.md`(2026-09-26(토), §3.5) |
+| `tradesentry-eval` | 이 저장소, `skills/tradesentry-eval/SKILL.md` | 공개 전에는 설치하지 않고 저장소 파일을 직접 읽는다. `npx skills add JoeHwangHee/nvidia-hackathon-2026 --skill tradesentry-eval`는 `[미확인]`(§5.3) | 평가 스킬 ②. 룰북 Part B 성능 평가를 사전 점검→실행→채점 순으로 수행(§3.3) | 평가 | 규범 1d, 3a, 3b, 4a | 2026-09-24(목) 문서 실행에서 작성. 거버넌스 카드 `skills/tradesentry-eval/tradesentry-eval-card.md`(2026-09-26(토), §3.5) |
+| `tradesentry` | 이 저장소, `skills/tradesentry/SKILL.md` | NemoClaw 에이전트에 넣는 방식은 X1에서 정한다. `npx skills add JoeHwangHee/nvidia-hackathon-2026 --skill tradesentry`는 `[미확인]`(§5.3) | 런타임 스킬. NemoClaw의 OpenClaw 에이전트가 부르고 OpenShell 안 TradeSentry CLI로 잇는다(§3.4) | 런타임 | 규범 1c, 1d, 4a | 구현 단계 작성 예정(2026-09-25(금)) → 2026-09-25(금) 작성됨(`skills/tradesentry/SKILL.md`, 시험 `tests/test_runtime_skill.py`) `[사실: git 이력]`. 거버넌스 카드 `skills/tradesentry/tradesentry-card.md`(2026-09-26(토), §3.5) |
 
 ## 2. 공식 스킬 사용 계획
 
@@ -112,7 +112,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 ### 2.6 `skill-card-generator` — 우리 스킬의 거버넌스 카드
 
-- 계획은 §3.5에 있다.
+- 계획과 결과(2026-09-26(토) 카드 3개. 설치가 거부돼 생성기 형식만 따라 수동 작성)는 §3.5에 있다.
 - 삭제 시험 답: 정확도 지표는 변하지 않는다. 우리 스킬의 능력 범위를 밝히는 카드가 없어져 규범 4a(NVIDIA 제품에 꽂히는 산출물) 근거가 약해진다 `[추론]`.
 
 ### 2.7 `nvidia-skill-finder` — 추가 스킬 탐색
@@ -226,18 +226,23 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
   5. MVP 합격 체크리스트 1번(NemoClaw 경로 항목)은 대체 경로와 사실 표기로 대신한다.
   6. 자기채점(`tradesentry-scorecard`)은 규범 1c 근거가 약해진 것을 그대로 반영한다.
 
-### 3.5 거버넌스 카드 계획(`skill-card-generator`)
+### 3.5 거버넌스 카드(`skill-card-generator`)
 
-- 목적: 우리 스킬 3개(`tradesentry-scorecard`, `tradesentry-eval`, `tradesentry`)마다 능력 범위를 밝히는 거버넌스 카드를 만든다. `skill-card-generator`는 기존 스킬 디렉터리에서 거버넌스 skill card를 만든다 `[사실: DATA_AND_SKILL_INVENTORY.md PART 2-6 설명]`. 카드의 정확한 항목과 형식은 `[미확인]`이다.
-- 카드에서 드러나야 할 것 `[DESIGN]`
-  - 읽는 입력과 쓰는 출력(`docs/rules/DATA_CONTRACT_V1.md` §10 계획 경로·명령 표의 경로)
-  - 외부 전송 여부(런타임은 NVIDIA 추론 엔드포인트만)
-  - 금지 사항: `.env`와 봉인 폴더를 읽지 않음, 정답표를 샌드박스에 넣지 않음
-  - 생성기 형식에 이 항목이 없으면 카드는 생성기 형식대로 두고, 빠진 항목은 해당 SKILL.md 본문에 있는지 확인한다.
-- 언제: 런타임 스킬까지 세 스킬이 모두 생긴 뒤, 2026-09-27(일) README·재현 묶음을 준비할 때 만든다 `[DESIGN]`.
-- 저장 위치: 계획 경로·명령 표에 아직 없다. 이 문서에서 새 경로를 정하지 않는다. 위치가 정해지면 그 표와 이 사전을 함께 고친다.
-- 봉인: 카드를 만들 때도 봉인 폴더의 경로·내용을 입력에 넣지 않는다. `tradesentry-eval` 카드에는 규칙과 절차만 담긴다.
-- 근거로 쓰는 곳: 규범 1d·4a.
+- 목적: 우리 스킬 3개(`tradesentry-scorecard`, `tradesentry-eval`, `tradesentry`)마다 능력 범위를 밝히는 거버넌스 카드를 만든다. `skill-card-generator`는 기존 스킬 디렉터리에서 거버넌스 skill card를 만든다 `[사실: DATA_AND_SKILL_INVENTORY.md PART 2-6 설명]`.
+- 만든 날짜와 경위: 2026-09-26(토), 로드맵 P1(선택 항목). 설치 명령 `npx skills add NVIDIA/skills --skill skill-card-generator`는 작업 에이전트의 실행 권한 정책(신뢰하지 않는 코드 설치 차단)으로 거부돼 설치하지 못했다(설치 확인 없음) `[사실: 작업 기록 2026-09-26(토)]`. 생성기의 SKILL.md·템플릿·스타일 가이드·예시 카드를 GitHub `NVIDIA/skills` 저장소(`skills/skill-card-generator/`, 해당 폴더 마지막 커밋 2a23a90, 2026-07-01)에서 읽어 **생성기 형식을 따라 수동 작성**했다. 생성기의 스크립트(`discover_assets.py`·`render_card.py`·`validate_submission.py`)는 돌리지 않았다 `[사실: 카드 머리말의 작성 경위]`.
+- 저장 위치와 파일 이름 `[사실: 생성기 SKILL.md "Examples"의 --out 인자 형식(대상 스킬 폴더 안 <스킬 이름>-card.md)]`. 경로의 정본은 `docs/rules/DATA_CONTRACT_V1.md` §10 계획 경로·명령 표의 "거버넌스 카드(스킬 카드)" 행이다.
+  - `skills/tradesentry-scorecard/tradesentry-scorecard-card.md`
+  - `skills/tradesentry-eval/tradesentry-eval-card.md`
+  - `skills/tradesentry/tradesentry-card.md`
+- 형식 `[사실: 생성기 references/skill-card.md.j2·references/style-guide.md, 2026-09-26(토) GitHub 조회]`: 절 제목은 영어 고정이며 카드는 제목을 그대로 두고 괄호에 한국어 설명을 붙였다. 절은 차례로 Description(설명 한 문장), 이용 자세 문장(commercial / research_dev / demonstration 가운데 하나), Owner 또는 Third-Party Community Consideration(NVIDIA 소유가 아니면 제3자 고지), License/Terms of Use, Use Case, Deployment Geography for Use, Requirements / Dependencies(API 키·외부 자격 증명 필요 여부와 종류), Known Risks and Mitigations(템플릿 고정 문구), Reference(s), Skill Output(출력 종류·형식·차원·그 밖의 속성), 선택 Evaluation 절(근거가 있을 때만), Skill Version(s), 그리고 NVIDIA 소유일 때만 Ethical Considerations다. 추론·기본값 항목에는 붉은 `VERIFY` 표시를 붙이고 소유자가 확인한 뒤 지운다. 카드와 함께 필드별 신뢰도(`HIGH`/`INFERRED`/`HUMAN-REQUIRED`) 검토표를 남긴다(카드의 부록 A).
+- 카드에서 드러나야 할 것 `[DESIGN]`과 실제 대응 `[사실: 카드 3개 대조]`
+  - 읽는 입력과 쓰는 출력(`docs/rules/DATA_CONTRACT_V1.md` §10 계획 경로·명령 표의 경로): 쓰는 출력은 카드의 Skill Output 절에 있다. 읽는 입력은 생성기 형식에 항목이 없어 카드에 따로 두지 않았고, 세 SKILL.md 본문에 있다(`tradesentry-scorecard` "입력"·"읽는 문서"·"증거를 찾는 곳", `tradesentry-eval` "실행"의 샌드박스 표·"채점"·"봉인 자료 취급"의 경로, `tradesentry` "할 일" 1·4).
+  - 외부 전송 여부(런타임은 NVIDIA 추론 엔드포인트만): 생성기 형식에 항목이 없다. Requirements / Dependencies 절의 한국어 설명에 자격 증명과 함께 적었고, 본문 정본은 SKILL.md다(`tradesentry` "하지 않는 것": NVIDIA 추론 요청은 CLI만 하고 다른 프로그램으로 외부에 요청하지 않음. `tradesentry-eval` "실행"의 샌드박스: 외부 전송은 샌드박스 안 CLI의 추론 요청 한 경로만, 채점기·실행기는 네트워크를 부르지 않음. `tradesentry-scorecard`: 허용된 실행이 시험·검사 명령과 채점기 재계산뿐이며 둘은 네트워크·키 없이 돈다 `[추론]`).
+  - 금지 사항(`.env`와 봉인 폴더를 읽지 않음, 정답표를 샌드박스에 넣지 않음): 생성기 형식에 항목이 없어 카드에 따로 두지 않았다. 세 SKILL.md 본문에 있다(`tradesentry-scorecard` "읽지 않는 것"·"금지", `tradesentry-eval` "금지", `tradesentry` "하지 않는 것").
+  - 생성기 형식에 없는 항목은 카드에 더하지 않고 SKILL.md 본문으로 가리킨다(위 규칙).
+- 봉인: 카드를 만들 때 봉인 폴더의 경로 값·내용을 입력에 넣지 않았다. `tradesentry-eval` 카드에는 규칙과 절차만 담았다 `[사실: 작업 기록 2026-09-26(토), 카드 본문]`.
+- 남은 확인 `[미확인]`: 카드의 `VERIFY` 표시 두 곳(제3자 소유자 표기와 링크, 라이선스 식별자 — 저장소에 LICENSE 파일이 없다)은 사용자가 확인·결정한 뒤 지운다. 생성기를 실제로 설치·실행해 같은 결과가 나오는지는 확인하지 않았다.
+- 근거로 쓰는 곳: 규범 1d·4a. 설치 없이 형식만 따랐으므로 자기채점에서는 이 사실대로 적는다 `[DESIGN]`.
 
 ## 4. 쓰지 않는 스킬과 이유
 
