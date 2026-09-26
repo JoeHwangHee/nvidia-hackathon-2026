@@ -391,7 +391,8 @@ class RunTest(unittest.TestCase):
         detect = ["detect", "--snapshot", "controlled_fixture_v0", "--policy", "dev-0.1"]
         self.assertEqual(args.run(detect),
                          {"command": "detect", "snapshot_id": "controlled_fixture_v0", "policy_version": "dev-0.1",
-                          "mode": None, "case": None, "run_name": None, "conditions_extra": None, "replay": None})
+                          "mode": None, "case": None, "run_name": None, "conditions_extra": None, "replay": None,
+                          "sealed": False})
         self.assertEqual(args.run(detect + ["--mode", "agent"])["mode"], "agent")  # 쓰지 않는 옵션도 받은 값 그대로
 
 
@@ -478,3 +479,37 @@ class ReplayTest(unittest.TestCase):
         for value in ("replay.json", "./replay.json", "../shared/replay.json", "eval/dev/smoke/x.json"):
             with self.subTest(value=value):
                 self.assertEqual(args.parse(argv_for("run-case") + ["--replay", value]).replay, value)
+
+
+class SealedTest(unittest.TestCase):
+    """--sealed(봉인 묶음의 공식 채점 대상 실행 경로, 단위 E2만 준다. FIX1, 사용자 승인 대기): run-case만의 값 없는 선택 옵션.
+    있으면 sealed=True, 없으면 False. 다른 명령은 --replay와 같은 방식으로 거부하고, --replay와 함께 적으면 인자 오류(2)다."""
+
+    def test_only_run_case_takes_it_and_it_defaults_to_false(self):
+        self.assertTrue(args.parse(argv_for("run-case") + ["--sealed"]).sealed)
+        self.assertFalse(args.parse(argv_for("run-case")).sealed)
+        self.assertTrue(args.run(argv_for("run-case") + ["--sealed"])["sealed"])
+        for command in args.COMMANDS:
+            if command == "run-case":
+                continue
+            with self.subTest(command=command):
+                code, err = parse_error(argv_for(command) + ["--sealed"])
+                self.assertEqual(code, 2)
+                self.assertIn("unrecognized arguments: --sealed", err)
+
+    def test_sealed_with_replay_is_an_argument_error(self):
+        for order in (["--sealed", "--replay", "replay.json"], ["--replay", "replay.json", "--sealed"]):
+            with self.subTest(order=order):
+                code, err = parse_error(argv_for("run-case") + order)
+                self.assertEqual(code, 2)
+                self.assertIn(args.SEALED_WITH_REPLAY, err)
+        # 하나씩은 받는다
+        self.assertEqual(args.parse(argv_for("run-case") + ["--replay", "replay.json"]).sealed, False)
+
+    def test_help_mentions_the_sealed_runner_only(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as caught:
+            args.parse(["run-case", "--help"])
+        self.assertEqual(caught.exception.code, 0)
+        self.assertIn("--sealed", out.getvalue())
+        self.assertIn("단위 E2", out.getvalue())

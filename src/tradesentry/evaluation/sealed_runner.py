@@ -43,7 +43,8 @@ tradesentry.workflow·tools·policy·metrics·cli·ingest와 채점기 eval.scor
    않는다.
 4. 실행: 실행 폴더 outputs/sealed/sealed_evaluate-{시각}/을 N8대로 확보하고 outputs/부터의 상대경로를 표준 출력 첫 줄에 적는다.
    E1 execute_batch(sealed=True)가 (사례 × 모드)를 순서 seed로 섞어 동시성 1로 돌리고, 사례마다 outputs/sealed/run_case-{시각}/을
-   확보해 sandbox_exec.SandboxCaseRunner가 전용 샌드박스 안 run-case에 --run-name으로 넘기고 내려받는다. 묶음 기록은
+   확보해 sandbox_exec.SandboxCaseRunner가 전용 샌드박스 안 run-case에 --run-name으로 넘기고(봉인 묶음이면 --sealed도 붙여
+   run-case의 봉인 실행 경로를 고른다) 내려받는다. 묶음 기록은
    evaluation_sealed_runner-{시각}.jsonl(줄 형식은 E1과 같다). 인프라 실패 재실행(룰북 B5)과 속도 조절은 E1 그대로다.
 5. 실행 조건 입력 파일 run_conditions-{시각}.json(자료 계약 §8.2)을 같은 폴더에 배타 생성한다: E1 build_run_conditions에
    sandbox.name·policy_yaml_sha256, reproduce_evaluate(위 명령 그대로), prescoring_checks.final_status·seed_concurrency를 채우고
@@ -436,7 +437,8 @@ def _run_sealed(settings: Settings, cases: list | None, clock, sleep, out, err) 
         print(f"종료 코드: {EXIT_FAILED}", file=out, flush=True)
         return EXIT_FAILED
     runner = sandbox_exec.SandboxCaseRunner(settings.sandbox,
-                                            exec_timeout_s=limits["wall_time_s"] + sandbox_exec.SANDBOX_EXEC_MARGIN_S)
+                                            exec_timeout_s=limits["wall_time_s"] + sandbox_exec.SANDBOX_EXEC_MARGIN_S,
+                                            sealed=sealed)  # 봉인 묶음이면 샌드박스 안 run-case에 --sealed(리허설 dev20은 붙이지 않는다)
     # 4. 실행 폴더 확보(N8)와 첫 줄
     parent = settings.outputs / SEALED_NAME if sealed else settings.outputs
     other = settings.outputs if sealed else settings.outputs / SEALED_NAME

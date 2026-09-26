@@ -17,8 +17,8 @@ model-decision-as3-real-dev ⑤~⑥)이 절차의 정본이다.
 1. 사전 점검(sandbox_preflight): openshell 명령이 있는가, 샌드박스 이미지 기록(SANDBOX_IMAGE_MANIFEST)의 코드 커밋이 40자
    16진수이고 dirty가 거짓인가, 그 커밋이 호스트 code_version과 같은가. 실행 폴더를 만들기 전에 부른다.
 2. 사례 실행 함수(SandboxCaseRunner, 단위 E1 CaseCall → 실행 쪽 키 21개): `openshell sandbox exec -n <샌드박스> --timeout <초>
-   -- /opt/tradesentry/bin/tradesentry run-case --snapshot … --policy … --mode … --case … --run-name <call.run_id>`(사용자 결정
-   10(나)) → 받기 전 확인(`sh -c 'test -d …/<실행명> && ! test -L …/<실행명> && ! test -L /sandbox/outputs'`, MT5 결정 기록 ⑯
+   -- /opt/tradesentry/bin/tradesentry run-case --snapshot … --policy … --mode … --case … --run-name <call.run_id> [--sealed]`
+   (사용자 결정 10(나). `--sealed`는 봉인 묶음 실행(sealed=True, 단위 E2)일 때만 붙는다. evaluate는 붙이지 않는다) → 받기 전 확인(`sh -c 'test -d …/<실행명> && ! test -L …/<실행명> && ! test -L /sandbox/outputs'`, MT5 결정 기록 ⑯
    T-DL4) → 같은 부모 아래 임시 폴더 .download-*로 `openshell sandbox download` → os.lstat으로 링크·특수 파일·하드링크·읽을 수
    없는 폴더·겹친 층·N6·N7 배치 밖 항목을 거부하고(링크만 os.unlink로 지우고 .quarantine-*로 격리) → 확보한 빈 사례 실행 폴더로
    os.rename → 실행 결과 기록(runlog_run_record-{시각}.json)을 읽어 돌려준다. 받지 못하면 SandboxError 하위 예외를 내고, 묶음
@@ -237,18 +237,22 @@ def sandbox_request(call) -> SandboxRequest:
 class SandboxCaseRunner:
     """샌드박스 백엔드의 사례 실행 함수(단위 E1 CaseCall → 실행 쪽 키 21개, AS3 결정 기록 ④). 절차는 머리 설명 2."""
 
-    def __init__(self, sandbox: str = SCORED_SANDBOX, *, exec_timeout_s: int):
+    def __init__(self, sandbox: str = SCORED_SANDBOX, *, exec_timeout_s: int, sealed: bool = False):
         self.sandbox = sandbox
         self.exec_timeout_s = exec_timeout_s
+        self.sealed = sealed  # 봉인 묶음 실행이면 샌드박스 안 run-case에 --sealed를 붙인다(단위 E2만 True. evaluate는 False)
         self.incidents: list[str] = []
 
     def __call__(self, call) -> dict:
         request = sandbox_request(call)
         remote = f"{SANDBOX_OUTPUTS}/{call.run_id}"
-        done = _openshell(["openshell", "sandbox", "exec", "-n", self.sandbox, "--timeout", str(self.exec_timeout_s),
-                           "--", SANDBOX_CLI, "run-case", "--snapshot", request.snapshot_id, "--policy",
-                           request.policy_version, "--mode", request.mode, "--case", request.case, "--run-name",
-                           request.run_name], self.exec_timeout_s + 30)
+        argv = ["openshell", "sandbox", "exec", "-n", self.sandbox, "--timeout", str(self.exec_timeout_s),
+                "--", SANDBOX_CLI, "run-case", "--snapshot", request.snapshot_id, "--policy",
+                request.policy_version, "--mode", request.mode, "--case", request.case, "--run-name",
+                request.run_name]
+        if self.sealed:
+            argv.append("--sealed")
+        done = _openshell(argv, self.exec_timeout_s + 30)
         if done is None:
             raise SandboxExecFailed("openshell sandbox exec을 부르지 못했거나 제한 시간을 넘었다")
         check = _openshell(["openshell", "sandbox", "exec", "-n", self.sandbox, "--timeout",

@@ -260,6 +260,11 @@ def check_replay(value: str) -> str:
     return value
 
 
+SEALED_OPTION = "sealed"  # run-case만 받는 선택 옵션(값 없는 플래그, --replay와 같은 자리). 봉인 묶음의 공식 실행 경로
+SEALED_HELP = ("봉인 묶음(holdout40·real_sealed)의 공식 채점 대상 실행 경로. 샌드박스 밖 실행기(단위 E2)만 준다. 개발 실행에는 "
+               "주지 않는다")
+SEALED_WITH_REPLAY = "--sealed와 --replay는 함께 적지 않는다(재생은 키 없는 스모크용이고 봉인 실행은 점수표 근거다)"
+
 RUN_NAME_OPTION = "run-name"
 RUN_NAME_HELP = ("호스트가 먼저 확보한 실행명(예: run_case-260925143015). 주면 그 이름의 실행 폴더 outputs/{실행명}/을 이미 "
                  "있으면 실패하는 방식으로 만들고, 주지 않으면 CLI가 실행명을 확보한다(사용자 결정 10)")
@@ -308,7 +313,8 @@ class Request:
     않는 공통 옵션(예: detect의 --mode)도 받은 값을 그대로 둔다. 쓸지 말지는 처리 함수가 COMMAND_OPTIONS대로 정한다.
     case는 --case 값 그대로이고 run-case만 받는다(뜻은 run-case 배선이 정한다). run_name은 --run-name 값 그대로다(없으면
     None. 다섯 명령이 받는다). conditions_extra는 --conditions-extra 값 그대로다(없으면 None. evaluate만 받는다). replay는
-    --replay 값 그대로다(없으면 None. run-case만 받는다. 키 없는 스모크 재현).
+    --replay 값 그대로다(없으면 None. run-case만 받는다. 키 없는 스모크 재현). sealed는 --sealed가 있으면 True(기본 False.
+    run-case만 받는다. 봉인 묶음의 공식 채점 대상 실행 경로, 단위 E2만 준다. --replay와 함께 적으면 인자 오류).
     """
 
     command: str
@@ -319,6 +325,7 @@ class Request:
     run_name: str | None = None
     conditions_extra: str | None = None
     replay: str | None = None
+    sealed: bool = False
 
 
 def option_help(command: str, option: str) -> str:
@@ -352,6 +359,7 @@ def build_parser() -> argparse.ArgumentParser:
         if name == "run-case":
             command.add_argument(f"--{REPLAY_OPTION}", dest="replay", action=_Once, metavar="REPLAY_PATH",
                                  type=check_replay, help=REPLAY_HELP)
+            command.add_argument(f"--{SEALED_OPTION}", dest="sealed", action="store_true", help=SEALED_HELP)
     return parser
 
 
@@ -360,12 +368,16 @@ def parse(argv: list[str] | None = None) -> Request:
 
     인자 오류면 사용법과 오류 문장을 표준 오류에 쓰고 SystemExit(2), 도움말이면 SystemExit(0)을 낸다(argparse 방식).
     """
-    namespace = build_parser().parse_args(argv)
+    parser = build_parser()
+    namespace = parser.parse_args(argv)
+    sealed = bool(getattr(namespace, "sealed", False))
+    if sealed and getattr(namespace, "replay", None) is not None:
+        parser.error(SEALED_WITH_REPLAY)  # 사용법과 함께 SystemExit(2)
     return Request(command=namespace.command, snapshot_id=namespace.snapshot,
                    policy_version=getattr(namespace, "policy", None), mode=getattr(namespace, "mode", None),
                    case=getattr(namespace, "case", None), run_name=getattr(namespace, "run_name", None),
                    conditions_extra=getattr(namespace, "conditions_extra", None),
-                   replay=getattr(namespace, "replay", None))
+                   replay=getattr(namespace, "replay", None), sealed=sealed)
 
 
 def run(inp: object) -> object:

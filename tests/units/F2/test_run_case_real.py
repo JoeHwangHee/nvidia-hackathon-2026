@@ -77,15 +77,16 @@ class RealCase(NoNetworkMixin, unittest.TestCase):
             patcher.start()
             self.addCleanup(patcher.stop)
 
-    def run_case(self, case_id: str, mode: str = "checklist"):
-        return call(["run-case", "--snapshot", rf.TWO_WAY_ID, "--policy", "dev-0.1", "--mode", mode, "--case", case_id])
+    def run_case(self, case_id: str, mode: str = "checklist", sealed: bool = False):
+        argv = ["run-case", "--snapshot", rf.TWO_WAY_ID, "--policy", "dev-0.1", "--mode", mode, "--case", case_id]
+        return call(argv + (["--sealed"] if sealed else []))
 
-    def spied_run_case(self, case_id: str):
+    def spied_run_case(self, case_id: str, sealed: bool = False):
         spies = {name: mock.patch.object(query.Snapshot, name, autospec=True, side_effect=getattr(query.Snapshot, name))
                  for name in VALUE_READS}
         with contextlib.ExitStack() as stack:
             mocks = {name: stack.enter_context(patcher) for name, patcher in spies.items()}
-            code, out, err = self.run_case(case_id)
+            code, out, err = self.run_case(case_id, sealed=sealed)
         return code, out, err, {name: m.call_count for name, m in mocks.items()}, mocks
 
 
@@ -116,6 +117,47 @@ class RealRunCaseTest(RealCase):
             code, out, err, counts, mocks = self.spied_run_case(SEALED_CASE)
         self.assertGreater(counts["parent_series"], 0)
         self.assertIn("JP", [c.args[2] for c in mocks["parent_series"].call_args_list])
+
+    def test_sealed_flag_investigates_the_real_sealed_series(self):
+        """--sealed(봉인 묶음의 공식 채점 대상 실행 경로, 단위 E2만 준다. FIX1): real_sealed 계열 사례를 조사하고 dataset
+        real_sealed·grouping_version g0을 적는다."""
+        code, out, err = self.run_case(SEALED_CASE, sealed=True)
+        self.assertEqual((code, err), (0, ""), err)
+        record_line = [line for line in out.splitlines() if "runlog_run_record-" in line][0]
+        record = trace_log.loads((self.root / record_line).read_text(encoding="utf-8"))
+        self.assertEqual((record["dataset"], record["grouping_version"], record["execution_status"], record["case_id"]),
+                         ("real_sealed", "g0", "COMPLETED", SEALED_CASE))
+
+    def test_sealed_flag_refuses_the_real_dev_series_before_any_value_is_read(self):
+        code, out, err, counts, _ = self.spied_run_case(DEV_CASE, sealed=True)
+        self.assertEqual((code, out), (1, ""))
+        self.assertEqual(err, dispatch.SEALED_REAL_REFUSAL + "\n")
+        self.assertNotIn(DEV_CASE, err)
+        self.assertEqual(counts, dict.fromkeys(VALUE_READS, 0))
+        [run_dir] = list(self.outputs.iterdir())
+        self.assertEqual(list(run_dir.iterdir()), [])  # 확보한 빈 실행 폴더만
+
+    def test_sealed_flag_still_needs_a_usable_split_record(self):
+        self.split_file.write_text("{", encoding="utf-8")
+        code, out, err, counts, _ = self.spied_run_case(SEALED_CASE, sealed=True)
+        self.assertEqual((code, out, err), (1, "", dispatch.RUN_CASE_SPLIT_REFUSAL + "\n"))
+        self.assertEqual(counts, dict.fromkeys(VALUE_READS, 0))
+
+    def test_real_case_scope_is_unchanged_by_the_sealed_path(self):
+        """개발 경로 real_case_scope는 real_dev만 통과시키고, 봉인 경로 sealed_real_case_scope는 real_sealed만 통과시킨다(둘의
+        반환 모양은 같다)."""
+        with query.open_snapshot(rf.TWO_WAY_ID) as snap:
+            dev_scope = dispatch.real_case_scope(snap, DEV_CASE)
+            sealed_scope = dispatch.sealed_real_case_scope(snap, SEALED_CASE)
+            with self.assertRaises(dispatch.RunCaseError) as a:
+                dispatch.real_case_scope(snap, SEALED_CASE)
+            with self.assertRaises(dispatch.RunCaseError) as b:
+                dispatch.sealed_real_case_scope(snap, DEV_CASE)
+        self.assertEqual((str(a.exception), str(b.exception)), (dispatch.RUN_CASE_SEALED_REFUSAL, dispatch.SEALED_REAL_REFUSAL))
+        self.assertEqual(sorted(dev_scope), ["dataset", "series_assignment"])
+        self.assertEqual(sorted(sealed_scope), ["dataset", "series_assignment"])
+        self.assertEqual((dev_scope["dataset"], sealed_scope["dataset"]), ("real_dev", "real_sealed"))
+        self.assertEqual(dev_scope["series_assignment"], sealed_scope["series_assignment"])
 
     def test_unusable_split_record_is_refused(self):
         for label, raw in (("JSON 아님", "{"), ("계열 빠짐", json.dumps(split_record(dev=DEV[:-1]))),
