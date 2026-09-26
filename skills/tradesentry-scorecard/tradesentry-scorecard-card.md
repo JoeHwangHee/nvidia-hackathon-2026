@@ -77,7 +77,7 @@ Mitigation: Review and scan skill before deployment. <br>
 - 금지 해제 조건(자료 계약 §10.3 N10) 전의 봉인 묶음(`holdout40`, `real_sealed`) 출력(`outputs/sealed/` 아래, trace 포함)과 봉인 묶음을 채점한 채점기 출력 폴더를 읽지 않는다. `holdout40`·`real_sealed`에는 채점기를 돌리지 않는다 `[사실: skills/tradesentry-scorecard/SKILL.md "읽지 않는 것"·"금지"]`.
 - 증거 없이 점수를 올리지 않고, 2점·4점 등 중간 값을 쓰지 않으며, 근거 한 줄을 비운 채 점수를 주지 않는다. 룰북과 규범을 고치지 않고 결과를 본 뒤 앵커 해석을 유리하게 바꾸지 않는다. 계획 경로·명령 표에 없는 경로를 짓지 않는다 `[사실: skills/tradesentry-scorecard/SKILL.md "금지"]`.
 
-### 남은 확인 `[미확인]`
+### 확인 결과와 남은 확인
 
 - Third-Party Community Consideration 절의 소유자 표기 "TradeSentry (JoeHwangHee/nvidia-hackathon-2026)"와 링크(별도 에이전트 카드가 없어 저장소 README)는 소유자(사용자)가 2026-09-26(토) 15:34(채팅 "확인") 확인했다. 생성기 절차대로 확인 뒤 붉은 VERIFY 표시(span과 주석)를 지웠고, `scripts/validate_submission.py`는 종료 코드 0이다 `[사실: 사용자 확인 채팅 "확인", 검증 스크립트 실행]`.
 - License/Terms of Use 절이 비어 있다: 저장소에 LICENSE·NOTICE 파일과 SKILL.md frontmatter `license` 키가 없어 `license_identifier: null`로 두었고, 템플릿은 식별자가 없으면 이 절을 비워 렌더한다(표시도 붙지 않는다). 라이선스는 저장소 공개 방식 결정(로드맵 P2) 때 정하고 context JSON을 고쳐 다시 렌더한다 `[사실: discover 신호 Repo-root signals, 2026-09-26(토)]` `[사실: 생성기 references/skill-card.md.j2·references/style-guide.md·scripts/validate_submission.py (메인 폴더 설치본, 2026-09-26(토))]`.
