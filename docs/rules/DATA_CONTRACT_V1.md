@@ -852,6 +852,8 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 
 2026-09-25(금) 사용자 결정 8·10·12(결정 기록 `docs/tracking/decisions/20260925-0847-user-decision-morning-shared-promises.md`)로 실자료 분할 기록 행을 더하고, CLI 행에 `evaluate --mode`의 뜻과 선택 옵션 `--run-name`을 더했다.
 
+2026-09-26(토) 로드맵 P1(우리 스킬 3개의 거버넌스 카드)로 "거버넌스 카드(스킬 카드)" 행을 더했다. 새 경로 추가만이고 기존 값 변경은 없다(공용 약속 변경 절차 §13.1은 그 PR로 밟는다).
+
 **2026-09-24(목) 사용자 결정(결정 기록 `20260924-1720-user-decision-domain-restructure.md`, `20260924-2315-user-decision-impl-plan-approval.md` D2·D3)으로 고친 표**
 
 - 모든 문서는 아래 표의 경로와 명령만 쓴다. 이름은 조정값이며, S0 외부 자문으로 바뀌면 이 표와 참조 문서를 **함께** 고친다.
@@ -869,6 +871,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
 | OpenShell 정책 | `configs/openshell/policy.yaml` | M(보안 검토) |
 | 런타임 스킬 | `skills/tradesentry/SKILL.md` | M |
 | 평가 스킬 | `skills/tradesentry-scorecard/SKILL.md`, `skills/tradesentry-eval/SKILL.md` | 공동 |
+| 거버넌스 카드(스킬 카드) | `skills/tradesentry/tradesentry-card.md`, `skills/tradesentry-scorecard/tradesentry-scorecard-card.md`, `skills/tradesentry-eval/tradesentry-eval-card.md`(공식 스킬 `skill-card-generator`의 카드 형식. 형식·경위의 정본은 `docs/eval/SKILL_DICTIONARY.md` §3.5) | 공동 |
 | 합성 시험자료 | `data/snapshots/controlled_fixture_v0/` | D |
 | 그룹핑 결과 | `data/reference/peer_group_g0.csv`(`g0`, MVP 시험용 고정 비교국 목록), `data/reference/peer_group_g1.csv` | M 계산·D 검수 |
 | 실자료 분할 기록 | `data/reference/real_split_kcs_202201_202412_v2.json`(실자료 64개 계열의 `real_dev`·`real_sealed` 배정. 실자료 분할 단위 V5 출력과 바이트가 같다) | D |
