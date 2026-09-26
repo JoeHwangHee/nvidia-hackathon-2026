@@ -84,4 +84,5 @@
 | `20260926-0955-user-decision-f2-restart-after-run-case-defect.md` | 2026-09-26(토) 09:55 | 사용자 결정 "둘다 권장대로": 첫 `holdout40` 공식 실행(`sealed_evaluate-260926092509`, 15건 `CODE_ERROR`·모델 호출 0)을 하네스 결함의 무효 시작으로 처리(채점 안 함, 출력은 N10 금지 유지), `run-case --sealed` 승인, 수정 커밋 이미지로 전용 샌드박스 재생성 뒤 두 봉인 묶음 새 시작. 봉인 사건 표(08:1x~09:55) 포함 |
 | `20260926-1225-user-decision-r1-paths.md` | 2026-09-26(토) 12:25 | 사용자 결정 "둘다 권장대로": 봉인 원본 커밋 위치 `eval/sealed/`(봉인 폴더 구조 그대로, 커밋 때 해시 전체 재대조), 결과표 위치 `docs/eval/RESULTS.md` — 자료 계약 §10 두 행 추가 |
 | `20260926-1351-orchestrator-record-real-sealed-seed-publication.md` | 2026-09-26(토) 13:51 | `real_sealed` 표본 추출 seed 파일 공개(정답 대조 채점 뒤, 룰북 B6·병렬 개발 규칙 §6.2) — sha256 `5732e9506325…`, 내용 바이트 그대로. 금지 해제 조건 충족 |
-| `20260926-1351-orchestrator-record-f2-sealed-events.md` | 2026-09-26(토) 13:51 | F2 봉인 사건 전체 기록(날짜·주체·파일 수·해시 대조): 반입·재스테이징·전용 샌드박스·공식 실행 시작/종료·채점 시작/완료·원본 커밋 재대조 |
+| `20260926-1351-orchestrator-record-f2-sealed-events.md` | 2026-09-26(토) 13:51 | F2 봉인 사건 기록(날짜·주체·파일 수·해시 대조 결과·폴더 이름만): 반입·재스테이징·전용 샌드박스·공식 실행 시작/중단/종료·채점기 호출·채점 완료·원본 커밋 재대조 |
+| `20260926-1351-orchestrator-record-f2-operations.md` | 2026-09-26(토) 13:51 | F2 운영 기록: 실행 상태 건수(holdout40 COMPLETED 119·FAILED 4·INVALID 1, real_sealed COMPLETED 76·FAILED 12·INVALID 2, 재실행 4/4·10/10), 무효 시작 원인, 채점기 호출 이력(입력 오류 3회 뒤 각 1회 완료), 샌드박스 처리 |
