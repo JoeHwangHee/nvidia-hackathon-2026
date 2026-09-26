@@ -42,11 +42,12 @@ F2(봉인 묶음 공식 실행과 정답 대조 채점) 동안 오케스트레�
 | 2026-09-26(토) 13:51 | 채점 시작 real_sealed: 대상 outputs/sealed/sealed_evaluate-260926114518 (채점 전 재대조 일치, 채점기 diff 0, 자체 시험 0) | 오케스트레이터(독립 채점기, 샌드박스 밖, 키 변수 뺀 환경) | — | RECHECK: 봉인 해시 대조: 목록 파일 202개, 일치 202개, 불일치 0개, 목록 밖 항목 0개 → 일치 |
 | 2026-09-26(토) 13:51 | real_sealed 공식 실행 종료(sealed_evaluate-260926114518, 실행기 종료 0: COMPLETED 76·FAILED 12·INVALID 2, 재실행 10/10) → 채점기 호출 13:51:29 입력 오류(정정 전, 빈 폴더 score-260926135129) → 실행 조건 값 정정(원본 .operator-text.bak, sha 32fe015d…→d5cd4173…) → 13:51:36 채점 완료 score-260926135136 | 오케스트레이터 | 1 | 채점 전 재대조 202/202 일치 |
 | 2026-09-26(토) 13:51 | 봉인 원본 커밋 전 재대조와 복사(`eval/sealed/`) | 오케스트레이터(도구 실행) | 202 | RECHECK listed=202 matched=202 mismatched=0 extra=0; COPIED files=202 copy_hash_mismatch=0 dest=eval/sealed |
+| 2026-09-26(토) 16:13 | 전용 샌드박스 `ts-official`(수정 커밋 d35fe75 이미지) 삭제: `openshell sandbox delete ts-official` 출력 "Deleted sandbox ts-official", 16:13:48 `openshell sandbox list` 재확인에서 부재(남은 샌드박스 `x1-demo`·`ts-scored`). 사용자 결정 15:44(결정 기록 `20260926-1544-user-decision-submission-form-and-ts-official.md`: 최종 자기채점 뒤 삭제) → 자기채점 3회차 확정·PR #103 병합 뒤 실행. 샌드박스 안 두 봉인 묶음의 사례 실행 출력은 실행기가 이미 호스트 `outputs/sealed/`로 내려받았고 채점기 증거는 커밋(PR #93·#95)돼 잃는 자료 없음 | 오케스트레이터 | — | — |
 
 ## 전용 샌드박스 처리
 
 - 첫 `ts-official`(동결 커밋 c557540 이미지)은 10:07~10:09 재스테이징 때 삭제했다(무효 묶음의 빈 사례 폴더 15개와 봉인 아닌 진단 실행 3건 포함).
-- 두 번째 `ts-official`(수정 커밋 d35fe75 이미지)은 두 묶음 실행이 끝난 뒤 보존 상태다. 지우는 시점은 R1 마무리 때 다시 정한다 `[미확인]`.
+- 두 번째 `ts-official`(수정 커밋 d35fe75 이미지)은 두 묶음 실행과 규범 G2 증거용 전체 행 위반 시험(14:53, PR #98)이 끝난 뒤 보존했다가, 사용자 결정(2026-09-26(토) 15:44, 결정 기록 `20260926-1544-user-decision-submission-form-and-ts-official.md`: 최종 자기채점 뒤 삭제)에 따라 자기채점 3회차 확정(PR #103) 뒤 16:13에 삭제했다(위 표 마지막 행). 남은 샌드박스는 시연용 `x1-demo`와 개발 채점용 `ts-scored`다.
 
 ## 채점기 호출 기록
 

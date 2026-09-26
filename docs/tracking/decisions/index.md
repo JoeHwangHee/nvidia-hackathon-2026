@@ -86,3 +86,4 @@
 | `20260926-1351-orchestrator-record-real-sealed-seed-publication.md` | 2026-09-26(토) 13:51 | `real_sealed` 표본 추출 seed 파일 공개(정답 대조 채점 뒤, 룰북 B6·병렬 개발 규칙 §6.2) — sha256 `5732e9506325…`, 내용 바이트 그대로. 금지 해제 조건 충족 |
 | `20260926-1351-orchestrator-record-f2-sealed-events.md` | 2026-09-26(토) 13:51 | F2 봉인 사건 기록(날짜·주체·파일 수·해시 대조 결과·폴더 이름만): 반입·재스테이징·전용 샌드박스·공식 실행 시작/중단/종료·채점기 호출·채점 완료·원본 커밋 재대조 |
 | `20260926-1351-orchestrator-record-f2-operations.md` | 2026-09-26(토) 13:51 | F2 운영 기록: 실행 상태 건수(holdout40 COMPLETED 119·FAILED 4·INVALID 1, real_sealed COMPLETED 76·FAILED 12·INVALID 2, 재실행 4/4·10/10), 무효 시작 원인, 채점기 호출 이력(입력 오류 3회 뒤 각 1회 완료), 샌드박스 처리 |
+| `20260926-1544-user-decision-submission-form-and-ts-official.md` | 2026-09-26(토) 15:44 | 사용자 결정: 제출 폼 항목 5개(팀명·프로젝트명 `TradeSentry`, 신청 폼 장문 칸 직접 입력 + GitHub 링크를 적은 서비스 파일 한 쪽, 300·500자 내외(공백 포함), 자기채점 점수 포함(내부 값 표기), 실자료 판정 분포 포함)와 전용 샌드박스 `ts-official`을 최종 자기채점(3회차) 뒤 삭제(16:13 실행) |
