@@ -27,7 +27,7 @@ nvidia-hackathon-2026/
 │   │   ├── RULEBOOK.md                ← 평가 룰북: Part A 자기채점, Part B 성능 평가와 채점 규칙
 │   │   ├── RESULTS.md                 ← 결과표(R1): 두 봉인 묶음의 대표·보조 지표와 Wilson 95% 구간·등급, A등급 주장 조건 판정, B7 공개 값, 한계. 숫자는 커밋된 채점 요약에서만 옮긴다
 │   │   └── SKILL_DICTIONARY.md        ← 쓰는 스킬(Agent Skills 형식의 에이전트용 작업 절차)과 설치·이름 확인 방법
-│   ├── submission/                    ← 제출 폼 입력용 최종본 SUBMISSION_FORM.md(신청 폼 장문 칸 3개·서비스 파일 한 쪽 내용. 공개 저장소 URL은 P2 뒤 채운다)와 서비스 파일 템플릿 service_file.html
+│   ├── submission/                    ← 제출 폼 입력용 최종본 SUBMISSION_FORM.md(제출 절차, 신청 폼 장문 칸 3개, 서비스 파일 한 쪽 내용. 공개 저장소 URL은 2026-09-26(토) P2 결정으로 채웠다)와 서비스 파일 템플릿 service_file.html
 │   ├── architecture.md                ← 실행 사슬과 구성요소별 정본 위치
 │   ├── business-rules.md              ← 도메인 규칙별 정본 위치
 │   ├── security.md                    ← 키·샌드박스·봉인 통제별 정본 위치
