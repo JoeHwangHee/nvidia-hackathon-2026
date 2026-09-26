@@ -109,19 +109,19 @@ OpenShell 샌드박스 안 실행(이미지 스테이징, 정책 적용, 위반 
 
 Streamlit(파이썬 웹 화면 라이브러리) 앱 하나에 페이지 4개가 있다: 담당자용 화면 3개와 관리자용 화면 1개(기존 화면 1 "사례 보기").
 
-- **담당자 홈**: 선택한 스냅샷의 월별 경보 목록(kg당 단가 변화 U와 상대국 점유율 변화, 조사 상태)과 요약 4칸, "조사 시작" 버튼. 경보 목록은 CLI `detect`와 같은 함수로 만들고 지표는 조회 도구 봉투의 값을 그대로 옮긴다.
-- **사례 검토**: 조사 결과를 평이한 문장으로 옮긴 설명(무슨 일이 있었나 → 조사에서 확인한 것 → 다른 설명 가능성 → 결론), 판정 3종의 뜻, 근거로 삼은 것, 유의할 점. 숫자는 보고서의 claim과 trace 지표에서만 옮긴다.
-- **결정 기록/재조사/도움**: 담당자 결정 기록(모의 승인. 제안대로 또는 다르게, 메모)을 `outputs/approval_record-{시각}/approval_record-{시각}.json`에 추가 전용으로 저장하고, 실행 폴더의 지금 보고서와 대조해 `VALID`/`REVIEW_REQUIRED`를 붙인다. 같은 사례를 `--mode full`로 다시 도는 재조사 요청, 사후 확인(비활성), 용어 도움, 이력. 실제 기관 승인이나 통관 조치가 아니고 계정·권한은 없다.
-- **관리자용 조사 기록**(기존 화면 1 "사례 보기"): 실행 폴더 `outputs/run_case-{시각}/` 하나를 골라 사례별 조회 이유(발동 지표와 정책 기준값), 기준월·비교월의 kg당 단가·점유율 차트, 실제 실행한 도구(trace, 실행 추적 기록), 반대 근거와 보고서(typed claim, 코드가 덧붙인 주장 표시), 판정 전후 타임라인(조사 전 경보 → 최종 판정), 원본 행 링크(근거 ID → 스냅샷 행)를 보인다. 사이드바의 "사례 실행" 패널은 CLI와 같은 진입점으로 사례 1건을 돌리고 결과 폴더를 바로 띄운다(키가 없으면 재생 파일이 있는 합성 사례의 재생 실행만 된다). 화면은 기록을 보여 줄 뿐 판정·지표를 다시 계산하지 않고, 화면에서 시작한 실행과 재생 실행은 점수표 근거가 아니다.
+- **경보 목록**: 요약 카드 띠(이번 달 경보·지난달, 단가가 크게 바뀐 것(오른 것·내린 것), 점유율이 크게 바뀐 것, 조사 완료(제안별), 내 결정을 기다리는 사례), 조회 조건 카드(월·바뀐 것·진행 상태·정렬(변화 큰 순 기본)·찾기), 데이터 표 6열(품목·상대국·변화내용·변화·진행 상태·동작). 경보 목록은 CLI `detect`와 같은 함수로 만들고 지표는 조회 도구 봉투의 값을 그대로 옮긴다.
+- **사례 검토**: 조사 결과를 평이한 문장으로 옮긴 설명(무슨 일이 있었나 → 조사에서 확인한 것 → 다른 설명 가능성 → 결론, 보고서 요약 원문은 접힌 상태)과 "다음 업무 제안" 카드, 제안 3종의 뜻, 근거로 삼은 것, 유의할 점. 숫자는 보고서의 claim과 trace 지표에서만 옮긴다.
+- **결정 기록**: 담당자 결정 기록(모의 승인. 제안대로 또는 다르게, 이유)을 `outputs/approval_record-{시각}/approval_record-{시각}.json`에 추가 전용으로 저장하고, 실행 폴더의 지금 보고서와 대조해 `VALID`/`REVIEW_REQUIRED`를 붙인다(목록에는 "결정 완료"/"재검토 필요"). 같은 사례를 `--mode full`로 다시 도는 "다시 조사", 사후 확인(열리지 않음), 이 사례의 기록, 용어. 실제 기관 승인이나 통관 조치가 아니고 계정·권한은 없다.
+- **관리자 화면**(기존 화면 1 "사례 보기"): 실행 폴더 `outputs/run_case-{시각}/` 하나를 골라 사례별 조회 이유(발동 지표와 정책 기준값), 기준월·비교월의 kg당 단가·점유율 차트, 실제 실행한 도구(trace, 실행 추적 기록), 반대 근거와 보고서(typed claim, 코드가 덧붙인 주장 표시), 판정 전후 타임라인(조사 전 경보 → 최종 판정), 원본 행 링크(근거 ID → 스냅샷 행)를 보인다. 사이드바의 "사례 실행" 패널은 CLI와 같은 진입점으로 사례 1건을 돌리고 결과 폴더를 바로 띄운다(키가 없으면 재생 파일이 있는 합성 사례의 재생 실행만 된다). 화면은 기록을 보여 줄 뿐 판정·지표를 다시 계산하지 않고, 화면에서 시작한 실행과 재생 실행은 점수표 근거가 아니다.
 
-사이드바에서 언어(한국어/English)와 스냅샷을 고른다. 영어 모드에서도 보고서 요약(`narrative`)·가설(`hypotheses`) 원문은 한국어 그대로 두고 "(Korean original)"을 붙인다.
+담당자 화면에는 사이드바가 없고 머리 띠(페이지 링크 3개·자료 기간·언어 한국어/EN)로 움직인다. HS6 코드·스냅샷 ID·실행 폴더 이름·정책 이름·상태 코드 같은 내부 식별자는 담당자 화면에 보이지 않는다(예외: 결정 기록의 "문의할 때 사례 번호" 한 줄). 담당자 화면이 쓸 스냅샷은 관리자 화면 사이드바의 "담당자 화면 자료(스냅샷)"에서 고른다(기본은 정본 빌드가 있는 실자료). "조사 시작"·"다시 조사"는 배경 하위 프로세스로 돌고, 화면 전체를 덮는 로딩 창이 trace에서 읽은 5단계(자료 확인 → 이력·상대국 비교 → 하위품목 구성 → 검수·수정 → 숫자 대조)를 보인다. "목록으로"를 누르면 조사는 계속되고 모든 화면(관리자 화면 포함) 오른쪽 아래에 "조사 중" 표시가 떠 누르면 로딩 창이 다시 열리며, 끝나면 "조사 완료 · 결과 보기"로 바뀐다. 영어 모드에서도 보고서 요약(`narrative`)·가설(`hypotheses`) 원문은 한국어 그대로 두고 "(Korean original)"을 붙인다.
 
 ```bash
 uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/ui/ui_app.py --client.showErrorDetails=false   # 담당자용 화면 + 관리자용 화면. streamlit은 lock 밖(--with)에서 받는다. 브라우저 http://localhost:8501(다른 포트는 --server.port)
 uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py --client.showErrorDetails=false   # 기존 화면 1(관리자용)만 띄울 때
 ```
 
-앱은 `.env`를 읽지 않는다. 실제 NIM 실행은 Streamlit(파이썬 웹 화면 라이브러리) 프로세스 환경에 `NVIDIA_API_KEY`가 있을 때만 된다(예: `python3 spikes/x1/with_nvidia_key.py --env-file .env -- uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py --client.showErrorDetails=false`. 담당자용 화면도 같은 규칙이며 진입 스크립트만 `src/tradesentry/ui/ui_app.py`로 바꾼다). `outputs/sealed/`(봉인 묶음 출력)는 나열·표시하지 않는다. 화면에서 시작한 실행·재생 실행·결정 기록은 점수표 근거가 아니다. 정본: `docs/operations.md`("화면 1 실행"·"담당자용 화면 실행"), 결정 기록 `docs/tracking/decisions/20260926-0732-model-decision-ui-screen-1.md`(화면 1), `docs/tracking/decisions/20260926-1836-model-decision-ui-user-pages.md`(담당자용 화면. 사용자 결정 `docs/tracking/decisions/20260926-1828-user-decision-user-pages-and-review-fallback.md`).
+앱은 `.env`를 읽지 않는다. 실제 NIM 실행은 Streamlit(파이썬 웹 화면 라이브러리) 프로세스 환경에 `NVIDIA_API_KEY`가 있을 때만 된다(예: `python3 spikes/x1/with_nvidia_key.py --env-file .env -- uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py --client.showErrorDetails=false`. 담당자용 화면도 같은 규칙이며 진입 스크립트만 `src/tradesentry/ui/ui_app.py`로 바꾼다). `outputs/sealed/`(봉인 묶음 출력)는 나열·표시하지 않는다. 화면에서 시작한 실행·재생 실행·결정 기록은 점수표 근거가 아니다. 정본: `docs/operations.md`("화면 1 실행"·"담당자용 화면 실행"), 결정 기록 `docs/tracking/decisions/20260926-0732-model-decision-ui-screen-1.md`(화면 1), `docs/tracking/decisions/20260926-1836-model-decision-ui-user-pages.md`·`docs/tracking/decisions/20260926-2031-model-decision-ui-user-pages-v2.md`(담당자용 화면·v2. 사용자 결정 `docs/tracking/decisions/20260926-1828-user-decision-user-pages-and-review-fallback.md`).
 
 ## 6. 평가 방법과 결과 위치
 
