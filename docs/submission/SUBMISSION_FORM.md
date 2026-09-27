@@ -4,13 +4,13 @@
 
 ## 제출 절차
 
-마감은 2026-09-28(월) 23:59 KST다. 폼 구조는 대회 조사 문서 `NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md`의 3·4절(2026-09-22 조사 기준)에서 옮겼고, 실제 폼 안내와 다르면 폼을 따른다. 공개 저장소는 `https://github.com/JoeHwangHee/nvidia-hackathon-2026`이다(사용자 결정 2026-09-26(토) 20:50).
+마감은 2026-09-28(월) 23:59 KST다. 폼 구조는 대회 조사 문서 `docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md`의 3·4절(2026-09-22 조사 기준)에서 옮겼고, 실제 폼 안내와 다르면 폼을 따른다. 공개 저장소는 `https://github.com/JoeHwangHee/nvidia-hackathon-2026`이다(사용자 결정 2026-09-26(토) 20:50).
 
 진행(2026-09-26(토) 22:53): 2~7단계를 마쳤다(디자인 작업 병합, 문구·서비스 파일 확인, 공개 전 검사 재실행, 공개 전환, 인증 없는 접속 확인(curl로 저장소 페이지·README 200 확인. 시크릿 창 육안 확인은 제출 때 함께). 결정 기록 `docs/tracking/decisions/20260926-2253-user-decision-public-switch.md`). 남은 것은 1단계(교육 미션)와 8~10단계(팀장 제출 → 팀원 전원 제출 → 제출 뒤 키 재발급)다.
 
 진행(2026-09-27(일) 02:32): 라이선스 Apache-2.0 적용(PR LIC1).
 
-1. 교육 미션 확인(공식 진행 1단계): NVIDIA DLI(NVIDIA 교육 과정) 강의 "Securing Agents with NemoClaw and OpenShell"(무료, 약 4시간, https://learn.nvidia.com/courses/course-detail?course_id=course-v1:DLI+S-FX-43+V1). 신청 폼 안내 원문은 "참가자는 교육 미션을 확인한 후, build.nvidia.com의 Skill API를 활용하여 데모 프로젝트를 개발합니다."이고, 수강·수료를 증명하는 폼 칸은 없었다(대회 조사 문서 `NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md` 3-1절·4절, 2026-09-22 조사) `[사실]`. 공식 기한은 제출 마감(2026-09-28(월) 23:59)뿐이고, 2026-09-27(일)은 로드맵의 내부 목표다(`docs/plan/ROADMAP.md` 6.5절). 제출 전에 들어 둔다. 참가 자격도 함께 확인한다: 팀 2~5인, 만 19세 이상, 2007년 이후 출생자가 한 명이라도 있으면 팀 전체 무효. 2026-09-27(일) 02:3x 재확인: 공식 페이지(https://fastcampus.co.kr/NVIDIA_hackathon)의 일정 이미지 "해커톤 예선 접수"에 "1. 교육 미션: Securing Agents with NemoClaw and OpenShell 을 확인합니다."가 있고, Phase 1 안내 이미지에 "미션은 확인 후, Build NVIDIA의 Skill API를 활용하여 에이전트 데모를 제출합니다."가 있다 `[사실]`. 수강 완료(수료)를 요구하거나 증빙을 받는다는 문구는 공식 페이지, 신청 폼(2026-09-22 전체 조사. 2026-09-27에는 Google 로그인이 필요해 다시 열지 못함), 패스트캠퍼스 고객센터 도움말(이 대회 글 없음) 어디에도 없고, 공식 페이지의 "공식 수료 인증서"는 상위 5팀 보상 항목이다 `[사실]`. 신청 폼의 개인정보 제3자 제공 목적이 NVIDIA 계정 이메일로 "온라인 등록 대상자 확인"이므로, 강의는 폼에 적을 NVIDIA 계정으로 들어 두는 편이 안전하다 `[추론]`.
+1. 교육 미션 확인(공식 진행 1단계): NVIDIA DLI(NVIDIA 교육 과정) 강의 "Securing Agents with NemoClaw and OpenShell"(무료, 약 4시간, https://learn.nvidia.com/courses/course-detail?course_id=course-v1:DLI+S-FX-43+V1). 신청 폼 안내 원문은 "참가자는 교육 미션을 확인한 후, build.nvidia.com의 Skill API를 활용하여 데모 프로젝트를 개발합니다."이고, 수강·수료를 증명하는 폼 칸은 없었다(대회 조사 문서 `docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md` 3-1절·4절, 2026-09-22 조사) `[사실]`. 공식 기한은 제출 마감(2026-09-28(월) 23:59)뿐이고, 2026-09-27(일)은 로드맵의 내부 목표다(`docs/plan/ROADMAP.md` 6.5절). 제출 전에 들어 둔다. 참가 자격도 함께 확인한다: 팀 2~5인, 만 19세 이상, 2007년 이후 출생자가 한 명이라도 있으면 팀 전체 무효. 2026-09-27(일) 02:3x 재확인: 공식 페이지(https://fastcampus.co.kr/NVIDIA_hackathon)의 일정 이미지 "해커톤 예선 접수"에 "1. 교육 미션: Securing Agents with NemoClaw and OpenShell 을 확인합니다."가 있고, Phase 1 안내 이미지에 "미션은 확인 후, Build NVIDIA의 Skill API를 활용하여 에이전트 데모를 제출합니다."가 있다 `[사실]`. 수강 완료(수료)를 요구하거나 증빙을 받는다는 문구는 공식 페이지, 신청 폼(2026-09-22 전체 조사. 2026-09-27에는 Google 로그인이 필요해 다시 열지 못함), 패스트캠퍼스 고객센터 도움말(이 대회 글 없음) 어디에도 없고, 공식 페이지의 "공식 수료 인증서"는 상위 5팀 보상 항목이다 `[사실]`. 신청 폼의 개인정보 제3자 제공 목적이 NVIDIA 계정 이메일로 "온라인 등록 대상자 확인"이므로, 강의는 폼에 적을 NVIDIA 계정으로 들어 두는 편이 안전하다 `[추론]`.
 2. 디자인 작업 마무리: 담당자 화면 v2와 사용자의 추가 변경을 main에 병합한다.
 3. 제출 문구 최종 확인(오케스트레이터): 아래 폼 칸 2(Solution)와 칸 3(Tech Stack)의 화면 문장이 최종 화면과 맞는지 보고, Solution은 500자 내외를 지킨다.
 4. 서비스 파일 확인(오케스트레이터): `scripts/make_service_file.sh "https://github.com/JoeHwangHee/nvidia-hackathon-2026"`로 만든 `outputs/submission_service_file-{시각}/[NVIDIA 해커톤_TradeSentry_TradeSentry].pdf`가 한 쪽인지 확인한다. 서비스 파일 내용이 바뀌었으면 다시 만든다.
@@ -108,7 +108,7 @@
 - 어느 단계에서도 바뀌지 않는 것: 부정·위법·원산지 판정, 개별 거래가격 추정, 실제 기관 승인, 통관 조치는 하지 않는다. 채점 경로(탐지·조사·검증·채점)는 룰북 동결 대상이라 화면·승인 기능이나 검색·모델을 더해도 평가 규칙은 그대로이며, 바꾸면 새 룰북 버전으로만 바꾼다.
 
 [자기채점(내부 값)]
-- 팀 채점 규범(SCORING_GOLDEN_RULE.md)과 룰북 Part A로 저장소를 자기채점한 최종 회차(3회차, 2026-09-26(토)): artifacts/scorecard/scorecard-260926155108/scorecard-260926155108.md — 하드 게이트 6개 모두 PASS, 총점 73.8/100, 판정 밴드 "경쟁권". 앞선 2회차(같은 날)는 63.8/100 "약함"이었고, 공식 스킬 사용 기록과 위치 설정 문서(선행 사례 조사·도입 시나리오·한국 맥락 논증)를 보강해 올랐다. 가장 낮은 축은 NVIDIA 기술 활용 심도(3.33/5)와 실용성·산업가치(3.5/5)다.
+- 팀 채점 규범(docs/research/SCORING_GOLDEN_RULE.md)과 룰북 Part A로 저장소를 자기채점한 최종 회차(3회차, 2026-09-26(토)): artifacts/scorecard/scorecard-260926155108/scorecard-260926155108.md — 하드 게이트 6개 모두 PASS, 총점 73.8/100, 판정 밴드 "경쟁권". 앞선 2회차(같은 날)는 63.8/100 "약함"이었고, 공식 스킬 사용 기록과 위치 설정 문서(선행 사례 조사·도입 시나리오·한국 맥락 논증)를 보강해 올랐다. 가장 낮은 축은 NVIDIA 기술 활용 심도(3.33/5)와 실용성·산업가치(3.5/5)다.
 - 자기채점 점수는 팀 채점 규범으로 매긴 내부 값이며 대회 점수가 아니다. 대회가 공개한 것은 채점 항목 4개와 그 순서뿐이다.
 
 ---

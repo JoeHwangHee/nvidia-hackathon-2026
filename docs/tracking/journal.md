@@ -73,15 +73,15 @@
 - 대안: 기록된 대안 없음.
 - 결정 주체: 작업 에이전트(조사).
 - 영향: 이후 모든 후보 평가와 개발 플랜의 대회 조건 서술의 근거가 됐다.
-- 출처: `NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md` `[사실]`
+- 출처: `docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md` `[사실]`
 
 ### 2026-09-22(화) — 팀 채점 규범과 아이디어 후보 A~J
-- 한 일: 팀 채점 규범 `SCORING_GOLDEN_RULE.md`를 만들었다. 제1원리는 "숫자로 증명할 수 없는 아이디어는 채택하지 않는다"이고, 하드 게이트 G1~G6(정량 증명, 교육 미션 정합성, NVIDIA 기술 3종 이상, 재현 가능성, 산업 문제성, 6일 완주)과 가중치를 두었다. 가중치와 게이트는 팀 설계 규칙이고 대회 공식 배점이 아니다. 같은 날 아이디어 후보 10개와 6일 안에 쓸 수 있는 자원 재고도 만들었다.
+- 한 일: 팀 채점 규범 `docs/research/SCORING_GOLDEN_RULE.md`를 만들었다. 제1원리는 "숫자로 증명할 수 없는 아이디어는 채택하지 않는다"이고, 하드 게이트 G1~G6(정량 증명, 교육 미션 정합성, NVIDIA 기술 3종 이상, 재현 가능성, 산업 문제성, 6일 완주)과 가중치를 두었다. 가중치와 게이트는 팀 설계 규칙이고 대회 공식 배점이 아니다. 같은 날 아이디어 후보 10개와 6일 안에 쓸 수 있는 자원 재고도 만들었다.
 - 대안: A 에이전트 권한 정책 자동생성·레드팀(1위) 등 7개를 남기고, 일정·여행, 문서 생성, 범용 챗봇 RAG(검색 증강 생성)는 게이트에서 탈락시켰다.
 - 이유: 에이전트 데모는 누구나 만들 수 있어서 기준선 대비 개선 수치에서만 차이가 난다고 봤다. 그래서 개발 순서도 "평가 스크립트와 기준선을 먼저, 기능은 나중"으로 정했다.
 - 결정 주체: 작업 에이전트(초안). 누가 승인했는지는 기록에 없다 `[미확인]`.
 - 영향: 이 개발 순서가 2026-09-23 설계 세션의 결정 "문서 먼저, 구현은 다음"의 근거가 됐다(`docs/plan/DEV_PLAN.md` 13절).
-- 출처: `SCORING_GOLDEN_RULE.md`, `IDEA_CANDIDATES.md`, `DATA_AND_SKILL_INVENTORY.md` `[사실]`
+- 출처: `docs/research/SCORING_GOLDEN_RULE.md`, `docs/research/IDEA_CANDIDATES.md`, `docs/research/DATA_AND_SKILL_INVENTORY.md` `[사실]`
 
 ### 2026-09-22(화) 23:20~09-23(수) 00:20 — ChatGPT 교차 비평과 규범 v2.1
 - 한 일: 후보를 23개로 넓힌 뒤 ChatGPT 임시 채팅에서 "심사위원 겸 냉정한 기술 리뷰어" 역할로 비평을 받았다. ChatGPT의 근거 주장 6건은 공식 문서로 다시 확인해 5건이 맞았고 1건은 용어가 부분만 맞았다.
@@ -89,7 +89,7 @@
 - 이유: ChatGPT가 짚은 공통 실수 셋을 받아들였다. NVIDIA 기술의 개수를 필연성으로 착각한다("OpenShell을 지우면 여전히 작동하는가?"), 숫자를 만들 수 있다는 것과 그 숫자가 증거라는 것을 혼동한다, 핵심 실험보다 제품 서사를 먼저 키운다. 실거래가 이상거래 후보(I-12)는 "가격 이상치는 이상거래가 아니다", 합성 라벨 순환 평가를 이유로 폐기됐다.
 - 결정 주체: 외부 자문(ChatGPT, 의견) + 작업 에이전트(정리).
 - 영향: 규범 v2.1에 숫자 등급 A~D를 넣었다. A는 외부 벤치마크·실제 라벨, B는 동결 held-out, C는 독립 제작 결정적 픽스처, D는 우리가 만들고 우리가 채점한 합성이다. 대표 지표는 A·B여야 하고 D만 있으면 점수 상한이 낮다. 이 등급 체계가 뒤에 대표 지표를 실자료로 옮기는 근거가 됐다.
-- 출처: `IDEA_EXPANSION_CHATGPT_REVIEW.md`, `CHATGPT_REVIEW_TRANSCRIPT.md`, `SCORING_GOLDEN_RULE.md` `[사실]`
+- 출처: `docs/research/IDEA_EXPANSION_CHATGPT_REVIEW.md`, `docs/research/CHATGPT_REVIEW_TRANSCRIPT.md`, `docs/research/SCORING_GOLDEN_RULE.md` `[사실]`
 
 ### 2026-09-23(수) 09:30~11:05 — 실활용 조사, 현업·생활 밀착 브레인스토밍, 외부 아이디어 검토
 - 한 일
@@ -101,7 +101,7 @@
 - 이유: 기존 후보가 에이전트를 만드는 조직에 치우쳤다는 문제의식이었다. OpenShell 활용을 판정하는 공통 규칙("샌드박스에서 돌렸다"는 위생일 뿐이고, 헤드라인 흐름이 정책 차단·자격증명 분리 같은 기능에 구조적으로 기대야 한다)도 이때 세웠다.
 - 결정 주체: 사용자(팀장, 제약) + 작업 에이전트(조사·채점).
 - 영향: HSGate 설계·조사로 이어졌다. 외부 검토 문서와 브레인스토밍 문서의 작성 시각 표기는 순서가 맞지 않는다 `[미확인]`.
-- 출처: `IDEA_REAL_WORLD_USE_CASES.md`, `IDEA_REAL_CUSTOMER_BRAINSTORM.md`, `IDEA_EXTERNAL_CANDIDATES_REVIEW.md`, `IDEA_LIFE_EMBEDDED_BRAINSTORM.md` `[사실]`
+- 출처: `docs/research/IDEA_REAL_WORLD_USE_CASES.md`, `docs/research/IDEA_REAL_CUSTOMER_BRAINSTORM.md`, `docs/research/IDEA_EXTERNAL_CANDIDATES_REVIEW.md`, `docs/research/IDEA_LIFE_EMBEDDED_BRAINSTORM.md` `[사실]`
 
 ### 2026-09-23(수) 오전~19:14 — HSGate 설계와 R0~R6 조사
 - 한 일: HSGate 설계서(수입 상품 설명서에서 결정사례를 근거로 HS 세번을 제안하고, 근거와 관세사 승인이 모두 있을 때만 신고 전송을 허용)와 근거자료·도메인 학습 체크리스트를 쓰고, 데이터 유효성·평가 전용 재검토·NVIDIA 스택 공식 문서 대조 등 R0~R6 조사를 19:14까지 했다.
@@ -110,23 +110,23 @@
 - 이유·발견: R0는 설계서의 과대 가정 여섯 가지를 찾았다. 예를 들어 OpenShell은 승인 토큰·근거 묶음을 검사하지 못하고, OpenShell L7(HTTP 요청 수준) 규칙은 method·path·query만 본다.
 - 결정 주체: 사용자(팀장, 용도 정정) + 작업 에이전트(조사).
 - 영향: HSGate는 채택되지 않았다. 그래도 NVIDIA 스택 대조 결과(L7 규칙의 범위, Nemotron 3 Super 모델카드에 한국어가 없음)는 현행 개발 플랜의 위험·정직한 주장 규칙에 남았다.
-- 출처: `HSGate_설계서.md`, `HSGATE_EVALUATION_DATA_REVIEW.md`, `HSGATE_R0_CHECKLIST_STATUS.md`, `docs/plan/DEV_PLAN.md` 12절 `[사실]`
+- 출처: `docs/research/HSGate_설계서.md`, `docs/research/HSGATE_EVALUATION_DATA_REVIEW.md`, `docs/research/HSGATE_R0_CHECKLIST_STATUS.md`, `docs/plan/DEV_PLAN.md` 12절 `[사실]`
 
 ### 2026-09-23(수) 19:14~20:05 사이 — HSGate에서 TradeSentry로 전환
 - 한 일: 주제를 TradeSentry로 바꿨다. 관세청 수입통계에서 kg당 단가와 상대국 점유율의 전년 같은 달 대비 급변을 경보로 잡고, Nemotron 조사자와 별도 문맥의 Critic이 제한된 도구로 반증을 시도해 판정 3종 가운데 하나를 제안한다.
 - 대안: HSGate 유지. 같은 저녁의 문서 조사는 데이터 검토 결론만 보면 오히려 HSGate가 유리하다(외부 정답 라벨, A등급)고 보고했다 `[사실: 대화 d5e5f8c9 2026-09-23 20:24]`.
 - 이유: 전환 이유는 기록에 없다 `[미확인]`. 인계 문서도 "바꾼 이유는 어디에도 기록돼 있지 않다"고 적었다.
-- 남은 문서 근거: 폐기된 SourcingCritic과 같은 관세청 API를 쓰고, HS6 × 국가 단위이며, 찬반 검수 뒤 보류 판정을 두는 구조가 닮았다 `[추론]`. 구 개발계획(`Pasted markdown.md`)은 "사용자 고정 범위"와 저장소에 없는 이전 자료를 언급해, 구상이 이 저장소 밖에서 먼저 있었던 것으로 보인다 `[추론]`.
+- 남은 문서 근거: 폐기된 SourcingCritic과 같은 관세청 API를 쓰고, HS6 × 국가 단위이며, 찬반 검수 뒤 보류 판정을 두는 구조가 닮았다 `[추론]`. 구 개발계획(`docs/research/Pasted markdown.md`)은 "사용자 고정 범위"와 저장소에 없는 이전 자료를 언급해, 구상이 이 저장소 밖에서 먼저 있었던 것으로 보인다 `[추론]`.
 - 결정 주체: 사용자(팀장)로 보이나 기록 없음 `[미확인]`.
-- 출처: `TRADESENTRY_HANDOFF.md` 1절, `Pasted markdown.md`, `IDEA_EXTERNAL_CANDIDATES_REVIEW.md`
+- 출처: `docs/research/TRADESENTRY_HANDOFF.md` 1절, `docs/research/Pasted markdown.md`, `docs/research/IDEA_EXTERNAL_CANDIDATES_REVIEW.md`
 
 ### 2026-09-23(수) 20:05 무렵까지 — 구 개발계획과 2인 분담 합의안
-- 한 일: 구 개발계획 `Pasted markdown.md`가 범위를 정했다. HS85(전기기기 류) 안 HS4(4자리 품목) 1개·HS6 3~5개, 상대국 × 월, 두 신호(단가 |r_U|≥30%, 점유율 |d_s|≥10pp(퍼센트포인트). "시연 후보를 만드는 값"으로 명시), 판정 3종, 재조사 1회·도구 호출 8회·조회 도구 5개, 합성 개발 20 / 평가 40, 비교군 3개(고정 체크리스트 / Critic 없는 Nemotron / 전체)다. 20:05에는 분담 합의안 v0.1이 모델 트랙(M)과 데이터 트랙(D)으로 나누고 착수 전 합의 항목과 파일 소유권 표를 두었다.
+- 한 일: 구 개발계획 `docs/research/Pasted markdown.md`가 범위를 정했다. HS85(전기기기 류) 안 HS4(4자리 품목) 1개·HS6 3~5개, 상대국 × 월, 두 신호(단가 |r_U|≥30%, 점유율 |d_s|≥10pp(퍼센트포인트). "시연 후보를 만드는 값"으로 명시), 판정 3종, 재조사 1회·도구 호출 8회·조회 도구 5개, 합성 개발 20 / 평가 40, 비교군 3개(고정 체크리스트 / Critic 없는 Nemotron / 전체)다. 20:05에는 분담 합의안 v0.1이 모델 트랙(M)과 데이터 트랙(D)으로 나누고 착수 전 합의 항목과 파일 소유권 표를 두었다.
 - 대안: 분담 합의안은 사람 두 명의 서명 절차를 전제했다. 이것은 설계 세션에서 "사용자 승인 + 검토 에이전트"로 바뀌었다.
 - 이유: 분담 합의안은 관세청 월별 CIF(운임·보험료 포함 가격) 자료와 BACI(CEPII가 정리한 국가 간 연간 무역 자료, FOB(수출항 인도 가격) 기준)를 한 지표에 섞지 않기로 했고, 유사도 그룹핑은 비교집합 선택용일 뿐 판정 신호가 아니라고 했다.
 - 결정 주체: 사용자(팀장, 고정 범위) + 작성 에이전트(세부). 합의안에 사용자 서명은 없었다.
 - 영향: 탐지 공식·판정표·도구 5개·예산·A/B/C 합성 정답표는 뒤의 개발 플랜에 그대로 남았다. 바뀐 점은 `docs/plan/DEV_PLAN.md` 11절 표에 있다.
-- 출처: `Pasted markdown.md`, `TRADESENTRY_TEAM_SPLIT_DECISIONS.md` `[사실]`
+- 출처: `docs/research/Pasted markdown.md`, `docs/research/TRADESENTRY_TEAM_SPLIT_DECISIONS.md` `[사실]`
 
 ### 2026-09-23(수) 20:08~22:10 — 설계 준비 세션: 문서 조사, 수집기 결함 수정, v2 수집, 실측 메모
 - 한 일
@@ -139,7 +139,7 @@
 - 이유: 설정이 바뀌면 동결 스냅샷을 고치지 않고 새 스냅샷 ID로 모은다. 모델이 지시를 어긴 관찰에서 "조기 종료·도구 한도·같은 인자 재호출 차단은 코드가 강제하고, 숫자는 검증된 값으로만 채운다"는 설계 원칙이 나왔다.
 - 결정 주체: 사용자(팀장) 지시·승인 + 오케스트레이터.
 - 영향: v2가 작업 기준 스냅샷이 됐고, 설계 세션에서 "품목은 v2 그대로 동결"로 확정됐다.
-- 출처: `TRADESENTRY_FACTS_MEMO.md`, `TRADESENTRY_HANDOFF.md`, `[사실: 대화 d5e5f8c9 2026-09-23 20:14·21:18·21:35·21:58]`
+- 출처: `docs/research/TRADESENTRY_FACTS_MEMO.md`, `docs/research/TRADESENTRY_HANDOFF.md`, `[사실: 대화 d5e5f8c9 2026-09-23 20:14·21:18·21:35·21:58]`
 
 ## 3. 설계 — 계획 문서 세트 (2026-09-23 밤~09-24 오전)
 
@@ -673,7 +673,7 @@ MVP 완성 뒤 사용자가 제출 시나리오 C(MVP 수준 + 화면 1개)를 �
 
 | 선택 | 검토한 대안 | 고른 이유 | 정본 문서 |
 |---|---|---|---|
-| 주제: TradeSentry(수입통계 경보를 조사자와 Critic이 반증 검수) | HSGate(품목분류 게이트), 보안·DevOps 계열 후보 | 전환 이유는 기록에 없다 `[미확인]` | `TRADESENTRY_HANDOFF.md` |
+| 주제: TradeSentry(수입통계 경보를 조사자와 Critic이 반증 검수) | HSGate(품목분류 게이트), 보안·DevOps 계열 후보 | 전환 이유는 기록에 없다 `[미확인]` | `docs/research/TRADESENTRY_HANDOFF.md` |
 | 문서 먼저, 구현은 다음 | 곧바로 구현 | 평가 규칙과 기준선을 기능보다 먼저 두어 결과를 본 뒤 규칙을 바꾸지 않는다(규범의 개발 순서 경고) | `docs/plan/DEV_PLAN.md` 13절 |
 | 탐지는 코드가, 모델은 조사만 | 모델이 사례를 고르는 방식 | 탐지가 결정적 계산이어야 재현·채점이 된다 | `docs/plan/DEV_PLAN.md` 6절 |
 | 숫자는 검증된 값에서 틀로 채우고 검증기가 막음(`freeform` 제외 모든 모드) | 모델이 숫자를 직접 씀(기준선 `freeform`으로만 남김) | G4 시험에서 점유율 감소를 증가로 뒤집어 쓴 응답이 통과했다 | `docs/plan/DEV_PLAN.md` 7절 |
@@ -737,8 +737,8 @@ MVP 완성 뒤 사용자가 제출 시나리오 C(MVP 수준 + 화면 1개)를 �
 
 | 시각 | 문제 | 원인 | 대응 | 출처 |
 |---|---|---|---|---|
-| 2026-09-23(수) 21시 | 수집기 집계에 대상이 아닌 쌍이 섞이고 점유율 분모가 검증되지 않음 | 품목별 API가 HS4 요청에도 HS10 행을 주는데 같은 구조로 가정함 | 수집 요청 목록 기준 집계, HS10 단위 분모 대조 | `TRADESENTRY_HANDOFF.md` |
-| 2026-09-23(수) 21시 | 모델이 추가 조회 금지 지시를 어기고 점유율 감소를 증가로 씀 | 지침만으로는 행동을 강제할 수 없음 | 한도·조기 종료를 코드로 강제, 검증된 값만 채우기와 검증기 | `TRADESENTRY_FACTS_MEMO.md` |
+| 2026-09-23(수) 21시 | 수집기 집계에 대상이 아닌 쌍이 섞이고 점유율 분모가 검증되지 않음 | 품목별 API가 HS4 요청에도 HS10 행을 주는데 같은 구조로 가정함 | 수집 요청 목록 기준 집계, HS10 단위 분모 대조 | `docs/research/TRADESENTRY_HANDOFF.md` |
+| 2026-09-23(수) 21시 | 모델이 추가 조회 금지 지시를 어기고 점유율 감소를 증가로 씀 | 지침만으로는 행동을 강제할 수 없음 | 한도·조기 종료를 코드로 강제, 검증된 값만 채우기와 검증기 | `docs/research/TRADESENTRY_FACTS_MEMO.md` |
 | 2026-09-24(목) 04시 | 전체국가 점유율 분모가 두 배 | 품목별 API의 두 요청이 같은 행을 담는데 중복 제거가 빠짐 | "(HS10, 월) 중복 제거"를 문서에 같은 문구로 넣고 값이 다르면 빌드 중단 | PR #5·#6(중복 제거 문구), 원인·영향은 `[사실: 대화 5cf89145 2026-09-24 04:21]` |
 | 2026-09-24(목) 16:07 | X1이 NemoClaw 설치기 고지에서 멈춤 | 설치기가 제3자 고지 수락을 요구하고 에이전트는 대신 수락하지 않음 | 사용자에게 두 안을 올려 (가) 수락 후 재시도 | 결정 기록 `20260924-1720-user-decision-x1-option-ga.md` |
 | 2026-09-24(목) 17:45 | OpenClaw의 모델 호출이 막힘 | `openclaw`가 node 스크립트라 실행 파일이 node로 판정됨 | node를 허용하되 경로를 하나로 좁히고 보안 검토 | 결정 기록 `20260924-1741-orchestrator-decision-x1-retry.md` |

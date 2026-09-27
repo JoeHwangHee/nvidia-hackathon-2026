@@ -58,10 +58,10 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | 스킬 사전 | `docs/eval/SKILL_DICTIONARY.md` | 공식 스킬과 우리 스킬의 사용 일정 |
 | 평가 스킬 ①·② | `skills/tradesentry-scorecard/SKILL.md`, `skills/tradesentry-eval/SKILL.md` | 자기채점(룰북 Part A)과 성능 평가(룰북 Part B) 절차 |
 | 문서 색인 | `docs/README.md` | 문서 세트의 읽는 순서 |
-| 규범 | `SCORING_GOLDEN_RULE.md` | 팀 채점 규범. 가중치·게이트·앵커는 `[DESIGN]`이고 대회 공식 배점이 아니다 |
-| 분담 문서 | `TRADESENTRY_TEAM_SPLIT_DECISIONS.md` | 2인 분담 합의안(결정 D0~D12) |
-| 구 개발계획 | `Pasted markdown.md` | 이력 문서. 바뀐 결정은 옮기지 않는다 |
-| 대회 조사 문서 | `NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md` | 대회 참가 조건과 제출 양식 |
+| 규범 | `docs/research/SCORING_GOLDEN_RULE.md` | 팀 채점 규범. 가중치·게이트·앵커는 `[DESIGN]`이고 대회 공식 배점이 아니다 |
+| 분담 문서 | `docs/research/TRADESENTRY_TEAM_SPLIT_DECISIONS.md` | 2인 분담 합의안(결정 D0~D12) |
+| 구 개발계획 | `docs/research/Pasted markdown.md` | 이력 문서. 바뀐 결정은 옮기지 않는다 |
+| 대회 조사 문서 | `docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md` | 대회 참가 조건과 제출 양식 |
 
 ## 1. 날짜별 도착점
 
@@ -280,7 +280,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 ### 4.2 재전송과 재실행
 
-- **재전송**(한 실행 안에서 같은 모델 요청을 다시 보내는 것): NIM의 HTTP 5xx(서버 오류 응답)와 HTTP 429(호출 한도 초과)는 요청당 최대 3회, 대기 5·10·20초의 지수 대기(조정값)로 명시 재전송한다(2026-09-25(금) 15:52 사용자 결정, 결정 기록 `docs/tracking/decisions/20260925-1552-user-decision-429-retry.md`). 응답에 `Retry-After`(다시 시도할 때까지 기다릴 시간을 알려 주는 응답 헤더)가 있으면 대기는 max(지수 대기, min(`Retry-After`, 60초))이고 횟수는 그대로다(2026-09-25(금) 22:22 사용자 결정 ④, 결정 기록 `docs/tracking/decisions/20260925-2225-user-decision-code-boundaries.md`. 규칙의 정본은 개발 플랜 `docs/plan/DEV_PLAN.md` §6.6·§6.7). provider(모델 호출 클라이언트)의 자동 재시도는 끈다. 재전송은 모델 요청 10회 한도에 세지 않고, 요청당 3회와 사례당 300초로만 묶는다(2026-09-25(금) 18:05 사용자 결정, 결정 기록 `docs/tracking/decisions/20260925-1805-user-decision-retry-budget.md`). NIM 무료 키에서 HTTP 500이 간헐적으로 난다 `[사실: TRADESENTRY_FACTS_MEMO.md §5]`.
+- **재전송**(한 실행 안에서 같은 모델 요청을 다시 보내는 것): NIM의 HTTP 5xx(서버 오류 응답)와 HTTP 429(호출 한도 초과)는 요청당 최대 3회, 대기 5·10·20초의 지수 대기(조정값)로 명시 재전송한다(2026-09-25(금) 15:52 사용자 결정, 결정 기록 `docs/tracking/decisions/20260925-1552-user-decision-429-retry.md`). 응답에 `Retry-After`(다시 시도할 때까지 기다릴 시간을 알려 주는 응답 헤더)가 있으면 대기는 max(지수 대기, min(`Retry-After`, 60초))이고 횟수는 그대로다(2026-09-25(금) 22:22 사용자 결정 ④, 결정 기록 `docs/tracking/decisions/20260925-2225-user-decision-code-boundaries.md`. 규칙의 정본은 개발 플랜 `docs/plan/DEV_PLAN.md` §6.6·§6.7). provider(모델 호출 클라이언트)의 자동 재시도는 끈다. 재전송은 모델 요청 10회 한도에 세지 않고, 요청당 3회와 사례당 300초로만 묶는다(2026-09-25(금) 18:05 사용자 결정, 결정 기록 `docs/tracking/decisions/20260925-1805-user-decision-retry-budget.md`). NIM 무료 키에서 HTTP 500이 간헐적으로 난다 `[사실: docs/research/TRADESENTRY_FACTS_MEMO.md §5]`.
 - **재실행**(실행 하나를 처음부터 다시 돌리는 것): 룰북 B5의 인프라 실패 재실행 규칙을 따른다. `RB-1` 동결 때 사용자가 확인하는 항목이다(룰북 부록 23번, §6.2).
   - 조건: `execution_status`가 `FAILED`이고 원인이 모델 제공자 쪽 오류(재전송 한도를 다 쓴 HTTP 5xx, 재전송 한도를 다 쓴 HTTP 429, 연결 실패)뿐인 실행. 다른 4xx가 있으면 대상이 아니다. 원인 분류 코드로 적은 정본은 룰북 B5다.
   - 조건을 채운 실행은 모두 같은 설정으로 1회 재실행한다. 첫 실행이 모두 끝난 뒤, 첫 실행과 같은 순서로 돌린다.
@@ -386,7 +386,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 ### 6.3 `policy_v1` 승인 때 함께 확인할 것
 
-D가 `real_dev` 개발 묶음만으로 제안하고(DT4), 승인되면 `configs/policy_v1.json`에 기록한다. 2026-09-25(금) 사용자가 아래 항목을 모두 승인했다(결정 기록 `docs/tracking/decisions/20260925-0846-user-decision-policy-v1-approval.md` 결정 1과 판정 해석 U1~U4). 승격된 달의 V·Q 처리와 수입 0 명시 달의 처리는 계약 규칙(자료 계약 §3.4)이라 정책 파일 키가 아니라 `_status` 설명으로 적는다. 코드에 하드코딩하지 않는다. 아래의 677행·208개월·68개월은 v2 스냅샷의 실측값이다 `[사실: TRADESENTRY_FACTS_MEMO.md §3]`.
+D가 `real_dev` 개발 묶음만으로 제안하고(DT4), 승인되면 `configs/policy_v1.json`에 기록한다. 2026-09-25(금) 사용자가 아래 항목을 모두 승인했다(결정 기록 `docs/tracking/decisions/20260925-0846-user-decision-policy-v1-approval.md` 결정 1과 판정 해석 U1~U4). 승격된 달의 V·Q 처리와 수입 0 명시 달의 처리는 계약 규칙(자료 계약 §3.4)이라 정책 파일 키가 아니라 `_status` 설명으로 적는다. 코드에 하드코딩하지 않는다. 아래의 677행·208개월·68개월은 v2 스냅샷의 실측값이다 `[사실: docs/research/TRADESENTRY_FACTS_MEMO.md §3]`.
 
 - [x] **탐지 임계값**: 개발 제안은 |r_U|≥30%, |d_s|≥10pp다. 파일에는 자료 계약 §11.2의 단위로 `30`, `10`처럼 적는다.
 - [x] **`min_amount`, `min_weight`**: 금액>0인데 중량 0인 677행이 근거다.
@@ -424,7 +424,7 @@ D가 `real_dev` 개발 묶음만으로 제안하고(DT4), 승인되면 `configs/
 
 - **알아채는 신호**: X1이 착수 뒤 3시간(조정값) 안에 한 줄 경로를 통과하지 못한다. Brev 단계에서도 다시 3시간(조정값) 안에 통과하지 못한다.
 - **대체 경로**(개발 플랜 §5.4, 사용자 결정)
-  1. OpenShell과 NemoClaw는 로컬 Docker로 먼저 시도한다. OpenShell 게이트웨이는 Linux(glibc 2.28 이상) 전용이라 macOS에서는 Docker 안에서 돌린다 `[사실: HSGATE_R3_NVIDIA_STACK_CHECK.md §7]`. NemoClaw는 알파 단계다 `[사실: 대회 조사 문서 §9]`.
+  1. OpenShell과 NemoClaw는 로컬 Docker로 먼저 시도한다. OpenShell 게이트웨이는 Linux(glibc 2.28 이상) 전용이라 macOS에서는 Docker 안에서 돌린다 `[사실: docs/research/HSGATE_R3_NVIDIA_STACK_CHECK.md §7]`. NemoClaw는 알파 단계다 `[사실: 대회 조사 문서 §9]`.
   2. X1이 3시간을 넘기면 원인과 무관하게(단, 아래 "따로 다루는 두 경우"는 제외) Brev(드라이버·Docker 등이 미리 갖춰진 NVIDIA 원클릭 클라우드 개발 환경)로 옮긴다. Brev는 실행 환경을 클라우드 Linux로 옮기는 단계라, 로컬 Docker에서 난 게이트웨이·NAT·로그 문제도 여기서 풀릴 수 있다 `[추론]`. 원인이 NemoClaw 밖이면 이때 사용자에게 알린다. Brev 단계에도 기본 시한 3시간을 둔다 `[DESIGN, 조정값]`.
   3. Brev 단계도 3시간을 넘기면 원인을 판별한다. 원인이 NemoClaw 구간이면 OpenShell만 쓰고 제출서에 사실대로 적는다.
 - **OpenShell만 단계가 풀지 못하는 경우** `[DESIGN, 조정값]`: Brev 단계에서도 시한을 넘긴 원인이 OpenShell 게이트웨이 자체, NAT 실행 추적, 감사 로그일 때가 있다. 이 셋은 NemoClaw를 빼도 남으므로 OpenShell만 단계는 이 셋을 풀지 못한다. 이때는 우회하지 않고 즉시 사용자 결정을 받는다(§6.4).

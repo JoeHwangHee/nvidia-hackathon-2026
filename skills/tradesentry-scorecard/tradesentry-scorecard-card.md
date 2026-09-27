@@ -26,7 +26,7 @@ Mitigation: Review and scan skill before deployment. <br>
 
 ## Reference(s): <br>
 - [평가 룰북 docs/eval/RULEBOOK.md — Part A(A1~A5)와 부록](../../docs/eval/RULEBOOK.md) <br>
-- [팀 채점 규범 SCORING_GOLDEN_RULE.md — §2~§4, §7](../../SCORING_GOLDEN_RULE.md) <br>
+- [팀 채점 규범 SCORING_GOLDEN_RULE.md — §2~§4, §7](../../docs/research/SCORING_GOLDEN_RULE.md) <br>
 - [공용 자료 계약 docs/rules/DATA_CONTRACT_V1.md — §10 계획 경로·명령 표](../../docs/rules/DATA_CONTRACT_V1.md) <br>
 - [스킬 사전 docs/eval/SKILL_DICTIONARY.md — §1 상태 열, §2.1, §3.2, §3.4](../../docs/eval/SKILL_DICTIONARY.md) <br>
 - [개발 플랜 docs/plan/DEV_PLAN.md — §1, §5.4](../../docs/plan/DEV_PLAN.md) <br>
@@ -56,10 +56,11 @@ Mitigation: Review and scan skill before deployment. <br>
 - 값은 `skills/tradesentry-scorecard/SKILL.md`의 frontmatter와 본문, discover 신호(pyproject 버전, git 원격·SHA, 저장소 루트 LICENSE — 2026-09-26(토) 15:09 생성 때는 없었고 2026-09-27(일) 재렌더 때는 `license_identifier: Apache License  (from LICENSE)`)에서만 가져왔다. 없는 능력을 적지 않았고 결과 숫자를 적지 않았다.
 - 이전 카드(같은 경로, 2026-09-26(토) 오전. 생성기를 설치하지 못해 형식만 따라 수동 작성)는 이 파일로 덮어썼다.
 - 2026-09-27(일) 라이선스 결정(Apache License 2.0, 결정 기록 `docs/tracking/decisions/20260927-0215-user-decision-license-apache2.md`)에 따라 다시 렌더했다(생성기는 작업 worktree의 설치본 사본 `.agents/skills/skill-card-generator/`, 커밋하지 않음): `scripts/discover_assets.py skills/tradesentry-scorecard`(02:26:58~59, 종료 코드 0) → 이 카드 생성기 부분의 값을 그대로 옮기고 `license_identifier: "Apache-2.0"`, `license_verify: false` 두 값만 바꾼 context JSON(`outputs/skill_cards-{시각}/`, 커밋하지 않음) → 임시 경로 렌더(02:27:35~36, 종료 코드 0)와 옛 생성기 부분의 diff는 License/Terms of Use 아래 `Apache-2.0 <br>` 한 줄 추가뿐 → `scripts/render_card.py --context … --template references/skill-card.md.j2 --out skills/tradesentry-scorecard/tradesentry-scorecard-card.md`(02:28:58, 종료 코드 0) → 이 부록을 다시 붙이고 라이선스 부분만 고침 → `scripts/validate_submission.py skills/tradesentry-scorecard/tradesentry-scorecard-card.md`(종료 코드 0. 시각은 스킬 사전 §3.5 실행 기록 표).
+- 2026-09-27(일) 이전 설계·조사 기록을 저장소 루트에서 `docs/research/`로 옮기며(결정 기록 `docs/tracking/decisions/20260927-1030-user-decision-readme-journal-research-move.md`) Reference(s)의 규범 링크만 바꾸려고 다시 렌더했다: 이 카드 생성기 부분의 값으로 context JSON을 다시 만들어(바꾼 값 없음) `scripts/render_card.py`로 렌더해 기존 카드와 같음을 확인했고, 규범 링크 URL 하나(`../../SCORING_GOLDEN_RULE.md` → `../../docs/research/SCORING_GOLDEN_RULE.md`)만 바꾼 context로 다시 렌더했다(종료 코드 0). 설명 문장의 파일 이름 표기와 Skill Version(s)는 그대로다.
 
 ### 무엇을 하는가
 
-- 평가 스킬 ①이다. 에이전트가 TradeSentry 저장소를 룰북(`docs/eval/RULEBOOK.md`) Part A(팀 채점 규범 `SCORING_GOLDEN_RULE.md`를 TradeSentry 증거로 풀어 쓴 자기채점 규칙)로 자기채점하고, 규범 G1~G6 하드 게이트와 채점 지표 20개(0/1/3/5만)·`2e` 표시·CAP 규칙·판정 밴드·가장 낮은 축 2개·컴포넌트 삭제 시험 답을 판정마다 근거 한 줄과 증거 경로를 붙여 결과 파일로 남긴다 `[사실: skills/tradesentry-scorecard/SKILL.md frontmatter description·머리말]`.
+- 평가 스킬 ①이다. 에이전트가 TradeSentry 저장소를 룰북(`docs/eval/RULEBOOK.md`) Part A(팀 채점 규범 `docs/research/SCORING_GOLDEN_RULE.md`를 TradeSentry 증거로 풀어 쓴 자기채점 규칙)로 자기채점하고, 규범 G1~G6 하드 게이트와 채점 지표 20개(0/1/3/5만)·`2e` 표시·CAP 규칙·판정 밴드·가장 낮은 축 2개·컴포넌트 삭제 시험 답을 판정마다 근거 한 줄과 증거 경로를 붙여 결과 파일로 남긴다 `[사실: skills/tradesentry-scorecard/SKILL.md frontmatter description·머리말]`.
 - 세 회차(2026-09-25(금) MVP 시험 뒤, `RB-1` 동결 뒤 결과 정리 때, 2026-09-28(월) 제출 전)와 자기채점·점수표 요청 때 쓴다. 성능 평가(평가 스킬 ②의 일)와 아이디어 고르기는 하지 않는다 `[사실: skills/tradesentry-scorecard/SKILL.md "언제 쓰나"]`.
 - 자기채점 점수는 대회 점수가 아니다 `[사실: skills/tradesentry-scorecard/SKILL.md "정본과 이 스킬의 관계"]`.
 

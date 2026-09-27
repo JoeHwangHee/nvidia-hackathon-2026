@@ -65,17 +65,21 @@ class ScanLineTest(unittest.TestCase):
         self.assertEqual(self.kinds("artifacts/openshell/a.txt", f"  - {BREW_HOME}x/y"), ["user_home"])
         self.assertEqual(self.kinds("artifacts/openshell/a.txt", f"{BREW_HOME} {LINUX_HOME}"), ["user_home"])
 
-    def test_historical_baseline_is_per_line_and_root_only(self):
+    def test_historical_baseline_is_per_line_and_history_dir_only(self):
         line = f"예전 문장 `{TILDE}`"
-        baseline = frozenset({("OLD.md", ss._line_sha(line))})
-        self.assertEqual(self.kinds("OLD.md", line, baseline), [])
-        self.assertEqual(self.kinds("OLD.md", line + " 바뀜", baseline), ["tilde"])
-        self.assertEqual(self.kinds("docs/OLD.md", line, frozenset({("docs/OLD.md", ss._line_sha(line))})),
-                         ["tilde"])
+        old = ss.HISTORY_DIR + "OLD.md"
+        baseline = frozenset({(old, ss._line_sha(line))})
+        self.assertEqual(self.kinds(old, line, baseline), [])
+        self.assertEqual(self.kinds(old, line + " 바뀜", baseline), ["tilde"])
+        # 이력 문서 폴더 밖(루트·다른 폴더)과 그 하위 폴더에는 기준선을 적용하지 않는다
+        for path in ("OLD.md", "docs/OLD.md", ss.HISTORY_DIR + "sub/OLD.md"):
+            self.assertEqual(self.kinds(path, line, frozenset({(path, ss._line_sha(line))})), ["tilde"])
 
-    def test_committed_baseline_rows_are_root_history_docs(self):
+    def test_committed_baseline_rows_are_history_dir_docs(self):
+        self.assertEqual(ss.HISTORY_DIR, "docs/research/")
         for path, digest in ss.HISTORICAL_BASELINE:
-            self.assertNotIn("/", path)
+            self.assertTrue(path.startswith(ss.HISTORY_DIR))
+            self.assertNotIn("/", path[len(ss.HISTORY_DIR):])
             self.assertTrue(path.endswith(".md"))
             self.assertEqual(len(digest), 64)
 

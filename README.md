@@ -157,7 +157,7 @@ uv run --locked --with "streamlit==1.64.0" streamlit run src/tradesentry/app.py 
 | 봉인 원본(입력·정답표·사례 목록·표본·표본 추출 seed) | `eval/sealed/`(최종 채점과 seed 공개 뒤 커밋, 해시 목록 `eval/sealed_manifest.json`과 전체 재대조) |
 | 개발 묶음(`dev20`·`real_dev`) 채점 요약 | `artifacts/eval/score-*/scorer_summary-*.md`. 개발 묶음 값이며 **대표 숫자가 아니다**(등급 D). 같은 폴더에 `scorer_results-*.jsonl`, `scorer_claims-*.jsonl`, 재채점용 보고서 원문 `run_case-*/` |
 | OpenShell 정책 적용·위반 시험 증거 | `artifacts/openshell/openshell_violation_tests-*/` |
-| 자기채점(룰북 Part A, 팀 채점 규범 `SCORING_GOLDEN_RULE.md` 기준) | `artifacts/scorecard/scorecard-*/scorecard-*.md` |
+| 자기채점(룰북 Part A, 팀 채점 규범 `docs/research/SCORING_GOLDEN_RULE.md` 기준) | `artifacts/scorecard/scorecard-*/scorecard-*.md` |
 | 개발용 기대 판정 사례 A·B·C | `eval/dev/oracle_ABC.json` |
 | 합성 시나리오 명세(공개) | `eval/scenarios/SCENARIO_SPEC.md` |
 
@@ -186,6 +186,7 @@ docs/
   eval/      RULEBOOK.md(평가 룰북) · RESULTS.md(결과표) · SKILL_DICTIONARY.md(스킬 사전)
   submission/ SUBMISSION_FORM.md(제출 폼 입력용 최종본) · service_file.html(서비스 파일 한 쪽 템플릿)
   architecture.md · business-rules.md · security.md · operations.md · contracts.md · standards.md · engineering-notes.md
+  research/  이전 설계·조사 기록(2026-09-27 루트에서 옮김. 인용만 하고 고치지 않는다. 목록은 docs/research/README.md)
   tracking/  status.md · decisions/(결정 기록) · findings.md · journal.md(기획·개발 일지)
 src/tradesentry/               ← 앱 패키지(contract·snapshot·dal·metrics·policy·grouping·tools·workflow·reports·validator·runlog·evaluation·approval·cli)와 수집기 ingest.py · ui/(담당자용 화면. 진입 스크립트 ui/ui_app.py, 한국어/영어)
 tests/                         ← unittest(네트워크·키 없이 돈다). 단위 골든 시험 tests/units/{단위 ID}/
@@ -197,7 +198,6 @@ artifacts/                     ← 커밋 증거물: eval/score-*/ · openshell/
 scripts/                       ← secret_scan.py · make_smoke_replay.py · openshell_violation_tests.py · stage_sandbox_image.py · g4_nim_toolcall_probe.py · make_service_file.sh(서비스 파일 pdf·docx 생성)
 spikes/x1/                     ← 첫날 통합 시험 X1 임시 코드(앱에 섞지 않는다)
 outputs/                       ← 실행별 출력(커밋하지 않는다)
-*.md(루트의 나머지)             ← 이전 설계·조사 기록. 인용만 하고 고치지 않는다(목록은 docs/README.md §4)
 ```
 
 ## 9. 보안·비밀값 규칙

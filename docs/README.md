@@ -18,7 +18,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | `docs/rules/DATA_CONTRACT_V1.md` | 두 트랙 공용 자료 계약(현행 `schema_version=2`, 파일 이름의 V1은 처음 버전 표시). 객체·필드·상태값·ID 형식·도구 입출력 봉투·typed claim(정해진 필드에 담는 사실 주장)·결과 기록 키·단위와 표시 자릿수·봉인 해시 기록 형식, 계획 경로·명령 표와 이름·출력 규칙(실행명, 도메인 출력 `outputs/`, 증거 복사). **상태값·ID·모드 이름·경로의 정본** | 코드나 자료에 쓸 이름·값·형식을 정할 때 |
 | `docs/rules/PARALLEL_DEV_RULES.md` | 병렬 개발 규칙. 모델 트랙(M)·데이터 트랙(D) 파일 소유, 합성 시험자료 먼저 넘기기, D → M 인수 조건, 공용 약속 변경 승인, 봉인 자료 규칙, 실자료 분할 절차, 브랜치와 PR 이름, 스냅샷과 키 보호 | 두 트랙이 서로의 파일·약속을 건드릴 때, 봉인 자료를 다룰 때 |
 | `docs/rules/AGENT_OPS.md` | 에이전트 운용 규칙. 실행자 선택(Claude 보조 에이전트, Codex headless), 도메인 검토자 4종과 작업 성격 대응, 검토 판정과 반복, 작업 단위 PR과 병합, 외부 자문 체크포인트, 증거 규칙 | 작업을 누구에게 맡기고 어떻게 검토·병합할지 정할 때 |
-| `docs/eval/RULEBOOK.md` | 평가 룰북. Part A는 팀 채점 규범(`SCORING_GOLDEN_RULE.md`)에 따른 자기채점 규칙, Part B는 TradeSentry 성능 평가 규칙(자료 묶음, 비교 모드, 대표 지표와 채점 규칙, A등급 주장 조건, 보조 지표, 실행 규칙, 동결과 봉인, 결과 보고 양식). 부록에 `RB-1` 동결 때 사용자가 확인할 해석을 모았다 | 점수·지표를 계산하거나 판정 규칙을 확인할 때 |
+| `docs/eval/RULEBOOK.md` | 평가 룰북. Part A는 팀 채점 규범(`docs/research/SCORING_GOLDEN_RULE.md`)에 따른 자기채점 규칙, Part B는 TradeSentry 성능 평가 규칙(자료 묶음, 비교 모드, 대표 지표와 채점 규칙, A등급 주장 조건, 보조 지표, 실행 규칙, 동결과 봉인, 결과 보고 양식). 부록에 `RB-1` 동결 때 사용자가 확인할 해석을 모았다 | 점수·지표를 계산하거나 판정 규칙을 확인할 때 |
 | `docs/eval/RESULTS.md` | 결과표(로드맵 R1). 두 봉인 묶음(`real_sealed`·`holdout40`)의 대표·보조 지표와 Wilson 95% 구간·등급, A등급 주장 조건(룰북 B3-3) 판정, 룰북 B7 공개 값, 정직한 한계, 재현 명령. 숫자는 커밋된 채점 요약 `artifacts/eval/score-*/scorer_summary-*.md`에서만 옮긴다 | 제출서·README에 결과 숫자를 적을 때 |
 | `docs/eval/SKILL_DICTIONARY.md` | 스킬 사전. NVIDIA 공식 Agent Skills와 우리 스킬의 이름·출처·설치 명령·용도·단계·채점표 항목·상태 | 어떤 스킬을 설치하고 어디에 쓰는지 볼 때 |
 | `skills/tradesentry-scorecard/SKILL.md` | 평가 스킬 ①. 저장소를 룰북 Part A로 자기채점하고 근거가 붙은 점수표를 남기는 절차 | MVP 시험 뒤, `RB-1` 동결 뒤, 제출 전 자기채점할 때 |
@@ -65,16 +65,18 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 ## 4. 이력 문서
 
-저장소 루트의 기존 문서는 사실 근거이자 과거 결정의 기록이다. 고치지 않고 인용만 한다. 이번 문서 세트와 다르면 이번 문서 세트가 현행이다.
+`docs/research/`의 이전 기록(2026-09-27(일) 사용자 요청으로 저장소 루트에서 옮겼다)은 사실 근거이자 과거 결정의 기록이다. 고치지 않고 인용만 한다. 이번 문서 세트와 다르면 이번 문서 세트가 현행이다.
 
 | 문서 | 성격 |
 |---|---|
-| `Pasted markdown.md` | 기존 개발계획("구 개발계획"). `docs/plan/DEV_PLAN.md`가 대체했다. 바뀐 결정은 `docs/plan/DEV_PLAN.md` "기존 계획 대비 바뀐 점" 대조표에 있다 |
-| `TRADESENTRY_HANDOFF.md`, `TRADESENTRY_FACTS_MEMO.md` | 이전 세션 인계와 실측 사실 메모 |
-| `TRADESENTRY_TEAM_SPLIT_DECISIONS.md` | 팀 분담 결정(예: "분담 D6"). 사람 2인 서명 절차는 "사용자 승인 + 검토 에이전트"로 바뀌었다 |
-| `SCORING_GOLDEN_RULE.md` | 팀 채점 규범(예: "규범 G4"). 가중치·게이트·앵커는 팀 설계 규칙이고 대회 공식 배점이 아니다 |
-| `NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md`, `HSGATE_R3_NVIDIA_STACK_CHECK.md`, `03-openshell-policy-yaml-구조.md` | 대회·NVIDIA 스택 조사 문서. OpenShell·NemoClaw·Agent Skills 서술의 근거 |
-| `IDEA_*`, `HSGate*`, `CHATGPT_*`, `01-`·`02-` 문서 등 | 주제 선정 과정의 탐색 기록. 현행 설계의 근거가 아니다 |
+| `docs/research/Pasted markdown.md` | 기존 개발계획("구 개발계획"). `docs/plan/DEV_PLAN.md`가 대체했다. 바뀐 결정은 `docs/plan/DEV_PLAN.md` "기존 계획 대비 바뀐 점" 대조표에 있다 |
+| `docs/research/TRADESENTRY_HANDOFF.md`, `docs/research/TRADESENTRY_FACTS_MEMO.md` | 이전 세션 인계와 실측 사실 메모 |
+| `docs/research/TRADESENTRY_TEAM_SPLIT_DECISIONS.md` | 팀 분담 결정(예: "분담 D6"). 사람 2인 서명 절차는 "사용자 승인 + 검토 에이전트"로 바뀌었다 |
+| `docs/research/SCORING_GOLDEN_RULE.md` | 팀 채점 규범(예: "규범 G4"). 가중치·게이트·앵커는 팀 설계 규칙이고 대회 공식 배점이 아니다 |
+| `docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md`, `docs/research/HSGATE_R3_NVIDIA_STACK_CHECK.md`, `docs/research/03-openshell-policy-yaml-구조.md` | 대회·NVIDIA 스택 조사 문서. OpenShell·NemoClaw·Agent Skills 서술의 근거 |
+| `docs/research/IDEA_*`, `docs/research/HSGate*`·`docs/research/HSGATE_*`(R3 문서 말고), `docs/research/CHATGPT_*`, `docs/research/01-`·`02-` 문서, `docs/research/DATA_AND_SKILL_INVENTORY.md`, `docs/research/research_raw/` 등 | 주제 선정 과정의 탐색 기록. 현행 설계의 근거가 아니다 |
+
+옮기기 전 경로(저장소 루트)로 적힌 곳은 고치지 않았다: 동결된 평가 룰북 `docs/eval/RULEBOOK.md`, 지난 결정 기록, `artifacts/` 증거물, `eval/`의 주석. 옛 경로와 새 경로의 대응은 `docs/research/README.md`에 있다.
 
 ## 용어 설명
 

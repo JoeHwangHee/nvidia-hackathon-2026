@@ -1,6 +1,6 @@
 # TradeSentry 개발 플랜 (NVIDIA 최소 확장판)
 
-> 앞으로의 기준 개발 플랜이다. 구현 에이전트(코드를 작성하는 Claude 보조 에이전트)가 이 문서만 보고 무엇을 왜 만드는지 알 수 있게 쓴다. 기존 개발계획 `Pasted markdown.md`(이하 "구 개발계획")를 대체하며, 그 파일은 고치지 않고 이력으로 둔다.
+> 앞으로의 기준 개발 플랜이다. 구현 에이전트(코드를 작성하는 Claude 보조 에이전트)가 이 문서만 보고 무엇을 왜 만드는지 알 수 있게 쓴다. 기존 개발계획 `docs/research/Pasted markdown.md`(이하 "구 개발계획")를 대체하며, 그 파일은 고치지 않고 이력으로 둔다.
 
 ## 문서 정보
 
@@ -17,14 +17,14 @@
 
 | 약칭 | 파일 | 내용 |
 |---|---|---|
-| 구 개발계획 | `Pasted markdown.md` | 기존 개발계획. 이력으로 둔다 |
-| 규범 | `SCORING_GOLDEN_RULE.md` | 팀 채점 규범. 팀 설계 규칙이며 대회 공식 배점이 아니다 |
-| 분담 문서 | `TRADESENTRY_TEAM_SPLIT_DECISIONS.md` | 2인 분담 합의안. 결정 ID는 "분담 D6"처럼 출처를 붙여 쓴다 |
-| 인계 문서 | `TRADESENTRY_HANDOFF.md` | 2026-09-23(수) 세션 인계 |
-| 실측 메모 | `TRADESENTRY_FACTS_MEMO.md` | 관세청 API 동작, v2 스냅샷, NIM 관문 시험의 실측 사실 |
-| 03 문서 | `03-openshell-policy-yaml-구조.md` | OpenShell 정책 YAML 구조. 공식 문서 대용 |
-| R3 문서 | `HSGATE_R3_NVIDIA_STACK_CHECK.md` | NVIDIA 스택 주장과 공식 문서 대조 |
-| 대회 조사 문서 | `NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md` | 대회 사실과 NVIDIA 스택 조사 |
+| 구 개발계획 | `docs/research/Pasted markdown.md` | 기존 개발계획. 이력으로 둔다 |
+| 규범 | `docs/research/SCORING_GOLDEN_RULE.md` | 팀 채점 규범. 팀 설계 규칙이며 대회 공식 배점이 아니다 |
+| 분담 문서 | `docs/research/TRADESENTRY_TEAM_SPLIT_DECISIONS.md` | 2인 분담 합의안. 결정 ID는 "분담 D6"처럼 출처를 붙여 쓴다 |
+| 인계 문서 | `docs/research/TRADESENTRY_HANDOFF.md` | 2026-09-23(수) 세션 인계 |
+| 실측 메모 | `docs/research/TRADESENTRY_FACTS_MEMO.md` | 관세청 API 동작, v2 스냅샷, NIM 관문 시험의 실측 사실 |
+| 03 문서 | `docs/research/03-openshell-policy-yaml-구조.md` | OpenShell 정책 YAML 구조. 공식 문서 대용 |
+| R3 문서 | `docs/research/HSGATE_R3_NVIDIA_STACK_CHECK.md` | NVIDIA 스택 주장과 공식 문서 대조 |
+| 대회 조사 문서 | `docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md` | 대회 사실과 NVIDIA 스택 조사 |
 
 함께 만드는 산출 문서:
 
@@ -1012,9 +1012,9 @@ mix_effect    = Σ_i ((u_i,0 + u_i,1)/2) * (w_i,1 - w_i,0)
 
 ## 11. 기존 계획 대비 바뀐 점
 
-구 개발계획(`Pasted markdown.md`)은 이력으로 두고 고치지 않는다. 아래 표의 "기존" 열은 현행이 아니다.
+구 개발계획(`docs/research/Pasted markdown.md`)은 이력으로 두고 고치지 않는다. 아래 표의 "기존" 열은 현행이 아니다.
 
-| 항목 | 기존 (`Pasted markdown.md`) | 현행 |
+| 항목 | 기존 (`docs/research/Pasted markdown.md`) | 현행 |
 |---|---|---|
 | 기간 | 2022~2023 24개월, 판정 2023년 12개월 | 2022-01~2024-12 36개월, 판정 24개월 |
 | 품목·국가 | HS4 1개·HS6 3~5개·비교국 3~5개 미정 | v2 동결(HS6 4개 × 16개국 + ALL) |
