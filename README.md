@@ -20,15 +20,16 @@ flowchart TD
     SNAP[("고정 스냅샷 · 읽기 전용 SQLite<br/>HS 8504 아래 HS6 4개 × 상대국 16개 × 36개월")]
     DET["결정적 탐지 → 경보<br/>kg당 단가 · 상대국 점유율<br/>전년 같은 달 대비"]
     INV["Nemotron 조사자"]
-    TOOLS["조회 도구 5개"]
+    TOOLS["조회 도구 5개<br/>처음 두 조회와 근거 확인은 코드가,<br/>추가 비교는 조사자가 부른다"]
     CRI["Critic<br/>같은 Nemotron · 별도 문맥 검수자"]
-    REV["조사자 수정 1회"]
+    REV["필요하면 조사자 수정 1회"]
     VAL["검증기<br/>숫자 · 단위 · 근거 · 금지 문구"]
     SNAP --> DET --> INV
-    INV <-->|"tool call"| TOOLS
-    TOOLS -.->|"조회"| SNAP
+    INV <-->|"tool call · 모델용 도구 4개"| TOOLS
+    TOOLS -->|"조회"| SNAP
     INV -->|"초안"| CRI
     CRI -->|"누락 · 반대 설명 · 비교 조건 지적"| REV
+    CRI -->|"수정이 필요 없으면"| VAL
     REV --> VAL
   end
   NIM["NVIDIA NIM<br/>Nemotron 추론"]
@@ -48,8 +49,8 @@ TradeSentry가 경보 하나를 다루는 순서:
 | 단계 | 하는 일 |
 |---|---|
 | 1. 경보 | 관세청 수출입통계 공개 API를 한 시점에 수집해 고정한 스냅샷(HS(국제 품목분류 코드) 8504 아래 6자리 품목(HS6) 4개 × 상대국 16개 × 2022~2024년 36개월)에서, **kg당 단가**(금액 USD ÷ 순중량 kg)와 **상대국 점유율**(해당국 금액 ÷ 전체국가 금액)이 전년 같은 달보다 크게 바뀐 경우를 경보로 잡는다 |
-| 2. 조사 | 경보마다 Nemotron(NVIDIA 언어 모델) **조사자**가 조회 도구 5개(`check_comparability`, `get_history`, `compare_partners`, `decompose_hs`, `verify_evidence`)로 근거를 모아 초안을 쓴다 |
-| 3. 검수 | 별도 문맥의 **Critic**(초안의 누락·반대 설명·비교 조건을 지적하는 검수자 역할. 같은 모델을 다른 대화 문맥으로 쓴다)이 지적한 뒤 수정 1회를 거친다 |
+| 2. 조사 | 경보마다 조회 도구 5개(`check_comparability`, `get_history`, `compare_partners`, `decompose_hs`, `verify_evidence`)로 근거를 모으고 Nemotron(NVIDIA 언어 모델) **조사자**가 초안을 쓴다. 처음 두 조회와 근거 확인(`verify_evidence`)은 코드가 정해진 차례에 부르고, 추가 비교는 조사자가 모델용 도구 4개 가운데서 고른다 |
+| 3. 검수 | 별도 문맥의 **Critic**(초안의 누락·반대 설명·비교 조건을 지적하는 검수자 역할. 같은 모델을 다른 대화 문맥으로 쓴다)이 지적하고, 필요하면 수정 1회를 거친다 |
 | 4. 검증 | **검증기**(보고서의 숫자·단위·근거 ID를 스냅샷 원본과 대조하는 코드)가 잘못된 보고서를 막는다 |
 | 5. 제안 | 통과한 한국어 보고서가 담당자의 다음 업무를 셋 가운데 하나로 제안한다 |
 
@@ -77,17 +78,19 @@ TradeSentry가 경보 하나를 다루는 순서:
 
 ## 2. 실행 사슬
 
-**구성요소가 이어지는 길** — 시연은 NemoClaw를 거치고, 점수에 들어가는 채점 대상 실행은 OpenShell 안 CLI를 직접 부른다.
+**구성요소가 이어지는 길** — 시연은 NemoClaw가 만든 시연 샌드박스 안에서 돌고, 점수에 들어가는 채점 대상 실행은 전용 OpenShell 샌드박스 안 CLI를 직접 부른다. 두 샌드박스는 따로이며, 둘 다 밖으로 나가는 길은 NIM 추론 요청 하나다.
 
 ```mermaid
 flowchart TD
-  OP["운영자 요청"] --> NC["NemoClaw 에이전트<br/>OpenClaw 하네스"]
-  NC --> SK["런타임 스킬<br/>skills/tradesentry/SKILL.md"]
-  SK -->|"시연 경로"| CLI
-  SCO["채점 대상 실행"] -->|"NemoClaw를 거치지 않고 직접"| CLI
-  subgraph SB["OpenShell 샌드박스"]
+  OP["운영자 요청"] --> NC
+  subgraph SBD["시연 샌드박스 · NemoClaw가 OpenShell 위에 구성"]
+    NC["OpenClaw 에이전트"] --> SK["런타임 스킬<br/>skills/tradesentry/SKILL.md"]
+    SK -->|"시연 경로"| CLID["TradeSentry CLI"]
+  end
+  SCO["채점 대상 실행<br/>샌드박스 밖 실행기"] -->|"NemoClaw를 거치지 않고 직접"| CLI
+  subgraph SB["채점 대상 실행 전용 OpenShell 샌드박스"]
     CLI["TradeSentry CLI<br/>tradesentry detect · run-case"]
-    LOOP["NIM 호출<br/>조사자 → Critic → 수정 1회"]
+    LOOP["NIM 호출<br/>조사자 → Critic → 필요하면 수정 1회"]
     TOOLS["조회 도구 5개"]
     DB[("읽기 전용 SQLite 스냅샷")]
     NAT["NAT 실행 추적 · 프로파일"]
@@ -98,34 +101,43 @@ flowchart TD
     CLI --> NAT
     CLI --> VAL --> OUT
   end
-  LOOP -.->|"샌드박스 감독 프로세스의 정책 프록시를 거쳐 나감 · 샌드박스 안에 키 없음"| NIM["NIM · Nemotron"]
+  NIM["NIM · Nemotron"]
+  LOOP -.->|"샌드박스 감독 프로세스의 정책 프록시를 거쳐 나감 · 샌드박스 안에 키 없음"| NIM
+  CLID -.->|"시연 샌드박스도 외부 전송은 NIM 추론 요청 하나"| NIM
   OUT --> SC["독립 채점기 eval/scorer/<br/>샌드박스 밖 · 정답 · 원본과 대조"]
 ```
 
-**사례 1건의 조사 순서**(`run-case`, `full` 모드)
+**사례 1건의 조사 순서**(`run-case`, `full` 모드. 순서의 정본은 `docs/plan/DEV_PLAN.md` 6.7절)
 
 ```mermaid
 sequenceDiagram
-  participant CLI as TradeSentry CLI
+  participant CLI as TradeSentry CLI 코드
   participant NIM as NIM Nemotron
-  participant T as 조회 도구 5개
+  participant T as 조회 도구
   participant DB as 읽기 전용 SQLite 스냅샷
   participant V as 검증기
   Note over CLI: 경보는 결정적 코드가 잡는다 - 모델이 아니다
-  CLI->>NIM: 조사자 요청 - 도구 5개를 native tool call로 제공
-  loop 초안이 나올 때까지
+  CLI->>T: check_comparability, get_history - 코드가 먼저 부른다
+  T->>DB: 조회
+  DB-->>T: 원본 행
+  T-->>CLI: 도구 봉투 - 값과 근거 ID
+  CLI->>NIM: 조사자 요청 - 모델용 도구 4개를 native tool call로 제공, verify_evidence는 빼고
+  loop 추가 비교 선택 - 최대 2회
     NIM-->>CLI: tool call
     CLI->>T: 도구 실행
-    T->>DB: 조회
-    DB-->>T: 원본 행
-    T-->>CLI: 도구 봉투 - 값과 근거 ID
+    T-->>CLI: 도구 봉투
     CLI->>NIM: 도구 결과
   end
   NIM-->>CLI: 조사자 초안
+  Note over CLI,NIM: 초안이 형식 검사에서 떨어지면 Critic을 건너뛴다 - 개발 플랜 6.6절
   CLI->>NIM: Critic 요청 - 별도 대화 문맥, 도구 없음
   NIM-->>CLI: 누락 · 반대 설명 · 비교 조건 지적
-  CLI->>NIM: 수정 1회 - 그 안에서 조회 최대 2회
-  NIM-->>CLI: 수정한 보고서
+  CLI->>T: verify_evidence - 코드가 예약한 1회
+  opt 수정이 필요할 때
+    CLI->>NIM: 수정 1회 - 그 안에서 재조회 최대 2회
+    NIM-->>CLI: 수정한 보고서
+  end
+  CLI->>T: verify_evidence - 최종 1회
   CLI->>V: 숫자 · 단위 · 근거 · 상태 · 금지 문구 검사
   V-->>CLI: 통과하면 보고서, 아니면 차단
   Note over CLI: 한국어 보고서 + 실행 결과 기록 + trace
@@ -189,10 +201,11 @@ sequenceDiagram
 
 ```mermaid
 flowchart TB
-  subgraph L1["시연 경로 · NemoClaw"]
+  subgraph L1["시연 경로 · NemoClaw가 구성한 시연 샌드박스"]
     NC["OpenClaw 에이전트"] --> SK["런타임 스킬 tradesentry"]
+    SK --> CLID["TradeSentry CLI"]
   end
-  subgraph L2["격리 · OpenShell 샌드박스 - 커스텀 정책"]
+  subgraph L2["채점 대상 실행 · 전용 OpenShell 샌드박스 - 커스텀 정책"]
     CLI["TradeSentry CLI"]
     NAT["NAT<br/>사례 조사 흐름 실행 · 추적 · 프로파일"]
     CLI --- NAT
@@ -201,14 +214,14 @@ flowchart TB
     NEM["Nemotron<br/>nvidia/nemotron-3-super-120b-a12b"]
   end
   AS["Agent Skills<br/>공식 스킬 참고 · 사용 + 자체 스킬 3개"]
-  SK --> CLI
   CLI -->|"native tool call · 허용된 외부 전송은 POST /v1/chat/completions 하나"| NEM
+  CLID -->|"같은 추론 요청 하나만 허용"| NEM
   AS -.-> SK
 ```
 
 | 구성요소 | 역할(어디에 쓰는가) | 이 프로젝트에서 쓰는 곳(저장소 안 근거) |
 |---|---|---|
-| **NIM / Nemotron** | 조사자·Critic 추론. 모델 `nvidia/nemotron-3-super-120b-a12b`, 엔드포인트 `https://integrate.api.nvidia.com/v1/chat/completions`, native tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능)로 도구 5개를 부름 | `configs/model/model.json`(모델 ID·엔드포인트·요청 설정·사례당 한도), `configs/model/*.txt`(조사자·Critic 지침), `scripts/g4_nim_toolcall_probe.py`(tool call 왕복 확인) |
+| **NIM / Nemotron** | 조사자·Critic 추론. 모델 `nvidia/nemotron-3-super-120b-a12b`, 엔드포인트 `https://integrate.api.nvidia.com/v1/chat/completions`, native tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능)로 조회 도구를 부름(모델이 고르는 도구는 4개. 처음 두 조회와 근거 확인 `verify_evidence`는 코드가 부른다) | `configs/model/model.json`(모델 ID·엔드포인트·요청 설정·사례당 한도), `configs/model/*.txt`(조사자·Critic 지침), `scripts/g4_nim_toolcall_probe.py`(tool call 왕복 확인) |
 | **OpenShell** | 채점 대상 실행을 격리. 커스텀 정책으로 정답·봉인 경로 차단, 외부 전송은 NVIDIA 추론 엔드포인트의 `POST /v1/chat/completions` 하나만, 그것도 정책에 지정한 실행 파일에서만 허용(목록은 `configs/openshell/policy.yaml`), 샌드박스 안 키 비보유. 의도적 위반 시험표와 감사 로그 발췌를 커밋 | `configs/openshell/policy.yaml`(정책), `configs/openshell/image/`(샌드박스 이미지 정의), `scripts/openshell_violation_tests.py`, 증거 `artifacts/openshell/openshell_violation_tests-*/`(예측·실측 대조표 `.md`, `audit_log-*.txt`, `live_policy-*.yaml`), X1 기록 `artifacts/openshell/violation_tests.md`·`artifacts/openshell/logs/` |
 | **NemoClaw** | 시연 경로. OpenClaw 에이전트가 런타임 스킬을 읽고 샌드박스 안 CLI를 부른다 | `skills/tradesentry/SKILL.md`, `configs/openshell/policy_demo_network.yaml`(시연 샌드박스 네트워크 정책), 결정 기록 `docs/tracking/decisions/20260925-0530-model-decision-mt5-sandbox.md`, `spikes/x1/README.md`(첫날 통합 시험 X1 재현 절차) |
 | **NAT** (`nvidia-nat` 1.9.0, `nvidia-nat-profiler`) | 사례 조사 흐름 1건을 NAT 함수로 등록해 실행·추적·프로파일. 추적은 파일로만 남긴다 | `configs/nat/workflow.yml`, `src/tradesentry/workflow/nat_wrap.py`, 실행마다 `outputs/{실행명}/workflow_nat_wrap-*/`(`nat_trace.jsonl`, `workflow_profiling_metrics.json` 등) |
