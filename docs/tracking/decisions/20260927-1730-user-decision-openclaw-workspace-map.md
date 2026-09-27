@@ -20,7 +20,7 @@
 
 ## 대응표에 적은 것
 
-- 스킬 자리: 런타임 스킬 `skills/tradesentry/SKILL.md`. 시연에서 OpenClaw 에이전트가 이 스킬을 읽고 샌드박스 안 CLI를 불렀다(자기채점 `1c` 행과 status의 MVP 완성 표 1번). 스킬 폴더를 작업 공간에 넣는 명령은 X1 기록에 있는 `nemoclaw <샌드박스> skill install <스킬 폴더>`로 적었다 `[사실: artifacts/openshell/violation_tests.md]`.
+- 스킬 자리: 런타임 스킬 `skills/tradesentry/SKILL.md`. 시연에서 OpenClaw 에이전트가 이 스킬을 거쳐 샌드박스 안 CLI를 불렀다(자기채점 `1c` 행과 status의 MVP 완성 표 1번. SKILL.md를 읽는 장면을 직접 기록한 것은 X1의 시험 스킬이다). 스킬 폴더를 작업 공간에 넣는 명령은 X1 기록에 있는 `nemoclaw <샌드박스> skill install <스킬 폴더>`로 적었다 `[사실: artifacts/openshell/violation_tests.md]`.
 - 나머지 자리: "이 저장소에서 만들지 않았다"로만 적었다. NemoClaw가 시연 샌드박스의 이 파일들을 기본으로 어떻게 두는지는 확인하지 않았으므로 적지 않았다 `[미확인]`.
 - `HEARTBEAT.md`: 고정 스냅샷을 쓰는 데모라 주기 작업이 없다고 적었다(README 1절 범위의 "실시간 수집 없음"과 같은 뜻).
 - 작업 공간 밖: 시연 샌드박스는 네트워크 정책만 `configs/openshell/policy_demo_network.yaml`로 정하고, 정적 계층은 NemoClaw 판이 정하므로 커밋하지 않았다고 적었다 `[사실: 결정 기록 20260925-0530-model-decision-mt5-sandbox.md]`.

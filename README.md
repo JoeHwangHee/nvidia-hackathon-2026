@@ -231,12 +231,12 @@ flowchart TB
 
 | 작업 공간 자리 | 이 저장소 |
 |---|---|
-| `skills/<name>/SKILL.md` | 런타임 스킬 `skills/tradesentry/SKILL.md`. 시연에서 OpenClaw 에이전트가 이 스킬을 읽고 샌드박스 안 CLI를 불렀다. NemoClaw는 `nemoclaw <샌드박스> skill install <스킬 폴더>`로 스킬 폴더를 작업 공간의 `skills/<이름>/`에 넣는다(X1 기록 `artifacts/openshell/violation_tests.md`) |
+| `skills/<name>/SKILL.md` | 런타임 스킬 `skills/tradesentry/SKILL.md`. 시연에서 OpenClaw 에이전트가 이 스킬을 거쳐 샌드박스 안 CLI를 불렀다. NemoClaw는 `nemoclaw <샌드박스> skill install <스킬 폴더>`로 스킬 폴더를 작업 공간의 `skills/<name>/`에 넣는다(X1 기록 `artifacts/openshell/violation_tests.md`) |
 | `SOUL.md`, `TOOLS.md`, `USER.md`, `memory/` | 이 저장소에서 만들지 않았다 |
 | `AGENTS.md` | 이 저장소에서 만들지 않았다. 저장소 맨 위 `AGENTS.md`는 Codex(OpenAI의 코딩 에이전트)용 안내문이며 `CLAUDE.md`와 내용이 같다 |
 | `HEARTBEAT.md` | 이 저장소에서 만들지 않았다. 고정 스냅샷을 쓰는 데모라 주기 작업이 없다 |
 
-작업 공간 밖의 시연 샌드박스 설정은 네트워크 정책만 `configs/openshell/policy_demo_network.yaml`로 정했다. 파일시스템 규칙 같은 정적 계층은 NemoClaw 판이 정하므로 커밋하지 않았다(결정 기록 `docs/tracking/decisions/20260925-0530-model-decision-mt5-sandbox.md`).
+작업 공간 밖의 시연 샌드박스 설정은 네트워크 정책만 `configs/openshell/policy_demo_network.yaml`로 정했다. 파일시스템 규칙 같은 정적 계층(샌드박스를 만들 때 고정돼 실행 중 바꿀 수 없는 정책 부분)은 NemoClaw 판이 정하므로 커밋하지 않았다(결정 기록 `docs/tracking/decisions/20260925-0530-model-decision-mt5-sandbox.md`).
 
 ## 4. 5분 재현 — 키 없이
 
@@ -498,7 +498,7 @@ outputs/                       ← 실행별 출력(커밋하지 않는다)
 
 - NIM (`nvidia/nemotron-3-super-120b-a12b` at `https://integrate.api.nvidia.com/v1/chat/completions`, native tool calls)
 - OpenShell (custom policy `configs/openshell/policy.yaml`; violation tests and audit logs in `artifacts/openshell/`)
-- NemoClaw (demo path via the runtime skill `skills/tradesentry/SKILL.md`; of the OpenClaw workspace files, this repository supplies only that skill, see section 3)
+- NemoClaw (demo path via the runtime skill `skills/tradesentry/SKILL.md`; this repository supplies only that skill among the OpenClaw workspace files (see section 3))
 - NeMo Agent Toolkit 1.9.0 (`configs/nat/workflow.yml`, per-run traces and profiles)
 - Agent Skills (official skills listed in `docs/eval/SKILL_DICTIONARY.md`; three in-repo skills under `skills/`)
 
