@@ -21,7 +21,7 @@ flowchart TD
     DET["결정적 탐지 → 경보<br/>kg당 단가 · 상대국 점유율<br/>전년 같은 달 대비"]
     INV["Nemotron 조사자"]
     TOOLS["조회 도구 5개"]
-    CRI["Critic<br/>별도 문맥 검수자"]
+    CRI["Critic<br/>같은 Nemotron · 별도 문맥 검수자"]
     REV["조사자 수정 1회"]
     VAL["검증기<br/>숫자 · 단위 · 근거 · 금지 문구"]
     SNAP --> DET --> INV
@@ -32,7 +32,7 @@ flowchart TD
     REV --> VAL
   end
   NIM["NVIDIA NIM<br/>Nemotron 추론"]
-  INV -.->|"유일하게 열린 외부 전송<br/>POST /v1/chat/completions"| NIM
+  INV -.->|"조사자 · Critic · 수정 호출 모두<br/>유일하게 열린 외부 전송<br/>POST /v1/chat/completions"| NIM
   OUT["한국어 보고서<br/>다음 업무 제안<br/>MAINTAIN · MONITOR · HOLD"]
   VAL -->|"통과"| OUT
   OUT --> USER["담당자 결정<br/>담당자 화면에 기록"]
@@ -102,7 +102,7 @@ flowchart TD
   OUT --> SC["독립 채점기 eval/scorer/<br/>샌드박스 밖 · 정답 · 원본과 대조"]
 ```
 
-**사례 1건의 조사 순서**(`run-case`)
+**사례 1건의 조사 순서**(`run-case`, `full` 모드)
 
 ```mermaid
 sequenceDiagram
