@@ -420,6 +420,7 @@ docs/
   submission/ SUBMISSION_FORM.md(제출 폼 입력용 최종본) · service_file.html(서비스 파일 한 쪽 템플릿)
   architecture.md · business-rules.md · security.md · operations.md · contracts.md · standards.md · engineering-notes.md
   research/  이전 설계·조사 기록(2026-09-27 루트에서 옮김. 인용만 하고 고치지 않는다. 목록은 docs/research/README.md)
+  assets/    README에 넣은 담당자 화면 캡처(PNG)
   tracking/  status.md · decisions/(결정 기록) · findings.md · journal.md(기획·개발 일지)
 src/tradesentry/               ← 앱 패키지(contract·snapshot·dal·metrics·policy·grouping·tools·workflow·reports·validator·runlog·evaluation·approval·cli)와 수집기 ingest.py · ui/(담당자용 화면. 진입 스크립트 ui/ui_app.py, 한국어/영어)
 tests/                         ← unittest(네트워크·키 없이 돈다). 단위 골든 시험 tests/units/{단위 ID}/

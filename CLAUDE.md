@@ -36,6 +36,7 @@ nvidia-hackathon-2026/
 │   ├── operations.md                  ← 처음 준비, 명령·환경·실행 절차별 정본 위치
 │   ├── contracts.md                   ← CLI·스킬·도구·보고서·채점기 인터페이스별 정본 위치
 │   ├── research/                      ← 이전 설계·조사 기록(2026-09-27(일) 저장소 루트에서 옮김). 사실 출처로 인용만 하고 고치지 않는다(목록과 옛 경로 대응은 docs/research/README.md)
+│   ├── assets/                        ← README에 넣은 담당자 화면 캡처(PNG)
 │   └── tracking/
 │       ├── status.md                  ← 지금 된 것, 남은 일, 사용자 결정 대기
 │       ├── decisions/                 ← 결정 기록과 색인 index.md(2026-09-23(수) 설계 세션의 결정은 개발 플랜 §13)
