@@ -76,7 +76,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 | `docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md`, `docs/research/HSGATE_R3_NVIDIA_STACK_CHECK.md`, `docs/research/03-openshell-policy-yaml-구조.md` | 대회·NVIDIA 스택 조사 문서. OpenShell·NemoClaw·Agent Skills 서술의 근거 |
 | `docs/research/IDEA_*`, `docs/research/HSGate*`·`docs/research/HSGATE_*`(R3 문서 말고), `docs/research/CHATGPT_*`, `docs/research/01-`·`02-` 문서, `docs/research/DATA_AND_SKILL_INVENTORY.md`, `docs/research/research_raw/` 등 | 주제 선정 과정의 탐색 기록. 현행 설계의 근거가 아니다 |
 
-옮기기 전 경로(저장소 루트)로 적힌 곳은 고치지 않았다: 동결된 평가 룰북 `docs/eval/RULEBOOK.md`, 지난 결정 기록, `artifacts/` 증거물, `eval/`의 주석. 옛 경로와 새 경로의 대응은 `docs/research/README.md`에 있다.
+옮기기 전 경로(저장소 루트)로 적힌 곳은 고치지 않았다(동결된 평가 룰북 `docs/eval/RULEBOOK.md`, 이 이동 전의 결정 기록, `eval/`의 주석 등). 그 전체 목록과 옛 경로·새 경로의 대응은 `docs/research/README.md`에 있다.
 
 ## 용어 설명
 

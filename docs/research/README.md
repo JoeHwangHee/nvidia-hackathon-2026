@@ -17,7 +17,7 @@
 - 모든 파일이 이름 그대로 이 폴더 아래로 옮겨졌다. 옛 경로 `<파일 이름>`(저장소 루트)은 새 경로 `docs/research/<파일 이름>`이고, 옛 `research_raw/…`는 `docs/research/research_raw/…`다. 이 폴더 안 문서끼리의 상대 참조는 그대로 맞는다.
 - 옮기기 전 경로(저장소 루트)로 적힌 곳은 고치지 않았다. 읽을 때 위 규칙으로 바꿔 읽는다.
   - 동결된 평가 룰북 `docs/eval/RULEBOOK.md`(`RB-1` 동결 뒤에는 고치지 않는다)
-  - 지난 결정 기록(`docs/tracking/decisions/`의 2026-09-27(일) 이전 파일)과 커밋된 증거물(`artifacts/`)
+  - 이 이동 전에 쓴 결정 기록(`docs/tracking/decisions/`에서 파일 이름이 `20260927-1030`보다 앞선 기록)
   - 평가 자료 도구의 주석과 시나리오 명세(`eval/datagen/holdout40_check.py`, `eval/scenarios/SCENARIO_SPEC.md`)
   - 평가 스킬 ① 머리말 설명과 거버넌스 카드 설명 문장의 파일 이름 표기(경로가 아닌 이름. 카드의 링크는 새 경로로 고쳤다)
   - 샌드박스 이미지 준비 스크립트의 차단 목록(`scripts/stage_sandbox_image.py`. `docs/`가 이미 차단돼 이 폴더는 이미지에 들어가지 않는다)
