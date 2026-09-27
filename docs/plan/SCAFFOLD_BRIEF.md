@@ -33,14 +33,14 @@
 
 | 약칭 | 파일 | 내용 |
 |---|---|---|
-| 구 개발계획 | `Pasted markdown.md` | 기존 개발계획. 이력 문서로 남긴다 |
-| 규범 | `SCORING_GOLDEN_RULE.md` | 팀 자기채점 규범. 가중치·게이트·앵커는 `[DESIGN]`이며 대회 공식 배점이 아니다 |
-| 분담 문서 | `TRADESENTRY_TEAM_SPLIT_DECISIONS.md` | 2인 분담 합의안. 그 결정은 "분담 D6"처럼 출처를 붙여 적는다 |
-| 인계 문서 | `TRADESENTRY_HANDOFF.md` | 2026-09-23(수) 세션 인계 |
-| 실측 메모 | `TRADESENTRY_FACTS_MEMO.md` | 관세청 API 동작, v2 스냅샷, NIM 관문 시험의 실측 사실 |
-| 03 문서 | `03-openshell-policy-yaml-구조.md` | OpenShell 정책 YAML 구조. DLI 코스 소스를 옮기고 공식 문서로 보강했다 |
-| R3 문서 | `HSGATE_R3_NVIDIA_STACK_CHECK.md` | NVIDIA 스택 주장과 공식 문서의 대조 |
-| 대회 조사 문서 | `NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md` | 대회 사실과 NVIDIA 스택 조사 |
+| 구 개발계획 | `docs/research/Pasted markdown.md` | 기존 개발계획. 이력 문서로 남긴다 |
+| 규범 | `docs/research/SCORING_GOLDEN_RULE.md` | 팀 자기채점 규범. 가중치·게이트·앵커는 `[DESIGN]`이며 대회 공식 배점이 아니다 |
+| 분담 문서 | `docs/research/TRADESENTRY_TEAM_SPLIT_DECISIONS.md` | 2인 분담 합의안. 그 결정은 "분담 D6"처럼 출처를 붙여 적는다 |
+| 인계 문서 | `docs/research/TRADESENTRY_HANDOFF.md` | 2026-09-23(수) 세션 인계 |
+| 실측 메모 | `docs/research/TRADESENTRY_FACTS_MEMO.md` | 관세청 API 동작, v2 스냅샷, NIM 관문 시험의 실측 사실 |
+| 03 문서 | `docs/research/03-openshell-policy-yaml-구조.md` | OpenShell 정책 YAML 구조. DLI 코스 소스를 옮기고 공식 문서로 보강했다 |
+| R3 문서 | `docs/research/HSGATE_R3_NVIDIA_STACK_CHECK.md` | NVIDIA 스택 주장과 공식 문서의 대조 |
+| 대회 조사 문서 | `docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md` | 대회 사실과 NVIDIA 스택 조사 |
 
 - **함께 만든 산출 문서**: `docs/plan/DEV_PLAN.md`(개발 플랜), `docs/plan/ROADMAP.md`(날짜별 도착점과 작업 목록), `docs/rules/DATA_CONTRACT_V1.md`(자료 계약), `docs/rules/PARALLEL_DEV_RULES.md`(병렬 개발 규칙), `docs/rules/AGENT_OPS.md`(에이전트 운용 규칙), `docs/eval/RULEBOOK.md`(평가 룰북), `docs/eval/SKILL_DICTIONARY.md`(스킬 사전), `docs/README.md`(문서 색인). 채점 규칙의 세부는 평가 룰북이 정한다.
 

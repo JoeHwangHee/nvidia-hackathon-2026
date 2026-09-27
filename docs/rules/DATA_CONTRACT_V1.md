@@ -22,10 +22,10 @@
 - **절 번호**: 원문 블록 밖에서 "§n"은 이 문서의 절이고, "명세 §n"은 명세의 절이다.
 - **근거 태그**: [사실] 저장소 파일에서 직접 확인, [추론] 근거 있는 판단, [DESIGN] 팀 설계 규칙(대회 공식 규칙이 아니다), [미확인] 검증하지 않음. 원문 블록의 값은 모두 [DESIGN]이다.
 - **출처 약칭**
-  - 구 개발계획: `Pasted markdown.md`(기존 개발계획, 이력 문서)
-  - 분담: `TRADESENTRY_TEAM_SPLIT_DECISIONS.md`(2인 분담 합의안. "분담 D6"은 그 문서의 결정 D6)
-  - 메모: `TRADESENTRY_FACTS_MEMO.md`(실측 사실 메모)
-  - 인계: `TRADESENTRY_HANDOFF.md`(세션 인계 문서)
+  - 구 개발계획: `docs/research/Pasted markdown.md`(기존 개발계획, 이력 문서)
+  - 분담: `docs/research/TRADESENTRY_TEAM_SPLIT_DECISIONS.md`(2인 분담 합의안. "분담 D6"은 그 문서의 결정 D6)
+  - 메모: `docs/research/TRADESENTRY_FACTS_MEMO.md`(실측 사실 메모)
+  - 인계: `docs/research/TRADESENTRY_HANDOFF.md`(세션 인계 문서)
   - 수집기: `src/tradesentry/ingest.py`(관세청 API 수집·검증 코드)
   - oracle: `eval/dev/oracle_ABC.json`(합성 A/B/C 사례의 정답표. A는 구성변화, B는 잔존변화, C는 자료누락 사례다)
   - v2 SQLite 조회: `data/snapshots/kcs_202201_202412_v2/`의 로컬 SQLite를 2026-09-24(목)에 읽기 전용으로 조회한 결과(이 SQLite 파일은 커밋되지 않는다)
@@ -91,7 +91,7 @@
 
 ### 2.1 필수 필드 원문 — 구 개발계획 §3 "최소 데이터 계약"
 
-`Pasted markdown.md` §3 "최소 데이터 계약" 표를 붙여넣기 흔적(역슬래시 이스케이프)만 걷어 내고 옮겼다. 필드를 빼거나 더하지 않았다 [사실]. 표의 raw는 API가 돌려준 응답 파일 원본이고, sha256은 파일 내용으로 계산하는 64자리 16진수 지문(내용이 조금만 바뀌어도 값이 달라진다)이다.
+`docs/research/Pasted markdown.md` §3 "최소 데이터 계약" 표를 붙여넣기 흔적(역슬래시 이스케이프)만 걷어 내고 옮겼다. 필드를 빼거나 더하지 않았다 [사실]. 표의 raw는 API가 돌려준 응답 파일 원본이고, sha256은 파일 내용으로 계산하는 64자리 16진수 지문(내용이 조금만 바뀌어도 값이 달라진다)이다.
 
 | 객체 | 필수 필드 |
 |---|---|
@@ -146,7 +146,7 @@
 | precision/rounding 규칙 | `precision_rule` | 문자열 | 정밀도·반올림 규칙(§11.1). 기존 메타 키 이름 그대로다 [사실: 수집기] |
 | coverage_status | `coverage_status` | 문자열 | 수집 범위가 다 찼는지의 상태. 기존 수집기는 처음에 `IN_PROGRESS`를 적는다 [사실: 수집기]. v1은 이 필드의 값 집합을 정하지 않는다. 정하려면 §13 절차를 거친다 |
 
-- `hs_version`의 v2 대응: 대상 HS6 4개의 HS10 코드(6·5·4·2개)는 적용시작일자가 모두 2022-01-01 이전이거나 당일이다. 이 코드 집합은 v2에서 관측된 HS10 코드 집합과 같고, 대상 HS6 4개의 HS10 코드 수는 2022·2023·2024년이 같다 [사실: `data/reference/관세청_HS부호_20260101.xlsx` 읽기 전용 확인, 메모 §2]. HSGATE_EVALUATION_DATA_REVIEW.md 표 6행은 관세·통계통합품목분류표(HSK) 개정 시행일로 2022-01-01 다음을 2025-01-01로 적는다. 그러나 같은 출처가 "10단위는 거의 매년 바뀐다"고 하고, 위 xlsx에는 그 목록에 없는 적용시작일자 2017-01-01 코드도 있어 그 목록은 완전하지 않다. 그래서 v2 기간 안의 HSK 개정이 2022-01-01뿐이라는 판단은 [추론]이다. 이 판은 HS2022(세계관세기구 HS의 2022년 개정판)를 반영한 판으로 보이지만 [추론], 한국 관세율표의 HS2022 반영 시행일은 확인하지 않았다 [미확인: HSGATE_DATA_VALIDITY.md §8]. 확인 전까지 v2의 `hs_version`은 `HSK`(개정판 미상)로 두고, 확인되면 `HSK:HS2022`로 적는다 [DESIGN].
+- `hs_version`의 v2 대응: 대상 HS6 4개의 HS10 코드(6·5·4·2개)는 적용시작일자가 모두 2022-01-01 이전이거나 당일이다. 이 코드 집합은 v2에서 관측된 HS10 코드 집합과 같고, 대상 HS6 4개의 HS10 코드 수는 2022·2023·2024년이 같다 [사실: `data/reference/관세청_HS부호_20260101.xlsx` 읽기 전용 확인, 메모 §2]. docs/research/HSGATE_EVALUATION_DATA_REVIEW.md 표 6행은 관세·통계통합품목분류표(HSK) 개정 시행일로 2022-01-01 다음을 2025-01-01로 적는다. 그러나 같은 출처가 "10단위는 거의 매년 바뀐다"고 하고, 위 xlsx에는 그 목록에 없는 적용시작일자 2017-01-01 코드도 있어 그 목록은 완전하지 않다. 그래서 v2 기간 안의 HSK 개정이 2022-01-01뿐이라는 판단은 [추론]이다. 이 판은 HS2022(세계관세기구 HS의 2022년 개정판)를 반영한 판으로 보이지만 [추론], 한국 관세율표의 HS2022 반영 시행일은 확인하지 않았다 [미확인: docs/research/HSGATE_DATA_VALIDITY.md §8]. 확인 전까지 v2의 `hs_version`은 `HSK`(개정판 미상)로 두고, 확인되면 `HSK:HS2022`로 적는다 [DESIGN].
 - 동결 규칙: 스냅샷 SQLite는 `snapshot-build`가 raw 응답과 manifest에서 만드는 파생 저장소다. 승인된 `policy_version`의 승격 규칙(§3.4)까지 적용한 최종 빌드를 동결하고, 동결 뒤에는 고치지 않는다 [DESIGN]. 설정이 바뀌면 새 `snapshot_id`로 새 스냅샷을 만든다. v1·v2 스냅샷에 수집기의 `plan`·`collect`를 다시 돌리면 `manifest.json`이 덮어써지므로 하지 않는다 [사실: 인계 §6].
 - 스냅샷은 모든 조회의 유일한 원천이다. 조사 중에 새로 수집하지 않고, 도구가 없는 값을 만들어 채우지 않는다 [DESIGN].
 
@@ -967,7 +967,7 @@ oracle A 사례의 -40%를 빌린 합성 예시다. 실제 통계가 아니다.
     - upload 주의: 근거는 공식 문서이고 [사실: 공식 문서 manage-sandboxes "Transfer Files"], 우리 환경에서의 확정은 로드맵 MT5에서 한다 [미확인]. Git 저장소 안의 경로를 올리면 upload는 기본으로 `.gitignore`를 따른다. 추적 파일이 섞인 경로를 올리면 무시 대상(이 저장소에서는 스냅샷 SQLite와 `raw/` 등, §10.2)은 빠진다. 모든 파일이 무시 대상인 경로(예: `snapshot.sqlite` 하나)는 경고와 함께 거르지 않고 올라간다. 그래서 `.gitignore`는 제외 장치가 아니고, 제외는 명시한 반입 목록이 맡는다. `--no-git-ignore`는 `.env`가 없는 경로에만 쓰고, 이 주의는 모든 파일이 무시 대상일 때 거르지 않고 올리는 자동 전환에도 똑같이 걸린다. 목적지를 빼면 샌드박스 작업 폴더에 올라간다. upload는 심볼릭 링크를 그대로 두고, 이미 있는 폴더에는 합쳐 덮어쓴다. 원문은 "By default, uploads inside a Git repository respect `.gitignore` rules so that build artifacts, dependency caches, and other ignored files are not transferred.", "If `.gitignore` filtering excludes every file in the upload path, the CLI falls back to an unfiltered upload and prints a warning.", "Pass `--no-git-ignore` to opt into unfiltered uploads explicitly, upload a path outside the Git work tree, or force-add the intended files if they should remain Git-aware.", "When you omit the destination, OpenShell discovers the sandbox's working directory and uploads there."이다.
   - 권고는 (나)다 [DESIGN: 오케스트레이터 권고, 2026-09-24(목) 사용자 확인(PR #18)]. 1차 근거는 공식 문서다. CLI는 샌드박스의 정식 작업 폴더를 찾아 그 안으로 풀리는 샌드박스 쪽 원본만 받고, 글자 그대로(예: `/sandbox/../etc/passwd`)나 심볼릭 링크로 그 밖으로 벗어나는 경로는 전송 전에 거부한다 [사실: 공식 문서 manage-sandboxes "Transfer Files", https://docs.nvidia.com/openshell/sandboxes/manage-sandboxes]. 원문은 "The CLI discovers the sandbox's canonical working directory and only allows sandbox-side sources that resolve inside it."와 "Paths that escape lexically, such as `/etc/passwd` or `/sandbox/../etc/passwd`, and paths that escape through a symlink are refused before any data is transferred."이다. X1 임시 시험 기록(아래 X1 항목의 옛 이름 위치)의 "저장소 파일·봉인 입력 반입 방식" 행과 "NAT 실행 추적 산출물 위치" 행은 OpenShell 0.0.116에서 같은 동작을 관찰한 보강 근거다. X1은 샌드박스 안 `/sandbox/x1-runs/<run_id>/`에 쓰고 download로 호스트에 받았다. 작업 폴더 `/sandbox`는 X1 이미지에서 관찰한 값이다 [사실: X1 임시 시험 기록, X1 PR로 병합 예정]. X1은 저장소 파일을 이미지 빌드나 `openshell sandbox upload`로 들여 호스트 폴더를 열지 않았다. 최종 확정은 로드맵 MT5(샌드박스 출력 방식과 봉인 입력 반입 방식의 확정·리허설)와 MT7(샌드박스 밖 실행기)에서 한다.
   - 채점기 출력(정답표에서 온 값)은 샌드박스가 읽거나 쓸 수 있는 곳(허용 목록과 작업 폴더)에 두지 않는다. 커밋 사본 `artifacts/eval/score-{시각}/`도 같다. (나)에서는 어떤 샌드박스도 `outputs/`를 열지 않으므로 채점 실행 폴더 `outputs/score-{시각}/`가 이 조건을 채우고, 커밋 사본은 반입 목록에서 뺀다.
-- X1 임시 시험 기록은 옛 이름 `artifacts/openshell/violation_tests.md`, `artifacts/openshell/logs/`(커밋)와 `artifacts/runs/`(X1이 받은 실행 추적, 커밋 안 함)를 그대로 쓰고 새 이름 폴더로 옮기지 않는다(X1 결정 기록이 이 경로를 인용하고 결정 기록은 고치지 않는다). 규범 G2(팀 채점 규범 `SCORING_GOLDEN_RULE.md`의 교육 미션 정합성 게이트, 룰북 A1)의 증거로는 이 위치도 읽지만, 평가 묶음의 실행 조건 대조(룰북 B7)는 채점 요약 `scorer_summary-{시각}.md`에 적은 새 이름 폴더만 쓴다.
+- X1 임시 시험 기록은 옛 이름 `artifacts/openshell/violation_tests.md`, `artifacts/openshell/logs/`(커밋)와 `artifacts/runs/`(X1이 받은 실행 추적, 커밋 안 함)를 그대로 쓰고 새 이름 폴더로 옮기지 않는다(X1 결정 기록이 이 경로를 인용하고 결정 기록은 고치지 않는다). 규범 G2(팀 채점 규범 `docs/research/SCORING_GOLDEN_RULE.md`의 교육 미션 정합성 게이트, 룰북 A1)의 증거로는 이 위치도 읽지만, 평가 묶음의 실행 조건 대조(룰북 B7)는 채점 요약 `scorer_summary-{시각}.md`에 적은 새 이름 폴더만 쓴다.
 - 결정 기록의 `{실행 이름}-{시각}`이 이 절의 실행명이다.
 - 이 규칙은 계약 필드·키·값 집합을 바꾸지 않으므로 `schema_version`을 올리지 않는다(§13.2).
 

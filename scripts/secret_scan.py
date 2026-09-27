@@ -47,14 +47,16 @@ SECRET_KINDS = ("key", "svc_param")
 CONTAINER_DIRS = ("artifacts/openshell/", "spikes/x1/")
 CONTAINER_HOME_RE = re.compile(r"/" + "ho" + "me" + r"/(?:linuxbrew|sandbox)(?![\w\-])")
 
-# 빼는 규칙 2: 이력 문서 기준선(파일, 행 sha256). 2026-09-25(금) main deb8128에서 이 검사로 찾은 행이다.
+# 빼는 규칙 2: 이력 문서 기준선(파일, 행 sha256). 2026-09-25(금) main deb8128에서 이 검사로 찾은 행이다. 2026-09-27(일) 이력 문서를 docs/research/로 옮기며 경로만 바꿨다(행 해시는 그대로).
+# 이력 문서 폴더(2026-09-27(일) 저장소 루트에서 옮김). 기준선은 이 폴더 바로 아래 파일에만 적용한다.
+HISTORY_DIR = "docs/research/"
 HISTORICAL_BASELINE = frozenset({
-    ("03-openshell-policy-yaml-구조.md", "56e11940f41f220651453d2fc565b700bb6a80b900b1c251e254c5abb36909cf"),  # 34행
-    ("03-openshell-policy-yaml-구조.md", "98c5d47a090bb637514279e04fa9dac29c6ec1b738e02a130c36847bd61f464c"),  # 290행
-    ("CHATGPT_REVIEW_TRANSCRIPT.md", "a22552de8af2efa64f429d3e6b326e0f8fe583bc54683a6bcc82b3e888b23564"),  # 84행
-    ("IDEA_LIFE_EMBEDDED_BRAINSTORM.md", "1045631d48205312d6a84e3791b7a55e7b00a7d2be3bd361ef8e0805019c3ad7"),  # 36행
-    ("IDEA_REAL_WORLD_USE_CASES.md", "32c9811264aaa4fdced5b6066898838f1d0d9e520042fe432f94e0bc97ad5a1a"),  # 94행
-    ("IDEA_REAL_WORLD_USE_CASES.md", "beca1e34c75cd66188d907ef31f0495539d603d939f8b85d300e5e08a7e54379"),  # 135행
+    ("docs/research/03-openshell-policy-yaml-구조.md", "56e11940f41f220651453d2fc565b700bb6a80b900b1c251e254c5abb36909cf"),  # 34행
+    ("docs/research/03-openshell-policy-yaml-구조.md", "98c5d47a090bb637514279e04fa9dac29c6ec1b738e02a130c36847bd61f464c"),  # 290행
+    ("docs/research/CHATGPT_REVIEW_TRANSCRIPT.md", "a22552de8af2efa64f429d3e6b326e0f8fe583bc54683a6bcc82b3e888b23564"),  # 84행
+    ("docs/research/IDEA_LIFE_EMBEDDED_BRAINSTORM.md", "1045631d48205312d6a84e3791b7a55e7b00a7d2be3bd361ef8e0805019c3ad7"),  # 36행
+    ("docs/research/IDEA_REAL_WORLD_USE_CASES.md", "32c9811264aaa4fdced5b6066898838f1d0d9e520042fe432f94e0bc97ad5a1a"),  # 94행
+    ("docs/research/IDEA_REAL_WORLD_USE_CASES.md", "beca1e34c75cd66188d907ef31f0495539d603d939f8b85d300e5e08a7e54379"),  # 135행
 })
 
 
@@ -69,6 +71,11 @@ def is_container_home(path: str, line: str, match: "re.Match[str]") -> bool:
     return CONTAINER_HOME_RE.match(line, match.start()) is not None
 
 
+def _is_history_doc(path: str) -> bool:
+    """빼는 규칙 2의 적용 범위. 이력 문서 폴더 바로 아래 파일이면 참(하위 폴더·다른 폴더는 거짓)."""
+    return path.startswith(HISTORY_DIR) and "/" not in path[len(HISTORY_DIR):]
+
+
 def scan_line(path: str, line: str, baseline: frozenset = HISTORICAL_BASELINE) -> List[str]:
     """한 행에서 걸린 종류 목록(겹치면 종류마다 한 번)."""
     kinds = []
@@ -78,7 +85,7 @@ def scan_line(path: str, line: str, baseline: frozenset = HISTORICAL_BASELINE) -
                 continue
             kinds.append(kind)
             break
-    if kinds and "/" not in path and (path, _line_sha(line)) in baseline:
+    if kinds and _is_history_doc(path) and (path, _line_sha(line)) in baseline:
         return []
     return kinds
 

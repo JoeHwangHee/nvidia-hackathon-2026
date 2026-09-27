@@ -35,6 +35,7 @@ nvidia-hackathon-2026/
 │   ├── engineering-notes.md           ← 이 저장소에서 겪었거나 계획 문서로 확인한 함정과 대응
 │   ├── operations.md                  ← 처음 준비, 명령·환경·실행 절차별 정본 위치
 │   ├── contracts.md                   ← CLI·스킬·도구·보고서·채점기 인터페이스별 정본 위치
+│   ├── research/                      ← 이전 설계·조사 기록(2026-09-27(일) 저장소 루트에서 옮김). 사실 출처로 인용만 하고 고치지 않는다(목록과 옛 경로 대응은 docs/research/README.md)
 │   └── tracking/
 │       ├── status.md                  ← 지금 된 것, 남은 일, 사용자 결정 대기
 │       ├── decisions/                 ← 결정 기록과 색인 index.md(2026-09-23(수) 설계 세션의 결정은 개발 플랜 §13)
@@ -59,8 +60,7 @@ nvidia-hackathon-2026/
 ├── outputs/                           ← 실행별 출력 폴더(커밋하지 않는다. 이름 규칙은 자료 계약 §10.3). 봉인 묶음 실행 사슬의 출력은 `outputs/sealed/`에 두고, 봉인 묶음마다 금지 해제 조건(그 묶음의 정답 대조 채점이 끝나고, `real_sealed`이면 표본 추출 seed 공개 기록까지 있는 때. 자료 계약 §10.3 N10) 전에는 그 묶음 출력을 열지 않는다
 ├── scripts/g4_nim_toolcall_probe.py   ← NIM tool call(모델이 도구 호출을 구조화된 형식으로 요청하는 기능) 왕복 확인
 ├── scripts/make_service_file.sh       ← 서비스 파일 한 쪽(pdf·docx) 생성. 인자는 공개 저장소 URL, 출력은 outputs/submission_service_file-{시각}/
-├── .env.example                       ← `.env` 양식. API 키 칸은 비어 있고 모델 이름 같은 기본값만 있다
-└── *.md(루트의 나머지)                ← 이전 설계·조사 기록. 사실 출처로 인용만 하고 고치지 않는다(목록은 docs/README.md §4)
+└── .env.example                       ← `.env` 양식. API 키 칸은 비어 있고 모델 이름 같은 기본값만 있다
 ```
 
 ## 절대 규칙

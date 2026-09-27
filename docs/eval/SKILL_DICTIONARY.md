@@ -17,18 +17,18 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 **이 문서에 자주 나오는 용어**(자세한 설명은 끝의 "용어 설명")
 
-- **Agent Skills**(AI 에이전트가 읽고 따르는 이식 가능한 작업 지침 묶음, `SKILL.md` 형식): NVIDIA가 검증한 공식 스킬을 build.nvidia.com/skills에 공개한다. REST API가 아니며 `skills` CLI(Agent Skills를 설치·갱신하는 명령줄 도구, `npx skills ...`로 부른다)로 설치한다 `[사실: NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7, §7-1]`.
+- **Agent Skills**(AI 에이전트가 읽고 따르는 이식 가능한 작업 지침 묶음, `SKILL.md` 형식): NVIDIA가 검증한 공식 스킬을 build.nvidia.com/skills에 공개한다. REST API가 아니며 `skills` CLI(Agent Skills를 설치·갱신하는 명령줄 도구, `npx skills ...`로 부른다)로 설치한다 `[사실: docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7, §7-1]`.
 - **공식 스킬**(NVIDIA가 `NVIDIA/skills`·`NVIDIA/OpenShell` 저장소로 공개한 스킬)과 **우리 스킬**(이 저장소의 `skills/` 아래에 팀이 쓰는 스킬)을 구분한다.
 - **거버넌스 카드**(스킬이 무엇을 하고 무엇을 읽고 쓰는지 등 능력 범위를 밝히는 카드): `skill-card-generator`로 만든다.
 - **OpenShell**(에이전트를 격리 실행하는 NVIDIA 샌드박스 런타임. YAML 정책으로 파일시스템·네트워크·프로세스를 통제하고 허용·차단을 감사 로그로 남긴다).
-- **NemoClaw**(OpenShell 샌드박스 안에서 OpenClaw 에이전트를 돌리는 NVIDIA 참조 스택, 알파 단계): 모델·에이전트 하네스·보안 런타임을 한 번에 묶은 배포 묶음이며, 그 보안 런타임이 OpenShell이다 `[사실: HSGATE_R3_NVIDIA_STACK_CHECK.md §7, NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §8-1(알파 단계), §8-2 FAQ]`. 하네스는 모델을 감싸 도구 호출과 대화 흐름을 돌리는 실행 틀이고, **OpenClaw**는 NemoClaw의 기본 하네스다.
+- **NemoClaw**(OpenShell 샌드박스 안에서 OpenClaw 에이전트를 돌리는 NVIDIA 참조 스택, 알파 단계): 모델·에이전트 하네스·보안 런타임을 한 번에 묶은 배포 묶음이며, 그 보안 런타임이 OpenShell이다 `[사실: docs/research/HSGATE_R3_NVIDIA_STACK_CHECK.md §7, docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §8-1(알파 단계), §8-2 FAQ]`. 하네스는 모델을 감싸 도구 호출과 대화 흐름을 돌리는 실행 틀이고, **OpenClaw**는 NemoClaw의 기본 하네스다.
 - **NIM**(NVIDIA의 OpenAI 호환 추론 API). 모델은 Nemotron(NVIDIA 언어 모델 계열)의 `nvidia/nemotron-3-super-120b-a12b`다.
 - **NAT**(NVIDIA NeMo Agent Toolkit, 패키지 `nvidia-nat`. 조사 흐름을 감싸 실행·추적·프로파일·사후 평가를 맡는다).
 - **X1**(세로형 최소 통합 시험): 구현 첫날인 2026-09-24(목)에 NemoClaw 에이전트 → 스킬 → 샌드박스 안 CLI 최소 명령 → NIM 호출 1회 → NAT 실행 추적 1건 → 의도적 위반 1건의 차단 로그까지, 한 줄로 이어진 최소 경로를 한 번에 통과시키는 시험.
 - **MVP 시험**: 2026-09-25(금)에 최소 기능이 처음부터 끝까지 도는지 합격 체크리스트(`docs/plan/ROADMAP.md`)로 확인하는 시험.
 - **룰북**(`docs/eval/RULEBOOK.md`, 평가 규칙 문서. Part A는 프로젝트 자기채점, Part B는 TradeSentry 성능 평가. 동결 버전 이름은 `RB-1`)과 **자기채점**(채점 규범과 룰북 Part A로 우리 저장소를 스스로 채점하는 일).
 - **채점 대상 실행**(OpenShell 샌드박스 안에서 TradeSentry CLI로 사례를 돌리는 실행)과 **정답 대조 채점**(샌드박스 밖에서 독립 채점기가 결과를 정답·원본과 비교하는 일)은 따로 쓴다.
-- **채점 규범**(`SCORING_GOLDEN_RULE.md`, 팀이 정한 자기채점 규범)의 지표 코드는 "규범 1d"처럼 출처를 붙여 쓴다. 규범의 가중치·하드 게이트·점수 앵커(점수 0/1/3/5마다 정한 판정 문구)는 `[DESIGN]`이고 대회 공식 배점이 아니다.
+- **채점 규범**(`docs/research/SCORING_GOLDEN_RULE.md`, 팀이 정한 자기채점 규범)의 지표 코드는 "규범 1d"처럼 출처를 붙여 쓴다. 규범의 가중치·하드 게이트·점수 앵커(점수 0/1/3/5마다 정한 판정 문구)는 `[DESIGN]`이고 대회 공식 배점이 아니다.
 
 ## 1. 스킬 사전 표
 
@@ -74,22 +74,22 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 - 누가·언제: 모델 트랙(M, 판정 정책·조사 흐름·NVIDIA 연동·그룹핑을 맡는 구현 트랙)의 보조 에이전트. X1(2026-09-24(목))의 최소 정책부터 2026-09-25(금) 정책 YAML 완성까지 쓴다.
 - 산출: `configs/openshell/policy.yaml` 초안(소유 M, 보안 검토).
 - 채택 조건: 초안은 `docs/plan/DEV_PLAN.md` §4 OpenShell 정책 요건 (a)~(e)와 대조한 뒤에만 채택한다. 특히 다음을 본다.
-  - 파일시스템 정책은 허용 목록 방식이다. 나열한 경로(와 작업 폴더)만 허용하고 나머지는 거부한다 `[사실: 03-openshell-policy-yaml-구조.md §3.6]`. 그래서 저장소 안 평가 정답 경로의 읽기 차단은 그 경로를 허용 목록이나 작업 폴더에 **넣지 않을 때만** 성립한다. 초안이 정답 경로가 든 폴더를 작업 폴더로 잡으면 이 조건이 깨진다 `[추론]`.
-  - 외부 전송은 NVIDIA 추론 엔드포인트만 허용하고, L7 규칙(HTTP 요청 수준에서 허용·거부를 정하는 규칙. REST 규칙 기준으로 method·path·query를 본다)에 method·path를 명시한다. `rules`를 빼면 해당 host:port가 통째로 열리므로 받지 않는다. 범용 바이너리(`curl`, `python3` 등)와 `/**` 경로의 조합도 받지 않는다 `[사실: 03-openshell-policy-yaml-구조.md §3.4, §5]`.
+  - 파일시스템 정책은 허용 목록 방식이다. 나열한 경로(와 작업 폴더)만 허용하고 나머지는 거부한다 `[사실: docs/research/03-openshell-policy-yaml-구조.md §3.6]`. 그래서 저장소 안 평가 정답 경로의 읽기 차단은 그 경로를 허용 목록이나 작업 폴더에 **넣지 않을 때만** 성립한다. 초안이 정답 경로가 든 폴더를 작업 폴더로 잡으면 이 조건이 깨진다 `[추론]`.
+  - 외부 전송은 NVIDIA 추론 엔드포인트만 허용하고, L7 규칙(HTTP 요청 수준에서 허용·거부를 정하는 규칙. REST 규칙 기준으로 method·path·query를 본다)에 method·path를 명시한다. `rules`를 빼면 해당 host:port가 통째로 열리므로 받지 않는다. 범용 바이너리(`curl`, `python3` 등)와 `/**` 경로의 조합도 받지 않는다 `[사실: docs/research/03-openshell-policy-yaml-구조.md §3.4, §5]`.
   - API 키를 샌드박스 안에 두지 않는다. 방식은 X1에서 실제로 성공한 것만 쓴다(§2.4).
-  - 정적 계층(`filesystem_policy`·`landlock`·`process`)은 샌드박스를 만들 때 고정되고, 동적 계층(`network_policies`·`network_middlewares`)은 실행 중 다시 불러올 수 있다 `[사실: 03-openshell-policy-yaml-구조.md §2.1-1]`. 파일 접근 규칙을 바꾸려면 샌드박스를 다시 만든다.
-- 한계: OpenShell L7 규칙이 보는 것은 method·path·query뿐이다(REST 규칙 기준). GraphQL·MCP·JSON-RPC 규칙은 operation·도구 이름 같은 별도 필드를 쓴다 `[사실: HSGATE_R3_NVIDIA_STACK_CHECK.md §2]`. GraphQL·MCP 규칙의 operation·도구 이름은 본문에서 읽힐 수 있다 `[추론]`. 그래도 근거 묶음·토큰 같은 본문 값의 뜻을 조건으로 거는 필드는 어느 쪽에도 없으므로, 보고서 숫자와 근거의 뜻을 따지는 일은 앱 코드(검증기)가 맡는다. 정책 초안에 그런 역할을 기대하지 않는다.
+  - 정적 계층(`filesystem_policy`·`landlock`·`process`)은 샌드박스를 만들 때 고정되고, 동적 계층(`network_policies`·`network_middlewares`)은 실행 중 다시 불러올 수 있다 `[사실: docs/research/03-openshell-policy-yaml-구조.md §2.1-1]`. 파일 접근 규칙을 바꾸려면 샌드박스를 다시 만든다.
+- 한계: OpenShell L7 규칙이 보는 것은 method·path·query뿐이다(REST 규칙 기준). GraphQL·MCP·JSON-RPC 규칙은 operation·도구 이름 같은 별도 필드를 쓴다 `[사실: docs/research/HSGATE_R3_NVIDIA_STACK_CHECK.md §2]`. GraphQL·MCP 규칙의 operation·도구 이름은 본문에서 읽힐 수 있다 `[추론]`. 그래도 근거 묶음·토큰 같은 본문 값의 뜻을 조건으로 거는 필드는 어느 쪽에도 없으므로, 보고서 숫자와 근거의 뜻을 따지는 일은 앱 코드(검증기)가 맡는다. 정책 초안에 그런 역할을 기대하지 않는다.
 - 삭제 시험 답: 정책을 처음부터 손으로 써야 한다. 정확도 지표는 변하지 않는다. 규범 1b의 근거는 정책 파일과 감사 로그 자체다.
 
 ### 2.3 `openshell-cli` — OpenShell CLI 사용 안내
 
 - 누가·언제: M 트랙 보조 에이전트(X1부터), 그리고 봉인 자료 채점 때 오케스트레이터(작업을 배분·병합하는 주관 에이전트).
 - 용도
-  - 샌드박스 생성, 정책 적용, 라이브 정책 확인(`openshell policy get <agent> --full`) `[사실: 03-openshell-policy-yaml-구조.md §6.1]`.
-  - 감사 로그 수집: `openshell logs`로 허용·차단 이벤트를 모은다. 모든 allow/deny를 감사 로그로 기록한다는 근거는 `NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md` §8-2에, `openshell logs`의 이벤트 예(`HTTP:* DENIED`, `CONFIG:LOADED` 등)는 `HSGATE_R3_NVIDIA_STACK_CHECK.md` §3에 있다 `[사실]`. 감사 증거는 `openshell logs`의 허용·차단 이벤트와 앱 실행 기록이다.
+  - 샌드박스 생성, 정책 적용, 라이브 정책 확인(`openshell policy get <agent> --full`) `[사실: docs/research/03-openshell-policy-yaml-구조.md §6.1]`.
+  - 감사 로그 수집: `openshell logs`로 허용·차단 이벤트를 모은다. 모든 allow/deny를 감사 로그로 기록한다는 근거는 `docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md` §8-2에, `openshell logs`의 이벤트 예(`HTTP:* DENIED`, `CONFIG:LOADED` 등)는 `docs/research/HSGATE_R3_NVIDIA_STACK_CHECK.md` §3에 있다 `[사실]`. 감사 증거는 `openshell logs`의 허용·차단 이벤트와 앱 실행 기록이다.
   - 의도적 위반 시험: 정답 경로 읽기 시도, 비허용 호스트 전송, 비허용 바이너리, 키 조회를 각각 시험한다. 예측과 실측, 종료 코드, 로그 근거를 위반 시험 실행 폴더(`outputs/openshell_violation_tests-{시각}/`. `{시각}`은 시험을 시작한 KST 12자리 시각 `yymmddhhmmss`)에 시험표 `openshell_violation_tests-{시각}.md`(예측·실측 대조표), 감사 로그 발췌(`.txt`), 라이브 정책 조회 본문(`.yaml`)으로 남긴다. 한 시험 실행이 샌드박스 여럿을 다루면 폴더 안 파일 이름은 단위 표 `docs/plan/UNITS.md`의 단위 F7 행에 고정한다(자료 계약 §10.3 N7). 이 결과 파일만 같은 이름의 폴더 `artifacts/openshell/openshell_violation_tests-{시각}/`로 복사해 커밋한다(증거 복사: 실행 폴더와 같은 이름의 폴더에 커밋 증거 파일만 복사해 커밋하는 일, `docs/rules/DATA_CONTRACT_V1.md` §10.3).
   - 공식 채점 대상 실행 전용 샌드박스: 정적 계층은 생성 때 고정되므로, 봉인 입력은 공식 채점 대상 실행 전용 샌드박스를 새로 만들어 넣는다. 넣는 방식은 로드맵 MT5에서 정한다 `[미확인]`.
-- 해석 규칙: 명령 실패라는 사실만으로는 어느 장치가 막았는지 알 수 없다. 종료 코드와 감사 로그 행을 함께 남긴다 `[사실: 03-openshell-policy-yaml-구조.md §6.6]`. 정책이 어떤 목적지를 열어 두었다는 것만으로 안전을 주장하지 않는다.
+- 해석 규칙: 명령 실패라는 사실만으로는 어느 장치가 막았는지 알 수 없다. 종료 코드와 감사 로그 행을 함께 남긴다 `[사실: docs/research/03-openshell-policy-yaml-구조.md §6.6]`. 정책이 어떤 목적지를 열어 두었다는 것만으로 안전을 주장하지 않는다.
 - 삭제 시험 답: 정확도 지표는 변하지 않는다. 위반 시험 명령과 로그 수집 절차를 매번 따로 찾아야 해서 규범 3e(정책 위반 시험 결과) 증거를 만드는 시간이 늘어난다 `[추론]`.
 
 ### 2.4 `debug-inference` — 추론 경로 점검
@@ -97,7 +97,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 - 누가·언제: M 트랙. X1(2026-09-24(목))에서 샌드박스 안 NIM 호출이 되지 않을 때.
 - 용도: 키 주입 방식 두 후보를 시험할 때 추론 경로를 점검한다.
   - credential placeholder rewrite: 샌드박스 프로그램은 자리표시자만 갖고, 샌드박스 안 감독 프로세스의 정책 프록시가 게이트웨이에서 받은 자격 증명으로 요청 시점에 바꿔 넣는 방식 `[사실: OpenShell v0.0.116 docs/about/how-it-works.mdx 116행, docs/sandboxes/manage-providers.mdx 327~330행]`.
-  - `inference.local`: 샌드박스는 `inference.local`만 보고, 감독 프로세스의 추론 라우터가 게이트웨이의 추론 설정대로 전달하는 방식 `[사실: OpenShell v0.0.116 docs/about/how-it-works.mdx 117행]`. 추론 라우터는 `inference.local` 요청을 가로채 설정된 추론 백엔드로 넘기는 감독 프로세스의 부분이다. 게이트웨이당 provider(추론 제공자) 1개·모델 1개만 연결하는 단일 백엔드다 `[사실: 03-openshell-policy-yaml-구조.md §2.1-1]`. 공식 문서끼리의 표현 차이(요청이 게이트웨이를 거친다는 문서와 라우터를 샌드박스 쪽에 두는 문서)는 `docs/plan/DEV_PLAN.md` §4.6에 적었다. 조사자(도구를 골라 근거가 붙은 보고서 초안을 쓰는 모델 호출)와 Critic(조사자가 받은 근거와 초안을 별도 문맥에서 검토하는 검수자)이 같은 모델이라 라우팅이 필요 없다.
+  - `inference.local`: 샌드박스는 `inference.local`만 보고, 감독 프로세스의 추론 라우터가 게이트웨이의 추론 설정대로 전달하는 방식 `[사실: OpenShell v0.0.116 docs/about/how-it-works.mdx 117행]`. 추론 라우터는 `inference.local` 요청을 가로채 설정된 추론 백엔드로 넘기는 감독 프로세스의 부분이다. 게이트웨이당 provider(추론 제공자) 1개·모델 1개만 연결하는 단일 백엔드다 `[사실: docs/research/03-openshell-policy-yaml-구조.md §2.1-1]`. 공식 문서끼리의 표현 차이(요청이 게이트웨이를 거친다는 문서와 라우터를 샌드박스 쪽에 두는 문서)는 `docs/plan/DEV_PLAN.md` §4.6에 적었다. 조사자(도구를 골라 근거가 붙은 보고서 초안을 쓰는 모델 호출)와 Critic(조사자가 받은 근거와 초안을 별도 문맥에서 검토하는 검수자)이 같은 모델이라 라우팅이 필요 없다.
   - 둘 중 X1에서 실제로 성공한 방식만 채택하고 이유를 결정 기록(`docs/tracking/decisions/`)에 남긴다. 이 스킬이 두 방식을 모두 다루는지는 `[미확인]`이다.
 - 범위 밖: NIM 무료 키에서 간헐적으로 나는 HTTP 500은 경로 문제가 아니라 상류 오류일 수 있다 `[추론]`. 5xx·429 명시 재전송 규칙은 `docs/plan/DEV_PLAN.md`를 따른다.
 - 삭제 시험 답: 정확도 지표는 변하지 않는다. X1에서 추론 경로 문제를 푸는 시간이 늘 수 있다 `[추론]`.
@@ -105,7 +105,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 ### 2.5 `nemoclaw-user-guide` — NemoClaw 운용 안내
 
 - 누가·언제: M 트랙. X1(2026-09-24(목))과 NemoClaw 경로 완성(2026-09-25(금)) 때 쓴다.
-- 용도: NemoClaw 설치·기동과 OpenClaw 에이전트 운용 안내. 이 스킬은 NemoClaw 문서 MCP 서버(MCP: 에이전트가 외부 도구·자료 서버에 접속하는 표준 프로토콜)와 문서로 에이전트를 안내한다 `[사실: DATA_AND_SKILL_INVENTORY.md PART 2-1 설명]`.
+- 용도: NemoClaw 설치·기동과 OpenClaw 에이전트 운용 안내. 이 스킬은 NemoClaw 문서 MCP 서버(MCP: 에이전트가 외부 도구·자료 서버에 접속하는 표준 프로토콜)와 문서로 에이전트를 안내한다 `[사실: docs/research/DATA_AND_SKILL_INVENTORY.md PART 2-1 설명]`.
 - 연결 방식: NemoClaw에서 스킬과 TradeSentry CLI를 잇는 방식은 `docs/plan/SCAFFOLD_BRIEF.md` "고정 사항과 열린 질문"에 있는 열린 질문이며, X1 결과로 정한다.
 - 대체 경로: NemoClaw 경로가 서지 않을 때의 처리는 §3.4를 따른다.
 - 삭제 시험 답: 정확도 지표는 변하지 않는다. NemoClaw는 알파 단계라 안내 없이 구성하면 X1 제한 시간 3시간(조정값)을 넘길 위험이 커진다 `[추론]`.
@@ -117,19 +117,19 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 ### 2.7 `nvidia-skill-finder` — 추가 스킬 탐색
 
-- 누가·언제: 개발 중 누구나. 새 필요가 생기면 먼저 이 스킬로 맞는 공식 스킬이 있는지 찾는다. 이 스킬은 NVIDIA 관련 요청에 맞는 스킬을 찾아 준다 `[사실: DATA_AND_SKILL_INVENTORY.md PART 2-6 설명]`.
+- 누가·언제: 개발 중 누구나. 새 필요가 생기면 먼저 이 스킬로 맞는 공식 스킬이 있는지 찾는다. 이 스킬은 NVIDIA 관련 요청에 맞는 스킬을 찾아 준다 `[사실: docs/research/DATA_AND_SKILL_INVENTORY.md PART 2-6 설명]`.
 - 규칙: 찾은 후보는 §2.1 기준으로 판단한다. 채택하면 이 사전에 행을 더하고, 이름은 §5.4 방법으로 저장소와 다시 대조한다.
 - 삭제 시험 답: 정확도 지표는 변하지 않는다.
 
 ### 2.8 `nemo-relay-plugin-observability` — 선택
 
-- 설명: 도구·모델 호출 추적을 OpenTelemetry(호출 추적 자료의 공개 표준) 등의 형식으로 남기는 관측 스킬이다 `[사실: DATA_AND_SKILL_INVENTORY.md PART 2-2 설명]`.
+- 설명: 도구·모델 호출 추적을 OpenTelemetry(호출 추적 자료의 공개 표준) 등의 형식으로 남기는 관측 스킬이다 `[사실: docs/research/DATA_AND_SKILL_INVENTORY.md PART 2-2 설명]`.
 - 기본은 넣지 않는다 `[DESIGN]`. NAT 실행 추적과 프로파일 결과가 MVP 합격 체크리스트(`docs/plan/ROADMAP.md`)의 NAT 항목(7번)과 규범 3d(관측성)의 근거를 채우면, 이 스킬을 지워도 나빠지는 지표가 없다 `[추론]`.
 - 다시 볼 조건: NAT 추적에 남지 않는 항목이 실제로 확인될 때만 검토하고, 그때 §2.1 기준으로 판단한다.
 
 ### 2.9 "Skill API" 대응과 제출서 표기
 
-- 대회 공지의 "Skill API"는 NVIDIA 공식 제품명이 아니다 `[사실: NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7]`. 주최측이 뜻한 바는 `[미확인]`이다. 그래서 실체로 확인된 두 가지, 곧 build.nvidia.com Agent Skills(공식 스킬 조합 + 자체 SKILL.md 저작)와 NIM API를 **둘 다** 쓴다.
+- 대회 공지의 "Skill API"는 NVIDIA 공식 제품명이 아니다 `[사실: docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7]`. 주최측이 뜻한 바는 `[미확인]`이다. 그래서 실체로 확인된 두 가지, 곧 build.nvidia.com Agent Skills(공식 스킬 조합 + 자체 SKILL.md 저작)와 NIM API를 **둘 다** 쓴다.
 - 제출서 Tech Stack 칸(사용한 NVIDIA 기술과 전체 기술 스택을 나열하는 신청서 문항)에는 다음을 나열한다. 설치만 한 스킬은 적지 않는다 `[DESIGN]`.
   - 실제로 쓴 스킬 이름(§5.5의 사용 근거 경로가 있는 것만)
   - 모델 ID `nvidia/nemotron-3-super-120b-a12b`
@@ -228,7 +228,7 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 ### 3.5 거버넌스 카드(`skill-card-generator`)
 
-- 목적: 우리 스킬 3개(`tradesentry-scorecard`, `tradesentry-eval`, `tradesentry`)마다 능력 범위를 밝히는 거버넌스 카드를 만든다. `skill-card-generator`는 기존 스킬 디렉터리에서 거버넌스 skill card를 만든다 `[사실: DATA_AND_SKILL_INVENTORY.md PART 2-6 설명, 설치본 SKILL.md "Purpose"]`.
+- 목적: 우리 스킬 3개(`tradesentry-scorecard`, `tradesentry-eval`, `tradesentry`)마다 능력 범위를 밝히는 거버넌스 카드를 만든다. `skill-card-generator`는 기존 스킬 디렉터리에서 거버넌스 skill card를 만든다 `[사실: docs/research/DATA_AND_SKILL_INVENTORY.md PART 2-6 설명, 설치본 SKILL.md "Purpose"]`.
 - 설치: 2026-09-26(토) 15:06 사용자가 저장소 메인 폴더에서 `npx skills add NVIDIA/skills --skill skill-card-generator`를 실행해 설치했다. 설치 위치는 메인 폴더 `.agents/skills/skill-card-generator/`(SKILL.md, `references/skill-card.md.j2`, `references/style-guide.md`, `references/catalog/`, `scripts/discover_assets.py`·`render_card.py`·`validate_submission.py`)이고 Claude Code용 링크는 `.claude/skills/skill-card-generator`다. 둘과 `skills-lock.json`은 `.gitignore`(`/.agents/`, `/.claude/skills/`, `/skills-lock.json`)로 커밋하지 않는다 `[사실: 작업 기록 2026-09-26(토), 설치 폴더 목록]`.
   - 이력: 같은 날 오전에는 작업 에이전트의 실행 권한 정책(신뢰하지 않는 코드 설치 차단)으로 설치 명령이 거부돼, 생성기의 SKILL.md·템플릿·스타일 가이드를 GitHub `NVIDIA/skills`(해당 폴더 마지막 커밋 2a23a90)에서 읽어 형식만 따라 카드 3개를 수동 작성했다(PR #91). 이번 실행으로 그 카드를 같은 경로에 덮어썼다 `[사실: 작업 기록 2026-09-26(토)]`.
 - 실행 기록(2026-09-26(토), worktree `docs/CARDS2-generated-cards`. 스크립트는 설치본을 읽기만 했고 `uv run --locked python`으로 실행했다. jinja2 3.1.6은 가상환경에 있다. 시각은 KST) `[사실: 작업 기록 2026-09-26(토), 각 카드 부록 "생성 경위"]`
@@ -250,7 +250,11 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
   | 10 재렌더: 임시 경로 렌더와 diff | `scripts/render_card.py --context <context.json> --template references/skill-card.md.j2 --out outputs/skill_cards-260927022658/tmp-<이름>-card.md` 뒤 옛 카드의 생성기 부분과 diff. 세 카드 모두 차이는 `### License/Terms of Use: <br>` 아래 `Apache-2.0 <br>` 한 줄 추가뿐(다시 만든 context가 옛것과 같다는 증거) | 3개 | 02:27:35~36 | 렌더 0, 0, 0 |
   | 11 재렌더: 카드 경로 렌더·부록 | `scripts/render_card.py --context <context.json> --template references/skill-card.md.j2 --out skills/<이름>/<이름>-card.md` → 한국어 부록을 그대로 다시 붙이고 라이선스 부분(생성 경위, discover 신호 문장, License/Terms of Use 문단, 검토표 행)만 고침 | 3개 | 02:28:58 | 0, 0, 0 |
   | 12 재렌더: 검증 | `scripts/validate_submission.py skills/<이름>/<이름>-card.md` | 3개 | 02:29:55 | 0, 0, 0 |
+  | 13 재렌더(2026-09-27(일), 이력 문서 이동 뒤): context 재구성·같음 확인 | `tradesentry-scorecard` 카드 생성기 부분의 값으로 context JSON을 다시 만들고(바꾼 값 없음, 커밋하지 않음) `scripts/render_card.py`로 렌더해 기존 카드와 같음을 확인 | 1개 | 10:4x | 0 |
+  | 14 재렌더: 규범 링크 | Reference(s)의 규범 링크 URL 하나(`../../SCORING_GOLDEN_RULE.md` → `../../docs/research/SCORING_GOLDEN_RULE.md`)만 바꾼 context로 렌더. 생성기 부분의 차이는 이 한 줄이고, 부록에 생성 경위 한 줄과 경로 표기를 고침 | 1개 | 10:4x | 0 |
+  | 15 재렌더: 검증 | `scripts/validate_submission.py skills/tradesentry-scorecard/tradesentry-scorecard-card.md` | 1개 | 10:4x | 0 |
 
+  - 13~15행은 2026-09-27(일) 이전 설계·조사 기록을 저장소 루트에서 `docs/research/`로 옮긴 뒤(결정 기록 `docs/tracking/decisions/20260927-1030-user-decision-readme-journal-research-move.md`) 평가 스킬 ① 카드의 규범 링크만 고친 재렌더다. 다른 두 카드는 옮긴 문서를 링크하지 않아 다시 렌더하지 않았다 `[사실: 작업 기록 2026-09-27(일)]`.
   - 8~12행은 2026-09-27(일) 라이선스 결정(결정 기록 `docs/tracking/decisions/20260927-0215-user-decision-license-apache2.md`) 뒤의 재렌더다. 작업 worktree `docs/LIC1-apache2-license`에 둔 설치본 사본 `.agents/skills/skill-card-generator/`(커밋하지 않음)를 읽기만 하고 `uv run --locked python`으로 실행했다 `[사실: 작업 기록 2026-09-27(일), 각 카드 부록 "생성 경위"]`.
   - 렌더 결과에 미렌더 템플릿 조각(`{{ … }}`·`{% … %}`)은 0개다(생성기 SKILL.md 10단계 확인) `[사실: grep 결과]`.
   - validate가 1을 내는 까닭은 생성기 설계다: 소유자 항목이 추론값이라 붉은 `VERIFY` 표시를 붙였고(`owner.verify: true`), 그 표시는 사람 검토자(소유자)가 값을 확인한 뒤 지우게 돼 있다. 표시가 남은 카드는 제출 전 검증에서 실패한다. 2026-09-26(토) 15:34 사용자가 소유자 표기를 확인해 표시를 지웠고 검증은 0이다(7 행). 6' 행이 보여 주듯 표시를 지우면 0이 되며 한국어 부록은 검증을 막지 않는다 `[사실: 설치본 scripts/validate_submission.py CHECKS, references/style-guide.md "Verify markers"]`.
@@ -280,9 +284,9 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 ### 4.1 `data-designer`를 holdout40 생성에 쓰지 않는 이유
 
-- 무엇인가: 합성 데이터 생성 파이프라인 스킬이다. 재고 문서는 "평가셋 자동 생성에 활용 가능"하다고 적었다 `[사실: DATA_AND_SKILL_INVENTORY.md PART 2-6]`.
+- 무엇인가: 합성 데이터 생성 파이프라인 스킬이다. 재고 문서는 "평가셋 자동 생성에 활용 가능"하다고 적었다 `[사실: docs/research/DATA_AND_SKILL_INVENTORY.md PART 2-6]`.
 - 이유 1 — 생성·채점 순환으로 등급 하락 위험
-  - 채점 규범 §3의 숫자 등급에서 C는 "팀이 독립적으로 제작한 deterministic fixture(생성 규칙과 탐지 규칙이 분리됨)"이다. D는 "우리가 생성하고 우리가 채점한 synthetic(generator 규칙을 detector가 되찾는 구조)"이다 `[사실: SCORING_GOLDEN_RULE.md §3]`.
+  - 채점 규범 §3의 숫자 등급에서 C는 "팀이 독립적으로 제작한 deterministic fixture(생성 규칙과 탐지 규칙이 분리됨)"이다. D는 "우리가 생성하고 우리가 채점한 synthetic(generator 규칙을 detector가 되찾는 구조)"이다 `[사실: docs/research/SCORING_GOLDEN_RULE.md §3]`.
   - holdout40 보조 지표가 C로 남으려면 생성 규칙과 탐지·채점 규칙이 분리돼야 한다. 범용 생성 파이프라인이 사례와 정답을 함께 만들면, 정답이 생성기의 규칙에서 나오고 그 규칙을 탐지기가 되찾는 순환이 생긴다. 그러면 C가 D로 떨어질 위험이 있다 `[추론]`.
   - 채점 규범 §7도 "우리가 생성한 데이터를 우리가 채점한다"를 나쁜 신호(숫자 등급 D)로 꼽는다.
 - 이유 2 — 생성 주체와 절차가 이미 정해져 있다(사용자 결정)
@@ -294,13 +298,13 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 ### 4.2 `nemotron-policy-generator`
 
-- Nemotron content-safety 가드레일용 맞춤 안전 정책(Markdown 정책, JSON 분류 체계, 추론 프롬프트)을 만드는 스킬이다 `[사실: DATA_AND_SKILL_INVENTORY.md PART 2-1 설명]`.
+- Nemotron content-safety 가드레일용 맞춤 안전 정책(Markdown 정책, JSON 분류 체계, 추론 프롬프트)을 만드는 스킬이다 `[사실: docs/research/DATA_AND_SKILL_INVENTORY.md PART 2-1 설명]`.
 - 재고 문서는 이 스킬을 교육 미션(예선 참가 조건인 NVIDIA DLI 강의 "Securing Agents with NemoClaw and OpenShell") 직결·규범 1b(OpenShell 활용 깊이) 대응으로 적었다. 그러나 설명으로 보면 대상은 content-safety 정책이지 OpenShell 샌드박스 정책이 아니다 `[추론]`. OpenShell 정책 초안은 `generate-sandbox-policy`로 만든다.
 - 이번 설계는 NeMo Guardrails·NemoGuard를 넣지 않는다(이유는 `docs/plan/DEV_PLAN.md`). 그래서 이 스킬이 만든 정책을 쓸 곳이 없고, 지워도 나빠지는 지표가 없다.
 
 ### 4.3 `rag-eval`, `rag-perf`
 
-- `rag-eval`은 RAGAS(검색 증강 생성의 품질을 재는 평가 도구) 기반 품질 점수를, `rag-perf`는 RAG Blueprint 서버의 프로파일링·부하 시험을 맡는 스킬이다 `[사실: DATA_AND_SKILL_INVENTORY.md PART 2-2 설명]`.
+- `rag-eval`은 RAGAS(검색 증강 생성의 품질을 재는 평가 도구) 기반 품질 점수를, `rag-perf`는 RAG Blueprint 서버의 프로파일링·부하 시험을 맡는 스킬이다 `[사실: docs/research/DATA_AND_SKILL_INVENTORY.md PART 2-2 설명]`.
 - TradeSentry는 문서를 찾아 답을 만드는 RAG(검색 증강 생성) 시스템이 아니다. 도구 5개가 읽기 전용 스냅샷을 조회한다.
 - 대표 지표는 공식 통계 원본(스냅샷 raw 행)과 결정적으로 대조하며, 사람 판정자도 AI 채점자도 두지 않는다. faithfulness 같은 RAGAS 계열 점수는 모델 판정에 기대므로 이 규칙과 맞지 않는다 `[추론]`.
 
@@ -308,14 +312,14 @@ TradeSentry(관세청 수입통계에서 kg당 단가와 상대국 점유율이 
 
 - `debug-openshell-cluster`(`NVIDIA/OpenShell`): OpenShell 저장소 `skills/`에 이 사전의 세 스킬과 나란히 있다 `[사실: 2026-09-24(목) GitHub 트리 대조]`. 이름으로 보아 OpenShell 게이트웨이(클러스터) 점검용이다 `[추론]`. 설계 세션의 공식 스킬 목록 밖이므로 공식 사용 행으로는 넣지 않는다. X1에서 Docker 안 게이트웨이 문제가 생기면 §2.7 절차(§2.1 기준으로 판단하고, 채택하면 행을 더한다)로 검토할 후보다.
 - 도메인이 다른 공식 스킬(최적화 `cuopt-*`, 영상 `deepstream-*` 계열 등)은 후보로 보지 않았다. 필요가 생기면 `nvidia-skill-finder`로 찾고 §2.1 기준으로 판단한다.
-- 스킬은 아니지만 이번 설계에서 넣지 않는 NVIDIA 기술도 있다: Nemotron Nano/Ultra 라우팅, NeMo Guardrails·NemoGuard, NeMo Microservices(NVIDIA NeMo 서비스 제품군). 이 가운데 NeMo Microservices는 2026-10-01(목) 일몰 예정이고 후속은 NeMo Platform이라 핵심 기술로 쓰지 않는다 `[사실: NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §9]`. 목록과 이유는 `docs/plan/DEV_PLAN.md`를 따른다.
+- 스킬은 아니지만 이번 설계에서 넣지 않는 NVIDIA 기술도 있다: Nemotron Nano/Ultra 라우팅, NeMo Guardrails·NemoGuard, NeMo Microservices(NVIDIA NeMo 서비스 제품군). 이 가운데 NeMo Microservices는 2026-10-01(목) 일몰 예정이고 후속은 NeMo Platform이라 핵심 기술로 쓰지 않는다 `[사실: docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §9]`. 목록과 이유는 `docs/plan/DEV_PLAN.md`를 따른다.
 
 ## 5. 설치와 확인 방법
 
 ### 5.1 전제
 
 - 이번 문서 실행에서는 설치하지 않는다. 아래 명령은 구현 단계에서 쓴다(X1을 시작하는 2026-09-24(목)부터).
-- `skills` CLI v1.5.16 이상이 필요하다 `[사실: NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`. `npx`로 부르므로 Node.js가 있어야 한다 `[추론]`.
+- `skills` CLI v1.5.16 이상이 필요하다 `[사실: docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`. `npx`로 부르므로 Node.js가 있어야 한다 `[추론]`.
 - 설치는 개발 환경(에이전트 작업 폴더)에서 한다 `[DESIGN]`. 커스텀 정책을 적용한 샌드박스는 외부 전송을 NVIDIA 추론 엔드포인트로만 여므로, 샌드박스 안에서 스킬을 내려받아 설치하는 방식은 막힌다고 본다 `[추론]`. 런타임 스킬을 NemoClaw 에이전트에 넣는 방식은 X1에서 정한다.
 - 설치 명령에 `.env` 내용이나 봉인 폴더를 넘기지 않는다.
 
@@ -336,13 +340,13 @@ npx skills add NVIDIA/skills --skill nvidia-skill-finder
 npx skills add NVIDIA/skills --skill nemo-relay-plugin-observability
 ```
 
-- 명령 형식: `npx skills add NVIDIA/skills --skill <name>`은 조사 문서에 있는 형식이다 `[사실: NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`. `npx skills add NVIDIA/OpenShell --skill <name>`의 `--skill` 지정은 X1 구현 에이전트 보고로는 동작했다. 보고 내용은 다음과 같다: `npx skills add NVIDIA/OpenShell --skill openshell-cli --skill generate-sandbox-policy --skill debug-inference --agent claude-code -y`(종료 코드 0)로 세 스킬만 설치됐고, `npx skills add NVIDIA/skills --skill nemoclaw-user-guide --agent claude-code -y`(종료 코드 0)도 같았으며, 저장소 목록 조회(`npx skills add NVIDIA/OpenShell --list`)에는 `skills/` 아래 4개(`debug-inference`, `debug-openshell-cluster`, `generate-sandbox-policy`, `openshell-cli`)만 나왔다(skills CLI 1.7.0). 이 보고의 명령·종료 코드·출력·판은 저장소 안 실행 기록이 없어 `[미확인]`이다(X1 구현 에이전트 보고. 명령 목록만 `docs/tracking/decisions/20260924-1556-x1-key-injection.md` "확인된 명령"에 있다). 설치 결과 파일로 확인한 범위는 §1 머리의 `--skill` 항목에 적었다. 조사 문서에는 OpenShell 전용 스킬 전체를 받는 `npx skills add NVIDIA/OpenShell` 형식만 있다.
+- 명령 형식: `npx skills add NVIDIA/skills --skill <name>`은 조사 문서에 있는 형식이다 `[사실: docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`. `npx skills add NVIDIA/OpenShell --skill <name>`의 `--skill` 지정은 X1 구현 에이전트 보고로는 동작했다. 보고 내용은 다음과 같다: `npx skills add NVIDIA/OpenShell --skill openshell-cli --skill generate-sandbox-policy --skill debug-inference --agent claude-code -y`(종료 코드 0)로 세 스킬만 설치됐고, `npx skills add NVIDIA/skills --skill nemoclaw-user-guide --agent claude-code -y`(종료 코드 0)도 같았으며, 저장소 목록 조회(`npx skills add NVIDIA/OpenShell --list`)에는 `skills/` 아래 4개(`debug-inference`, `debug-openshell-cluster`, `generate-sandbox-policy`, `openshell-cli`)만 나왔다(skills CLI 1.7.0). 이 보고의 명령·종료 코드·출력·판은 저장소 안 실행 기록이 없어 `[미확인]`이다(X1 구현 에이전트 보고. 명령 목록만 `docs/tracking/decisions/20260924-1556-x1-key-injection.md` "확인된 명령"에 있다). 설치 결과 파일로 확인한 범위는 §1 머리의 `--skill` 항목에 적었다. 조사 문서에는 OpenShell 전용 스킬 전체를 받는 `npx skills add NVIDIA/OpenShell` 형식만 있다.
 - `--skill`이 동작하지 않을 때의 대안 `[DESIGN]`(X1 구현 에이전트 보고로는 `--skill`이 동작해 쓰지 않았다): 조사 문서의 `npx skills add NVIDIA/OpenShell`로 저장소 단위로 받는다. 이때 다음을 주의한다.
   - OpenShell 저장소에는 `skills/` 말고도 `.agents/skills/` 아래에 저장소 개발용 스킬 18개(`create-github-pr`, `fix-security-issue` 등)가 있다 `[사실: 2026-09-24(목) GitHub 트리 대조]`. 저장소 단위로 설치하면 쓰지 않을 이 스킬들과, 같은 `skills/`에 있는 `debug-openshell-cluster`(§4.4)도 함께 들어올 수 있다 `[추론]`.
   - 설치할 때 세 스킬(`generate-sandbox-policy`, `openshell-cli`, `debug-inference`)과 §2.7로 채택한 후보만 고를 수 있으면 그것만 고른다(고르는 방식은 `--skill`이다. X1 구현 에이전트 보고로는 동작했지만 실행 기록이 없어 `[미확인]`). 고를 수 없으면 설치 뒤 `npx skills list`로 확인하고 세 스킬(§2.7로 채택한 후보 포함) 밖의 것은 제거한다(제거 명령은 조사 문서에 없어 `[미확인]`).
   - `--skill` 지정 동작은 X1 구현 에이전트 보고만 있어 `[미확인]`이다(위 명령 형식 항목).
-- 에이전트 지정: `--agent claude-code`, `--agent codex` 옵션이 있다 `[사실: NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`. 개발 보조 에이전트는 Claude Code에서 돌므로 `npx skills add NVIDIA/skills --skill <name> --agent claude-code` 형식을 쓴다 `[DESIGN]`. OpenClaw 에이전트용 지정값이 있는지는 `[미확인]`이다.
-- Claude Code에서는 설치 뒤 `/reload-skills`로 스킬을 다시 읽는다 `[사실: NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`.
+- 에이전트 지정: `--agent claude-code`, `--agent codex` 옵션이 있다 `[사실: docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`. 개발 보조 에이전트는 Claude Code에서 돌므로 `npx skills add NVIDIA/skills --skill <name> --agent claude-code` 형식을 쓴다 `[DESIGN]`. OpenClaw 에이전트용 지정값이 있는지는 `[미확인]`이다.
+- Claude Code에서는 설치 뒤 `/reload-skills`로 스킬을 다시 읽는다 `[사실: docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`.
 
 ### 5.3 우리 스킬 설치
 
@@ -353,7 +357,7 @@ npx skills add NVIDIA/skills --skill nemo-relay-plugin-observability
 
 ### 5.4 설치·이름 확인
 
-1. 설치 확인: `npx skills list`로 설치된 스킬을 본다. `npx skills check`, `npx skills update` 명령도 있다 `[사실: NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`. 각 명령의 출력 형식은 `[미확인]`이다.
+1. 설치 확인: `npx skills list`로 설치된 스킬을 본다. `npx skills check`, `npx skills update` 명령도 있다 `[사실: docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`. 각 명령의 출력 형식은 `[미확인]`이다.
 2. 이름·출처 재대조(읽기 전용 GitHub 조회)
 
    ```bash
@@ -377,7 +381,7 @@ npx skills add NVIDIA/skills --skill nemo-relay-plugin-observability
 
 ## 용어 설명
 
-- **Agent Skills**: AI 에이전트가 읽고 따르는 이식 가능한 작업 지침 묶음. NVIDIA 공식 정의는 "Agent skills are portable instruction sets that extend what an AI agent can do."다 `[사실: NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`. Anthropic Agent Skills 규격을 바탕으로 한다.
+- **Agent Skills**: AI 에이전트가 읽고 따르는 이식 가능한 작업 지침 묶음. NVIDIA 공식 정의는 "Agent skills are portable instruction sets that extend what an AI agent can do."다 `[사실: docs/research/NVIDIA-FastCampus-Korea-Agentic-AI-Hackathon-2026.md §7-1]`. Anthropic Agent Skills 규격을 바탕으로 한다.
 - **SKILL.md**: 스킬 하나의 지침 파일. 맨 위 frontmatter에 `name`과 `description`을 둔다.
 - **frontmatter**: 마크다운 파일 맨 위 `---` 두 줄 사이에 두는 메타데이터 블록.
 - **`skills` CLI**: Agent Skills를 설치·갱신하는 Vercel의 명령줄 도구. `npx skills add ...`로 부르며 v1.5.16 이상이 필요하다.
@@ -417,7 +421,7 @@ npx skills add NVIDIA/skills --skill nemo-relay-plugin-observability
 - **정답 대조 채점**: 채점 대상 실행의 결과를 샌드박스 밖에서 독립 채점기가 정답·원본과 비교하는 일.
 - **독립 채점기**: 런타임 모듈을 가져다 쓰지 않고 따로 구현한 채점 프로그램(`eval/scorer/`).
 - **룰북·`RB-1`**: 평가 규칙 문서 `docs/eval/RULEBOOK.md`와 그 동결 버전 이름. `RB-1`은 2026-09-26(토) 18:00(조정값)에 동결한다.
-- **채점 규범**: 팀이 정한 자기채점 규범 `SCORING_GOLDEN_RULE.md`. 가중치·게이트·앵커는 `[DESIGN]`이다. "규범 1d"처럼 코드에 출처를 붙인다.
+- **채점 규범**: 팀이 정한 자기채점 규범 `docs/research/SCORING_GOLDEN_RULE.md`. 가중치·게이트·앵커는 `[DESIGN]`이다. "규범 1d"처럼 코드에 출처를 붙인다.
 - **자기채점**: 채점 규범과 룰북 Part A로 우리 저장소를 스스로 채점하는 일. `tradesentry-scorecard`가 수행한다.
 - **컴포넌트 삭제 시험**: 구성요소마다 "지우면 어떤 지표가 나빠지는가"를 적는 점검. 답이 없으면 개수 채우기로 본다.
 - **숫자 등급 A~D**: 정답을 누가 만들었는지와 정답이 개선 과정에 노출됐는지로 매기는 숫자 신뢰 등급. 대표 지표(`real_sealed` 사실 주장 오류율)는 주장 조건(§3.3)을 채울 때 A, holdout40 처리정확도는 C, dev20·`real_dev` 결과는 D다.
