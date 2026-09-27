@@ -48,11 +48,11 @@ TradeSentry가 경보 하나를 다루는 순서:
 
 | 단계 | 하는 일 |
 |---|---|
-| 1. 경보 | 관세청 수출입통계 공개 API를 한 시점에 수집해 고정한 스냅샷(HS(국제 품목분류 코드) 8504 아래 6자리 품목(HS6) 4개 × 상대국 16개 × 2022~2024년 36개월)에서, **kg당 단가**(금액 USD ÷ 순중량 kg)와 **상대국 점유율**(해당국 금액 ÷ 전체국가 금액)이 전년 같은 달보다 크게 바뀐 경우를 경보로 잡는다 |
-| 2. 조사 | 경보마다 조회 도구 5개(`check_comparability`, `get_history`, `compare_partners`, `decompose_hs`, `verify_evidence`)로 근거를 모으고 Nemotron(NVIDIA 언어 모델) **조사자**가 초안을 쓴다. 처음 두 조회와 근거 확인(`verify_evidence`)은 코드가 정해진 차례에 부르고, 추가 비교는 조사자가 모델용 도구 4개 가운데서 고른다 |
-| 3. 검수 | 별도 문맥의 **Critic**(초안의 누락·반대 설명·비교 조건을 지적하는 검수자 역할. 같은 모델을 다른 대화 문맥으로 쓴다)이 지적하고, 필요하면 수정 1회를 거친다 |
-| 4. 검증 | **검증기**(보고서의 숫자·단위·근거 ID를 스냅샷 원본과 대조하는 코드)가 잘못된 보고서를 막는다 |
-| 5. 제안 | 통과한 한국어 보고서가 담당자의 다음 업무를 셋 가운데 하나로 제안한다 |
+| 1.&nbsp;경보 | 관세청 수출입통계 공개 API를 한 시점에 수집해 고정한 스냅샷(HS(국제 품목분류 코드) 8504 아래 6자리 품목(HS6) 4개 × 상대국 16개 × 2022~2024년 36개월)에서, **kg당 단가**(금액 USD ÷ 순중량 kg)와 **상대국 점유율**(해당국 금액 ÷ 전체국가 금액)이 전년 같은 달보다 크게 바뀐 경우를 경보로 잡는다 |
+| 2.&nbsp;조사 | 경보마다 조회 도구 5개(`check_comparability`, `get_history`, `compare_partners`, `decompose_hs`, `verify_evidence`)로 근거를 모으고 Nemotron(NVIDIA 언어 모델) **조사자**가 초안을 쓴다. 처음 두 조회와 근거 확인(`verify_evidence`)은 코드가 정해진 차례에 부르고, 추가 비교는 조사자가 모델용 도구 4개 가운데서 고른다 |
+| 3.&nbsp;검수 | 별도 문맥의 **Critic**(초안의 누락·반대 설명·비교 조건을 지적하는 검수자 역할. 같은 모델을 다른 대화 문맥으로 쓴다)이 지적하고, 필요하면 수정 1회를 거친다 |
+| 4.&nbsp;검증 | **검증기**(보고서의 숫자·단위·근거 ID를 스냅샷 원본과 대조하는 코드)가 잘못된 보고서를 막는다 |
+| 5.&nbsp;제안 | 통과한 한국어 보고서가 담당자의 다음 업무를 셋 가운데 하나로 제안한다 |
 
 **다음 업무 제안 3종**
 
@@ -263,9 +263,9 @@ uv run --locked python scripts/secret_scan.py
 
 기대 결과
 
-- 2) 마지막 줄이 `OK (skipped=N)`이고 종료 코드 0. 건너뛴 시험은 돈 시험으로 세지 않는다.
-- 3) 표준 출력 한 줄 `controlled_fixture_v0: 단위 S3 검증 통과, normalized_sha256 …, 새로 쓴 파일 3건, 실행 폴더 outputs/snapshot_fixture-{시각}/`. `data/snapshots/controlled_fixture_v0/`에 `snapshot.sqlite`·`snapshot_build.sqlite`·`raw/`가 생긴다(모두 `.gitignore` 대상). 이미 있으면 대조·검증만 한다.
-- 4) 종료 코드 0. 표준 오류에 알림 한 줄 **"알림: --replay로 기록된 모델 응답을 재생한 실행이다(NIM을 부르지 않았다). 점수표 근거가 아니다."** 표준 출력에 실행 폴더 `outputs/run_case-{시각}/`의 파일 4개가 적힌다.
+- 2\) 마지막 줄이 `OK (skipped=N)`이고 종료 코드 0. 건너뛴 시험은 돈 시험으로 세지 않는다.
+- 3\) 표준 출력 한 줄 `controlled_fixture_v0: 단위 S3 검증 통과, normalized_sha256 …, 새로 쓴 파일 3건, 실행 폴더 outputs/snapshot_fixture-{시각}/`. `data/snapshots/controlled_fixture_v0/`에 `snapshot.sqlite`·`snapshot_build.sqlite`·`raw/`가 생긴다(모두 `.gitignore` 대상). 이미 있으면 대조·검증만 한다.
+- 4\) 종료 코드 0. 표준 오류에 알림 한 줄 **"알림: --replay로 기록된 모델 응답을 재생한 실행이다(NIM을 부르지 않았다). 점수표 근거가 아니다."** 표준 출력에 실행 폴더 `outputs/run_case-{시각}/`의 파일 4개가 적힌다.
 
   | 파일 | 내용 |
   |---|---|
@@ -275,7 +275,7 @@ uv run --locked python scripts/secret_scan.py
   | `workflow_nat_wrap-{시각}/` | NAT 추적 `nat_trace.jsonl`과 프로파일 결과 |
 
   재생은 기록된 NIM 응답을 차례로 내주며 요청 본문의 해시가 기록과 같은지 대조한다. 도구 5개는 재생 때도 합성 픽스처에서 실제로 돈다. 지침·요청 구성이 바뀌면 해시 불일치로 종료 코드 1이 나고, 그때는 실제 NIM 실행으로 재생 파일을 다시 만든다(`scripts/make_smoke_replay.py`). 세 사례(A `850450-XA-202412`, B `850431-XB-202412`, C `850432-XC-202412`)의 재생 파일이 모두 `eval/dev/smoke/`에 있다.
-- 5) `추적 파일 N개, 걸린 곳 0`, 종료 코드 0.
+- 5\) `추적 파일 N개, 걸린 곳 0`, 종료 코드 0.
 
 정본: `docs/operations.md`(처음 준비·키 없는 스모크 항목), 결정 기록 `docs/tracking/decisions/20260926-0230-model-decision-smoke-replay.md`.
 
